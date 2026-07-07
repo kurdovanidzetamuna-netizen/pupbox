@@ -1,0 +1,27 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html { @apply scroll-smooth; }
+  body { @apply antialiased; }
+}
+
+/* ── Scroll reveal animations ── */
+.fade-in-base {
+  opacity: 0;
+  transition: opacity 0.55s ease, transform 0.55s ease;
+}
+.fade-in-up    { transform: translateY(28px); }
+.fade-in-left  { transform: translateX(-28px); }
+.fade-in-right { transform: translateX(28px); }
+.fade-in-none  { transform: none; }
+
+.fade-in-visible {
+  opacity: 1;
+  transform: translate(0, 0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fade-in-base { opacity: 1; transform: none; transition: none; }
+}

@@ -1,0 +1,137 @@
+'use client';
+import { useState } from 'react';
+
+const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
+
+export default function AdminLoginPage() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    try {
+      const res = await fetch(`${API}/admin/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(Array.isArray(data.message) ? data.message[0] : data.message || 'Login failed');
+      localStorage.setItem('admin_token', data.token);
+      window.location.href = '/dashboard';
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div style={{ minHeight: '100vh', display: 'flex', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>
+      {/* Left panel */}
+      <div style={{ width: '50%', background: 'linear-gradient(135deg, #0f172a 0%, #0c1a2e 100%)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: '48px 56px', position: 'relative', overflow: 'hidden' }}>
+        {/* Background glow */}
+        <div style={{ position: 'absolute', top: 80, left: 40, width: 280, height: 280, background: '#0d9488', borderRadius: '50%', filter: 'blur(80px)', opacity: 0.12, pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', bottom: 80, right: 40, width: 320, height: 320, background: '#0d9488', borderRadius: '50%', filter: 'blur(100px)', opacity: 0.08, pointerEvents: 'none' }} />
+
+        {/* Logo */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, position: 'relative' }}>
+          <div style={{ width: 44, height: 44, background: '#0d9488', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>🐾</div>
+          <span style={{ color: '#fff', fontWeight: 700, fontSize: 20, letterSpacing: '-0.3px' }}>Pupbox</span>
+        </div>
+
+        {/* Headline */}
+        <div style={{ position: 'relative' }}>
+          <h1 style={{ color: '#fff', fontSize: 42, fontWeight: 800, lineHeight: 1.15, margin: '0 0 16px', letterSpacing: '-0.5px' }}>
+            Manage your<br />dog box business<br />
+            <span style={{ color: '#2dd4bf' }}>from one place.</span>
+          </h1>
+          <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 15, margin: 0, lineHeight: 1.6 }}>
+            Orders, subscriptions, customers,<br />content — all in one admin.
+          </p>
+        </div>
+
+        {/* Stats */}
+        <div style={{ display: 'flex', gap: 40, position: 'relative' }}>
+          {[['1,240+', 'Happy dogs'], ['₾48k', 'Monthly revenue'], ['94%', 'Renewal rate']].map(([v, l]) => (
+            <div key={l}>
+              <p style={{ color: '#fff', fontWeight: 800, fontSize: 24, margin: '0 0 2px', letterSpacing: '-0.5px' }}>{v}</p>
+              <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: 12, margin: 0 }}>{l}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Right form panel */}
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fff', padding: '48px 32px' }}>
+        <div style={{ width: '100%', maxWidth: 380 }}>
+          {/* Mobile logo */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 40 }}>
+            <div style={{ width: 36, height: 36, background: '#0d9488', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>🐾</div>
+            <span style={{ fontWeight: 700, color: '#0f172a', fontSize: 15 }}>Pupbox Admin</span>
+          </div>
+
+          <h2 style={{ fontSize: 26, fontWeight: 800, color: '#0f172a', margin: '0 0 6px', letterSpacing: '-0.4px' }}>Welcome back</h2>
+          <p style={{ fontSize: 14, color: '#94a3b8', margin: '0 0 32px' }}>Sign in to your admin account</p>
+
+          {error && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626', fontSize: 13, padding: '10px 14px', borderRadius: 10, marginBottom: 20 }}>
+              <span>⚠</span> {error}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 6 }}>Email address</label>
+              <input
+                type="email"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                required
+                placeholder="admin@pupbox.ge"
+                style={{ width: '100%', border: '1px solid #e2e8f0', borderRadius: 12, padding: '11px 14px', fontSize: 14, outline: 'none', background: '#f8fafc', boxSizing: 'border-box', color: '#0f172a' }}
+                onFocus={e => (e.target.style.borderColor = '#0d9488')}
+                onBlur={e => (e.target.style.borderColor = '#e2e8f0')}
+              />
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 6 }}>Password</label>
+              <input
+                type="password"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                required
+                placeholder="••••••••"
+                style={{ width: '100%', border: '1px solid #e2e8f0', borderRadius: 12, padding: '11px 14px', fontSize: 14, outline: 'none', background: '#f8fafc', boxSizing: 'border-box', color: '#0f172a' }}
+                onFocus={e => (e.target.style.borderColor = '#0d9488')}
+                onBlur={e => (e.target.style.borderColor = '#e2e8f0')}
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              style={{ background: loading ? '#99f6e4' : '#0d9488', color: '#fff', border: 'none', borderRadius: 12, padding: '13px', fontSize: 14, fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer', marginTop: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, transition: 'background 0.15s' }}
+            >
+              {loading ? (
+                <>
+                  <div style={{ width: 16, height: 16, border: '2px solid rgba(255,255,255,0.4)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+                  Signing in…
+                </>
+              ) : 'Sign In'}
+            </button>
+          </form>
+
+          <p style={{ marginTop: 32, fontSize: 12, color: '#cbd5e1', textAlign: 'center' }}>
+            Pupbox Admin Panel · Authorized access only
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
