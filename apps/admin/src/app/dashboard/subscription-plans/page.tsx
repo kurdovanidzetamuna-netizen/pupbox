@@ -95,7 +95,11 @@ function PlanCardPreview({ name, badge, boxCount, months, total, monthlyEquivale
         {boxCount} {boxCount === 1 ? 'box' : 'boxes'} over {months} {months === 1 ? 'month' : 'months'}
       </p>
       <p style={{ textAlign: 'center', margin: 0 }}>
-        <span style={{ fontSize: 30, fontWeight: 800, color: 'var(--teal-600)' }}>₾{total > 0 ? total.toFixed(0) : '—'}</span>
+        {/* Show the exact figure: rounding ₾3.92 to "₾4" made the preview
+            disagree with the price actually being set. */}
+        <span style={{ fontSize: 30, fontWeight: 800, color: 'var(--teal-600)' }}>
+          ₾{total > 0 ? (Number.isInteger(total) ? total.toFixed(0) : total.toFixed(2)) : '—'}
+        </span>
         <span style={{ fontSize: 11, color: 'var(--slate-400)', marginLeft: 4 }}>total</span>
       </p>
       <p style={{ textAlign: 'center', fontSize: 11, color: 'var(--slate-400)', margin: '3px 0 0' }}>
@@ -157,41 +161,54 @@ function MarginReadout({ price, cost }: { price: number; cost: number }) {
 }
 
 /**
- * A real on/off switch, rather than a checkbox buried in a paragraph.
- * The long explanation lives behind the ⓘ disclosure so the settings read as
- * a scannable list instead of three walls of text.
+ * A setting as a tile you tap, not a row with a switch on the end.
+ *
+ * The whole card is the target and the whole card changes colour, so which
+ * settings are on is legible from across the room rather than by scanning a
+ * column of small switches. Hovering shows the full explanation, which keeps
+ * the grid compact without hiding the detail.
  */
-function SettingRow({ icon, title, summary, detail, checked, onChange, accent = 'var(--teal-600)' }: {
-  icon: string; title: string; summary: string; detail: string;
-  checked: boolean; onChange: (v: boolean) => void; accent?: string;
+function SettingTile({ icon, title, onLabel, offLabel, detail, checked, onChange, accent = 'var(--teal-600)', tint = 'var(--teal-50)', border = 'var(--teal-200)' }: {
+  icon: string; title: string; onLabel: string; offLabel: string; detail: string;
+  checked: boolean; onChange: (v: boolean) => void; accent?: string; tint?: string; border?: string;
 }) {
-  const [open, setOpen] = useState(false);
+  const [hover, setHover] = useState(false);
   return (
-    <div style={{ borderBottom: '1px solid var(--slate-100)', padding: '12px 0' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <span style={{ fontSize: 16, width: 22, textAlign: 'center', flexShrink: 0 }}>{icon}</span>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--slate-900)' }}>{title}</span>
-            <button type="button" onClick={() => setOpen(o => !o)} title="What does this do?"
-              style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--slate-400)', fontSize: 12, padding: 0, lineHeight: 1 }}>
-              {open ? '▲' : 'ⓘ'}
-            </button>
-          </div>
-          <div style={{ fontSize: 11.5, color: 'var(--slate-400)', marginTop: 1 }}>{summary}</div>
-        </div>
-        {/* Switch */}
-        <button type="button" role="switch" aria-checked={checked} aria-label={title} onClick={() => onChange(!checked)}
-          style={{ width: 42, height: 24, borderRadius: 999, border: 'none', cursor: 'pointer', flexShrink: 0, padding: 2,
-            background: checked ? accent : 'var(--slate-300)', transition: 'background 0.15s', display: 'flex',
-            justifyContent: checked ? 'flex-end' : 'flex-start', alignItems: 'center' }}>
-          <span style={{ width: 20, height: 20, borderRadius: '50%', background: 'var(--white)', boxShadow: '0 1px 3px rgba(0,0,0,0.25)', transition: 'all 0.15s' }} />
-        </button>
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      aria-label={title}
+      title={detail}
+      onClick={() => onChange(!checked)}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      style={{
+        position: 'relative', textAlign: 'left', cursor: 'pointer', width: '100%',
+        background: checked ? tint : 'var(--white)',
+        border: `1.5px solid ${checked ? border : 'var(--slate-200)'}`,
+        borderRadius: 14, padding: '13px 14px', transition: 'all 0.15s',
+        boxShadow: checked ? `0 1px 6px ${tint}` : 'none',
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 7 }}>
+        <span style={{ fontSize: 19, lineHeight: 1, filter: checked ? 'none' : 'grayscale(1)', opacity: checked ? 1 : 0.5 }}>{icon}</span>
+        {/* Small pill instead of a switch: says the state in words, so it is
+            unambiguous even where the colour is hard to read. */}
+        <span style={{
+          fontSize: 9, fontWeight: 800, letterSpacing: '0.06em', padding: '2px 8px', borderRadius: 999,
+          background: checked ? accent : 'var(--slate-200)', color: checked ? 'var(--white)' : 'var(--slate-500)',
+        }}>{checked ? 'ON' : 'OFF'}</span>
       </div>
-      {open && (
-        <p style={{ fontSize: 11.5, color: 'var(--slate-500)', lineHeight: 1.6, margin: '8px 0 0 34px', paddingRight: 54 }}>{detail}</p>
+      <div style={{ fontSize: 12.5, fontWeight: 700, color: checked ? 'var(--slate-900)' : 'var(--slate-500)' }}>{title}</div>
+      <div style={{ fontSize: 11, color: 'var(--slate-400)', marginTop: 2, lineHeight: 1.35 }}>{checked ? onLabel : offLabel}</div>
+
+      {hover && (
+        <div style={{ position: 'absolute', bottom: 'calc(100% + 6px)', left: 0, right: 0, zIndex: 5, background: 'var(--slate-900)', color: 'var(--white)', fontSize: 11, lineHeight: 1.5, borderRadius: 10, padding: '9px 11px', boxShadow: '0 6px 20px rgba(0,0,0,0.25)', pointerEvents: 'none' }}>
+          {detail}
+        </div>
       )}
-    </div>
+    </button>
   );
 }
 
@@ -1355,19 +1372,9 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
                       </FormField>
                     </div>
 
-                    {/* Calculated results */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
-                      {[
-                        { label: 'Total price', value: pricingTotal > 0 ? `₾${pricingTotal.toFixed(2)}` : '—', highlight: true },
-                        { label: 'Effective / month', value: pricingEffectiveMonthly > 0 ? `₾${pricingEffectiveMonthly.toFixed(2)}` : '—', highlight: false },
-                        { label: 'Customer saves', value: pricingSavings > 0 ? `₾${pricingSavings.toFixed(2)}` : pricingDiscount > 0 ? '₾0.00' : '—', highlight: false, accent: pricingSavings > 0 },
-                      ].map(({ label, value, highlight, accent }) => (
-                        <div key={label} style={{ background: highlight ? 'var(--teal-50)' : 'var(--white)', border: `1px solid ${highlight ? 'var(--teal-200)' : 'var(--slate-200)'}`, borderRadius: 10, padding: '10px 14px' }}>
-                          <div style={{ fontSize: 11, color: 'var(--slate-400)', fontWeight: 600, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</div>
-                          <div style={{ fontSize: 18, fontWeight: 800, color: accent ? 'var(--teal-600)' : highlight ? 'var(--teal-600)' : 'var(--slate-700)' }}>{value}</div>
-                        </div>
-                      ))}
-                    </div>
+                    {/* The totals used to be repeated here as three tiles, but
+                        the preview already shows them larger and in context.
+                        One place for a number, not two. */}
                   </div>
                   {/* ── 3 · How it's sold ── */}
                   <StepHeading n={3} title="How it's sold" hint="The words on the pricing card" />
@@ -1468,57 +1475,58 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
                   <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--amber-800)' }}>Georgian translation is incomplete — <u>click to fill it in</u></span>
                 </div>
               )}
-              {/* Delivery */}
-              <div style={{ background: 'var(--slate-50)', borderRadius: 12, border: '1px solid var(--slate-200b)', padding: '18px 20px', marginBottom: 20 }}>
-                <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--slate-400)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 2px' }}>Delivery &amp; availability</p>
-                {/* The badge toggle moved into Plan behaviour; this block is now
-                    only about what delivery actually costs. */}
-                <SettingRow
-                  icon="🚚" title="Free delivery"
-                  summary={cfg.deliveryFree ? 'No delivery charge on this plan' : `Charged at ₾${Number(cfg.deliveryCost || 0).toFixed(2)} per box`}
-                  detail="Covers delivery for every box on this plan. Turn it off to charge a fixed amount per box instead — the cost feeds into the plan's total price calculation."
-                  checked={cfg.deliveryFree} onChange={v => setCfg(c => ({ ...c, deliveryFree: v }))}
-                />
-                {!cfg.deliveryFree && (
-                  <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <label style={{ fontSize: 12.5, color: 'var(--slate-600)', fontWeight: 600 }}>Cost per box</label>
-                    <div style={{ position: 'relative' }}>
-                      <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 13, color: 'var(--slate-400)' }}>₾</span>
-                      <input type="number" min="0" step="0.01" value={cfg.deliveryCost} onChange={e => setCfg(c => ({ ...c, deliveryCost: num(e.target.value) }))} style={{ width: 96, border: '1px solid var(--slate-200)', borderRadius: 9, padding: '7px 10px 7px 24px', fontSize: 13, outline: 'none' }} />
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Plan behaviour — switches with the detail tucked behind ⓘ so
-                  four settings read at a glance instead of four paragraphs. */}
-              <div style={{ background: 'var(--white)', border: '1px solid var(--slate-200b)', borderRadius: 12, padding: '4px 18px 10px', marginBottom: 20 }}>
-                <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--slate-400)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '14px 0 2px' }}>Plan behaviour</p>
-                <SettingRow
+              {/* ── 4 · How it behaves ──────────────────────────────────
+                  One grid of tappable tiles rather than two stacked panels of
+                  switch rows. Each tile is the target, says ON or OFF in
+                  words, and lights up when active, so the whole configuration
+                  reads in a glance. */}
+              <StepHeading n={4} title="How it behaves" hint="Tap to turn each one on or off — hover for what it does" />
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10, marginBottom: 14 }}>
+                <SettingTile
                   icon="✅" title="Active"
-                  summary={form.isActive ? 'Visible and purchasable on the site' : 'Hidden from customers'}
+                  onLabel="Live on the pricing page" offLabel="Hidden from customers"
                   detail="Makes this plan visible and purchasable on the website. Disable to hide the plan from customers without deleting it."
                   checked={form.isActive} onChange={v => setForm((x: any) => ({ ...x, isActive: v }))}
+                  accent="var(--emerald-600)" tint="var(--green-50)" border="var(--green-300)"
                 />
-                <SettingRow
+                <SettingTile
                   icon="🔄" title="Auto renewal"
-                  summary={form.autoRenewal ? 'Renews and charges automatically' : 'Ends after the final box'}
+                  onLabel="Renews and charges automatically" offLabel="Ends after the final box"
                   detail="When enabled, customers on this plan are automatically charged and receive the next box when their current period ends — no action needed from them. They can turn it off anytime from their account."
                   checked={form.autoRenewal} onChange={v => setForm((x: any) => ({ ...x, autoRenewal: v }))}
                 />
-                <SettingRow
-                  icon="🎁" title="Can be gifted" accent="var(--amber-600)"
-                  summary={form.giftable ? "Can be bought for someone else's dog" : 'Cannot be given as a gift'}
+                <SettingTile
+                  icon="🎁" title="Can be gifted"
+                  onLabel="Buyable for someone else's dog" offLabel="Cannot be given as a gift"
                   detail="Lets customers buy this plan for someone else's dog. The recipient gets an emailed gift card, then adds their own dog and address before the first box ships. Gifted subscriptions never auto-renew, whatever this plan's auto-renewal setting says."
                   checked={form.giftable} onChange={v => setForm((x: any) => ({ ...x, giftable: v }))}
+                  accent="var(--amber-600)" tint="var(--amber-50)" border="var(--amber-200)"
                 />
-                <SettingRow
-                  icon="🏷️" title='Show "Delivery included" badge'
-                  summary={form.deliveryIncluded ? 'Badge shown on the plan card' : 'No badge'}
-                  detail="Displays a small “Delivery included” badge on this plan's card on the pricing page. Set the actual delivery charge under Delivery above."
+                <SettingTile
+                  icon="🚚" title="Free delivery"
+                  onLabel="No delivery charge" offLabel={`₾${Number(cfg.deliveryCost || 0).toFixed(2)} per box`}
+                  detail="Covers delivery for every box on this plan. Turn it off to charge a fixed amount per box instead — the cost feeds into the plan's total price calculation."
+                  checked={cfg.deliveryFree} onChange={v => setCfg(c => ({ ...c, deliveryFree: v }))}
+                />
+                <SettingTile
+                  icon="🏷️" title="Delivery badge"
+                  onLabel="Badge shown on the card" offLabel="No badge shown"
+                  detail="Displays a small “Delivery included” badge on this plan's card on the pricing page. Set the actual delivery charge with the Free delivery tile."
                   checked={form.deliveryIncluded} onChange={v => setForm((x: any) => ({ ...x, deliveryIncluded: v }))}
                 />
               </div>
+
+              {/* Only asked for when it applies. */}
+              {!cfg.deliveryFree && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20, background: 'var(--slate-50)', border: '1px solid var(--slate-200b)', borderRadius: 10, padding: '10px 14px' }}>
+                  <label style={{ fontSize: 12.5, color: 'var(--slate-600)', fontWeight: 600 }}>Delivery cost per box</label>
+                  <div style={{ position: 'relative' }}>
+                    <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 13, color: 'var(--slate-400)' }}>₾</span>
+                    <input type="number" min="0" step="0.01" value={cfg.deliveryCost} onChange={e => setCfg(c => ({ ...c, deliveryCost: num(e.target.value) }))} style={{ width: 96, border: '1px solid var(--slate-200)', borderRadius: 9, padding: '7px 10px 7px 24px', fontSize: 13, outline: 'none' }} />
+                  </div>
+                  <span style={{ fontSize: 11, color: 'var(--slate-400)' }}>added to the plan total</span>
+                </div>
+              )}
 
               {/* No second save button here: one primary action lives in the
                   header, so there is never a question of which one commits what. */}
