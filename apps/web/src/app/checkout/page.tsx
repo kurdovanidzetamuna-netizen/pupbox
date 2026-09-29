@@ -8,12 +8,22 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1
 
 function getToken() { return typeof window !== 'undefined' ? localStorage.getItem('pupbox_token') : null; }
 
-const STEPS = ['Account', 'Dog Profile', 'Delivery', 'Review'];
-
 export default function CheckoutPage() {
   const { cart, refresh } = useCart();
   const router = useRouter();
   const [step, setStep] = useState(0);
+  // Arrives as /checkout?gift=true from the "Gift This Plan" buttons. Read in
+  // an effect, not during render, so the server and client agree on first paint.
+  const [isGift, setIsGift] = useState(false);
+  useEffect(() => {
+    setIsGift(new URLSearchParams(window.location.search).get('gift') === 'true');
+  }, []);
+
+  // Gifting replaces the dog step: the recipient's dog is not ours to describe,
+  // so they supply it later from the claim link.
+  const STEPS = isGift
+    ? ['Account', 'Gift Details', 'Delivery', 'Review']
+    : ['Account', 'Dog Profile', 'Delivery', 'Review'];
   const [deliveryMethods, setDeliveryMethods] = useState<any[]>([]);
   const [selectedDelivery, setSelectedDelivery] = useState('');
   const [loading, setLoading] = useState(false);
@@ -24,6 +34,7 @@ export default function CheckoutPage() {
     email: '', password: '', firstName: '', lastName: '', phone: '',
     city: '', addressLine1: '', addressLine2: '',
     dogName: '', dogBreed: '', dogSize: '', dogGender: '',
+    giftRecipientName: '', giftRecipientEmail: '', giftMessage: '',
     isNewAccount: true,
   });
 
@@ -57,6 +68,13 @@ export default function CheckoutPage() {
       setStep(1);
     } catch (e: any) { setError(e.message); }
     finally { setLoading(false); }
+  }
+
+  function handleGiftStep() {
+    setError('');
+    if (!form.giftRecipientName.trim()) { setError('Who is this gift for?'); return; }
+    if (!/^\S+@\S+\.\S+$/.test(form.giftRecipientEmail.trim())) { setError('Enter a valid email so we can send the gift card'); return; }
+    setStep(2);
   }
 
   async function handleDogStep() {
@@ -96,7 +114,16 @@ export default function CheckoutPage() {
           city: form.city,
           addressLine1: form.addressLine1,
           addressLine2: form.addressLine2 || undefined,
-          autoRenewal,
+          // A gift never auto-renews — the buyer must not be billed
+          // indefinitely for someone else's dog.
+          autoRenewal: isGift ? false : autoRenewal,
+          ...(isGift ? {
+            gift: {
+              recipientName: form.giftRecipientName.trim(),
+              recipientEmail: form.giftRecipientEmail.trim(),
+              ...(form.giftMessage.trim() ? { message: form.giftMessage.trim() } : {}),
+            },
+          } : {}),
         }),
       });
       const data = await res.json();
@@ -175,8 +202,48 @@ export default function CheckoutPage() {
               </div>
             )}
 
+            {/* Step 1 (gifting): who it's for. We deliberately don't ask about
+                their dog — the buyer rarely knows its size or allergies, and the
+                recipient supplies all of that from the claim link. */}
+            {step === 1 && isGift && (
+              <div className="bg-white rounded-xl border border-gray-100 p-8">
+                <h2 className="text-xl font-bold text-gray-900 mb-2">🎁 Gift Details</h2>
+                <p className="text-sm text-gray-500 mb-6">
+                  We&apos;ll email them a gift card with your message. They&apos;ll add their dog&apos;s details
+                  and delivery address themselves, so you don&apos;t need to know them.
+                </p>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Recipient&apos;s name <span className="text-teal-600">*</span></label>
+                    <input value={form.giftRecipientName} onChange={e => updateForm('giftRecipientName', e.target.value)} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400" placeholder="e.g. Nino Beridze" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Recipient&apos;s email <span className="text-teal-600">*</span></label>
+                    <input type="email" value={form.giftRecipientEmail} onChange={e => updateForm('giftRecipientEmail', e.target.value)} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400" placeholder="nino@example.com" />
+                    <p className="text-xs text-gray-400 mt-1">The gift card goes here once your payment clears.</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Personal message</label>
+                    <textarea value={form.giftMessage} onChange={e => updateForm('giftMessage', e.target.value)} rows={3} maxLength={1000} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 resize-y" placeholder="Happy birthday! Hope Rex enjoys these treats 🐾" />
+                    <p className="text-xs text-gray-400 mt-1">{form.giftMessage.length}/1000 — optional, shown on the gift card</p>
+                  </div>
+                </div>
+                <div className="mt-5 bg-amber-50 border border-amber-200 rounded-lg p-3">
+                  <p className="text-xs text-amber-800">
+                    The first box ships once they&apos;ve claimed the gift and told us about their dog.
+                    Gift subscriptions never auto-renew, so you won&apos;t be charged again.
+                  </p>
+                </div>
+                {error && <p className="text-red-500 text-sm mt-4">{error}</p>}
+                <div className="flex gap-3 mt-6">
+                  <button onClick={() => setStep(0)} className="flex-1 border border-gray-200 text-gray-600 py-3 rounded-xl font-medium hover:bg-gray-50">← Back</button>
+                  <button onClick={handleGiftStep} className="flex-1 bg-teal-600 text-white py-3 rounded-xl font-bold hover:bg-teal-700">Continue →</button>
+                </div>
+              </div>
+            )}
+
             {/* Step 1: Dog Profile */}
-            {step === 1 && (
+            {step === 1 && !isGift && (
               <div className="bg-white rounded-xl border border-gray-100 p-8">
                 <h2 className="text-xl font-bold text-gray-900 mb-2">Dog Profile</h2>
                 <p className="text-sm text-gray-500 mb-6">{cart?.hasSubscription ? 'Tell us about your dog so we can personalise the box.' : 'Optional — skip if no subscription.'}</p>
@@ -267,7 +334,17 @@ export default function CheckoutPage() {
             {/* Step 3: Review */}
             {step === 3 && (
               <div className="bg-white rounded-xl border border-gray-100 p-8">
-                <h2 className="text-xl font-bold text-gray-900 mb-6">Review Your Order</h2>
+                <h2 className="text-xl font-bold text-gray-900 mb-6">{isGift ? 'Review Your Gift' : 'Review Your Order'}</h2>
+                {isGift && (
+                  <div className="mb-6 bg-amber-50 border border-amber-200 rounded-xl p-4">
+                    <p className="text-sm font-bold text-amber-900 mb-1">🎁 Gift for {form.giftRecipientName}</p>
+                    <p className="text-xs text-amber-800">{form.giftRecipientEmail}</p>
+                    {form.giftMessage && <p className="text-xs italic text-amber-800 mt-2">“{form.giftMessage}”</p>}
+                    <p className="text-xs text-amber-700 mt-2 pt-2 border-t border-amber-200">
+                      Delivery details below are yours, for billing. The box ships to the address {form.giftRecipientName || 'they'} provide{form.giftRecipientName ? 's' : ''} when claiming.
+                    </p>
+                  </div>
+                )}
                 <div className="space-y-4 mb-6">
                   {cart?.items.map((item: any) => (
                     <div key={item.id} className="flex justify-between text-sm text-gray-600">
@@ -287,7 +364,9 @@ export default function CheckoutPage() {
                   <p>{form.firstName} {form.lastName} · {form.phone}</p>
                   <p>{form.addressLine1}{form.addressLine2 ? ', ' + form.addressLine2 : ''}, {form.city}</p>
                 </div>
-                {cart?.hasSubscription && (
+                {/* Not offered for a gift: it is forced off server-side, so a
+                    toggle here would imply a choice the buyer does not have. */}
+                {cart?.hasSubscription && !isGift && (
                   <div className={`rounded-xl border-2 p-4 mb-5 cursor-pointer transition ${autoRenewal ? 'border-teal-500 bg-teal-50' : 'border-gray-200 bg-gray-50'}`}
                     onClick={() => setAutoRenewal(v => !v)}>
                     <div className="flex items-start gap-3">

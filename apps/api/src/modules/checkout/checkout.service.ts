@@ -42,6 +42,7 @@ export class CheckoutService {
     city: string;
     addressLine1: string;
     addressLine2?: string;
+    autoRenewal?: boolean;
     gift?: GiftDetails;
   }) {
     const cart = await this.cartService.getOrCreate(userId);
@@ -136,8 +137,9 @@ export class CheckoutService {
             // Opaque, unguessable — this token is the only credential guarding
             // the claim link that arrives by email.
             giftClaimToken: gift ? crypto.randomBytes(24).toString('base64url') : null,
-            // Never keep billing the buyer for someone else's dog.
-            autoRenewal: gift ? false : true,
+            // Never keep billing the buyer for someone else's dog; otherwise
+            // honour what the customer chose at checkout.
+            autoRenewal: gift ? false : data.autoRenewal ?? true,
           },
           select: { id: true },
         });

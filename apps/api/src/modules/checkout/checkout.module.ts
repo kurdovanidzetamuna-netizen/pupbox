@@ -4,7 +4,7 @@ import { CartModule } from '../cart/cart.module';
 import { Controller, Post, Get, Body, UseGuards, Request, Query } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth, ApiTags, ApiOperation } from '@nestjs/swagger';
-import { IsString, IsOptional, IsEmail, ValidateNested, IsDateString, MaxLength } from 'class-validator';
+import { IsString, IsOptional, IsEmail, IsBoolean, ValidateNested, IsDateString, MaxLength } from 'class-validator';
 import { Type } from 'class-transformer';
 
 /**
@@ -35,6 +35,12 @@ class CreateOrderDto {
   @IsString() city: string;
   @IsString() addressLine1: string;
   @IsOptional() @IsString() addressLine2?: string;
+  /**
+   * The customer's auto-renewal choice. The checkout page has always sent
+   * this; because it was missing here, forbidNonWhitelisted rejected every
+   * order with 400 "property autoRenewal should not exist".
+   */
+  @IsOptional() @IsBoolean() autoRenewal?: boolean;
   @IsOptional() @ValidateNested() @Type(() => GiftDetailsDto) gift?: GiftDetailsDto;
 }
 
