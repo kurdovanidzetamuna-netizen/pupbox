@@ -170,6 +170,10 @@ model User {
   referralsReceived Referral[] @relation("ReferralInvited")
   couponUsages   CouponUsage[]
   carts          Cart[]
+
+  // Registration counts per period drive the customers card and its chart.
+  @@index([createdAt])
+  @@index([status])
 }
 
 model AdminUser {
@@ -440,6 +444,13 @@ model CustomerSubscription {
   updatedAt     DateTime           @updatedAt
 
   orders        Order[]
+
+  // Active-subscriber counts, churn (status + updatedAt) and per-plan
+  // rankings all aggregate on these.
+  @@index([status])
+  @@index([planId])
+  @@index([userId])
+  @@index([createdAt])
 }
 
 // ─── DELIVERY ────────────────────────────────────────────────────────────────
@@ -533,6 +544,15 @@ model Order {
 
   items            OrderItem[]
   payments         Payment[]
+
+  // Dashboard analytics and the admin order list both scan by date window,
+  // status and channel. Postgres does not index foreign keys automatically,
+  // so userId and subscriptionId are covered here too.
+  @@index([createdAt])
+  @@index([status])
+  @@index([type])
+  @@index([userId])
+  @@index([subscriptionId])
 }
 
 model OrderItem {
@@ -549,6 +569,12 @@ model OrderItem {
   quantity         Int               @default(1)
   total            Decimal           @db.Decimal(10, 2)
   createdAt        DateTime          @default(now())
+
+  // Channel attribution reads items by order, and the top-products /
+  // top-plans rankings filter on the two nullable target columns.
+  @@index([orderId])
+  @@index([productId])
+  @@index([subscriptionPlanId])
 }
 
 // ─── PAYMENTS ────────────────────────────────────────────────────────────────
@@ -571,6 +597,13 @@ model Payment {
   updatedAt        DateTime      @updatedAt
 
   refunds          Refund[]
+
+  // Revenue is summed as "PAID within a date window", and the webhook looks
+  // payments up by order plus provider id.
+  @@index([status, createdAt])
+  @@index([orderId])
+  @@index([userId])
+  @@index([providerPaymentId])
 }
 
 model Refund {
