@@ -44,6 +44,118 @@ function migrateConfig(saved: any, boxCount: number): typeof EMPTY_CONFIG {
 
 function num(v: any, fallback = 0) { const n = parseFloat(v); return isNaN(n) ? fallback : n; }
 
+/** Derives a clean URL slug from a plan name. Collapses runs of separators so
+ *  "3 - month" cannot become "3---month", which is how one shipped already. */
+function slugify(name: string): string {
+  return name.toLowerCase().trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/-{2,}/g, '-')
+    .replace(/^-|-$/g, '');
+}
+
+/** Numbered section heading, so a long form reads as a sequence of decisions. */
+function StepHeading({ n, title, hint }: { n: number; title: string; hint: string }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, margin: '0 0 12px' }}>
+      <span style={{ width: 22, height: 22, borderRadius: '50%', background: 'var(--teal-600)', color: 'var(--white)', fontSize: 11, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>{n}</span>
+      <div>
+        <p style={{ fontSize: 14, fontWeight: 800, color: 'var(--slate-900)', margin: 0 }}>{title}</p>
+        <p style={{ fontSize: 11.5, color: 'var(--slate-400)', margin: '1px 0 0' }}>{hint}</p>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * The plan card as customers will actually see it on the pricing page.
+ *
+ * A plan is a thing people look at and choose between, not a database row —
+ * but it was authored blind: you set a price, a discount and a badge, then
+ * guessed at the result. Rendering it live turns the drawer into a builder.
+ * Mirrors apps/web PlanCard; the two live in different apps so the styling is
+ * duplicated deliberately rather than shared.
+ */
+function PlanCardPreview({ name, badge, boxCount, months, total, monthlyEquivalent, savings, benefits, giftable, deliveryBadge }: {
+  name: string; badge: string; boxCount: number; months: number;
+  total: number; monthlyEquivalent: number; savings: number;
+  benefits: string[]; giftable: boolean; deliveryBadge: boolean;
+}) {
+  const badgeLabel = badge === 'popular' ? 'MOST POPULAR' : badge === 'best_value' ? 'BEST VALUE' : badge === 'new' ? 'NEW' : null;
+  return (
+    <div style={{ position: 'relative', background: 'var(--white)', border: `2px solid ${badgeLabel ? 'var(--teal-500, var(--teal-600))' : 'var(--slate-200)'}`, borderRadius: 16, padding: '22px 20px 20px', boxShadow: badgeLabel ? '0 6px 20px rgba(13,148,136,0.14)' : '0 1px 4px rgba(0,0,0,0.05)' }}>
+      {badgeLabel && (
+        <div style={{ position: 'absolute', top: -11, left: '50%', transform: 'translateX(-50%)', background: 'var(--teal-600)', color: 'var(--white)', fontSize: 9.5, fontWeight: 800, letterSpacing: '0.08em', padding: '4px 12px', borderRadius: 999, whiteSpace: 'nowrap' }}>
+          {badgeLabel}
+        </div>
+      )}
+      <p style={{ textAlign: 'center', fontSize: 16, fontWeight: 800, color: 'var(--slate-900)', margin: '2px 0 2px' }}>
+        {name || <span style={{ color: 'var(--slate-300)' }}>Plan name</span>}
+      </p>
+      <p style={{ textAlign: 'center', fontSize: 11, color: 'var(--slate-400)', margin: '0 0 12px' }}>
+        {boxCount} {boxCount === 1 ? 'box' : 'boxes'} over {months} {months === 1 ? 'month' : 'months'}
+      </p>
+      <p style={{ textAlign: 'center', margin: 0 }}>
+        <span style={{ fontSize: 30, fontWeight: 800, color: 'var(--teal-600)' }}>₾{total > 0 ? total.toFixed(0) : '—'}</span>
+        <span style={{ fontSize: 11, color: 'var(--slate-400)', marginLeft: 4 }}>total</span>
+      </p>
+      <p style={{ textAlign: 'center', fontSize: 11, color: 'var(--slate-400)', margin: '3px 0 0' }}>
+        {monthlyEquivalent > 0 ? `≈ ₾${monthlyEquivalent.toFixed(2)}/month` : ''}
+      </p>
+      {savings > 0 && (
+        <p style={{ textAlign: 'center', fontSize: 11, fontWeight: 700, color: 'var(--amber-700)', margin: '6px 0 0' }}>
+          Save ₾{savings.toFixed(2)} vs monthly
+        </p>
+      )}
+      <div style={{ borderTop: '1px solid var(--slate-100)', margin: '14px 0 12px' }} />
+      {benefits.length === 0 ? (
+        <p style={{ fontSize: 11, color: 'var(--slate-300)', fontStyle: 'italic', textAlign: 'center', margin: 0 }}>No benefits listed yet</p>
+      ) : (
+        <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {benefits.map((b, i) => (
+            <li key={i} style={{ display: 'flex', gap: 7, fontSize: 11.5, color: 'var(--slate-600)', lineHeight: 1.4 }}>
+              <span style={{ color: 'var(--teal-600)', fontWeight: 700, flexShrink: 0 }}>✓</span>{b}
+            </li>
+          ))}
+        </ul>
+      )}
+      <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginTop: 12 }}>
+        {deliveryBadge && <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 7px', borderRadius: 999, background: 'var(--teal-50)', color: 'var(--teal-600)', border: '1px solid var(--teal-200)' }}>🚚 DELIVERY INCLUDED</span>}
+        {giftable && <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 7px', borderRadius: 999, background: 'var(--amber-50)', color: 'var(--amber-700)', border: '1px solid var(--amber-200)' }}>🎁 GIFTABLE</span>}
+      </div>
+      <div style={{ marginTop: 14, background: 'var(--teal-600)', color: 'var(--white)', borderRadius: 999, padding: '9px 0', textAlign: 'center', fontSize: 12, fontWeight: 700 }}>
+        Choose this plan →
+      </div>
+    </div>
+  );
+}
+
+/**
+ * What the plan earns. Box cost comes from the Box Builder tab, so a plan
+ * priced below what it costs to fill shows up here rather than after launch.
+ */
+function MarginReadout({ price, cost }: { price: number; cost: number }) {
+  const profit = price - cost;
+  const margin = price > 0 ? (profit / price) * 100 : 0;
+  const tone = cost === 0 ? 'var(--slate-400)' : profit < 0 ? 'var(--red-600)' : margin < 25 ? 'var(--amber-700)' : 'var(--emerald-600)';
+  const row = (label: string, value: string, color?: string, bold?: boolean) => (
+    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11.5, padding: '4px 0', color: color ?? 'var(--slate-500)', fontWeight: bold ? 700 : 500 }}>
+      <span>{label}</span><span>{value}</span>
+    </div>
+  );
+  return (
+    <div style={{ marginTop: 14, background: 'var(--slate-50)', border: '1px solid var(--slate-200b)', borderRadius: 12, padding: '12px 14px' }}>
+      <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--slate-400)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 6px' }}>Economics</p>
+      {row('Customer pays', price > 0 ? `₾${price.toFixed(2)}` : '—')}
+      {row('Cost to fulfil', cost > 0 ? `₾${cost.toFixed(2)}` : 'not set')}
+      <div style={{ borderTop: '1px solid var(--slate-200b)', margin: '4px 0' }} />
+      {row(profit < 0 ? 'Loss per plan' : 'Profit per plan', cost > 0 && price > 0 ? `₾${Math.abs(profit).toFixed(2)}` : '—', tone, true)}
+      {row('Margin', cost > 0 && price > 0 ? `${margin.toFixed(0)}%` : '—', tone, true)}
+      {cost === 0 && <p style={{ fontSize: 10.5, color: 'var(--slate-400)', margin: '6px 0 0', lineHeight: 1.4 }}>Add box contents in Box Builder to see margin.</p>}
+      {cost > 0 && profit < 0 && <p style={{ fontSize: 10.5, color: 'var(--red-600)', margin: '6px 0 0', fontWeight: 600 }}>⚠ This plan sells below cost.</p>}
+    </div>
+  );
+}
+
 /**
  * A real on/off switch, rather than a checkbox buried in a paragraph.
  * The long explanation lives behind the ⓘ disclosure so the settings read as
@@ -187,6 +299,9 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
 
   const DEFAULT_BADGES = PAGE_DEFAULT_BADGES;
   const [showNewBadge, setShowNewBadge] = useState(false);
+  // Once the slug is edited by hand it stops following the name. Existing
+  // plans start "touched" because their URL is already published.
+  const [slugTouched, setSlugTouched] = useState(false);
   const [newBadgeInput, setNewBadgeInput] = useState('');
 
   // Reverse-compute monthlyPrice from stored price + duration + discount when loading an existing plan
@@ -292,6 +407,24 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
     [cfg.giftBoxes]
   );
   const totalCost = allProductTotal + perBoxOtherCost * boxCount + giftBoxTotal;
+
+  // What still stands between this and a plan customers can buy. Surfaced as a
+  // named list rather than letting Save fail and scatter red text around the
+  // form, so you know what is left without hunting for it.
+  const benefitLines = String(form.benefits || '').split('\n').map((l: string) => l.trim()).filter(Boolean);
+  const blockers: { label: string; tab: 'form' | 'builder' | 'discounts'; lang?: Lang }[] = [
+    ...(!String(form.name || '').trim() ? [{ label: 'Plan name', tab: 'form' as const }] : []),
+    ...(!(Number(form.durationValue) > 0) ? [{ label: 'How many months it runs', tab: 'form' as const }] : []),
+    ...(!(Number(form.boxCount) > 0) ? [{ label: 'How many boxes', tab: 'form' as const }] : []),
+    ...(!(pricingTotal > 0) ? [{ label: 'A price', tab: 'form' as const }] : []),
+    ...(benefitLines.length === 0 ? [{ label: 'At least one benefit', tab: 'form' as const }] : []),
+  ];
+  // Worth flagging but not worth blocking on — you can launch without them.
+  const warnings: { label: string; tab: 'form' | 'builder' | 'discounts' }[] = [
+    ...(allProductTotal === 0 ? [{ label: 'No box contents yet, so margin is unknown', tab: 'builder' as const }] : []),
+    ...(!String(ka.name || '').trim() ? [{ label: 'No Georgian name — the site will show the English one', tab: 'form' as const }] : []),
+  ];
+  const canCreate = blockers.length === 0;
   const sellingPrice = pricingTotal;
   const margin = sellingPrice - totalCost;
   const marginPct = totalCost > 0 ? (margin / totalCost) * 100 : sellingPrice > 0 ? 100 : 0;
@@ -522,7 +655,7 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
           </div>
         </div>
       )}
-      <div style={{ position: 'fixed', top: 0, right: 0, width: 820, height: '100%', background: 'var(--white)', zIndex: 51, overflowY: 'auto', boxShadow: '-8px 0 40px rgba(0,0,0,0.12)', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ position: 'fixed', top: 0, right: 0, width: 'min(1180px, 96vw)', height: '100%', background: 'var(--white)', zIndex: 51, overflowY: 'auto', boxShadow: '-8px 0 40px rgba(0,0,0,0.12)', display: 'flex', flexDirection: 'column' }}>
 
         {/* Header */}
         <div style={{ position: 'sticky', top: 0, background: 'var(--slate-900)', padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', zIndex: 1, flexShrink: 0 }}>
@@ -533,7 +666,11 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
               {plan.badge && <Pill bg="var(--teal-600)" color="var(--white)" border="none">{plan.badge}</Pill>}
             </div>
             <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, margin: '4px 0 0' }}>
-              {plan.id ? `${plan.durationValue} ${plan.durationUnit.toLowerCase()}s · ${plan.boxCount} box${plan.boxCount > 1 ? 'es' : ''}` : 'Fill in Plan Settings to get started'}
+              {plan.id
+                ? `${plan.durationValue} ${plan.durationUnit.toLowerCase()}s · ${plan.boxCount} box${plan.boxCount > 1 ? 'es' : ''}`
+                : blockers.length === 0
+                  ? 'Ready to create'
+                  : `${blockers.length} thing${blockers.length > 1 ? 's' : ''} left before you can create it`}
             </p>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
@@ -542,8 +679,9 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
               onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--teal-600)'; }}
               onMouseDown={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(0.95)'; }}
               onMouseUp={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)'; }}
-              style={{ background: 'var(--teal-600)', color: 'var(--white)', border: 'none', borderRadius: 9, padding: '8px 18px', fontSize: 13, fontWeight: 700, cursor: saving ? 'default' : 'pointer', opacity: saving ? 0.6 : 1, transition: 'background 0.15s, transform 0.1s' }}>
-              {saving ? 'Saving…' : '✓ Save All'}
+              title={plan.id ? 'Save changes to this plan' : canCreate ? 'Create this plan' : `Still needed: ${blockers.map(b => b.label).join(', ')}`}
+              style={{ background: plan.id || canCreate ? 'var(--teal-600)' : 'var(--slate-600)', color: 'var(--white)', border: 'none', borderRadius: 9, padding: '8px 18px', fontSize: 13, fontWeight: 700, cursor: saving ? 'default' : 'pointer', opacity: saving ? 0.6 : plan.id || canCreate ? 1 : 0.55, transition: 'background 0.15s, transform 0.1s' }}>
+              {saving ? 'Saving…' : plan.id ? 'Save changes' : canCreate ? 'Create plan' : `Create plan · ${blockers.length} left`}
             </button>
             <button onClick={tryClose} style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(255,255,255,0.1)', border: 'none', color: 'var(--white)', cursor: 'pointer', fontSize: 18, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
           </div>
@@ -551,12 +689,31 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
 
         {/* Tab bar */}
         <div style={{ display: 'flex', gap: 0, borderBottom: '1px solid var(--slate-200b)', flexShrink: 0 }}>
-          {([['form', '⚙️ Plan Settings'], ['builder', '📦 Box Builder'], ['discounts', '🏷️ Discounts']] as const).map(([t, label]) => (
-            <button key={t} onClick={() => { setTab(t); if (t === 'builder') setActiveBox(0); }} style={{ padding: '12px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer', border: 'none', background: 'none', color: tab === t ? 'var(--teal-600)' : 'var(--slate-500)', borderBottom: tab === t ? '2px solid var(--teal-600)' : '2px solid transparent' }}>{label}</button>
-          ))}
+          {/* Tabs carry state: a tick when that part is done, and a reason
+              when it cannot be opened yet. Previously Box Builder and
+              Discounts looked available on a new plan and silently did
+              nothing, because there is no plan to attach them to. */}
+          {([
+            { t: 'form' as const, label: 'Plan Settings', icon: '⚙️', done: blockers.length === 0, lockedReason: '' },
+            { t: 'builder' as const, label: 'Box Builder', icon: '📦', done: allProductTotal > 0, lockedReason: plan.id ? '' : 'Create the plan first' },
+            { t: 'discounts' as const, label: 'Discounts', icon: '🏷️', done: (cfg.couponIds || []).length > 0, lockedReason: plan.id ? '' : 'Create the plan first' },
+          ]).map(({ t, label, icon, done, lockedReason }) => {
+            const locked = !!lockedReason;
+            const active = tab === t;
+            return (
+              <button key={t} disabled={locked} title={lockedReason || undefined}
+                onClick={() => { if (locked) return; setTab(t); if (t === 'builder') setActiveBox(0); }}
+                style={{ padding: '12px 20px', fontSize: 13, fontWeight: 600, cursor: locked ? 'not-allowed' : 'pointer', border: 'none', background: 'none', display: 'flex', alignItems: 'center', gap: 7, opacity: locked ? 0.45 : 1, color: active ? 'var(--teal-600)' : 'var(--slate-500)', borderBottom: active ? '2px solid var(--teal-600)' : '2px solid transparent' }}>
+                <span>{locked ? '🔒' : icon}</span>
+                <span>{label}</span>
+                {!locked && done && <span style={{ fontSize: 10, color: 'var(--emerald-600)', fontWeight: 800 }}>✓</span>}
+              </button>
+            );
+          })}
         </div>
 
-        <div style={{ flex: 1, padding: 24, overflowY: 'auto' }}>
+        <div style={{ flex: 1, display: 'flex', minHeight: 0 }}>
+        <div style={{ flex: 1, padding: 24, overflowY: 'auto', minWidth: 0 }}>
 
           {/* ── Global validation errors ── */}
           {Object.keys(formErrors).some(k => formErrors[k]) && (
@@ -1058,18 +1215,54 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
 
               {lang === 'en' ? (
                 <>
-                  {/* ── Identity ── */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
-                    {[
-                      { label: 'Name', key: 'name', type: 'text', placeholder: '3-Month Plan' },
-                      { label: 'Slug', key: 'slug', type: 'text', placeholder: '3-month' },
-                      { label: 'Box Count', key: 'boxCount', type: 'number', placeholder: '3' },
-                      { label: 'Sort Order', key: 'sortOrder', type: 'number', placeholder: '0' },
-                    ].map((f: any) => (
-                      <FormField key={f.key} label={f.label} required={['name', 'slug', 'boxCount'].includes(f.key)} error={formErrors[f.key]}>
-                        <input type={f.type} value={form[f.key] ?? ''} onChange={e => { setForm((x: any) => ({ ...x, [f.key]: e.target.value })); setFormErrors((e2: any) => ({ ...e2, [f.key]: '' })); }} placeholder={f.placeholder} style={{ ...inputClass(), ...(formErrors[f.key] ? { borderColor: 'var(--red-500)' } : {}) }} />
-                      </FormField>
-                    ))}
+                  {/* ── 1 · What the plan is ──────────────────────────────
+                      Name leads, because it is the decision. The slug is
+                      derived from it and stays hidden: exposing it is how the
+                      catalogue ended up with a plan slugged "3---month". */}
+                  <StepHeading n={1} title="What the plan is" hint="The name customers see, and how long it runs" />
+                  <div style={{ marginBottom: 14 }}>
+                    <FormField label="Plan name" required error={formErrors.name}>
+                      <input
+                        value={form.name ?? ''}
+                        onChange={e => {
+                          const name = e.target.value;
+                          setForm((x: any) => ({
+                            ...x,
+                            name,
+                            // Only auto-follow the name while the slug has not
+                            // been taken over by hand, and never for a plan
+                            // that already exists — its URL is in the wild.
+                            ...(slugTouched || plan.id ? {} : { slug: slugify(name) }),
+                          }));
+                          setFormErrors((e2: any) => ({ ...e2, name: '', slug: '' }));
+                        }}
+                        placeholder="e.g. 6 Months"
+                        style={{ ...inputClass(), fontSize: 15, fontWeight: 600, ...(formErrors.name ? { borderColor: 'var(--red-500)' } : {}) }}
+                      />
+                    </FormField>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 5, fontSize: 11, color: 'var(--slate-400)' }}>
+                      <span>Web address:</span>
+                      <code style={{ background: 'var(--slate-100)', borderRadius: 5, padding: '1px 6px', color: 'var(--slate-600)' }}>/prices/{form.slug || '…'}</code>
+                      <button type="button" onClick={() => setSlugTouched(t => !t)}
+                        style={{ background: 'none', border: 'none', color: 'var(--teal-600)', cursor: 'pointer', fontSize: 11, padding: 0, textDecoration: 'underline' }}>
+                        {slugTouched ? 'use the name' : 'edit'}
+                      </button>
+                    </div>
+                    {slugTouched && (
+                      <div style={{ marginTop: 6 }}>
+                        <FormField label="" error={formErrors.slug}>
+                          <input value={form.slug ?? ''} onChange={e => { setForm((x: any) => ({ ...x, slug: e.target.value })); setFormErrors((e2: any) => ({ ...e2, slug: '' })); }}
+                            placeholder="6-months" style={{ ...inputClass(), fontFamily: 'monospace', fontSize: 12, ...(formErrors.slug ? { borderColor: 'var(--red-500)' } : {}) }} />
+                        </FormField>
+                      </div>
+                    )}
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 20 }}>
+                    <FormField label="Boxes included" required error={formErrors.boxCount} hint="How many boxes they receive in total">
+                      <input type="number" min="1" value={form.boxCount ?? ''} onChange={e => { setForm((x: any) => ({ ...x, boxCount: e.target.value })); setFormErrors((e2: any) => ({ ...e2, boxCount: '' })); }}
+                        placeholder="6" style={{ ...inputClass(), ...(formErrors.boxCount ? { borderColor: 'var(--red-500)' } : {}) }} />
+                    </FormField>
                     <div>
                       <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--slate-700b)', marginBottom: 6 }}>Badge</label>
                       <CustomSelect
@@ -1130,9 +1323,9 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
                     </div>
                   </div>
 
-                  {/* ── Pricing calculator ── */}
-                  <div style={{ background: 'var(--slate-50)', borderRadius: 14, border: '1px solid var(--slate-200)', padding: '20px 20px 16px', marginBottom: 16 }}>
-                    <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--slate-500)', margin: '0 0 14px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Pricing</p>
+                  {/* ── 2 · Pricing ── */}
+                  <StepHeading n={2} title="What it costs" hint="Set a monthly rate and a discount — the totals update on the right" />
+                  <div style={{ background: 'var(--slate-50)', borderRadius: 14, border: '1px solid var(--slate-200)', padding: '20px 20px 16px', marginBottom: 20 }}>
 
                     {/* Inputs row */}
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 16 }}>
@@ -1176,16 +1369,29 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
                       ))}
                     </div>
                   </div>
-                  <div style={{ marginBottom: 16 }}>
-                    <FormField label="Description">
-                      <input value={form.description || ''} onChange={e => setForm((x: any) => ({ ...x, description: e.target.value }))} placeholder="Short plan description" style={inputClass()} />
+                  {/* ── 3 · How it's sold ── */}
+                  <StepHeading n={3} title="How it's sold" hint="The words on the pricing card" />
+                  <div style={{ marginBottom: 14 }}>
+                    <FormField label="Description" hint="One line under the plan name — optional">
+                      <input value={form.description || ''} onChange={e => setForm((x: any) => ({ ...x, description: e.target.value }))} placeholder="e.g. Our most popular commitment" style={inputClass()} />
                     </FormField>
                   </div>
-                  <div style={{ marginBottom: 16 }}>
-                    <FormField label="Benefits" hint="The ticked list customers see on this plan's pricing card">
+                  <div style={{ marginBottom: 20 }}>
+                    <FormField label="Benefits" required hint="The ticked list customers see on this plan's pricing card">
                       <BenefitsEditor value={form.benefits} onChange={v => setForm((x: any) => ({ ...x, benefits: v }))} />
                     </FormField>
                   </div>
+
+                  {/* Rarely touched, so folded away rather than sitting at the
+                      same weight as the plan's name. */}
+                  <details style={{ marginBottom: 20 }}>
+                    <summary style={{ fontSize: 12, color: 'var(--slate-400)', cursor: 'pointer', userSelect: 'none' }}>Advanced</summary>
+                    <div style={{ marginTop: 10, maxWidth: 200 }}>
+                      <FormField label="Sort order" hint="Lower numbers appear first on the pricing page">
+                        <input type="number" value={form.sortOrder ?? ''} onChange={e => setForm((x: any) => ({ ...x, sortOrder: e.target.value }))} placeholder="0" style={inputClass()} />
+                      </FormField>
+                    </div>
+                  </details>
                 </>
               ) : (
                 <>
@@ -1264,7 +1470,7 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
               )}
               {/* Delivery */}
               <div style={{ background: 'var(--slate-50)', borderRadius: 12, border: '1px solid var(--slate-200b)', padding: '18px 20px', marginBottom: 20 }}>
-                <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--slate-400)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 2px' }}>Delivery</p>
+                <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--slate-400)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 2px' }}>Delivery &amp; availability</p>
                 {/* The badge toggle moved into Plan behaviour; this block is now
                     only about what delivery actually costs. */}
                 <SettingRow
@@ -1314,17 +1520,8 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
                 />
               </div>
 
-              <div style={{ display: 'flex', marginBottom: 24 }}>
-                <button onClick={() => save()} disabled={saving}
-                  onMouseEnter={e => { if (!saving) (e.currentTarget as HTMLButtonElement).style.background = 'var(--teal-700)'; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--teal-600)'; }}
-                  onMouseDown={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(0.95)'; }}
-                  onMouseUp={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)'; }}
-                  onMouseOut={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)'; }}
-                  style={{ marginLeft: 'auto', background: 'var(--teal-600)', color: 'var(--white)', border: 'none', borderRadius: 9, padding: '8px 22px', fontSize: 13, fontWeight: 700, cursor: saving ? 'default' : 'pointer', opacity: saving ? 0.6 : 1, transition: 'background 0.15s, transform 0.1s' }}>
-                  {saving ? 'Saving…' : '💾 Save Settings'}
-                </button>
-              </div>
+              {/* No second save button here: one primary action lives in the
+                  header, so there is never a question of which one commits what. */}
             </div>
           )}
 
@@ -1407,6 +1604,53 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
               </div>
             </div>
           )}
+        </div>
+
+        {/* ── Live preview ────────────────────────────────────────────────
+            A plan is something customers look at and choose between. Showing
+            the real card while it is edited is the difference between
+            designing one and filling in a form about one. */}
+        <aside style={{ width: 300, flexShrink: 0, borderLeft: '1px solid var(--slate-200b)', background: 'var(--slate-50)', padding: 20, overflowY: 'auto' }}>
+          <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--slate-400)', textTransform: 'uppercase', letterSpacing: '0.07em', margin: '0 0 3px' }}>Live preview</p>
+          <p style={{ fontSize: 11, color: 'var(--slate-400)', margin: '0 0 14px' }}>How this looks on the pricing page</p>
+
+          <PlanCardPreview
+            name={form.name}
+            badge={form.badge || ''}
+            boxCount={boxCount}
+            months={Number(form.durationValue) || 1}
+            total={pricingTotal}
+            monthlyEquivalent={pricingEffectiveMonthly}
+            savings={pricingSavings}
+            benefits={benefitLines}
+            giftable={!!form.giftable}
+            deliveryBadge={!!form.deliveryIncluded}
+          />
+
+          <MarginReadout price={pricingTotal} cost={totalCost} />
+
+          {/* What is left, named — rather than letting Save fail and scatter
+              red text through a form two screens long. */}
+          {(blockers.length > 0 || warnings.length > 0) && (
+            <div style={{ marginTop: 14, background: 'var(--white)', border: '1px solid var(--slate-200b)', borderRadius: 12, padding: '12px 14px' }}>
+              <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--slate-400)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 8px' }}>
+                {blockers.length > 0 ? `${blockers.length} thing${blockers.length > 1 ? 's' : ''} left` : 'Ready — worth a look'}
+              </p>
+              {blockers.map(b => (
+                <button key={b.label} type="button" onClick={() => { setTab(b.tab); if (b.lang) setLang(b.lang); }}
+                  style={{ display: 'flex', alignItems: 'flex-start', gap: 7, width: '100%', textAlign: 'left', background: 'transparent', border: 'none', padding: '4px 0', cursor: 'pointer', fontSize: 11.5, color: 'var(--slate-700)' }}>
+                  <span style={{ color: 'var(--red-500)', flexShrink: 0 }}>○</span>{b.label}
+                </button>
+              ))}
+              {warnings.map(w => (
+                <button key={w.label} type="button" onClick={() => setTab(w.tab)}
+                  style={{ display: 'flex', alignItems: 'flex-start', gap: 7, width: '100%', textAlign: 'left', background: 'transparent', border: 'none', padding: '4px 0', cursor: 'pointer', fontSize: 11.5, color: 'var(--slate-400)' }}>
+                  <span style={{ color: 'var(--amber-500)', flexShrink: 0 }}>△</span>{w.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </aside>
         </div>
       </div>
       {showNewBoxItemDrawer && <QuickAddBoxItemModal onClose={() => setShowNewBoxItemDrawer(false)} onCreated={loadBoxItems} />}
