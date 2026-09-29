@@ -137,25 +137,22 @@ function PlanCardPreview({ name, badge, boxCount, months, total, monthlyEquivale
  * What the plan earns. Box cost comes from the Box Builder tab, so a plan
  * priced below what it costs to fill shows up here rather than after launch.
  */
-function MarginReadout({ price, cost }: { price: number; cost: number }) {
+function MarginLine({ price, cost }: { price: number; cost: number }) {
+  const known = cost > 0 && price > 0;
   const profit = price - cost;
   const margin = price > 0 ? (profit / price) * 100 : 0;
-  const tone = cost === 0 ? 'var(--slate-400)' : profit < 0 ? 'var(--red-600)' : margin < 25 ? 'var(--amber-700)' : 'var(--emerald-600)';
-  const row = (label: string, value: string, color?: string, bold?: boolean) => (
-    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11.5, padding: '4px 0', color: color ?? 'var(--slate-500)', fontWeight: bold ? 700 : 500 }}>
-      <span>{label}</span><span>{value}</span>
-    </div>
-  );
+  const tone = !known ? 'var(--slate-400)' : profit < 0 ? 'var(--red-600)' : margin < 25 ? 'var(--amber-700)' : 'var(--emerald-600)';
   return (
-    <div style={{ marginTop: 14, background: 'var(--slate-50)', border: '1px solid var(--slate-200b)', borderRadius: 12, padding: '12px 14px' }}>
-      <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--slate-400)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 6px' }}>Economics</p>
-      {row('Customer pays', price > 0 ? `₾${price.toFixed(2)}` : '—')}
-      {row('Cost to fulfil', cost > 0 ? `₾${cost.toFixed(2)}` : 'not set')}
-      <div style={{ borderTop: '1px solid var(--slate-200b)', margin: '4px 0' }} />
-      {row(profit < 0 ? 'Loss per plan' : 'Profit per plan', cost > 0 && price > 0 ? `₾${Math.abs(profit).toFixed(2)}` : '—', tone, true)}
-      {row('Margin', cost > 0 && price > 0 ? `${margin.toFixed(0)}%` : '—', tone, true)}
-      {cost === 0 && <p style={{ fontSize: 10.5, color: 'var(--slate-400)', margin: '6px 0 0', lineHeight: 1.4 }}>Add box contents in Box Builder to see margin.</p>}
-      {cost > 0 && profit < 0 && <p style={{ fontSize: 10.5, color: 'var(--red-600)', margin: '6px 0 0', fontWeight: 600 }}>⚠ This plan sells below cost.</p>}
+    <div style={{ borderTop: '1px solid var(--slate-200b)', paddingTop: 10, marginTop: 12 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, fontSize: 11 }}>
+        <span style={{ color: 'var(--slate-400)' }}>Costs <strong style={{ color: 'var(--slate-600)' }}>{cost > 0 ? `₾${cost.toFixed(2)}` : '—'}</strong></span>
+        <span style={{ color: tone, fontWeight: 700 }}>
+          {known ? `${profit < 0 ? '−' : '+'}₾${Math.abs(profit).toFixed(2)} · ${margin.toFixed(0)}% margin` : 'margin unknown'}
+        </span>
+      </div>
+      {cost > 0 && profit < 0 && (
+        <p style={{ fontSize: 10.5, color: 'var(--red-600)', margin: '5px 0 0', fontWeight: 600 }}>⚠ Sells below what the box costs to fill.</p>
+      )}
     </div>
   );
 }
@@ -179,34 +176,31 @@ function SettingTile({ icon, title, onLabel, offLabel, detail, checked, onChange
       role="switch"
       aria-checked={checked}
       aria-label={title}
-      title={detail}
+      title={`${detail}${checked ? '' : ' (currently off)'}`}
       onClick={() => onChange(!checked)}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
       style={{
-        position: 'relative', textAlign: 'left', cursor: 'pointer', width: '100%',
-        background: checked ? tint : 'var(--white)',
-        border: `1.5px solid ${checked ? border : 'var(--slate-200)'}`,
-        borderRadius: 14, padding: '13px 14px', transition: 'all 0.15s',
-        boxShadow: checked ? `0 1px 6px ${tint}` : 'none',
+        position: 'relative', display: 'inline-flex', alignItems: 'center', gap: 7,
+        cursor: 'pointer', whiteSpace: 'nowrap',
+        // On reads as a solid, filled chip; off as a plain outline. The
+        // difference is the fill itself, not a small indicator to decode.
+        background: checked ? accent : 'var(--white)',
+        border: `1.5px solid ${checked ? accent : 'var(--slate-300)'}`,
+        color: checked ? 'var(--white)' : 'var(--slate-500)',
+        borderRadius: 999, padding: '6px 13px 6px 10px', transition: 'all 0.12s',
+        fontSize: 12.5, fontWeight: 600,
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 7 }}>
-        <span style={{ fontSize: 19, lineHeight: 1, filter: checked ? 'none' : 'grayscale(1)', opacity: checked ? 1 : 0.5 }}>{icon}</span>
-        {/* Small pill instead of a switch: says the state in words, so it is
-            unambiguous even where the colour is hard to read. */}
-        <span style={{
-          fontSize: 9, fontWeight: 800, letterSpacing: '0.06em', padding: '2px 8px', borderRadius: 999,
-          background: checked ? accent : 'var(--slate-200)', color: checked ? 'var(--white)' : 'var(--slate-500)',
-        }}>{checked ? 'ON' : 'OFF'}</span>
-      </div>
-      <div style={{ fontSize: 12.5, fontWeight: 700, color: checked ? 'var(--slate-900)' : 'var(--slate-500)' }}>{title}</div>
-      <div style={{ fontSize: 11, color: 'var(--slate-400)', marginTop: 2, lineHeight: 1.35 }}>{checked ? onLabel : offLabel}</div>
+      <span style={{ fontSize: 13, lineHeight: 1, filter: checked ? 'none' : 'grayscale(1)', opacity: checked ? 1 : 0.45 }}>{icon}</span>
+      <span>{title}</span>
+      <span style={{ fontWeight: 800, fontSize: 12, opacity: checked ? 0.9 : 0.5 }}>{checked ? '✓' : '＋'}</span>
 
       {hover && (
-        <div style={{ position: 'absolute', bottom: 'calc(100% + 6px)', left: 0, right: 0, zIndex: 5, background: 'var(--slate-900)', color: 'var(--white)', fontSize: 11, lineHeight: 1.5, borderRadius: 10, padding: '9px 11px', boxShadow: '0 6px 20px rgba(0,0,0,0.25)', pointerEvents: 'none' }}>
+        <span style={{ position: 'absolute', bottom: 'calc(100% + 6px)', left: 0, zIndex: 5, minWidth: 220, maxWidth: 300, background: 'var(--slate-900)', color: 'var(--white)', fontSize: 11, fontWeight: 400, lineHeight: 1.5, borderRadius: 9, padding: '8px 11px', boxShadow: '0 6px 20px rgba(0,0,0,0.25)', pointerEvents: 'none', whiteSpace: 'normal', textAlign: 'left' }}>
+          <strong style={{ display: 'block', marginBottom: 2 }}>{checked ? onLabel : offLabel}</strong>
           {detail}
-        </div>
+        </span>
       )}
     </button>
   );
@@ -1480,8 +1474,8 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
                   switch rows. Each tile is the target, says ON or OFF in
                   words, and lights up when active, so the whole configuration
                   reads in a glance. */}
-              <StepHeading n={4} title="How it behaves" hint="Tap to turn each one on or off — hover for what it does" />
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10, marginBottom: 14 }}>
+              <StepHeading n={4} title="How it behaves" hint="Filled means on — tap to change, hover for what it does" />
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, marginBottom: 14 }}>
                 <SettingTile
                   icon="✅" title="Active"
                   onLabel="Live on the pricing page" offLabel="Hidden from customers"
@@ -1620,8 +1614,10 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
             designing one and filling in a form about one. */}
         <aside style={{ width: 300, flexShrink: 0, borderLeft: '1px solid var(--slate-200b)', background: 'var(--slate-50)', padding: 20, overflowY: 'auto' }}>
           <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--slate-400)', textTransform: 'uppercase', letterSpacing: '0.07em', margin: '0 0 3px' }}>Live preview</p>
-          <p style={{ fontSize: 11, color: 'var(--slate-400)', margin: '0 0 14px' }}>How this looks on the pricing page</p>
+          <p style={{ fontSize: 11, color: 'var(--slate-400)', margin: '0 0 12px' }}>How this looks on the pricing page</p>
 
+          {/* One panel, not three. */}
+          <div style={{ background: 'var(--white)', border: '1px solid var(--slate-200b)', borderRadius: 14, padding: 14 }}>
           <PlanCardPreview
             name={form.name}
             badge={form.badge || ''}
@@ -1635,29 +1631,26 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
             deliveryBadge={!!form.deliveryIncluded}
           />
 
-          <MarginReadout price={pricingTotal} cost={totalCost} />
+          {/* Economics and what-is-missing were separate bordered boxes
+              stacked under the card, which read as three competing panels.
+              Folded into the one panel: card, a single line of economics,
+              then anything outstanding. */}
+          <MarginLine price={pricingTotal} cost={totalCost} />
 
-          {/* What is left, named — rather than letting Save fail and scatter
-              red text through a form two screens long. */}
           {(blockers.length > 0 || warnings.length > 0) && (
-            <div style={{ marginTop: 14, background: 'var(--white)', border: '1px solid var(--slate-200b)', borderRadius: 12, padding: '12px 14px' }}>
-              <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--slate-400)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 8px' }}>
-                {blockers.length > 0 ? `${blockers.length} thing${blockers.length > 1 ? 's' : ''} left` : 'Ready — worth a look'}
+            <div style={{ borderTop: '1px solid var(--slate-200b)', paddingTop: 10, marginTop: 10 }}>
+              <p style={{ fontSize: 10, fontWeight: 700, color: blockers.length > 0 ? 'var(--red-600)' : 'var(--amber-700)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 6px' }}>
+                {blockers.length > 0 ? `${blockers.length} still needed` : 'Ready to create'}
               </p>
-              {blockers.map(b => (
-                <button key={b.label} type="button" onClick={() => { setTab(b.tab); if (b.lang) setLang(b.lang); }}
-                  style={{ display: 'flex', alignItems: 'flex-start', gap: 7, width: '100%', textAlign: 'left', background: 'transparent', border: 'none', padding: '4px 0', cursor: 'pointer', fontSize: 11.5, color: 'var(--slate-700)' }}>
-                  <span style={{ color: 'var(--red-500)', flexShrink: 0 }}>○</span>{b.label}
-                </button>
-              ))}
-              {warnings.map(w => (
-                <button key={w.label} type="button" onClick={() => setTab(w.tab)}
-                  style={{ display: 'flex', alignItems: 'flex-start', gap: 7, width: '100%', textAlign: 'left', background: 'transparent', border: 'none', padding: '4px 0', cursor: 'pointer', fontSize: 11.5, color: 'var(--slate-400)' }}>
-                  <span style={{ color: 'var(--amber-500)', flexShrink: 0 }}>△</span>{w.label}
+              {[...blockers.map(b => ({ ...b, blocking: true })), ...warnings.map(w => ({ ...w, blocking: false, lang: undefined }))].map(item => (
+                <button key={item.label} type="button" onClick={() => { setTab(item.tab); if (item.lang) setLang(item.lang); }}
+                  style={{ display: 'flex', alignItems: 'flex-start', gap: 6, width: '100%', textAlign: 'left', background: 'transparent', border: 'none', padding: '3px 0', cursor: 'pointer', fontSize: 11, lineHeight: 1.4, color: item.blocking ? 'var(--slate-700)' : 'var(--slate-400)' }}>
+                  <span style={{ color: item.blocking ? 'var(--red-500)' : 'var(--amber-500)', flexShrink: 0 }}>{item.blocking ? '•' : '△'}</span>{item.label}
                 </button>
               ))}
             </div>
           )}
+          </div>
         </aside>
         </div>
       </div>
