@@ -1,6 +1,7 @@
 import { Controller, Get, Patch, Body, UseGuards, Request, Param, Query } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth, ApiTags, ApiOperation } from '@nestjs/swagger';
+import { Prisma, UserStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
 const USER_SELECT = {
@@ -50,18 +51,24 @@ export class AdminCustomersController {
   @Get()
   @ApiOperation({ summary: 'List all customers' })
   async list(@Query('search') search?: string, @Query('status') status?: string) {
+    // Every User row is a customer — admins live in the separate AdminUser
+    // model, so there is no isAdmin column to filter on. Querying one threw
+    // PrismaClientValidationError and this endpoint returned 500 every time;
+    // the `as any` on the where clause is what stopped the compiler saying so.
+    const where: Prisma.UserWhereInput = {
+      deletedAt: null,
+      ...(status && status in UserStatus ? { status: status as UserStatus } : {}),
+      ...(search ? {
+        OR: [
+          { email: { contains: search, mode: 'insensitive' } },
+          { firstName: { contains: search, mode: 'insensitive' } },
+          { lastName: { contains: search, mode: 'insensitive' } },
+        ],
+      } : {}),
+    };
+
     return this.prisma.user.findMany({
-      where: ({
-        isAdmin: false,
-        ...(status ? { status: status as any } : {}),
-        ...(search ? {
-          OR: [
-            { email: { contains: search, mode: 'insensitive' } },
-            { firstName: { contains: search, mode: 'insensitive' } },
-            { lastName: { contains: search, mode: 'insensitive' } },
-          ],
-        } : {}),
-      } as any),
+      where,
       select: { id: true, email: true, firstName: true, lastName: true, phone: true, status: true, referralCode: true, createdAt: true, _count: { select: { orders: true } } },
       orderBy: { createdAt: 'desc' },
     });
