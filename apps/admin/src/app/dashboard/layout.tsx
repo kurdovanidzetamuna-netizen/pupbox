@@ -124,10 +124,38 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const { theme, toggleTheme } = useTheme();
 
   useEffect(() => {
-    const token = localStorage.getItem('admin_token');
-    if (!token) {
+    function signOut() {
+      localStorage.removeItem('admin_token');
       router.replace('/login');
     }
+
+    // Presence alone is not enough. An expired token passes a null check, then
+    // every page's fetch 401s and the `catch {}` around it renders an empty
+    // state — so the panel silently looks like a database with no data in it
+    // rather than a session that has run out.
+    const token = localStorage.getItem('admin_token');
+    if (!token) return signOut();
+
+    try {
+      const { exp } = JSON.parse(atob(token.split('.')[1]));
+      if (!exp || exp * 1000 <= Date.now()) return signOut();
+    } catch {
+      return signOut(); // malformed token is no better than none
+    }
+
+    // The local check cannot catch a token the server rejects for other
+    // reasons (secret rotated, admin removed), so treat any 401 from our API
+    // as the end of the session too.
+    const originalFetch = window.fetch;
+    window.fetch = async (...args) => {
+      const res = await originalFetch(...args);
+      if (res.status === 401) {
+        const url = typeof args[0] === 'string' ? args[0] : (args[0] as Request)?.url ?? '';
+        if (url.includes('/api/v1/') && !url.includes('/auth/login')) signOut();
+      }
+      return res;
+    };
+    return () => { window.fetch = originalFetch; };
   }, [router]);
 
   function isActive(href: string, exact?: boolean) {
