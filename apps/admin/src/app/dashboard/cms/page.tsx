@@ -5,9 +5,9 @@ import LangTabs, { type Lang } from '@/components/LangTabs';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 
-const inp = { width: '100%', border: '1px solid #e2e8f0', borderRadius: 10, padding: '9px 14px', fontSize: 13, outline: 'none', boxSizing: 'border-box' as const };
-const lbl = { display: 'block', fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: 6 };
-const card = { background: '#fff', borderRadius: 14, border: '1px solid #e8ecf0', padding: 24, boxShadow: '0 1px 4px rgba(0,0,0,0.04)' };
+const inp = { width: '100%', border: '1px solid var(--slate-200)', borderRadius: 10, padding: '9px 14px', fontSize: 13, outline: 'none', boxSizing: 'border-box' as const };
+const lbl = { display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--slate-400)', textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: 6 };
+const card = { background: 'var(--white)', borderRadius: 14, border: '1px solid var(--slate-200b)', padding: 24, boxShadow: '0 1px 4px rgba(0,0,0,0.04)' };
 
 export default function AdminCmsPage() {
   const [pages, setPages] = useState<any[]>([]);
@@ -64,10 +64,10 @@ export default function AdminCmsPage() {
       <div style={{ padding: 32 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 28 }}>
           <div>
-            <h1 style={{ fontSize: 24, fontWeight: 800, color: '#0f172a', margin: 0 }}>Edit Page</h1>
-            <p style={{ fontSize: 13, color: '#94a3b8', fontFamily: 'monospace', marginTop: 4 }}>/{editing.slug}</p>
+            <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--slate-900)', margin: 0 }}>Edit Page</h1>
+            <p style={{ fontSize: 13, color: 'var(--slate-400)', fontFamily: 'monospace', marginTop: 4 }}>/{editing.slug}</p>
           </div>
-          <button onClick={() => setEditing(null)} style={{ fontSize: 13, color: '#94a3b8', background: 'none', border: 'none', cursor: 'pointer' }}>← Cancel</button>
+          <button onClick={() => setEditing(null)} style={{ fontSize: 13, color: 'var(--slate-400)', background: 'none', border: 'none', cursor: 'pointer' }}>← Cancel</button>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: 20 }}>
@@ -93,7 +93,7 @@ export default function AdminCmsPage() {
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             <div style={card}>
-              <p style={{ fontSize: 13, fontWeight: 700, color: '#374151', margin: '0 0 14px' }}>Settings{lang === 'ka' ? ' / SEO (Georgian)' : ''}</p>
+              <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--slate-700b)', margin: '0 0 14px' }}>Settings{lang === 'ka' ? ' / SEO (Georgian)' : ''}</p>
               {lang === 'en' && (
                 <div style={{ marginBottom: 12 }}>
                   <FormField label="Status">
@@ -115,7 +115,7 @@ export default function AdminCmsPage() {
                 </FormField>
               </div>
             </div>
-            <button onClick={save} disabled={saving} style={{ background: '#0d9488', color: '#fff', border: 'none', borderRadius: 10, padding: '11px', fontSize: 13, fontWeight: 600, cursor: saving ? 'default' : 'pointer', opacity: saving ? 0.6 : 1, width: '100%' }}>
+            <button onClick={save} disabled={saving} style={{ background: 'var(--teal-600)', color: 'var(--white)', border: 'none', borderRadius: 10, padding: '11px', fontSize: 13, fontWeight: 600, cursor: saving ? 'default' : 'pointer', opacity: saving ? 0.6 : 1, width: '100%' }}>
               {saving ? 'Saving…' : 'Save Page'}
             </button>
           </div>
@@ -128,21 +128,21 @@ export default function AdminCmsPage() {
     <div style={{ padding: 32 }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 28 }}>
         <div>
-          <h1 style={{ fontSize: 24, fontWeight: 800, color: '#0f172a', margin: 0 }}>CMS Pages</h1>
-          <p style={{ fontSize: 13, color: '#94a3b8', marginTop: 4 }}>{pages.length} pages</p>
+          <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--slate-900)', margin: 0 }}>CMS Pages</h1>
+          <p style={{ fontSize: 13, color: 'var(--slate-400)', marginTop: 4 }}>{pages.length} pages</p>
         </div>
-        <button onClick={createPage} style={{ background: '#0d9488', color: '#fff', border: 'none', borderRadius: 10, padding: '9px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+        <button onClick={createPage} style={{ background: 'var(--teal-600)', color: 'var(--white)', border: 'none', borderRadius: 10, padding: '9px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
           + New Page
         </button>
       </div>
 
-      <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #e8ecf0', overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
+      <div style={{ background: 'var(--white)', borderRadius: 16, border: '1px solid var(--slate-200b)', overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
         {loading ? (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '80px 0' }}>
-            <div style={{ width: 32, height: 32, border: '4px solid #99f6e4', borderTopColor: '#0d9488', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+            <div style={{ width: 32, height: 32, border: '4px solid var(--teal-200)', borderTopColor: 'var(--teal-600)', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
           </div>
         ) : pages.length === 0 ? (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 0', color: '#cbd5e1' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 0', color: 'var(--slate-300)' }}>
             <div style={{ fontSize: 40, marginBottom: 8 }}>📄</div>
             <p style={{ fontSize: 13 }}>No CMS pages yet</p>
           </div>
@@ -151,27 +151,27 @@ export default function AdminCmsPage() {
             <thead>
               <tr>
                 {['Page', 'Slug', 'Status', 'Updated', 'Actions'].map(h => (
-                  <th key={h} style={{ padding: '10px 18px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', borderBottom: '1px solid #e8ecf0', background: '#f8fafc' }}>{h}</th>
+                  <th key={h} style={{ padding: '10px 18px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: 'var(--slate-400)', textTransform: 'uppercase', letterSpacing: '0.06em', borderBottom: '1px solid var(--slate-200b)', background: 'var(--slate-50)' }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {pages.map((p) => (
-                <tr key={p.id} style={{ borderBottom: '1px solid #f8fafc' }}>
-                  <td style={{ padding: '14px 18px', fontWeight: 600, color: '#1e293b' }}>{p.title}</td>
+                <tr key={p.id} style={{ borderBottom: '1px solid var(--slate-50)' }}>
+                  <td style={{ padding: '14px 18px', fontWeight: 600, color: 'var(--slate-800)' }}>{p.title}</td>
                   <td style={{ padding: '14px 18px' }}>
-                    <span style={{ fontFamily: 'monospace', fontSize: 11, background: '#f1f5f9', color: '#64748b', padding: '3px 8px', borderRadius: 6 }}>/{p.slug}</span>
+                    <span style={{ fontFamily: 'monospace', fontSize: 11, background: 'var(--slate-100)', color: 'var(--slate-500)', padding: '3px 8px', borderRadius: 6 }}>/{p.slug}</span>
                   </td>
                   <td style={{ padding: '14px 18px' }}>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 10px', borderRadius: 999, fontSize: 11, fontWeight: 600, ...(p.status === 'PUBLISHED' ? { background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0' } : { background: '#fffbeb', color: '#b45309', border: '1px solid #fde68a' }) }}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 10px', borderRadius: 999, fontSize: 11, fontWeight: 600, ...(p.status === 'PUBLISHED' ? { background: 'var(--green-50)', color: 'var(--green-800)', border: '1px solid var(--green-200)' } : { background: 'var(--amber-50)', color: 'var(--amber-700)', border: '1px solid var(--amber-200)' }) }}>
                       {p.status}
                     </span>
                   </td>
-                  <td style={{ padding: '14px 18px', fontSize: 12, color: '#94a3b8' }}>
+                  <td style={{ padding: '14px 18px', fontSize: 12, color: 'var(--slate-400)' }}>
                     {p.updatedAt ? new Date(p.updatedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '—'}
                   </td>
                   <td style={{ padding: '14px 18px' }}>
-                    <button onClick={() => { setEditing({ ...p }); const kaData = p.translations?.ka; setKa(kaData ? { title: kaData.title || '', contentHtml: kaData.content?.html || '', seoTitle: kaData.seoTitle || '', seoDesc: kaData.seoDesc || '' } : { title: '', contentHtml: '', seoTitle: '', seoDesc: '' }); setLang('en'); }} style={{ fontSize: 12, padding: '5px 10px', borderRadius: 8, background: '#eff6ff', color: '#2563eb', border: 'none', cursor: 'pointer', fontWeight: 600 }}>Edit</button>
+                    <button onClick={() => { setEditing({ ...p }); const kaData = p.translations?.ka; setKa(kaData ? { title: kaData.title || '', contentHtml: kaData.content?.html || '', seoTitle: kaData.seoTitle || '', seoDesc: kaData.seoDesc || '' } : { title: '', contentHtml: '', seoTitle: '', seoDesc: '' }); setLang('en'); }} style={{ fontSize: 12, padding: '5px 10px', borderRadius: 8, background: 'var(--blue-50)', color: 'var(--blue-600)', border: 'none', cursor: 'pointer', fontWeight: 600 }}>Edit</button>
                   </td>
                 </tr>
               ))}

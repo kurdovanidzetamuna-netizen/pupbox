@@ -14,7 +14,7 @@ const LANGS: { code: Lang; flag: string; label: string }[] = [
 
 export default function LangTabs({ lang, onChange }: LangTabsProps) {
   return (
-    <div style={{ display: 'flex', gap: 4, padding: '3px', background: '#f1f5f9', borderRadius: 10, width: 'fit-content', marginBottom: 18 }}>
+    <div style={{ display: 'flex', gap: 4, padding: '3px', background: 'var(--slate-100)', borderRadius: 10, width: 'fit-content', marginBottom: 18 }}>
       {LANGS.map(l => (
         <button
           key={l.code}
@@ -23,8 +23,8 @@ export default function LangTabs({ lang, onChange }: LangTabsProps) {
           style={{
             display: 'flex', alignItems: 'center', gap: 6,
             padding: '6px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600,
-            background: lang === l.code ? '#fff' : 'transparent',
-            color: lang === l.code ? '#0d9488' : '#94a3b8',
+            background: lang === l.code ? 'var(--white)' : 'transparent',
+            color: lang === l.code ? 'var(--teal-600)' : 'var(--slate-400)',
             boxShadow: lang === l.code ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
             transition: 'all 0.15s',
           }}

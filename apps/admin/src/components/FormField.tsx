@@ -13,12 +13,12 @@ export const inputClass = (error?: string): React.CSSProperties => ({
   width: '100%',
   padding: '9px 12px',
   fontSize: 13,
-  border: `1px solid ${error ? '#fca5a5' : '#e2e8f0'}`,
+  border: `1px solid ${error ? 'var(--red-300)' : 'var(--slate-200)'}`,
   borderRadius: 10,
   outline: 'none',
-  background: error ? '#fff5f5' : '#fff',
+  background: error ? 'var(--red-50b)' : 'var(--white)',
   boxSizing: 'border-box' as const,
-  color: '#0f172a',
+  color: 'var(--slate-900)',
 });
 
 export function parseFieldErrors(message: string | string[]): Record<string, string> {
@@ -59,18 +59,18 @@ export function parseFieldErrors(message: string | string[]): Record<string, str
 export default function FormField({ label, required, error, children, hint }: FormFieldProps) {
   return (
     <div>
-      <label style={{ fontSize: 12, fontWeight: 600, color: error ? '#dc2626' : '#475569', marginBottom: 5, display: 'flex', alignItems: 'center', gap: 4 }}>
+      <label style={{ fontSize: 12, fontWeight: 600, color: error ? 'var(--red-600)' : 'var(--slate-600)', marginBottom: 5, display: 'flex', alignItems: 'center', gap: 4 }}>
         {label}
-        {required && <span style={{ color: '#dc2626', fontSize: 13, lineHeight: 1 }}>*</span>}
+        {required && <span style={{ color: 'var(--red-600)', fontSize: 13, lineHeight: 1 }}>*</span>}
       </label>
       {children}
       {error && (
-        <p style={{ fontSize: 11, color: '#dc2626', marginTop: 4, display: 'flex', alignItems: 'center', gap: 3 }}>
+        <p style={{ fontSize: 11, color: 'var(--red-600)', marginTop: 4, display: 'flex', alignItems: 'center', gap: 3 }}>
           <span>⚠</span> {error}
         </p>
       )}
       {hint && !error && (
-        <p style={{ fontSize: 11, color: '#94a3b8', marginTop: 3 }}>{hint}</p>
+        <p style={{ fontSize: 11, color: 'var(--slate-400)', marginTop: 3 }}>{hint}</p>
       )}
     </div>
   );

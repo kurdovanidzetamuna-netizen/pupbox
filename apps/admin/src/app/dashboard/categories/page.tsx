@@ -119,10 +119,10 @@ export default function AdminCategoriesPage() {
     <div style={{ padding: 32 }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 28 }}>
         <div>
-          <h1 style={{ fontSize: 24, fontWeight: 800, color: '#0f172a', margin: 0 }}>Categories</h1>
-          <p style={{ fontSize: 13, color: '#94a3b8', marginTop: 4 }}>{categories.length} categories</p>
+          <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--slate-900)', margin: 0 }}>Categories</h1>
+          <p style={{ fontSize: 13, color: 'var(--slate-400)', marginTop: 4 }}>{categories.length} categories</p>
         </div>
-        <button onClick={openCreate} style={{ background: '#0d9488', color: '#fff', borderRadius: 10, padding: '9px 16px', fontSize: 13, fontWeight: 600, border: 'none', cursor: 'pointer' }}>
+        <button onClick={openCreate} style={{ background: 'var(--teal-600)', color: 'var(--white)', borderRadius: 10, padding: '9px 16px', fontSize: 13, fontWeight: 600, border: 'none', cursor: 'pointer' }}>
           + Add Category
         </button>
       </div>
@@ -130,9 +130,9 @@ export default function AdminCategoriesPage() {
       <ErrorPopup errors={popupErrors} onClose={() => setPopupErrors([])} />
       {/* Form panel */}
       {showForm && (
-        <div style={{ background: '#fff', border: '1px solid #e8ecf0', borderRadius: 16, padding: 24, marginBottom: 24 }}>
-          <p style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', margin: '0 0 18px' }}>{editId ? 'Edit Category' : 'New Category'}</p>
-          {error && <div style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: 8, padding: '8px 12px', marginBottom: 14, fontSize: 12 }}>{error}</div>}
+        <div style={{ background: 'var(--white)', border: '1px solid var(--slate-200b)', borderRadius: 16, padding: 24, marginBottom: 24 }}>
+          <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--slate-900)', margin: '0 0 18px' }}>{editId ? 'Edit Category' : 'New Category'}</p>
+          {error && <div style={{ background: 'var(--red-50)', color: 'var(--red-600)', border: '1px solid var(--red-200)', borderRadius: 8, padding: '8px 12px', marginBottom: 14, fontSize: 12 }}>{error}</div>}
           <form onSubmit={handleSubmit}>
             <LangTabs lang={lang} onChange={setLang} />
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
@@ -172,10 +172,10 @@ export default function AdminCategoriesPage() {
               </div>
             </div>
             <div style={{ display: 'flex', gap: 10 }}>
-              <button type="submit" disabled={saving} style={{ background: '#0d9488', color: '#fff', border: 'none', borderRadius: 10, padding: '9px 20px', fontSize: 13, fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1 }}>
+              <button type="submit" disabled={saving} style={{ background: 'var(--teal-600)', color: 'var(--white)', border: 'none', borderRadius: 10, padding: '9px 20px', fontSize: 13, fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1 }}>
                 {saving ? 'Saving…' : editId ? 'Save Changes' : 'Create'}
               </button>
-              <button type="button" onClick={() => setShowForm(false)} style={{ background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 10, padding: '9px 20px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
+              <button type="button" onClick={() => setShowForm(false)} style={{ background: 'var(--slate-100)', color: 'var(--slate-500)', border: 'none', borderRadius: 10, padding: '9px 20px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
                 Cancel
               </button>
             </div>
@@ -184,13 +184,13 @@ export default function AdminCategoriesPage() {
       )}
 
       {/* Table */}
-      <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #e8ecf0', overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
+      <div style={{ background: 'var(--white)', borderRadius: 16, border: '1px solid var(--slate-200b)', overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
         {loading ? (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '80px 0' }}>
-            <div style={{ width: 32, height: 32, border: '4px solid #99f6e4', borderTopColor: '#0d9488', borderRadius: '50%' }} />
+            <div style={{ width: 32, height: 32, border: '4px solid var(--teal-200)', borderTopColor: 'var(--teal-600)', borderRadius: '50%' }} />
           </div>
         ) : categories.length === 0 ? (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 0', color: '#cbd5e1' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 0', color: 'var(--slate-300)' }}>
             <div style={{ fontSize: 40, marginBottom: 8 }}>🗂️</div>
             <p style={{ fontSize: 13 }}>No categories yet</p>
           </div>
@@ -199,36 +199,36 @@ export default function AdminCategoriesPage() {
             <thead>
               <tr>
                 {['Name', 'Slug', 'Description', 'Sort', 'Status', 'Actions'].map(h => (
-                  <th key={h} style={{ padding: '10px 18px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', borderBottom: '1px solid #e8ecf0', background: '#f8fafc' }}>{h}</th>
+                  <th key={h} style={{ padding: '10px 18px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: 'var(--slate-400)', textTransform: 'uppercase', letterSpacing: '0.06em', borderBottom: '1px solid var(--slate-200b)', background: 'var(--slate-50)' }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {categories.map((cat: any) => (
-                <tr key={cat.id} style={{ borderBottom: '1px solid #f8fafc' }}>
-                  <td style={{ padding: '14px 18px', fontWeight: 600, color: '#1e293b' }}>{cat.name}</td>
+                <tr key={cat.id} style={{ borderBottom: '1px solid var(--slate-50)' }}>
+                  <td style={{ padding: '14px 18px', fontWeight: 600, color: 'var(--slate-800)' }}>{cat.name}</td>
                   <td style={{ padding: '14px 18px' }}>
-                    <span style={{ fontFamily: 'monospace', fontSize: 11, color: '#64748b', background: '#f1f5f9', padding: '3px 8px', borderRadius: 6 }}>{cat.slug}</span>
+                    <span style={{ fontFamily: 'monospace', fontSize: 11, color: 'var(--slate-500)', background: 'var(--slate-100)', padding: '3px 8px', borderRadius: 6 }}>{cat.slug}</span>
                   </td>
-                  <td style={{ padding: '14px 18px', color: '#64748b', maxWidth: 200 }}>
+                  <td style={{ padding: '14px 18px', color: 'var(--slate-500)', maxWidth: 200 }}>
                     <span style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cat.description || '—'}</span>
                   </td>
-                  <td style={{ padding: '14px 18px', color: '#64748b', textAlign: 'center' }}>{cat.sortOrder ?? 0}</td>
+                  <td style={{ padding: '14px 18px', color: 'var(--slate-500)', textAlign: 'center' }}>{cat.sortOrder ?? 0}</td>
                   <td style={{ padding: '14px 18px' }}>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 10px', borderRadius: 999, fontSize: 11, fontWeight: 600, ...(cat.isActive !== false ? { background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0' } : { background: '#f8fafc', color: '#64748b', border: '1px solid #e2e8f0' }) }}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 10px', borderRadius: 999, fontSize: 11, fontWeight: 600, ...(cat.isActive !== false ? { background: 'var(--green-50)', color: 'var(--green-800)', border: '1px solid var(--green-200)' } : { background: 'var(--slate-50)', color: 'var(--slate-500)', border: '1px solid var(--slate-200)' }) }}>
                       {cat.isActive !== false ? 'Active' : 'Inactive'}
                     </span>
                   </td>
                   <td style={{ padding: '14px 18px' }}>
                     <div style={{ display: 'flex', gap: 6 }}>
-                      <button onClick={() => openEdit(cat)} style={{ fontSize: 12, padding: '5px 10px', borderRadius: 8, background: '#eff6ff', color: '#2563eb', border: 'none', cursor: 'pointer', fontWeight: 600 }}>Edit</button>
+                      <button onClick={() => openEdit(cat)} style={{ fontSize: 12, padding: '5px 10px', borderRadius: 8, background: 'var(--blue-50)', color: 'var(--blue-600)', border: 'none', cursor: 'pointer', fontWeight: 600 }}>Edit</button>
                       {deleteConfirm === cat.id ? (
                         <>
-                          <button onClick={() => handleDelete(cat.id)} style={{ fontSize: 12, padding: '5px 10px', borderRadius: 8, background: '#fef2f2', color: '#dc2626', border: 'none', cursor: 'pointer', fontWeight: 600 }}>Confirm</button>
-                          <button onClick={() => setDeleteConfirm(null)} style={{ fontSize: 12, padding: '5px 10px', borderRadius: 8, background: '#f1f5f9', color: '#64748b', border: 'none', cursor: 'pointer', fontWeight: 600 }}>Cancel</button>
+                          <button onClick={() => handleDelete(cat.id)} style={{ fontSize: 12, padding: '5px 10px', borderRadius: 8, background: 'var(--red-50)', color: 'var(--red-600)', border: 'none', cursor: 'pointer', fontWeight: 600 }}>Confirm</button>
+                          <button onClick={() => setDeleteConfirm(null)} style={{ fontSize: 12, padding: '5px 10px', borderRadius: 8, background: 'var(--slate-100)', color: 'var(--slate-500)', border: 'none', cursor: 'pointer', fontWeight: 600 }}>Cancel</button>
                         </>
                       ) : (
-                        <button onClick={() => setDeleteConfirm(cat.id)} style={{ fontSize: 12, padding: '5px 10px', borderRadius: 8, background: '#fff1f2', color: '#be123c', border: 'none', cursor: 'pointer', fontWeight: 600 }}>Delete</button>
+                        <button onClick={() => setDeleteConfirm(cat.id)} style={{ fontSize: 12, padding: '5px 10px', borderRadius: 8, background: 'var(--rose-50)', color: 'var(--rose-700)', border: 'none', cursor: 'pointer', fontWeight: 600 }}>Delete</button>
                       )}
                     </div>
                   </td>

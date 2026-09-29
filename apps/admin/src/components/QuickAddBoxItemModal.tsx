@@ -12,7 +12,7 @@ function slugify(s: string) {
 }
 
 const DisabledBadge = () => (
-  <span style={{ fontSize: 10, fontWeight: 700, background: '#f1f5f9', color: '#94a3b8', border: '1px solid #e2e8f0', borderRadius: 5, padding: '1px 6px', marginLeft: 6 }}>EN only</span>
+  <span style={{ fontSize: 10, fontWeight: 700, background: 'var(--slate-100)', color: 'var(--slate-400)', border: '1px solid var(--slate-200)', borderRadius: 5, padding: '1px 6px', marginLeft: 6 }}>EN only</span>
 );
 
 interface Props {
@@ -153,10 +153,10 @@ export default function QuickAddBoxItemModal({ onClose, onCreated }: Props) {
 
   const inp = (error?: string, disabled?: boolean): React.CSSProperties => ({
     width: '100%', padding: '8px 11px', fontSize: 13,
-    border: `1px solid ${error ? '#fca5a5' : '#e2e8f0'}`,
+    border: `1px solid ${error ? 'var(--red-300)' : 'var(--slate-200)'}`,
     borderRadius: 9, outline: 'none',
-    background: disabled ? '#f8fafc' : error ? '#fff5f5' : '#fff',
-    boxSizing: 'border-box', color: disabled ? '#94a3b8' : '#0f172a',
+    background: disabled ? 'var(--slate-50)' : error ? 'var(--red-50b)' : 'var(--white)',
+    boxSizing: 'border-box', color: disabled ? 'var(--slate-400)' : 'var(--slate-900)',
     cursor: disabled ? 'not-allowed' : 'text',
   });
 
@@ -171,51 +171,51 @@ export default function QuickAddBoxItemModal({ onClose, onCreated }: Props) {
         @keyframes qaDrawerOut { from { transform: translateX(0) } to { transform: translateX(100%) } }
       `}</style>
       <div onClick={handleClose} style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.4)', zIndex: 2000, animation: `${visible ? 'qaOverlayIn' : 'qaOverlayOut'} 0.28s ease forwards` }} />
-      <div onClick={e => e.stopPropagation()} style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: '100%', maxWidth: 480, background: '#fff', zIndex: 2001, display: 'flex', flexDirection: 'column', boxShadow: '-8px 0 40px rgba(0,0,0,0.14)', animation: `${visible ? 'qaDrawerIn' : 'qaDrawerOut'} 0.28s cubic-bezier(0.4,0,0.2,1) forwards` }}>
+      <div onClick={e => e.stopPropagation()} style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: '100%', maxWidth: 480, background: 'var(--white)', zIndex: 2001, display: 'flex', flexDirection: 'column', boxShadow: '-8px 0 40px rgba(0,0,0,0.14)', animation: `${visible ? 'qaDrawerIn' : 'qaDrawerOut'} 0.28s cubic-bezier(0.4,0,0.2,1) forwards` }}>
 
         {/* Header */}
-        <div style={{ padding: '20px 28px 14px', borderBottom: '1px solid #e2e8f0', flexShrink: 0 }}>
+        <div style={{ padding: '20px 28px 14px', borderBottom: '1px solid var(--slate-200)', flexShrink: 0 }}>
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 }}>
             <div>
-              <h2 style={{ margin: 0, fontSize: 17, fontWeight: 800, color: '#0f172a' }}>New Box Item</h2>
-              <p style={{ margin: '2px 0 0', fontSize: 12, color: '#94a3b8' }}>Quick-create a product for subscription boxes</p>
+              <h2 style={{ margin: 0, fontSize: 17, fontWeight: 800, color: 'var(--slate-900)' }}>New Box Item</h2>
+              <p style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--slate-400)' }}>Quick-create a product for subscription boxes</p>
             </div>
             <button onClick={handleClose}
-              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#f1f5f9'; }}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--slate-100)'; }}
               onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
-              style={{ width: 32, height: 32, borderRadius: 8, border: 'none', background: 'transparent', cursor: 'pointer', fontSize: 20, color: '#94a3b8', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.15s', flexShrink: 0 }}>×</button>
+              style={{ width: 32, height: 32, borderRadius: 8, border: 'none', background: 'transparent', cursor: 'pointer', fontSize: 20, color: 'var(--slate-400)', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.15s', flexShrink: 0 }}>×</button>
           </div>
           <LangTabs lang={lang} onChange={setLang} />
         </div>
 
         {/* Body */}
         <form onSubmit={handleSubmit} style={{ overflowY: 'auto', flex: 1, padding: '18px 28px', display: 'flex', flexDirection: 'column', gap: 15 }}>
-          {errors._ && <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 9, padding: '10px 14px', fontSize: 13, color: '#dc2626' }}>⚠ {errors._}</div>}
-          {toast && <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 9, padding: '10px 14px', fontSize: 13, color: '#166534' }}>✓ {toast}</div>}
+          {errors._ && <div style={{ background: 'var(--red-50)', border: '1px solid var(--red-200)', borderRadius: 9, padding: '10px 14px', fontSize: 13, color: 'var(--red-600)' }}>⚠ {errors._}</div>}
+          {toast && <div style={{ background: 'var(--green-50)', border: '1px solid var(--green-200)', borderRadius: 9, padding: '10px 14px', fontSize: 13, color: 'var(--green-800)' }}>✓ {toast}</div>}
 
           {/* Photos — always visible, same in both tabs */}
           <div>
-            <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 8, display: 'block' }}>Photos</label>
+            <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--slate-600)', marginBottom: 8, display: 'block' }}>Photos</label>
             <div
               onDragOver={e => { e.preventDefault(); setDragOver(true); }}
               onDragLeave={() => setDragOver(false)}
               onDrop={e => { e.preventDefault(); setDragOver(false); queueFiles(e.dataTransfer.files); }}
               onClick={() => fileRef.current?.click()}
-              style={{ border: `2px dashed ${dragOver ? '#0d9488' : '#cbd5e1'}`, borderRadius: 12, padding: '16px', background: dragOver ? '#f0fdfa' : '#f8fafc', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, cursor: 'pointer', transition: 'all 0.15s' }}
+              style={{ border: `2px dashed ${dragOver ? 'var(--teal-600)' : 'var(--slate-300)'}`, borderRadius: 12, padding: '16px', background: dragOver ? 'var(--teal-50)' : 'var(--slate-50)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, cursor: 'pointer', transition: 'all 0.15s' }}
             >
-              <svg width="26" height="26" fill="none" stroke={dragOver ? '#0d9488' : '#94a3b8'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-              <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: dragOver ? '#0d9488' : '#475569' }}>Drop images here or click to browse</p>
-              <p style={{ margin: 0, fontSize: 11, color: '#94a3b8' }}>JPEG, PNG, SVG, WebP · max 10 MB each</p>
+              <svg width="26" height="26" fill="none" stroke={dragOver ? 'var(--teal-600)' : 'var(--slate-400)'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+              <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: dragOver ? 'var(--teal-600)' : 'var(--slate-600)' }}>Drop images here or click to browse</p>
+              <p style={{ margin: 0, fontSize: 11, color: 'var(--slate-400)' }}>JPEG, PNG, SVG, WebP · max 10 MB each</p>
             </div>
             <input ref={fileRef} type="file" accept=".jpg,.jpeg,.png,.svg,.webp" multiple style={{ display: 'none' }} onChange={e => { if (e.target.files) queueFiles(e.target.files); e.target.value = ''; }} />
-            {imageError && <p style={{ fontSize: 11, color: '#dc2626', marginTop: 4 }}>⚠ {imageError}</p>}
+            {imageError && <p style={{ fontSize: 11, color: 'var(--red-600)', marginTop: 4 }}>⚠ {imageError}</p>}
             {queuedPreviews.length > 0 && (
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
                 {queuedPreviews.map((src, i) => (
                   <div key={i} style={{ position: 'relative' }}>
-                    <img src={src} alt="" style={{ width: 60, height: 60, objectFit: 'cover', borderRadius: 8, border: '1px solid #e2e8f0' }} />
+                    <img src={src} alt="" style={{ width: 60, height: 60, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--slate-200)' }} />
                     <button type="button" onClick={() => { setQueuedFiles(q => q.filter((_, j) => j !== i)); setQueuedPreviews(p => p.filter((_, j) => j !== i)); }}
-                      style={{ position: 'absolute', top: -6, right: -6, width: 20, height: 20, borderRadius: '50%', background: '#ef4444', border: '2px solid #fff', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>×</button>
+                      style={{ position: 'absolute', top: -6, right: -6, width: 20, height: 20, borderRadius: '50%', background: 'var(--red-500)', border: '2px solid var(--white)', color: 'var(--white)', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>×</button>
                   </div>
                 ))}
               </div>
@@ -224,62 +224,62 @@ export default function QuickAddBoxItemModal({ onClose, onCreated }: Props) {
 
           {/* Product Name */}
           <div>
-            <label style={{ fontSize: 12, fontWeight: 600, color: (isKa ? errors.ka_name : errors.name) ? '#dc2626' : '#475569', marginBottom: 5, display: 'flex', alignItems: 'center' }}>
-              Product Name <span style={{ color: '#dc2626', marginLeft: 2 }}>*</span>
+            <label style={{ fontSize: 12, fontWeight: 600, color: (isKa ? errors.ka_name : errors.name) ? 'var(--red-600)' : 'var(--slate-600)', marginBottom: 5, display: 'flex', alignItems: 'center' }}>
+              Product Name <span style={{ color: 'var(--red-600)', marginLeft: 2 }}>*</span>
             </label>
             {isKa ? (
               <>
                 <input ref={nameRef} value={ka.name} onChange={e => setKaField('name', e.target.value)} placeholder="e.g. ქათმის ჯერკი" style={inp(errors.ka_name)} />
-                {errors.ka_name && <p style={{ fontSize: 11, color: '#dc2626', marginTop: 3 }}>⚠ {errors.ka_name}</p>}
+                {errors.ka_name && <p style={{ fontSize: 11, color: 'var(--red-600)', marginTop: 3 }}>⚠ {errors.ka_name}</p>}
               </>
             ) : (
               <>
                 <input ref={nameRef} value={form.name} onChange={e => set('name', e.target.value)} placeholder="e.g. Chicken Jerky Treats" style={inp(errors.name)} />
-                {errors.name && <p style={{ fontSize: 11, color: '#dc2626', marginTop: 3 }}>⚠ {errors.name}</p>}
+                {errors.name && <p style={{ fontSize: 11, color: 'var(--red-600)', marginTop: 3 }}>⚠ {errors.name}</p>}
               </>
             )}
           </div>
 
           {/* Slug — EN only */}
           <div style={isKa ? disabledSection : {}}>
-            <label style={{ fontSize: 12, fontWeight: 600, color: errors.slug ? '#dc2626' : '#475569', marginBottom: 5, display: 'flex', alignItems: 'center' }}>
-              Slug <span style={{ color: '#dc2626', marginLeft: 2 }}>*</span>{isKa && <DisabledBadge />}
+            <label style={{ fontSize: 12, fontWeight: 600, color: errors.slug ? 'var(--red-600)' : 'var(--slate-600)', marginBottom: 5, display: 'flex', alignItems: 'center' }}>
+              Slug <span style={{ color: 'var(--red-600)', marginLeft: 2 }}>*</span>{isKa && <DisabledBadge />}
             </label>
             <input value={slug} onChange={e => { setSlug(e.target.value); setSlugManual(true); setErrors(er => ({ ...er, slug: '' })); }} placeholder="auto-generated from name" style={inp(errors.slug, isKa)} disabled={isKa} />
-            {errors.slug && <p style={{ fontSize: 11, color: '#dc2626', marginTop: 3 }}>⚠ {errors.slug}</p>}
+            {errors.slug && <p style={{ fontSize: 11, color: 'var(--red-600)', marginTop: 3 }}>⚠ {errors.slug}</p>}
           </div>
 
           {/* SKU + Price — EN only */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div style={isKa ? disabledSection : {}}>
-              <label style={{ fontSize: 12, fontWeight: 600, color: errors.sku ? '#dc2626' : '#475569', marginBottom: 5, display: 'flex', alignItems: 'center' }}>
-                SKU <span style={{ color: '#dc2626', marginLeft: 2 }}>*</span>{isKa && <DisabledBadge />}
+              <label style={{ fontSize: 12, fontWeight: 600, color: errors.sku ? 'var(--red-600)' : 'var(--slate-600)', marginBottom: 5, display: 'flex', alignItems: 'center' }}>
+                SKU <span style={{ color: 'var(--red-600)', marginLeft: 2 }}>*</span>{isKa && <DisabledBadge />}
               </label>
               <input value={form.sku} onChange={e => set('sku', e.target.value)} placeholder="e.g. TRT-001" style={inp(errors.sku, isKa)} disabled={isKa} />
-              {errors.sku && <p style={{ fontSize: 11, color: '#dc2626', marginTop: 3 }}>⚠ {errors.sku}</p>}
+              {errors.sku && <p style={{ fontSize: 11, color: 'var(--red-600)', marginTop: 3 }}>⚠ {errors.sku}</p>}
             </div>
             <div style={isKa ? disabledSection : {}}>
-              <label style={{ fontSize: 12, fontWeight: 600, color: errors.price ? '#dc2626' : '#475569', marginBottom: 5, display: 'flex', alignItems: 'center' }}>
-                Price (₾) <span style={{ color: '#dc2626', marginLeft: 2 }}>*</span>{isKa && <DisabledBadge />}
+              <label style={{ fontSize: 12, fontWeight: 600, color: errors.price ? 'var(--red-600)' : 'var(--slate-600)', marginBottom: 5, display: 'flex', alignItems: 'center' }}>
+                Price (₾) <span style={{ color: 'var(--red-600)', marginLeft: 2 }}>*</span>{isKa && <DisabledBadge />}
               </label>
               <input type="number" min="0" step="0.01" value={form.price} onChange={e => set('price', e.target.value)} placeholder="0.00" style={inp(errors.price, isKa)} disabled={isKa} />
-              {errors.price && <p style={{ fontSize: 11, color: '#dc2626', marginTop: 3 }}>⚠ {errors.price}</p>}
+              {errors.price && <p style={{ fontSize: 11, color: 'var(--red-600)', marginTop: 3 }}>⚠ {errors.price}</p>}
             </div>
           </div>
 
           {/* Category + Stock — EN only */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, ...(isKa ? disabledSection : {}) }}>
             <div>
-              <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 5, display: 'flex', alignItems: 'center' }}>
+              <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--slate-600)', marginBottom: 5, display: 'flex', alignItems: 'center' }}>
                 Category{isKa && <DisabledBadge />}
               </label>
-              <select value={form.categoryId} onChange={e => set('categoryId', e.target.value)} disabled={isKa} style={{ ...inp(undefined, isKa), color: form.categoryId && !isKa ? '#0f172a' : '#94a3b8' }}>
+              <select value={form.categoryId} onChange={e => set('categoryId', e.target.value)} disabled={isKa} style={{ ...inp(undefined, isKa), color: form.categoryId && !isKa ? 'var(--slate-900)' : 'var(--slate-400)' }}>
                 <option value="">No category</option>
                 {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </div>
             <div>
-              <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 5, display: 'flex', alignItems: 'center' }}>
+              <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--slate-600)', marginBottom: 5, display: 'flex', alignItems: 'center' }}>
                 Stock (units){isKa && <DisabledBadge />}
               </label>
               <input type="number" min="0" value={form.stockQuantity} onChange={e => set('stockQuantity', e.target.value)} disabled={isKa} style={inp(undefined, isKa)} />
@@ -288,7 +288,7 @@ export default function QuickAddBoxItemModal({ onClose, onCreated }: Props) {
 
           {/* Brand — EN only */}
           <div style={isKa ? disabledSection : {}}>
-            <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 5, display: 'flex', alignItems: 'center' }}>
+            <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--slate-600)', marginBottom: 5, display: 'flex', alignItems: 'center' }}>
               Brand{isKa && <DisabledBadge />}
             </label>
             <input value={form.brand} onChange={e => set('brand', e.target.value)} placeholder="Optional" disabled={isKa} style={inp(undefined, isKa)} />
@@ -296,7 +296,7 @@ export default function QuickAddBoxItemModal({ onClose, onCreated }: Props) {
 
           {/* Short Description */}
           <div>
-            <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 5, display: 'block' }}>Short Description</label>
+            <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--slate-600)', marginBottom: 5, display: 'block' }}>Short Description</label>
             {isKa ? (
               <textarea value={ka.shortDescription} onChange={e => setKaField('shortDescription', e.target.value)} placeholder="Optional" rows={3} style={{ ...inp(), resize: 'vertical', fontFamily: 'inherit' }} />
             ) : (
@@ -306,21 +306,21 @@ export default function QuickAddBoxItemModal({ onClose, onCreated }: Props) {
         </form>
 
         {/* Footer */}
-        <div style={{ padding: '14px 28px', borderTop: '1px solid #e2e8f0', display: 'flex', gap: 10, flexShrink: 0 }}>
+        <div style={{ padding: '14px 28px', borderTop: '1px solid var(--slate-200)', display: 'flex', gap: 10, flexShrink: 0 }}>
           <button type="submit" onClick={handleSubmit} disabled={saving}
-            onMouseEnter={e => { if (!saving) (e.currentTarget as HTMLButtonElement).style.background = '#0f766e'; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = '#0d9488'; }}
+            onMouseEnter={e => { if (!saving) (e.currentTarget as HTMLButtonElement).style.background = 'var(--teal-700)'; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--teal-600)'; }}
             onMouseDown={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(0.97)'; }}
             onMouseUp={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)'; }}
-            style={{ flex: 2, padding: '10px 0', borderRadius: 10, background: '#0d9488', color: '#fff', border: 'none', cursor: saving ? 'default' : 'pointer', fontWeight: 700, fontSize: 13, opacity: saving ? 0.7 : 1, transition: 'background 0.15s, transform 0.1s' }}>
+            style={{ flex: 2, padding: '10px 0', borderRadius: 10, background: 'var(--teal-600)', color: 'var(--white)', border: 'none', cursor: saving ? 'default' : 'pointer', fontWeight: 700, fontSize: 13, opacity: saving ? 0.7 : 1, transition: 'background 0.15s, transform 0.1s' }}>
             {saving ? 'Creating…' : 'Create Box Item'}
           </button>
           <button onClick={handleClose}
-            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#e2e8f0'; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = '#f1f5f9'; }}
+            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--slate-200)'; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--slate-100)'; }}
             onMouseDown={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(0.97)'; }}
             onMouseUp={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)'; }}
-            style={{ flex: 1, padding: '10px 0', borderRadius: 10, background: '#f1f5f9', color: '#374151', border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 13, transition: 'background 0.15s, transform 0.1s' }}>Cancel</button>
+            style={{ flex: 1, padding: '10px 0', borderRadius: 10, background: 'var(--slate-100)', color: 'var(--slate-700b)', border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 13, transition: 'background 0.15s, transform 0.1s' }}>Cancel</button>
         </div>
       </div>
     </>

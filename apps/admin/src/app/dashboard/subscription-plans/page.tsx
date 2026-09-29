@@ -356,8 +356,8 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
 
   // ── render ──
 
-  const marginColor = margin >= 0 ? '#15803d' : '#dc2626';
-  const marginBg = margin >= 0 ? '#f0fdf4' : '#fef2f2';
+  const marginColor = margin >= 0 ? 'var(--green-700)' : 'var(--red-600)';
+  const marginBg = margin >= 0 ? 'var(--green-50)' : 'var(--red-50)';
   const unaddedItems = boxItems.filter(b => !activeItems.find(i => i.productId === b.id));
 
   return (
@@ -369,9 +369,9 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
         <div style={{
           position: 'fixed', bottom: 32, left: '50%', transform: 'translateX(-50%)',
           zIndex: 200, display: 'flex', alignItems: 'center', gap: 10,
-          background: toast.type === 'error' ? '#1e293b' : '#0f172a',
-          borderLeft: `4px solid ${toast.type === 'error' ? '#ef4444' : '#0d9488'}`,
-          color: '#fff', borderRadius: 12, padding: '12px 18px',
+          background: toast.type === 'error' ? 'var(--slate-800)' : 'var(--slate-900)',
+          borderLeft: `4px solid ${toast.type === 'error' ? 'var(--red-500)' : 'var(--teal-600)'}`,
+          color: 'var(--white)', borderRadius: 12, padding: '12px 18px',
           boxShadow: '0 8px 32px rgba(0,0,0,0.28)', fontSize: 13, fontWeight: 600,
           minWidth: 280, maxWidth: 440, animation: 'slideUp 0.22s ease',
         }}>
@@ -385,32 +385,32 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
       {showCloseConfirm && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div onClick={() => setShowCloseConfirm(false)} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)' }} />
-          <div style={{ position: 'relative', background: '#fff', borderRadius: 16, padding: '28px 32px', width: 380, boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}>
-            <div style={{ width: 44, height: 44, borderRadius: 12, background: '#fff7ed', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16, fontSize: 22 }}>⚠️</div>
-            <h3 style={{ fontSize: 16, fontWeight: 800, color: '#0f172a', margin: '0 0 8px' }}>Discard unsaved changes?</h3>
-            <p style={{ fontSize: 13, color: '#64748b', margin: '0 0 24px', lineHeight: 1.5 }}>You have unsaved edits to this plan. Closing now will lose all changes.</p>
+          <div style={{ position: 'relative', background: 'var(--white)', borderRadius: 16, padding: '28px 32px', width: 380, boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}>
+            <div style={{ width: 44, height: 44, borderRadius: 12, background: 'var(--orange-50)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16, fontSize: 22 }}>⚠️</div>
+            <h3 style={{ fontSize: 16, fontWeight: 800, color: 'var(--slate-900)', margin: '0 0 8px' }}>Discard unsaved changes?</h3>
+            <p style={{ fontSize: 13, color: 'var(--slate-500)', margin: '0 0 24px', lineHeight: 1.5 }}>You have unsaved edits to this plan. Closing now will lose all changes.</p>
             <div style={{ display: 'flex', gap: 10 }}>
               <button
                 onClick={onClose}
-                style={{ flex: 1, background: '#ef4444', color: '#fff', border: 'none', borderRadius: 10, padding: '10px 0', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}
+                style={{ flex: 1, background: 'var(--red-500)', color: 'var(--white)', border: 'none', borderRadius: 10, padding: '10px 0', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}
               >Discard & close</button>
               <button
                 onClick={() => setShowCloseConfirm(false)}
-                style={{ flex: 1, background: '#f1f5f9', color: '#334155', border: 'none', borderRadius: 10, padding: '10px 0', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}
+                style={{ flex: 1, background: 'var(--slate-100)', color: 'var(--slate-700)', border: 'none', borderRadius: 10, padding: '10px 0', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}
               >Keep editing</button>
             </div>
           </div>
         </div>
       )}
-      <div style={{ position: 'fixed', top: 0, right: 0, width: 820, height: '100%', background: '#fff', zIndex: 51, overflowY: 'auto', boxShadow: '-8px 0 40px rgba(0,0,0,0.12)', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ position: 'fixed', top: 0, right: 0, width: 820, height: '100%', background: 'var(--white)', zIndex: 51, overflowY: 'auto', boxShadow: '-8px 0 40px rgba(0,0,0,0.12)', display: 'flex', flexDirection: 'column' }}>
 
         {/* Header */}
-        <div style={{ position: 'sticky', top: 0, background: '#0f172a', padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', zIndex: 1, flexShrink: 0 }}>
+        <div style={{ position: 'sticky', top: 0, background: 'var(--slate-900)', padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', zIndex: 1, flexShrink: 0 }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <span style={{ color: '#fff', fontWeight: 800, fontSize: 16 }}>{plan.name || 'New Plan'}</span>
-              {plan.price ? <Pill bg="#f0fdfa" color="#0d9488" border="1px solid #99f6e4">₾{Number(plan.price).toFixed(2)}</Pill> : null}
-              {plan.badge && <Pill bg="#0d9488" color="#fff" border="none">{plan.badge}</Pill>}
+              <span style={{ color: 'var(--white)', fontWeight: 800, fontSize: 16 }}>{plan.name || 'New Plan'}</span>
+              {plan.price ? <Pill bg="var(--teal-50)" color="var(--teal-600)" border="1px solid var(--teal-200)">₾{Number(plan.price).toFixed(2)}</Pill> : null}
+              {plan.badge && <Pill bg="var(--teal-600)" color="var(--white)" border="none">{plan.badge}</Pill>}
             </div>
             <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, margin: '4px 0 0' }}>
               {plan.id ? `${plan.durationValue} ${plan.durationUnit.toLowerCase()}s · ${plan.boxCount} box${plan.boxCount > 1 ? 'es' : ''}` : 'Fill in Plan Settings to get started'}
@@ -418,21 +418,21 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
             <button onClick={() => save(true)} disabled={saving}
-              onMouseEnter={e => { if (!saving) (e.currentTarget as HTMLButtonElement).style.background = '#0f766e'; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = '#0d9488'; }}
+              onMouseEnter={e => { if (!saving) (e.currentTarget as HTMLButtonElement).style.background = 'var(--teal-700)'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--teal-600)'; }}
               onMouseDown={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(0.95)'; }}
               onMouseUp={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)'; }}
-              style={{ background: '#0d9488', color: '#fff', border: 'none', borderRadius: 9, padding: '8px 18px', fontSize: 13, fontWeight: 700, cursor: saving ? 'default' : 'pointer', opacity: saving ? 0.6 : 1, transition: 'background 0.15s, transform 0.1s' }}>
+              style={{ background: 'var(--teal-600)', color: 'var(--white)', border: 'none', borderRadius: 9, padding: '8px 18px', fontSize: 13, fontWeight: 700, cursor: saving ? 'default' : 'pointer', opacity: saving ? 0.6 : 1, transition: 'background 0.15s, transform 0.1s' }}>
               {saving ? 'Saving…' : '✓ Save All'}
             </button>
-            <button onClick={tryClose} style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(255,255,255,0.1)', border: 'none', color: '#fff', cursor: 'pointer', fontSize: 18, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
+            <button onClick={tryClose} style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(255,255,255,0.1)', border: 'none', color: 'var(--white)', cursor: 'pointer', fontSize: 18, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
           </div>
         </div>
 
         {/* Tab bar */}
-        <div style={{ display: 'flex', gap: 0, borderBottom: '1px solid #e8ecf0', flexShrink: 0 }}>
+        <div style={{ display: 'flex', gap: 0, borderBottom: '1px solid var(--slate-200b)', flexShrink: 0 }}>
           {([['form', '⚙️ Plan Settings'], ['builder', '📦 Box Builder'], ['discounts', '🏷️ Discounts']] as const).map(([t, label]) => (
-            <button key={t} onClick={() => { setTab(t); if (t === 'builder') setActiveBox(0); }} style={{ padding: '12px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer', border: 'none', background: 'none', color: tab === t ? '#0d9488' : '#64748b', borderBottom: tab === t ? '2px solid #0d9488' : '2px solid transparent' }}>{label}</button>
+            <button key={t} onClick={() => { setTab(t); if (t === 'builder') setActiveBox(0); }} style={{ padding: '12px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer', border: 'none', background: 'none', color: tab === t ? 'var(--teal-600)' : 'var(--slate-500)', borderBottom: tab === t ? '2px solid var(--teal-600)' : '2px solid transparent' }}>{label}</button>
           ))}
         </div>
 
@@ -442,15 +442,15 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
           {Object.keys(formErrors).some(k => formErrors[k]) && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 16 }}>
               {formErrors.kaName && (
-                <div onClick={() => { setTab('form'); setLang('ka'); }} style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#fef3c7', border: '1.5px solid #fcd34d', borderRadius: 10, padding: '10px 14px', cursor: 'pointer' }}>
-                  <svg width="14" height="14" fill="none" stroke="#d97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-                  <span style={{ fontSize: 12, fontWeight: 600, color: '#92400e' }}>Georgian translation is incomplete — <u>click to fill it in</u></span>
+                <div onClick={() => { setTab('form'); setLang('ka'); }} style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--amber-100)', border: '1.5px solid var(--amber-300)', borderRadius: 10, padding: '10px 14px', cursor: 'pointer' }}>
+                  <svg width="14" height="14" fill="none" stroke="var(--amber-600)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--amber-800)' }}>Georgian translation is incomplete — <u>click to fill it in</u></span>
                 </div>
               )}
               {Object.entries(formErrors).filter(([k, v]) => k !== 'kaName' && v).map(([k, msg]) => (
-                <div key={k} onClick={() => { setTab('form'); setLang('en'); }} style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#fef2f2', border: '1.5px solid #fca5a5', borderRadius: 10, padding: '10px 14px', cursor: 'pointer' }}>
-                  <svg width="14" height="14" fill="none" stroke="#dc2626" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                  <span style={{ fontSize: 12, fontWeight: 600, color: '#dc2626' }}>{msg as string} — <u>click to fix</u></span>
+                <div key={k} onClick={() => { setTab('form'); setLang('en'); }} style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--red-50)', border: '1.5px solid var(--red-300)', borderRadius: 10, padding: '10px 14px', cursor: 'pointer' }}>
+                  <svg width="14" height="14" fill="none" stroke="var(--red-600)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--red-600)' }}>{msg as string} — <u>click to fix</u></span>
                 </div>
               ))}
             </div>
@@ -474,44 +474,44 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
                         <button
                           key={i}
                           onClick={() => { setActiveBox(i); setCatalogueSearch(''); }}
-                          style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', padding: '8px 14px', borderRadius: 10, border: `2px solid ${isActive ? '#0d9488' : '#e2e8f0'}`, background: isActive ? '#f0fdfa' : '#fff', cursor: 'pointer', minWidth: 90, transition: 'all 0.12s' }}
+                          style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', padding: '8px 14px', borderRadius: 10, border: `2px solid ${isActive ? 'var(--teal-600)' : 'var(--slate-200)'}`, background: isActive ? 'var(--teal-50)' : 'var(--white)', cursor: 'pointer', minWidth: 90, transition: 'all 0.12s' }}
                         >
-                          <span style={{ fontSize: 11, fontWeight: 700, color: isActive ? '#0d9488' : '#64748b' }}>Box {i + 1}</span>
-                          <span style={{ fontSize: 10, color: isActive ? '#0d9488' : '#94a3b8', marginTop: 1 }}>
+                          <span style={{ fontSize: 11, fontWeight: 700, color: isActive ? 'var(--teal-600)' : 'var(--slate-500)' }}>Box {i + 1}</span>
+                          <span style={{ fontSize: 10, color: isActive ? 'var(--teal-600)' : 'var(--slate-400)', marginTop: 1 }}>
                             {bItems.length} item{bItems.length !== 1 ? 's' : ''} · ₾{bTotal.toFixed(2)}
                           </span>
                         </button>
                       );
                     })}
                     <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <span style={{ fontSize: 11, color: '#94a3b8' }}>Total across all boxes:</span>
-                      <span style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>₾{allProductTotal.toFixed(2)}</span>
+                      <span style={{ fontSize: 11, color: 'var(--slate-400)' }}>Total across all boxes:</span>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--slate-900)' }}>₾{allProductTotal.toFixed(2)}</span>
                     </div>
                   </div>
                 )}
 
                 {/* Current box items */}
-                <div style={{ background: '#f8fafc', borderRadius: 12, border: '1px solid #e8ecf0', overflow: 'hidden' }}>
-                  <div style={{ padding: '12px 16px', borderBottom: '1px solid #e8ecf0', display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', flex: 1 }}>
+                <div style={{ background: 'var(--slate-50)', borderRadius: 12, border: '1px solid var(--slate-200b)', overflow: 'hidden' }}>
+                  <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--slate-200b)', display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--slate-900)', flex: 1 }}>
                       {boxCount > 1 ? `Box ${safeActiveBox + 1} Contents` : 'Box Contents'}
                     </span>
-                    <span style={{ fontSize: 11, color: '#94a3b8' }}>{activeItems.length} item{activeItems.length !== 1 ? 's' : ''} · ₾{activeProductTotal.toFixed(2)} product cost</span>
+                    <span style={{ fontSize: 11, color: 'var(--slate-400)' }}>{activeItems.length} item{activeItems.length !== 1 ? 's' : ''} · ₾{activeProductTotal.toFixed(2)} product cost</span>
                     {activeItems.length > 0 && (
                       <button
                         onClick={() => updateBox(safeActiveBox, () => [])}
-                        onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#fef2f2'; (e.currentTarget as HTMLButtonElement).style.borderColor = '#fca5a5'; (e.currentTarget as HTMLButtonElement).style.color = '#dc2626'; }}
-                        onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = '#fff'; (e.currentTarget as HTMLButtonElement).style.borderColor = '#e2e8f0'; (e.currentTarget as HTMLButtonElement).style.color = '#64748b'; }}
+                        onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--red-50)'; (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--red-300)'; (e.currentTarget as HTMLButtonElement).style.color = 'var(--red-600)'; }}
+                        onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--white)'; (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--slate-200)'; (e.currentTarget as HTMLButtonElement).style.color = 'var(--slate-500)'; }}
                         onMouseDown={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(0.95)'; }}
                         onMouseUp={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)'; }}
-                        style={{ background: '#fff', color: '#64748b', border: '1px solid #e2e8f0', borderRadius: 8, padding: '4px 10px', fontSize: 11, fontWeight: 700, cursor: 'pointer', flexShrink: 0, transition: 'background 0.15s, border-color 0.15s, color 0.15s, transform 0.1s' }}
+                        style={{ background: 'var(--white)', color: 'var(--slate-500)', border: '1px solid var(--slate-200)', borderRadius: 8, padding: '4px 10px', fontSize: 11, fontWeight: 700, cursor: 'pointer', flexShrink: 0, transition: 'background 0.15s, border-color 0.15s, color 0.15s, transform 0.1s' }}
                       >
                         Remove All
                       </button>
                     )}
                   </div>
                   {activeItems.length === 0 ? (
-                    <div style={{ padding: '32px 16px', textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>
+                    <div style={{ padding: '32px 16px', textAlign: 'center', color: 'var(--slate-400)', fontSize: 13 }}>
                       No items added yet — add products from the catalogue below
                     </div>
                   ) : (
@@ -519,35 +519,35 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
                       <thead>
                         <tr>
                           {['Product', 'Box price (₾)', 'Qty', 'Line total', ''].map(h => (
-                            <th key={h} style={{ padding: '8px 12px', textAlign: h === 'Qty' || h === 'Line total' ? 'center' : 'left', fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', background: '#f1f5f9', borderBottom: '1px solid #e8ecf0' }}>{h}</th>
+                            <th key={h} style={{ padding: '8px 12px', textAlign: h === 'Qty' || h === 'Line total' ? 'center' : 'left', fontSize: 10, fontWeight: 700, color: 'var(--slate-400)', textTransform: 'uppercase', letterSpacing: '0.06em', background: 'var(--slate-100)', borderBottom: '1px solid var(--slate-200b)' }}>{h}</th>
                           ))}
                         </tr>
                       </thead>
                       <tbody>
                         {activeItems.map((item: PlanItem) => (
-                          <tr key={item.productId} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                            <td style={{ padding: '10px 12px', fontWeight: 600, color: '#1e293b' }}>{item.name}</td>
+                          <tr key={item.productId} style={{ borderBottom: '1px solid var(--slate-100)' }}>
+                            <td style={{ padding: '10px 12px', fontWeight: 600, color: 'var(--slate-800)' }}>{item.name}</td>
                             <td style={{ padding: '10px 12px' }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                                <span style={{ color: '#94a3b8', fontSize: 12 }}>₾</span>
+                                <span style={{ color: 'var(--slate-400)', fontSize: 12 }}>₾</span>
                                 <input
                                   type="number" min="0" step="0.01"
                                   value={item.price}
                                   onChange={e => setItemPrice(item.productId, num(e.target.value))}
-                                  style={{ width: 70, border: '1px solid #e2e8f0', borderRadius: 7, padding: '5px 8px', fontSize: 12, outline: 'none', textAlign: 'right' }}
+                                  style={{ width: 70, border: '1px solid var(--slate-200)', borderRadius: 7, padding: '5px 8px', fontSize: 12, outline: 'none', textAlign: 'right' }}
                                 />
                               </div>
                             </td>
                             <td style={{ padding: '10px 12px', textAlign: 'center' }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: 4, justifyContent: 'center' }}>
-                                <button onClick={() => setItemQty(item.productId, item.qty - 1)} style={{ width: 22, height: 22, border: '1px solid #e2e8f0', borderRadius: 5, background: '#fff', cursor: 'pointer', fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b' }}>−</button>
-                                <span style={{ width: 24, textAlign: 'center', fontWeight: 700, color: '#0f172a' }}>{item.qty}</span>
-                                <button onClick={() => setItemQty(item.productId, item.qty + 1)} style={{ width: 22, height: 22, border: '1px solid #e2e8f0', borderRadius: 5, background: '#fff', cursor: 'pointer', fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b' }}>+</button>
+                                <button onClick={() => setItemQty(item.productId, item.qty - 1)} style={{ width: 22, height: 22, border: '1px solid var(--slate-200)', borderRadius: 5, background: 'var(--white)', cursor: 'pointer', fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--slate-500)' }}>−</button>
+                                <span style={{ width: 24, textAlign: 'center', fontWeight: 700, color: 'var(--slate-900)' }}>{item.qty}</span>
+                                <button onClick={() => setItemQty(item.productId, item.qty + 1)} style={{ width: 22, height: 22, border: '1px solid var(--slate-200)', borderRadius: 5, background: 'var(--white)', cursor: 'pointer', fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--slate-500)' }}>+</button>
                               </div>
                             </td>
-                            <td style={{ padding: '10px 12px', textAlign: 'center', fontWeight: 700, color: '#0f172a' }}>₾{(item.price * item.qty).toFixed(2)}</td>
+                            <td style={{ padding: '10px 12px', textAlign: 'center', fontWeight: 700, color: 'var(--slate-900)' }}>₾{(item.price * item.qty).toFixed(2)}</td>
                             <td style={{ padding: '10px 12px', textAlign: 'center' }}>
-                              <button onClick={() => removeItem(item.productId)} style={{ background: '#fef2f2', color: '#dc2626', border: 'none', borderRadius: 6, padding: '3px 8px', fontSize: 11, cursor: 'pointer', fontWeight: 600 }}>✕</button>
+                              <button onClick={() => removeItem(item.productId)} style={{ background: 'var(--red-50)', color: 'var(--red-600)', border: 'none', borderRadius: 6, padding: '3px 8px', fontSize: 11, cursor: 'pointer', fontWeight: 600 }}>✕</button>
                             </td>
                           </tr>
                         ))}
@@ -561,43 +561,43 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
                 <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                   <button
                     onClick={() => setShowNewBoxItemDrawer(true)}
-                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#f8fafc'; (e.currentTarget as HTMLButtonElement).style.borderColor = '#cbd5e1'; }}
-                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = '#fff'; (e.currentTarget as HTMLButtonElement).style.borderColor = '#e2e8f0'; }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--slate-50)'; (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--slate-300)'; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--white)'; (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--slate-200)'; }}
                     onMouseDown={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(0.95)'; }}
                     onMouseUp={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)'; }}
-                    style={{ background: '#fff', color: '#334155', border: '1.5px solid #e2e8f0', borderRadius: 9, padding: '6px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer', transition: 'background 0.15s, border-color 0.15s, transform 0.1s' }}
+                    style={{ background: 'var(--white)', color: 'var(--slate-700)', border: '1.5px solid var(--slate-200)', borderRadius: 9, padding: '6px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer', transition: 'background 0.15s, border-color 0.15s, transform 0.1s' }}
                   >+ New Box Item</button>
                 </div>
 
                 {boxItems.length > 0 && (
-                  <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e8ecf0', overflow: 'hidden' }}>
-                    <div style={{ padding: '12px 16px', borderBottom: '1px solid #e8ecf0', display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <span style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', flex: 1 }}>Add from Box Items catalogue</span>
+                  <div style={{ background: 'var(--white)', borderRadius: 12, border: '1px solid var(--slate-200b)', overflow: 'hidden' }}>
+                    <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--slate-200b)', display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--slate-900)', flex: 1 }}>Add from Box Items catalogue</span>
                       {unaddedItems.length > 0 && (
                         <button
                           onClick={() => {
                             const visible = unaddedItems.filter(p => !catalogueSearch || p.name.toLowerCase().includes(catalogueSearch.toLowerCase()) || (p.sku || '').toLowerCase().includes(catalogueSearch.toLowerCase()) || (p.brand || '').toLowerCase().includes(catalogueSearch.toLowerCase()));
                             visible.forEach(p => addItem(p));
                           }}
-                          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#0f766e'; }}
-                          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = '#0d9488'; }}
+                          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--teal-700)'; }}
+                          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--teal-600)'; }}
                           onMouseDown={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(0.95)'; }}
                           onMouseUp={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)'; }}
-                          style={{ background: '#0d9488', color: '#fff', border: 'none', borderRadius: 8, padding: '5px 12px', fontSize: 12, fontWeight: 700, cursor: 'pointer', flexShrink: 0, transition: 'background 0.15s, transform 0.1s' }}
+                          style={{ background: 'var(--teal-600)', color: 'var(--white)', border: 'none', borderRadius: 8, padding: '5px 12px', fontSize: 12, fontWeight: 700, cursor: 'pointer', flexShrink: 0, transition: 'background 0.15s, transform 0.1s' }}
                         >
                           + Add All
                         </button>
                       )}
                       <div style={{ position: 'relative' }}>
-                        <span style={{ position: 'absolute', left: 9, top: '50%', transform: 'translateY(-50%)', fontSize: 13, color: '#94a3b8', pointerEvents: 'none' }}>🔍</span>
+                        <span style={{ position: 'absolute', left: 9, top: '50%', transform: 'translateY(-50%)', fontSize: 13, color: 'var(--slate-400)', pointerEvents: 'none' }}>🔍</span>
                         <input
                           value={catalogueSearch}
                           onChange={e => setCatalogueSearch(e.target.value)}
                           placeholder="Search items..."
-                          style={{ paddingLeft: 28, paddingRight: catalogueSearch ? 28 : 10, paddingTop: 5, paddingBottom: 5, fontSize: 12, border: '1px solid #e2e8f0', borderRadius: 8, outline: 'none', width: 160, background: '#f8fafc' }}
+                          style={{ paddingLeft: 28, paddingRight: catalogueSearch ? 28 : 10, paddingTop: 5, paddingBottom: 5, fontSize: 12, border: '1px solid var(--slate-200)', borderRadius: 8, outline: 'none', width: 160, background: 'var(--slate-50)' }}
                         />
                         {catalogueSearch && (
-                          <button onClick={() => setCatalogueSearch('')} style={{ position: 'absolute', right: 7, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, color: '#94a3b8', padding: 0, lineHeight: 1 }}>×</button>
+                          <button onClick={() => setCatalogueSearch('')} style={{ position: 'absolute', right: 7, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, color: 'var(--slate-400)', padding: 0, lineHeight: 1 }}>×</button>
                         )}
                       </div>
                     </div>
@@ -607,20 +607,20 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
                           <div
                             key={p.id}
                             onClick={() => addItem(p)}
-                            style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', borderBottom: '1px solid #f8fafc', cursor: 'pointer', transition: 'background 0.1s' }}
-                            onMouseEnter={e => (e.currentTarget.style.background = '#f0fdfa')}
+                            style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', borderBottom: '1px solid var(--slate-50)', cursor: 'pointer', transition: 'background 0.1s' }}
+                            onMouseEnter={e => (e.currentTarget.style.background = 'var(--teal-50)')}
                             onMouseLeave={e => (e.currentTarget.style.background = '')}
                           >
                             <div style={{ flex: 1 }}>
-                              <p style={{ fontWeight: 600, color: '#1e293b', margin: 0, fontSize: 13 }}>{p.name}</p>
-                              <p style={{ fontSize: 11, color: '#94a3b8', margin: '2px 0 0' }}>RRP ₾{Number(p.price).toFixed(2)}{p.inventory?.quantity !== undefined ? ` · ${p.inventory.quantity} in stock` : ''}</p>
+                              <p style={{ fontWeight: 600, color: 'var(--slate-800)', margin: 0, fontSize: 13 }}>{p.name}</p>
+                              <p style={{ fontSize: 11, color: 'var(--slate-400)', margin: '2px 0 0' }}>RRP ₾{Number(p.price).toFixed(2)}{p.inventory?.quantity !== undefined ? ` · ${p.inventory.quantity} in stock` : ''}</p>
                             </div>
-                            <span style={{ background: '#f0fdfa', color: '#0d9488', border: '1px solid #99f6e4', borderRadius: 8, padding: '5px 12px', fontSize: 12, fontWeight: 700, flexShrink: 0 }}>+ Add</span>
+                            <span style={{ background: 'var(--teal-50)', color: 'var(--teal-600)', border: '1px solid var(--teal-200)', borderRadius: 8, padding: '5px 12px', fontSize: 12, fontWeight: 700, flexShrink: 0 }}>+ Add</span>
                           </div>
                         ))}
                       </div>
                     ) : (
-                      <div style={{ padding: '14px 16px', fontSize: 12, color: '#15803d', fontWeight: 600, background: '#f0fdf4', display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div style={{ padding: '14px 16px', fontSize: 12, color: 'var(--green-700)', fontWeight: 600, background: 'var(--green-50)', display: 'flex', alignItems: 'center', gap: 8 }}>
                         <span>✓</span><span>All catalogue items are in this box</span>
                       </div>
                     )}
@@ -628,28 +628,28 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
                 )}
 
                 {boxItems.length === 0 && (
-                  <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 10, padding: '12px 16px', fontSize: 13, color: '#92400e' }}>
+                  <div style={{ background: 'var(--amber-50)', border: '1px solid var(--amber-200)', borderRadius: 10, padding: '12px 16px', fontSize: 13, color: 'var(--amber-800)' }}>
                     💡 No box items found. Go to <strong>Box Items</strong> page and toggle products as box-included first.
                   </div>
                 )}
 
                 {/* ── Gift Boxes ── */}
-                <div style={{ borderTop: '2px dashed #e2e8f0', paddingTop: 16 }}>
+                <div style={{ borderTop: '2px dashed var(--slate-200)', paddingTop: 16 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
                     <div>
-                      <span style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>🎁 Gift Boxes</span>
-                      <span style={{ fontSize: 11, color: '#94a3b8', marginLeft: 8 }}>Free bonus boxes included with this plan</span>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--slate-900)' }}>🎁 Gift Boxes</span>
+                      <span style={{ fontSize: 11, color: 'var(--slate-400)', marginLeft: 8 }}>Free bonus boxes included with this plan</span>
                     </div>
                     <button
                       onClick={addGiftBox}
-                      style={{ background: '#fdf4ff', color: '#9333ea', border: '1px solid #e9d5ff', borderRadius: 8, padding: '5px 12px', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
+                      style={{ background: 'var(--fuchsia-50)', color: 'var(--purple-600)', border: '1px solid var(--purple-200)', borderRadius: 8, padding: '5px 12px', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
                     >
                       + Add Gift Box
                     </button>
                   </div>
 
                   {(cfg.giftBoxes || []).length === 0 && (
-                    <div style={{ background: '#fdf4ff', border: '1px dashed #e9d5ff', borderRadius: 10, padding: '20px 16px', textAlign: 'center', color: '#9333ea', fontSize: 13 }}>
+                    <div style={{ background: 'var(--fuchsia-50)', border: '1px dashed var(--purple-200)', borderRadius: 10, padding: '20px 16px', textAlign: 'center', color: 'var(--purple-600)', fontSize: 13 }}>
                       No gift boxes yet — click "+ Add Gift Box" to create a free bonus box for this plan
                     </div>
                   )}
@@ -658,23 +658,23 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
                     const gTotal = gift.items.reduce((s, i) => s + i.price * i.qty, 0);
                     const gUnadded = boxItems.filter(b => !gift.items.find(i => i.productId === b.id));
                     return (
-                      <div key={gift.id} style={{ background: '#fdf4ff', border: '1px solid #e9d5ff', borderRadius: 12, overflow: 'hidden', marginBottom: 12 }}>
+                      <div key={gift.id} style={{ background: 'var(--fuchsia-50)', border: '1px solid var(--purple-200)', borderRadius: 12, overflow: 'hidden', marginBottom: 12 }}>
                         {/* Gift box header */}
-                        <div style={{ padding: '10px 14px', background: '#f5f3ff', borderBottom: '1px solid #e9d5ff', display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <div style={{ padding: '10px 14px', background: 'var(--violet-50)', borderBottom: '1px solid var(--purple-200)', display: 'flex', alignItems: 'center', gap: 10 }}>
                           <span style={{ fontSize: 16 }}>🎁</span>
                           <input
                             value={gift.label}
                             onChange={e => updateGiftBox(gift.id, { label: e.target.value })}
-                            style={{ flex: 1, border: '1px solid #e9d5ff', borderRadius: 7, padding: '4px 8px', fontSize: 13, fontWeight: 700, outline: 'none', background: '#fff', color: '#6d28d9' }}
+                            style={{ flex: 1, border: '1px solid var(--purple-200)', borderRadius: 7, padding: '4px 8px', fontSize: 13, fontWeight: 700, outline: 'none', background: 'var(--white)', color: 'var(--violet-700)' }}
                           />
                           <input
                             value={gift.description}
                             onChange={e => updateGiftBox(gift.id, { description: e.target.value })}
                             placeholder="Short description (shown to customer)"
-                            style={{ flex: 2, border: '1px solid #e9d5ff', borderRadius: 7, padding: '4px 8px', fontSize: 12, outline: 'none', background: '#fff', color: '#64748b' }}
+                            style={{ flex: 2, border: '1px solid var(--purple-200)', borderRadius: 7, padding: '4px 8px', fontSize: 12, outline: 'none', background: 'var(--white)', color: 'var(--slate-500)' }}
                           />
-                          <span style={{ fontSize: 11, color: '#9333ea', fontWeight: 600, whiteSpace: 'nowrap' }}>₾{gTotal.toFixed(2)} cost</span>
-                          <button onClick={() => removeGiftBox(gift.id)} style={{ background: '#fef2f2', color: '#dc2626', border: 'none', borderRadius: 6, padding: '3px 8px', fontSize: 11, cursor: 'pointer', fontWeight: 600, whiteSpace: 'nowrap' }}>✕ Remove</button>
+                          <span style={{ fontSize: 11, color: 'var(--purple-600)', fontWeight: 600, whiteSpace: 'nowrap' }}>₾{gTotal.toFixed(2)} cost</span>
+                          <button onClick={() => removeGiftBox(gift.id)} style={{ background: 'var(--red-50)', color: 'var(--red-600)', border: 'none', borderRadius: 6, padding: '3px 8px', fontSize: 11, cursor: 'pointer', fontWeight: 600, whiteSpace: 'nowrap' }}>✕ Remove</button>
                         </div>
 
                         {/* Gift box items */}
@@ -682,18 +682,18 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
                           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                             <tbody>
                               {gift.items.map(item => (
-                                <tr key={item.productId} style={{ borderBottom: '1px solid #f3e8ff' }}>
-                                  <td style={{ padding: '7px 14px', fontWeight: 600, color: '#1e293b' }}>{item.name}</td>
+                                <tr key={item.productId} style={{ borderBottom: '1px solid var(--purple-100)' }}>
+                                  <td style={{ padding: '7px 14px', fontWeight: 600, color: 'var(--slate-800)' }}>{item.name}</td>
                                   <td style={{ padding: '7px 8px', textAlign: 'center' }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: 4, justifyContent: 'center' }}>
-                                      <button onClick={() => setGiftItemQty(gift.id, item.productId, item.qty - 1)} style={{ width: 20, height: 20, border: '1px solid #e9d5ff', borderRadius: 4, background: '#fff', cursor: 'pointer', fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6d28d9' }}>−</button>
-                                      <span style={{ width: 20, textAlign: 'center', fontWeight: 700, color: '#6d28d9' }}>{item.qty}</span>
-                                      <button onClick={() => setGiftItemQty(gift.id, item.productId, item.qty + 1)} style={{ width: 20, height: 20, border: '1px solid #e9d5ff', borderRadius: 4, background: '#fff', cursor: 'pointer', fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6d28d9' }}>+</button>
+                                      <button onClick={() => setGiftItemQty(gift.id, item.productId, item.qty - 1)} style={{ width: 20, height: 20, border: '1px solid var(--purple-200)', borderRadius: 4, background: 'var(--white)', cursor: 'pointer', fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--violet-700)' }}>−</button>
+                                      <span style={{ width: 20, textAlign: 'center', fontWeight: 700, color: 'var(--violet-700)' }}>{item.qty}</span>
+                                      <button onClick={() => setGiftItemQty(gift.id, item.productId, item.qty + 1)} style={{ width: 20, height: 20, border: '1px solid var(--purple-200)', borderRadius: 4, background: 'var(--white)', cursor: 'pointer', fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--violet-700)' }}>+</button>
                                     </div>
                                   </td>
-                                  <td style={{ padding: '7px 14px', textAlign: 'right', fontWeight: 600, color: '#6d28d9' }}>₾{(item.price * item.qty).toFixed(2)}</td>
+                                  <td style={{ padding: '7px 14px', textAlign: 'right', fontWeight: 600, color: 'var(--violet-700)' }}>₾{(item.price * item.qty).toFixed(2)}</td>
                                   <td style={{ padding: '7px 10px', textAlign: 'center' }}>
-                                    <button onClick={() => removeGiftItem(gift.id, item.productId)} style={{ background: '#fef2f2', color: '#dc2626', border: 'none', borderRadius: 5, padding: '2px 6px', fontSize: 11, cursor: 'pointer' }}>✕</button>
+                                    <button onClick={() => removeGiftItem(gift.id, item.productId)} style={{ background: 'var(--red-50)', color: 'var(--red-600)', border: 'none', borderRadius: 5, padding: '2px 6px', fontSize: 11, cursor: 'pointer' }}>✕</button>
                                   </td>
                                 </tr>
                               ))}
@@ -703,19 +703,19 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
 
                         {/* Add items to gift box */}
                         {gUnadded.length > 0 && (
-                          <div style={{ padding: '8px 14px', borderTop: gift.items.length > 0 ? '1px solid #f3e8ff' : 'none' }}>
+                          <div style={{ padding: '8px 14px', borderTop: gift.items.length > 0 ? '1px solid var(--purple-100)' : 'none' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                              <p style={{ fontSize: 11, color: '#9333ea', fontWeight: 600, margin: 0, flex: 1 }}>Add items to this gift box:</p>
+                              <p style={{ fontSize: 11, color: 'var(--purple-600)', fontWeight: 600, margin: 0, flex: 1 }}>Add items to this gift box:</p>
                               <div style={{ position: 'relative' }}>
-                                <span style={{ position: 'absolute', left: 7, top: '50%', transform: 'translateY(-50%)', fontSize: 11, color: '#c084fc', pointerEvents: 'none' }}>🔍</span>
+                                <span style={{ position: 'absolute', left: 7, top: '50%', transform: 'translateY(-50%)', fontSize: 11, color: 'var(--purple-400)', pointerEvents: 'none' }}>🔍</span>
                                 <input
                                   value={giftSearch[gift.id] || ''}
                                   onChange={e => setGiftSearch(prev => ({ ...prev, [gift.id]: e.target.value }))}
                                   placeholder="Search..."
-                                  style={{ paddingLeft: 24, paddingRight: giftSearch[gift.id] ? 22 : 8, paddingTop: 3, paddingBottom: 3, fontSize: 11, border: '1px solid #e9d5ff', borderRadius: 7, outline: 'none', width: 120, background: '#fff' }}
+                                  style={{ paddingLeft: 24, paddingRight: giftSearch[gift.id] ? 22 : 8, paddingTop: 3, paddingBottom: 3, fontSize: 11, border: '1px solid var(--purple-200)', borderRadius: 7, outline: 'none', width: 120, background: 'var(--white)' }}
                                 />
                                 {giftSearch[gift.id] && (
-                                  <button onClick={() => setGiftSearch(prev => ({ ...prev, [gift.id]: '' }))} style={{ position: 'absolute', right: 5, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: '#c084fc', padding: 0, lineHeight: 1 }}>×</button>
+                                  <button onClick={() => setGiftSearch(prev => ({ ...prev, [gift.id]: '' }))} style={{ position: 'absolute', right: 5, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: 'var(--purple-400)', padding: 0, lineHeight: 1 }}>×</button>
                                 )}
                               </div>
                             </div>
@@ -724,9 +724,9 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
                                 <button
                                   key={p.id}
                                   onClick={() => addGiftItem(gift.id, p)}
-                                  style={{ background: '#fff', color: '#6d28d9', border: '1px solid #e9d5ff', borderRadius: 7, padding: '4px 10px', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}
-                                  onMouseEnter={e => (e.currentTarget.style.background = '#f5f3ff')}
-                                  onMouseLeave={e => (e.currentTarget.style.background = '#fff')}
+                                  style={{ background: 'var(--white)', color: 'var(--violet-700)', border: '1px solid var(--purple-200)', borderRadius: 7, padding: '4px 10px', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}
+                                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--violet-50)')}
+                                  onMouseLeave={e => (e.currentTarget.style.background = 'var(--white)')}
                                 >
                                   + {p.name}
                                 </button>
@@ -745,9 +745,9 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
                 {/* Cost breakdown card */}
-                <div style={{ background: '#f8fafc', borderRadius: 12, border: '1px solid #e8ecf0', overflow: 'hidden' }}>
-                  <div style={{ padding: '12px 16px', background: '#0f172a' }}>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>Cost Breakdown</span>
+                <div style={{ background: 'var(--slate-50)', borderRadius: 12, border: '1px solid var(--slate-200b)', overflow: 'hidden' }}>
+                  <div style={{ padding: '12px 16px', background: 'var(--slate-900)' }}>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--white)' }}>Cost Breakdown</span>
                     <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', margin: '3px 0 0' }}>
                       {boxCount > 1 ? `Box ${safeActiveBox + 1} of ${boxCount}` : `Per plan · ${boxCount} box`}
                     </p>
@@ -755,19 +755,19 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
 
                   <div style={{ padding: '0 0 0' }}>
                     {/* Products for active box */}
-                    <div style={{ padding: '12px 16px', borderBottom: '1px solid #e8ecf0' }}>
+                    <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--slate-200b)' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                        <span style={{ fontSize: 12, fontWeight: 600, color: '#64748b' }}>📦 Products ({activeItems.length})</span>
-                        <span style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>₾{activeProductTotal.toFixed(2)}</span>
+                        <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--slate-500)' }}>📦 Products ({activeItems.length})</span>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--slate-900)' }}>₾{activeProductTotal.toFixed(2)}</span>
                       </div>
                       {activeItems.map((i: PlanItem) => (
-                        <div key={i.productId} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#94a3b8', marginBottom: 2 }}>
+                        <div key={i.productId} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--slate-400)', marginBottom: 2 }}>
                           <span>{i.name} ×{i.qty}</span>
                           <span>₾{(i.price * i.qty).toFixed(2)}</span>
                         </div>
                       ))}
                       {boxCount > 1 && (
-                        <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px dashed #e2e8f0', display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#64748b' }}>
+                        <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px dashed var(--slate-200)', display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--slate-500)' }}>
                           <span>All {boxCount} boxes total</span>
                           <span style={{ fontWeight: 700 }}>₾{allProductTotal.toFixed(2)}</span>
                         </div>
@@ -775,36 +775,36 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
                     </div>
 
                     {/* Operational cost (per box) */}
-                    <div style={{ padding: '10px 16px', borderBottom: '1px solid #e8ecf0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: 12, fontWeight: 600, color: '#64748b' }}>⚙️ Operational cost {boxCount > 1 ? '(per box)' : ''}</span>
+                    <div style={{ padding: '10px 16px', borderBottom: '1px solid var(--slate-200b)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--slate-500)' }}>⚙️ Operational cost {boxCount > 1 ? '(per box)' : ''}</span>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <span style={{ fontSize: 11, color: '#94a3b8' }}>₾</span>
+                        <span style={{ fontSize: 11, color: 'var(--slate-400)' }}>₾</span>
                         <input
                           type="number" min="0" step="0.01"
                           value={cfg.operationalCost}
                           onChange={e => setCfg(c => ({ ...c, operationalCost: num(e.target.value) }))}
-                          style={{ width: 72, border: '1px solid #e2e8f0', borderRadius: 7, padding: '4px 8px', fontSize: 12, outline: 'none', textAlign: 'right' }}
+                          style={{ width: 72, border: '1px solid var(--slate-200)', borderRadius: 7, padding: '4px 8px', fontSize: 12, outline: 'none', textAlign: 'right' }}
                         />
                       </div>
                     </div>
 
                     {/* Delivery cost */}
-                    <div style={{ padding: '10px 16px', borderBottom: '1px solid #e8ecf0' }}>
+                    <div style={{ padding: '10px 16px', borderBottom: '1px solid var(--slate-200b)' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: cfg.deliveryFree ? 0 : 8 }}>
-                        <span style={{ fontSize: 12, fontWeight: 600, color: '#64748b' }}>🚚 Delivery</span>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 12, color: cfg.deliveryFree ? '#0d9488' : '#64748b', fontWeight: 600 }}>
-                          <input type="checkbox" checked={cfg.deliveryFree} onChange={e => setCfg(c => ({ ...c, deliveryFree: e.target.checked }))} style={{ accentColor: '#0d9488' }} />
+                        <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--slate-500)' }}>🚚 Delivery</span>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 12, color: cfg.deliveryFree ? 'var(--teal-600)' : 'var(--slate-500)', fontWeight: 600 }}>
+                          <input type="checkbox" checked={cfg.deliveryFree} onChange={e => setCfg(c => ({ ...c, deliveryFree: e.target.checked }))} style={{ accentColor: 'var(--teal-600)' }} />
                           Free delivery
                         </label>
                       </div>
                       {!cfg.deliveryFree && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 4, justifyContent: 'flex-end' }}>
-                          <span style={{ fontSize: 11, color: '#94a3b8' }}>₾</span>
+                          <span style={{ fontSize: 11, color: 'var(--slate-400)' }}>₾</span>
                           <input
                             type="number" min="0" step="0.01"
                             value={cfg.deliveryCost}
                             onChange={e => setCfg(c => ({ ...c, deliveryCost: num(e.target.value) }))}
-                            style={{ width: 72, border: '1px solid #e2e8f0', borderRadius: 7, padding: '4px 8px', fontSize: 12, outline: 'none', textAlign: 'right' }}
+                            style={{ width: 72, border: '1px solid var(--slate-200)', borderRadius: 7, padding: '4px 8px', fontSize: 12, outline: 'none', textAlign: 'right' }}
                           />
                         </div>
                       )}
@@ -812,15 +812,15 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
 
                     {/* Gift boxes cost */}
                     {(cfg.giftBoxes || []).length > 0 && (
-                      <div style={{ padding: '10px 16px', borderBottom: '1px solid #e8ecf0', background: '#fdf4ff' }}>
+                      <div style={{ padding: '10px 16px', borderBottom: '1px solid var(--slate-200b)', background: 'var(--fuchsia-50)' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                          <span style={{ fontSize: 12, fontWeight: 600, color: '#9333ea' }}>🎁 Gift Boxes ({cfg.giftBoxes.length})</span>
-                          <span style={{ fontSize: 13, fontWeight: 700, color: '#9333ea' }}>₾{giftBoxTotal.toFixed(2)}</span>
+                          <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--purple-600)' }}>🎁 Gift Boxes ({cfg.giftBoxes.length})</span>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--purple-600)' }}>₾{giftBoxTotal.toFixed(2)}</span>
                         </div>
                         {cfg.giftBoxes.map(g => {
                           const gc = g.items.reduce((s, i) => s + i.price * i.qty, 0);
                           return (
-                            <div key={g.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#a855f7', marginBottom: 2 }}>
+                            <div key={g.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--purple-500)', marginBottom: 2 }}>
                               <span>{g.label} ({g.items.length} items)</span>
                               <span>₾{gc.toFixed(2)}</span>
                             </div>
@@ -830,40 +830,40 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
                     )}
 
                     {/* Total cost */}
-                    <div style={{ padding: '10px 16px', borderBottom: '2px solid #0f172a', background: '#f1f5f9' }}>
+                    <div style={{ padding: '10px 16px', borderBottom: '2px solid var(--slate-900)', background: 'var(--slate-100)' }}>
                       {boxCount > 1 && (
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#64748b', marginBottom: 4 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--slate-500)', marginBottom: 4 }}>
                           <span>Box {safeActiveBox + 1} cost</span>
                           <span style={{ fontWeight: 600 }}>₾{activeBoxCost.toFixed(2)}</span>
                         </div>
                       )}
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: 12, fontWeight: 700, color: '#0f172a' }}>Total cost {(cfg.giftBoxes || []).length > 0 ? '(incl. gifts)' : boxCount > 1 ? '(all boxes)' : ''}</span>
-                        <span style={{ fontSize: 14, fontWeight: 800, color: '#0f172a' }}>₾{totalCost.toFixed(2)}</span>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--slate-900)' }}>Total cost {(cfg.giftBoxes || []).length > 0 ? '(incl. gifts)' : boxCount > 1 ? '(all boxes)' : ''}</span>
+                        <span style={{ fontSize: 14, fontWeight: 800, color: 'var(--slate-900)' }}>₾{totalCost.toFixed(2)}</span>
                       </div>
                       {boxCount > 1 && (
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#64748b', marginTop: 3 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--slate-500)', marginTop: 3 }}>
                           <span>Avg per box</span><span>₾{(totalCost / boxCount).toFixed(2)}</span>
                         </div>
                       )}
                     </div>
 
                     {/* Selling price */}
-                    <div style={{ padding: '10px 16px', borderBottom: '1px solid #e8ecf0' }}>
+                    <div style={{ padding: '10px 16px', borderBottom: '1px solid var(--slate-200b)' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: 12, fontWeight: 600, color: '#64748b' }}>Total price</span>
-                        <span style={{ fontSize: 13, fontWeight: 800, color: pricingTotal > 0 ? '#0f172a' : '#94a3b8' }}>
+                        <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--slate-500)' }}>Total price</span>
+                        <span style={{ fontSize: 13, fontWeight: 800, color: pricingTotal > 0 ? 'var(--slate-900)' : 'var(--slate-400)' }}>
                           {pricingTotal > 0 ? `₾${pricingTotal.toFixed(2)}` : '—'}
                         </span>
                       </div>
                       {pricingDiscount > 0 && (
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#0d9488', marginTop: 2 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--teal-600)', marginTop: 2 }}>
                           <span>After {pricingDiscount}% discount</span>
                           <span>Save ₾{pricingSavings.toFixed(2)}</span>
                         </div>
                       )}
                       {boxCount > 1 && (
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#64748b', marginTop: 3 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--slate-500)', marginTop: 3 }}>
                           <span>Per box</span><span>₾{perBoxSell.toFixed(2)}</span>
                         </div>
                       )}
@@ -896,30 +896,30 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
                 </div>
 
                 {/* Selling price summary */}
-                <div style={{ background: '#f0fdfa', borderRadius: 10, border: '1px solid #99f6e4', padding: '12px 14px' }}>
-                  <p style={{ fontSize: 11, fontWeight: 700, color: '#0d9488', margin: '0 0 8px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>What customer sees</p>
-                  <p style={{ fontSize: 22, fontWeight: 800, color: '#0f172a', margin: 0 }}>₾{pricingTotal.toFixed(2)}</p>
-                  <p style={{ fontSize: 12, color: '#64748b', margin: '3px 0 0' }}>
+                <div style={{ background: 'var(--teal-50)', borderRadius: 10, border: '1px solid var(--teal-200)', padding: '12px 14px' }}>
+                  <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--teal-600)', margin: '0 0 8px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>What customer sees</p>
+                  <p style={{ fontSize: 22, fontWeight: 800, color: 'var(--slate-900)', margin: 0 }}>₾{pricingTotal.toFixed(2)}</p>
+                  <p style={{ fontSize: 12, color: 'var(--slate-500)', margin: '3px 0 0' }}>
                     {pricingMonths} month{pricingMonths > 1 ? 's' : ''} · {boxCount} box{boxCount > 1 ? 'es' : ''} · {cfg.deliveryFree ? 'Free delivery' : `₾${Number(cfg.deliveryCost).toFixed(2)} delivery`}
                   </p>
-                  {pricingEffectiveMonthly > 0 && <p style={{ fontSize: 12, color: '#64748b', margin: '3px 0 0' }}>₾{pricingEffectiveMonthly.toFixed(2)} / month</p>}
-                  {pricingSavings > 0 && <p style={{ fontSize: 12, color: '#0d9488', margin: '3px 0 0', fontWeight: 600 }}>You save ₾{pricingSavings.toFixed(2)} ({pricingDiscount}%)</p>}
+                  {pricingEffectiveMonthly > 0 && <p style={{ fontSize: 12, color: 'var(--slate-500)', margin: '3px 0 0' }}>₾{pricingEffectiveMonthly.toFixed(2)} / month</p>}
+                  {pricingSavings > 0 && <p style={{ fontSize: 12, color: 'var(--teal-600)', margin: '3px 0 0', fontWeight: 600 }}>You save ₾{pricingSavings.toFixed(2)} ({pricingDiscount}%)</p>}
                   {(cfg.giftBoxes || []).map(g => (
-                    <p key={g.id} style={{ fontSize: 12, color: '#9333ea', margin: '3px 0 0', fontWeight: 600 }}>
+                    <p key={g.id} style={{ fontSize: 12, color: 'var(--purple-600)', margin: '3px 0 0', fontWeight: 600 }}>
                       🎁 {g.label}{g.description ? ` — ${g.description}` : ''}
                     </p>
                   ))}
                 </div>
               </div>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16, paddingTop: 16, borderTop: '1px solid #e8ecf0' }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--slate-200b)' }}>
               <button onClick={() => save()} disabled={saving}
-                onMouseEnter={e => { if (!saving) (e.currentTarget as HTMLButtonElement).style.background = '#0f766e'; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = '#0d9488'; }}
+                onMouseEnter={e => { if (!saving) (e.currentTarget as HTMLButtonElement).style.background = 'var(--teal-700)'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--teal-600)'; }}
                 onMouseDown={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(0.95)'; }}
                 onMouseUp={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)'; }}
                 onMouseOut={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)'; }}
-                style={{ background: '#0d9488', color: '#fff', border: 'none', borderRadius: 9, padding: '8px 22px', fontSize: 13, fontWeight: 700, cursor: saving ? 'default' : 'pointer', opacity: saving ? 0.6 : 1, transition: 'background 0.15s, transform 0.1s' }}>
+                style={{ background: 'var(--teal-600)', color: 'var(--white)', border: 'none', borderRadius: 9, padding: '8px 22px', fontSize: 13, fontWeight: 700, cursor: saving ? 'default' : 'pointer', opacity: saving ? 0.6 : 1, transition: 'background 0.15s, transform 0.1s' }}>
                 {saving ? 'Saving…' : '💾 Save Box Builder'}
               </button>
             </div>
@@ -929,9 +929,9 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
           {tab === 'form' && (
             <div style={{ maxWidth: 600 }}>
               {formErrors.kaName && (
-                <div onClick={() => setLang('ka')} style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#fef3c7', border: '1.5px solid #fcd34d', borderRadius: 10, padding: '10px 14px', cursor: 'pointer', marginBottom: 12 }}>
-                  <svg width="14" height="14" fill="none" stroke="#d97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-                  <span style={{ fontSize: 12, fontWeight: 600, color: '#92400e' }}>Georgian translation is incomplete — <u>click to fill it in</u></span>
+                <div onClick={() => setLang('ka')} style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--amber-100)', border: '1.5px solid var(--amber-300)', borderRadius: 10, padding: '10px 14px', cursor: 'pointer', marginBottom: 12 }}>
+                  <svg width="14" height="14" fill="none" stroke="var(--amber-600)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--amber-800)' }}>Georgian translation is incomplete — <u>click to fill it in</u></span>
                 </div>
               )}
               <LangTabs lang={lang} onChange={setLang} />
@@ -947,11 +947,11 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
                       { label: 'Sort Order', key: 'sortOrder', type: 'number', placeholder: '0' },
                     ].map((f: any) => (
                       <FormField key={f.key} label={f.label} required={['name', 'slug', 'boxCount'].includes(f.key)} error={formErrors[f.key]}>
-                        <input type={f.type} value={form[f.key] ?? ''} onChange={e => { setForm((x: any) => ({ ...x, [f.key]: e.target.value })); setFormErrors((e2: any) => ({ ...e2, [f.key]: '' })); }} placeholder={f.placeholder} style={{ ...inputClass(), ...(formErrors[f.key] ? { borderColor: '#ef4444' } : {}) }} />
+                        <input type={f.type} value={form[f.key] ?? ''} onChange={e => { setForm((x: any) => ({ ...x, [f.key]: e.target.value })); setFormErrors((e2: any) => ({ ...e2, [f.key]: '' })); }} placeholder={f.placeholder} style={{ ...inputClass(), ...(formErrors[f.key] ? { borderColor: 'var(--red-500)' } : {}) }} />
                       </FormField>
                     ))}
                     <div>
-                      <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 6 }}>Badge</label>
+                      <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--slate-700b)', marginBottom: 6 }}>Badge</label>
                       <CustomSelect
                         value={form.badge || ''}
                         onChange={v => { if (v === '__new__') { setShowNewBadge(true); } else { setForm((x: any) => ({ ...x, badge: v })); } }}
@@ -966,7 +966,7 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
 
                       {/* Inline new-badge creator */}
                       {showNewBadge && (
-                        <div style={{ marginTop: 8, background: '#f8fafc', border: '1.5px solid #e2e8f0', borderRadius: 10, padding: '10px 12px' }}>
+                        <div style={{ marginTop: 8, background: 'var(--slate-50)', border: '1.5px solid var(--slate-200)', borderRadius: 10, padding: '10px 12px' }}>
                           <div style={{ display: 'flex', gap: 6 }}>
                             <input
                               autoFocus
@@ -984,7 +984,7 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
                                 if (e.key === 'Escape') { setShowNewBadge(false); setNewBadgeInput(''); }
                               }}
                               placeholder="e.g. Flash Sale"
-                              style={{ padding: '6px 10px', fontSize: 12, border: '1.5px solid #e2e8f0', borderRadius: 8, outline: 'none', background: '#fff', flex: 1, minWidth: 0 }}
+                              style={{ padding: '6px 10px', fontSize: 12, border: '1.5px solid var(--slate-200)', borderRadius: 8, outline: 'none', background: 'var(--white)', flex: 1, minWidth: 0 }}
                             />
                             <button
                               type="button"
@@ -997,22 +997,22 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
                                 setForm((x: any) => ({ ...x, badge: label }));
                                 setNewBadgeInput(''); setShowNewBadge(false);
                               }}
-                              style={{ padding: '6px 12px', fontSize: 12, fontWeight: 700, borderRadius: 8, border: 'none', background: '#0d9488', color: '#fff', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                              style={{ padding: '6px 12px', fontSize: 12, fontWeight: 700, borderRadius: 8, border: 'none', background: 'var(--teal-600)', color: 'var(--white)', cursor: 'pointer', whiteSpace: 'nowrap' }}
                             >+ Add</button>
                             <button type="button" onClick={() => { setShowNewBadge(false); setNewBadgeInput(''); }}
-                              style={{ padding: '6px 10px', fontSize: 12, fontWeight: 600, borderRadius: 8, border: '1.5px solid #e2e8f0', background: '#fff', color: '#64748b', cursor: 'pointer' }}>
+                              style={{ padding: '6px 10px', fontSize: 12, fontWeight: 600, borderRadius: 8, border: '1.5px solid var(--slate-200)', background: 'var(--white)', color: 'var(--slate-500)', cursor: 'pointer' }}>
                               ✕
                             </button>
                           </div>
                         </div>
                       )}
-                      <p style={{ fontSize: 11, color: '#94a3b8', margin: '5px 0 0' }}>One badge per label across all plans — assigning it here removes it from any other plan.</p>
+                      <p style={{ fontSize: 11, color: 'var(--slate-400)', margin: '5px 0 0' }}>One badge per label across all plans — assigning it here removes it from any other plan.</p>
                     </div>
                   </div>
 
                   {/* ── Pricing calculator ── */}
-                  <div style={{ background: '#f8fafc', borderRadius: 14, border: '1px solid #e2e8f0', padding: '20px 20px 16px', marginBottom: 16 }}>
-                    <p style={{ fontSize: 12, fontWeight: 700, color: '#64748b', margin: '0 0 14px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Pricing</p>
+                  <div style={{ background: 'var(--slate-50)', borderRadius: 14, border: '1px solid var(--slate-200)', padding: '20px 20px 16px', marginBottom: 16 }}>
+                    <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--slate-500)', margin: '0 0 14px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Pricing</p>
 
                     {/* Inputs row */}
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 16 }}>
@@ -1021,7 +1021,7 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
                           type="number" min="1" value={form.durationValue ?? ''}
                           onChange={e => { setForm((x: any) => ({ ...x, durationValue: e.target.value })); setFormErrors((e2: any) => ({ ...e2, durationValue: '' })); }}
                           placeholder="3"
-                          style={{ ...inputClass(), ...(formErrors.durationValue ? { borderColor: '#ef4444' } : {}) }}
+                          style={{ ...inputClass(), ...(formErrors.durationValue ? { borderColor: 'var(--red-500)' } : {}) }}
                         />
                       </FormField>
                       <FormField label="Monthly price (₾)" required error={formErrors.monthlyPrice}>
@@ -1029,7 +1029,7 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
                           type="number" min="0" step="0.01" value={form.monthlyPrice ?? ''}
                           onChange={e => { setForm((x: any) => ({ ...x, monthlyPrice: e.target.value })); setFormErrors((e2: any) => ({ ...e2, monthlyPrice: '' })); }}
                           placeholder="50.00"
-                          style={{ ...inputClass(), ...(formErrors.monthlyPrice ? { borderColor: '#ef4444' } : {}) }}
+                          style={{ ...inputClass(), ...(formErrors.monthlyPrice ? { borderColor: 'var(--red-500)' } : {}) }}
                         />
                       </FormField>
                       <FormField label="Discount %">
@@ -1049,9 +1049,9 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
                         { label: 'Effective / month', value: pricingEffectiveMonthly > 0 ? `₾${pricingEffectiveMonthly.toFixed(2)}` : '—', highlight: false },
                         { label: 'Customer saves', value: pricingSavings > 0 ? `₾${pricingSavings.toFixed(2)}` : pricingDiscount > 0 ? '₾0.00' : '—', highlight: false, accent: pricingSavings > 0 },
                       ].map(({ label, value, highlight, accent }) => (
-                        <div key={label} style={{ background: highlight ? '#f0fdfa' : '#fff', border: `1px solid ${highlight ? '#99f6e4' : '#e2e8f0'}`, borderRadius: 10, padding: '10px 14px' }}>
-                          <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</div>
-                          <div style={{ fontSize: 18, fontWeight: 800, color: accent ? '#0d9488' : highlight ? '#0d9488' : '#334155' }}>{value}</div>
+                        <div key={label} style={{ background: highlight ? 'var(--teal-50)' : 'var(--white)', border: `1px solid ${highlight ? 'var(--teal-200)' : 'var(--slate-200)'}`, borderRadius: 10, padding: '10px 14px' }}>
+                          <div style={{ fontSize: 11, color: 'var(--slate-400)', fontWeight: 600, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</div>
+                          <div style={{ fontSize: 18, fontWeight: 800, color: accent ? 'var(--teal-600)' : highlight ? 'var(--teal-600)' : 'var(--slate-700)' }}>{value}</div>
                         </div>
                       ))}
                     </div>
@@ -1078,19 +1078,19 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
                       { label: 'Sort Order', value: String(form.sortOrder ?? '') },
                     ].map(({ label, value }) => (
                       <FormField key={label} label={label}>
-                        <input value={value} readOnly style={{ ...inputClass(), background: '#f8fafc', color: '#94a3b8', cursor: 'not-allowed' }} />
+                        <input value={value} readOnly style={{ ...inputClass(), background: 'var(--slate-50)', color: 'var(--slate-400)', cursor: 'not-allowed' }} />
                       </FormField>
                     ))}
                     {/* Badge read-only */}
                     <div>
-                      <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 6 }}>Badge</label>
-                      <input value={form.badge || 'No badge'} readOnly style={{ ...inputClass(), background: '#f8fafc', color: '#94a3b8', cursor: 'not-allowed' }} />
+                      <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--slate-700b)', marginBottom: 6 }}>Badge</label>
+                      <input value={form.badge || 'No badge'} readOnly style={{ ...inputClass(), background: 'var(--slate-50)', color: 'var(--slate-400)', cursor: 'not-allowed' }} />
                     </div>
                   </div>
 
                   {/* ── Pricing (read-only mirrors) ── */}
-                  <div style={{ background: '#f8fafc', borderRadius: 14, border: '1px solid #e2e8f0', padding: '20px 20px 16px', marginBottom: 16 }}>
-                    <p style={{ fontSize: 12, fontWeight: 700, color: '#64748b', margin: '0 0 14px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Pricing</p>
+                  <div style={{ background: 'var(--slate-50)', borderRadius: 14, border: '1px solid var(--slate-200)', padding: '20px 20px 16px', marginBottom: 16 }}>
+                    <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--slate-500)', margin: '0 0 14px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Pricing</p>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 16 }}>
                       {[
                         { label: 'Months', value: String(form.durationValue ?? '') },
@@ -1098,7 +1098,7 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
                         { label: 'Discount %', value: form.discountPercent ? String(form.discountPercent) : '0' },
                       ].map(({ label, value }) => (
                         <FormField key={label} label={label}>
-                          <input value={value} readOnly style={{ ...inputClass(), background: '#f8fafc', color: '#94a3b8', cursor: 'not-allowed' }} />
+                          <input value={value} readOnly style={{ ...inputClass(), background: 'var(--slate-50)', color: 'var(--slate-400)', cursor: 'not-allowed' }} />
                         </FormField>
                       ))}
                     </div>
@@ -1108,9 +1108,9 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
                         { label: 'Effective / month', value: pricingEffectiveMonthly > 0 ? `₾${pricingEffectiveMonthly.toFixed(2)}` : '—', highlight: false },
                         { label: 'Customer saves', value: pricingSavings > 0 ? `₾${pricingSavings.toFixed(2)}` : pricingDiscount > 0 ? '₾0.00' : '—', highlight: false, accent: pricingSavings > 0 },
                       ].map(({ label, value, highlight, accent }) => (
-                        <div key={label} style={{ background: highlight ? '#f0fdfa' : '#fff', border: `1px solid ${highlight ? '#99f6e4' : '#e2e8f0'}`, borderRadius: 10, padding: '10px 14px' }}>
-                          <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</div>
-                          <div style={{ fontSize: 18, fontWeight: 800, color: (accent as any) ? '#0d9488' : highlight ? '#0d9488' : '#334155' }}>{value}</div>
+                        <div key={label} style={{ background: highlight ? 'var(--teal-50)' : 'var(--white)', border: `1px solid ${highlight ? 'var(--teal-200)' : 'var(--slate-200)'}`, borderRadius: 10, padding: '10px 14px' }}>
+                          <div style={{ fontSize: 11, color: 'var(--slate-400)', fontWeight: 600, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</div>
+                          <div style={{ fontSize: 18, fontWeight: 800, color: (accent as any) ? 'var(--teal-600)' : highlight ? 'var(--teal-600)' : 'var(--slate-700)' }}>{value}</div>
                         </div>
                       ))}
                     </div>
@@ -1119,7 +1119,7 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
                   {/* ── Georgian text fields (editable) ── */}
                   <div style={{ marginBottom: 16 }}>
                     <FormField label="Name" required error={formErrors.kaName}>
-                      <input value={ka.name} onChange={e => { setKa((k: any) => ({ ...k, name: e.target.value })); setFormErrors((e2: any) => ({ ...e2, kaName: '' })); }} placeholder="სახელი" style={{ ...inputClass(), ...(formErrors.kaName ? { borderColor: '#ef4444' } : {}) }} />
+                      <input value={ka.name} onChange={e => { setKa((k: any) => ({ ...k, name: e.target.value })); setFormErrors((e2: any) => ({ ...e2, kaName: '' })); }} placeholder="სახელი" style={{ ...inputClass(), ...(formErrors.kaName ? { borderColor: 'var(--red-500)' } : {}) }} />
                     </FormField>
                   </div>
                   <div style={{ marginBottom: 16 }}>
@@ -1137,55 +1137,55 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
 
 
               {formErrors.kaName && (
-                <div onClick={() => setLang('ka')} style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#fef3c7', border: '1.5px solid #fcd34d', borderRadius: 10, padding: '10px 14px', cursor: 'pointer', marginBottom: 12 }}>
-                  <svg width="14" height="14" fill="none" stroke="#d97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-                  <span style={{ fontSize: 12, fontWeight: 600, color: '#92400e' }}>Georgian translation is incomplete — <u>click to fill it in</u></span>
+                <div onClick={() => setLang('ka')} style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--amber-100)', border: '1.5px solid var(--amber-300)', borderRadius: 10, padding: '10px 14px', cursor: 'pointer', marginBottom: 12 }}>
+                  <svg width="14" height="14" fill="none" stroke="var(--amber-600)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--amber-800)' }}>Georgian translation is incomplete — <u>click to fill it in</u></span>
                 </div>
               )}
               {/* Delivery */}
-              <div style={{ background: '#f8fafc', borderRadius: 12, border: '1px solid #e8ecf0', padding: '18px 20px', marginBottom: 20 }}>
-                <p style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', margin: '0 0 4px' }}>🚚 Delivery</p>
-                <p style={{ fontSize: 12, color: '#94a3b8', margin: '0 0 14px' }}>Set delivery behaviour for subscribers on this plan.</p>
+              <div style={{ background: 'var(--slate-50)', borderRadius: 12, border: '1px solid var(--slate-200b)', padding: '18px 20px', marginBottom: 20 }}>
+                <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--slate-900)', margin: '0 0 4px' }}>🚚 Delivery</p>
+                <p style={{ fontSize: 12, color: 'var(--slate-400)', margin: '0 0 14px' }}>Set delivery behaviour for subscribers on this plan.</p>
                 <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: '#1e293b' }}>
-                    <input type="checkbox" checked={cfg.deliveryFree} onChange={e => setCfg(c => ({ ...c, deliveryFree: e.target.checked }))} style={{ width: 16, height: 16, accentColor: '#0d9488' }} />
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: 'var(--slate-800)' }}>
+                    <input type="checkbox" checked={cfg.deliveryFree} onChange={e => setCfg(c => ({ ...c, deliveryFree: e.target.checked }))} style={{ width: 16, height: 16, accentColor: 'var(--teal-600)' }} />
                     <span><strong>Free delivery</strong> for all deliveries on this plan</span>
                   </label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: '#1e293b' }}>
-                    <input type="checkbox" checked={form.deliveryIncluded} onChange={e => setForm((x: any) => ({ ...x, deliveryIncluded: e.target.checked }))} style={{ width: 16, height: 16, accentColor: '#0d9488' }} />
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: 'var(--slate-800)' }}>
+                    <input type="checkbox" checked={form.deliveryIncluded} onChange={e => setForm((x: any) => ({ ...x, deliveryIncluded: e.target.checked }))} style={{ width: 16, height: 16, accentColor: 'var(--teal-600)' }} />
                     <span>Show "Delivery included" badge on plan card</span>
                   </label>
                 </div>
                 {!cfg.deliveryFree && (
                   <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <label style={{ fontSize: 13, color: '#374151', fontWeight: 600 }}>Fixed delivery cost per box: ₾</label>
-                    <input type="number" min="0" step="0.01" value={cfg.deliveryCost} onChange={e => setCfg(c => ({ ...c, deliveryCost: num(e.target.value) }))} style={{ width: 80, border: '1px solid #e2e8f0', borderRadius: 9, padding: '7px 10px', fontSize: 13, outline: 'none' }} />
+                    <label style={{ fontSize: 13, color: 'var(--slate-700b)', fontWeight: 600 }}>Fixed delivery cost per box: ₾</label>
+                    <input type="number" min="0" step="0.01" value={cfg.deliveryCost} onChange={e => setCfg(c => ({ ...c, deliveryCost: num(e.target.value) }))} style={{ width: 80, border: '1px solid var(--slate-200)', borderRadius: 9, padding: '7px 10px', fontSize: 13, outline: 'none' }} />
                   </div>
                 )}
               </div>
 
               <div style={{ display: 'flex', gap: 12, marginBottom: 24, flexWrap: 'wrap' }}>
-                <label style={{ flex: 1, minWidth: 220, display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer', background: form.autoRenewal ? '#f0fdf4' : '#f8fafc', border: `1.5px solid ${form.autoRenewal ? '#86efac' : '#e2e8f0'}`, borderRadius: 12, padding: '12px 14px', transition: 'all 0.15s' }}>
-                  <input type="checkbox" checked={form.autoRenewal} onChange={e => setForm((x: any) => ({ ...x, autoRenewal: e.target.checked }))} style={{ width: 16, height: 16, accentColor: '#0d9488', marginTop: 2, flexShrink: 0 }} />
+                <label style={{ flex: 1, minWidth: 220, display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer', background: form.autoRenewal ? 'var(--green-50)' : 'var(--slate-50)', border: `1.5px solid ${form.autoRenewal ? 'var(--green-300)' : 'var(--slate-200)'}`, borderRadius: 12, padding: '12px 14px', transition: 'all 0.15s' }}>
+                  <input type="checkbox" checked={form.autoRenewal} onChange={e => setForm((x: any) => ({ ...x, autoRenewal: e.target.checked }))} style={{ width: 16, height: 16, accentColor: 'var(--teal-600)', marginTop: 2, flexShrink: 0 }} />
                   <div>
-                    <p style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', margin: '0 0 3px' }}>🔄 Auto Renewal</p>
-                    <p style={{ fontSize: 11, color: '#64748b', margin: 0, lineHeight: 1.5 }}>When enabled, customers on this plan are automatically charged and receive the next box when their current period ends — no action needed from them. They can turn it off anytime from their account.</p>
+                    <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--slate-900)', margin: '0 0 3px' }}>🔄 Auto Renewal</p>
+                    <p style={{ fontSize: 11, color: 'var(--slate-500)', margin: 0, lineHeight: 1.5 }}>When enabled, customers on this plan are automatically charged and receive the next box when their current period ends — no action needed from them. They can turn it off anytime from their account.</p>
                   </div>
                 </label>
-                <label style={{ flex: 1, minWidth: 220, display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer', background: form.isActive ? '#f0fdf4' : '#f8fafc', border: `1.5px solid ${form.isActive ? '#86efac' : '#e2e8f0'}`, borderRadius: 12, padding: '12px 14px', transition: 'all 0.15s' }}>
-                  <input type="checkbox" checked={form.isActive} onChange={e => setForm((x: any) => ({ ...x, isActive: e.target.checked }))} style={{ width: 16, height: 16, accentColor: '#0d9488', marginTop: 2, flexShrink: 0 }} />
+                <label style={{ flex: 1, minWidth: 220, display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer', background: form.isActive ? 'var(--green-50)' : 'var(--slate-50)', border: `1.5px solid ${form.isActive ? 'var(--green-300)' : 'var(--slate-200)'}`, borderRadius: 12, padding: '12px 14px', transition: 'all 0.15s' }}>
+                  <input type="checkbox" checked={form.isActive} onChange={e => setForm((x: any) => ({ ...x, isActive: e.target.checked }))} style={{ width: 16, height: 16, accentColor: 'var(--teal-600)', marginTop: 2, flexShrink: 0 }} />
                   <div>
-                    <p style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', margin: '0 0 3px' }}>✅ Active</p>
-                    <p style={{ fontSize: 11, color: '#64748b', margin: 0, lineHeight: 1.5 }}>Makes this plan visible and purchasable on the website. Disable to hide the plan from customers without deleting it.</p>
+                    <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--slate-900)', margin: '0 0 3px' }}>✅ Active</p>
+                    <p style={{ fontSize: 11, color: 'var(--slate-500)', margin: 0, lineHeight: 1.5 }}>Makes this plan visible and purchasable on the website. Disable to hide the plan from customers without deleting it.</p>
                   </div>
                 </label>
                 <button onClick={() => save()} disabled={saving}
-                  onMouseEnter={e => { if (!saving) (e.currentTarget as HTMLButtonElement).style.background = '#0f766e'; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = '#0d9488'; }}
+                  onMouseEnter={e => { if (!saving) (e.currentTarget as HTMLButtonElement).style.background = 'var(--teal-700)'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--teal-600)'; }}
                   onMouseDown={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(0.95)'; }}
                   onMouseUp={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)'; }}
                   onMouseOut={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)'; }}
-                  style={{ marginLeft: 'auto', background: '#0d9488', color: '#fff', border: 'none', borderRadius: 9, padding: '8px 22px', fontSize: 13, fontWeight: 700, cursor: saving ? 'default' : 'pointer', opacity: saving ? 0.6 : 1, transition: 'background 0.15s, transform 0.1s' }}>
+                  style={{ marginLeft: 'auto', background: 'var(--teal-600)', color: 'var(--white)', border: 'none', borderRadius: 9, padding: '8px 22px', fontSize: 13, fontWeight: 700, cursor: saving ? 'default' : 'pointer', opacity: saving ? 0.6 : 1, transition: 'background 0.15s, transform 0.1s' }}>
                   {saving ? 'Saving…' : '💾 Save Settings'}
                 </button>
               </div>
@@ -1197,33 +1197,33 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
             <div style={{ display: 'flex', flexDirection: 'column', gap: 20, maxWidth: 600 }}>
 
               {/* Referral discount */}
-              <div style={{ background: '#f8fafc', borderRadius: 12, border: '1px solid #e8ecf0', padding: '18px 20px' }}>
-                <p style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', margin: '0 0 4px' }}>🔗 Referral Discount</p>
-                <p style={{ fontSize: 12, color: '#94a3b8', margin: '0 0 16px' }}>Discount automatically applied when a new customer signs up via a referral link and buys this plan.</p>
+              <div style={{ background: 'var(--slate-50)', borderRadius: 12, border: '1px solid var(--slate-200b)', padding: '18px 20px' }}>
+                <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--slate-900)', margin: '0 0 4px' }}>🔗 Referral Discount</p>
+                <p style={{ fontSize: 12, color: 'var(--slate-400)', margin: '0 0 16px' }}>Discount automatically applied when a new customer signs up via a referral link and buys this plan.</p>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <label style={{ fontSize: 13, color: '#374151', fontWeight: 600 }}>Discount %</label>
+                  <label style={{ fontSize: 13, color: 'var(--slate-700b)', fontWeight: 600 }}>Discount %</label>
                   <input
                     type="number" min="0" max="100" step="1"
                     value={cfg.referralDiscountPercent}
                     onChange={e => setCfg(c => ({ ...c, referralDiscountPercent: num(e.target.value) }))}
-                    style={{ width: 80, border: '1px solid #e2e8f0', borderRadius: 9, padding: '8px 12px', fontSize: 14, fontWeight: 700, outline: 'none', textAlign: 'center' }}
+                    style={{ width: 80, border: '1px solid var(--slate-200)', borderRadius: 9, padding: '8px 12px', fontSize: 14, fontWeight: 700, outline: 'none', textAlign: 'center' }}
                   />
-                  <span style={{ fontSize: 13, color: '#64748b' }}>% off first payment</span>
+                  <span style={{ fontSize: 13, color: 'var(--slate-500)' }}>% off first payment</span>
                 </div>
                 {cfg.referralDiscountPercent > 0 && (
-                  <div style={{ marginTop: 12, background: '#f0fdfa', borderRadius: 8, padding: '8px 12px', fontSize: 12, color: '#0d9488' }}>
+                  <div style={{ marginTop: 12, background: 'var(--teal-50)', borderRadius: 8, padding: '8px 12px', fontSize: 12, color: 'var(--teal-600)' }}>
                     Customer pays ₾{(pricingTotal * (1 - cfg.referralDiscountPercent / 100)).toFixed(2)} instead of ₾{pricingTotal.toFixed(2)} on first order via referral
                   </div>
                 )}
               </div>
 
               {/* Promo codes */}
-              <div style={{ background: '#f8fafc', borderRadius: 12, border: '1px solid #e8ecf0', padding: '18px 20px' }}>
-                <p style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', margin: '0 0 4px' }}>🏷️ Promo Codes</p>
-                <p style={{ fontSize: 12, color: '#94a3b8', margin: '0 0 16px' }}>Active coupons that can be applied to this plan. Toggle to allow/block each coupon.</p>
+              <div style={{ background: 'var(--slate-50)', borderRadius: 12, border: '1px solid var(--slate-200b)', padding: '18px 20px' }}>
+                <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--slate-900)', margin: '0 0 4px' }}>🏷️ Promo Codes</p>
+                <p style={{ fontSize: 12, color: 'var(--slate-400)', margin: '0 0 16px' }}>Active coupons that can be applied to this plan. Toggle to allow/block each coupon.</p>
 
                 {coupons.length === 0 ? (
-                  <div style={{ fontSize: 13, color: '#94a3b8', padding: '12px 0' }}>
+                  <div style={{ fontSize: 13, color: 'var(--slate-400)', padding: '12px 0' }}>
                     No active coupons yet. Create them in the <strong>Coupons</strong> page first.
                   </div>
                 ) : (
@@ -1231,19 +1231,19 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
                     {coupons.map((c: any) => {
                       const linked = cfg.couponIds.includes(c.id);
                       return (
-                        <div key={c.id} onClick={() => toggleCoupon(c.id)} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 10, border: linked ? '2px solid #0d9488' : '1px solid #e2e8f0', background: linked ? '#f0fdfa' : '#fff', cursor: 'pointer', transition: 'all 0.15s' }}>
-                          <div style={{ width: 20, height: 20, borderRadius: 5, border: linked ? 'none' : '2px solid #e2e8f0', background: linked ? '#0d9488' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                            {linked && <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M2 5.5l2.5 2.5L9 3" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                        <div key={c.id} onClick={() => toggleCoupon(c.id)} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 10, border: linked ? '2px solid var(--teal-600)' : '1px solid var(--slate-200)', background: linked ? 'var(--teal-50)' : 'var(--white)', cursor: 'pointer', transition: 'all 0.15s' }}>
+                          <div style={{ width: 20, height: 20, borderRadius: 5, border: linked ? 'none' : '2px solid var(--slate-200)', background: linked ? 'var(--teal-600)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            {linked && <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M2 5.5l2.5 2.5L9 3" stroke="var(--white)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>}
                           </div>
                           <div style={{ flex: 1 }}>
-                            <span style={{ fontFamily: 'monospace', fontWeight: 800, color: '#0f172a', fontSize: 13, background: '#f1f5f9', padding: '2px 8px', borderRadius: 5 }}>{c.code}</span>
-                            {c.description && <span style={{ fontSize: 12, color: '#94a3b8', marginLeft: 8 }}>{c.description}</span>}
+                            <span style={{ fontFamily: 'monospace', fontWeight: 800, color: 'var(--slate-900)', fontSize: 13, background: 'var(--slate-100)', padding: '2px 8px', borderRadius: 5 }}>{c.code}</span>
+                            {c.description && <span style={{ fontSize: 12, color: 'var(--slate-400)', marginLeft: 8 }}>{c.description}</span>}
                           </div>
-                          <Pill bg={c.discountType === 'PERCENT' ? '#f0fdfa' : '#eff6ff'} color={c.discountType === 'PERCENT' ? '#0d9488' : '#2563eb'} border="none">
+                          <Pill bg={c.discountType === 'PERCENT' ? 'var(--teal-50)' : 'var(--blue-50)'} color={c.discountType === 'PERCENT' ? 'var(--teal-600)' : 'var(--blue-600)'} border="none">
                             {c.discountType === 'PERCENT' ? `${c.discountValue}% off` : `₾${c.discountValue} off`}
                           </Pill>
                           {c.expiresAt && (
-                            <span style={{ fontSize: 11, color: '#94a3b8' }}>Until {new Date(c.expiresAt).toLocaleDateString('en-GB')}</span>
+                            <span style={{ fontSize: 11, color: 'var(--slate-400)' }}>Until {new Date(c.expiresAt).toLocaleDateString('en-GB')}</span>
                           )}
                         </div>
                       );
@@ -1252,20 +1252,20 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
                 )}
 
                 {cfg.couponIds.length > 0 && (
-                  <div style={{ marginTop: 14, background: '#fffbeb', borderRadius: 8, padding: '8px 12px', fontSize: 12, color: '#92400e' }}>
+                  <div style={{ marginTop: 14, background: 'var(--amber-50)', borderRadius: 8, padding: '8px 12px', fontSize: 12, color: 'var(--amber-800)' }}>
                     ℹ️ {cfg.couponIds.length} coupon{cfg.couponIds.length > 1 ? 's' : ''} linked to this plan. These will be shown as available options at checkout.
                   </div>
                 )}
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: 16, borderTop: '1px solid #e8ecf0' }}>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: 16, borderTop: '1px solid var(--slate-200b)' }}>
                 <button onClick={() => save()} disabled={saving}
-                  onMouseEnter={e => { if (!saving) (e.currentTarget as HTMLButtonElement).style.background = '#0f766e'; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = '#0d9488'; }}
+                  onMouseEnter={e => { if (!saving) (e.currentTarget as HTMLButtonElement).style.background = 'var(--teal-700)'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--teal-600)'; }}
                   onMouseDown={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(0.95)'; }}
                   onMouseUp={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)'; }}
                   onMouseOut={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)'; }}
-                  style={{ background: '#0d9488', color: '#fff', border: 'none', borderRadius: 9, padding: '8px 22px', fontSize: 13, fontWeight: 700, cursor: saving ? 'default' : 'pointer', opacity: saving ? 0.6 : 1, transition: 'background 0.15s, transform 0.1s' }}>
+                  style={{ background: 'var(--teal-600)', color: 'var(--white)', border: 'none', borderRadius: 9, padding: '8px 22px', fontSize: 13, fontWeight: 700, cursor: saving ? 'default' : 'pointer', opacity: saving ? 0.6 : 1, transition: 'background 0.15s, transform 0.1s' }}>
                   {saving ? 'Saving…' : '💾 Save Discounts'}
                 </button>
               </div>
@@ -1405,8 +1405,8 @@ export default function AdminSubscriptionPlansPage() {
   return (
     <div style={{ padding: 32 }}>
       <div style={{ marginBottom: 20 }}>
-        <h1 style={{ fontSize: 24, fontWeight: 800, color: '#0f172a', margin: '0 0 4px' }}>Subscription Plans</h1>
-        <p style={{ fontSize: 13, color: '#94a3b8', margin: 0 }}>Click "Configure" on any plan to set box contents, pricing, and discounts.</p>
+        <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--slate-900)', margin: '0 0 4px' }}>Subscription Plans</h1>
+        <p style={{ fontSize: 13, color: 'var(--slate-400)', margin: 0 }}>Click "Configure" on any plan to set box contents, pricing, and discounts.</p>
       </div>
 
       <StatCards>
@@ -1436,19 +1436,19 @@ export default function AdminSubscriptionPlansPage() {
       <Toolbar style={{ marginBottom: 20 }}>
         <ActionButton onClick={() => setBuilderPlan({ ...EMPTY_FORM })}>+ New Plan</ActionButton>
         <ActionButton variant="secondary" onClick={() => setShowBoxItemModal(true)}>+ New Box Item</ActionButton>
-        <Link href="/dashboard/box-items" style={{ background: '#fff', color: '#334155', border: '1.5px solid #e2e8f0', borderRadius: 9, padding: '7px 16px', fontSize: 13, fontWeight: 600, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap', transition: 'background 0.15s, border-color 0.15s' }}
-          onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.background = '#f8fafc'; (e.currentTarget as HTMLAnchorElement).style.borderColor = '#cbd5e1'; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.background = '#fff'; (e.currentTarget as HTMLAnchorElement).style.borderColor = '#e2e8f0'; }}>
+        <Link href="/dashboard/box-items" style={{ background: 'var(--white)', color: 'var(--slate-700)', border: '1.5px solid var(--slate-200)', borderRadius: 9, padding: '7px 16px', fontSize: 13, fontWeight: 600, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap', transition: 'background 0.15s, border-color 0.15s' }}
+          onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.background = 'var(--slate-50)'; (e.currentTarget as HTMLAnchorElement).style.borderColor = 'var(--slate-300)'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.background = 'var(--white)'; (e.currentTarget as HTMLAnchorElement).style.borderColor = 'var(--slate-200)'; }}>
           <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
           Box Items
         </Link>
         <button onClick={() => setShowBadgeManager(true)}
-          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#e2e8f0'; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = '#f1f5f9'; }}
+          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--slate-200)'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--slate-100)'; }}
           onMouseDown={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(0.95)'; }}
           onMouseUp={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)'; }}
           onMouseOut={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)'; }}
-          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 9, border: '1.5px solid #cbd5e1', background: '#f1f5f9', color: '#475569', fontSize: 13, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', transition: 'background 0.15s, transform 0.1s' }}>
+          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 9, border: '1.5px solid var(--slate-300)', background: 'var(--slate-100)', color: 'var(--slate-600)', fontSize: 13, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', transition: 'background 0.15s, transform 0.1s' }}>
           <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
           Badges
         </button>
@@ -1474,32 +1474,32 @@ export default function AdminSubscriptionPlansPage() {
       {showBadgeManager && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(15,23,42,0.45)' }}
           onClick={e => { if (e.target === e.currentTarget) setShowBadgeManager(false); }}>
-          <div style={{ background: '#fff', borderRadius: 18, width: 480, maxWidth: '95vw', boxShadow: '0 8px 40px rgba(0,0,0,0.18)', padding: 28 }}>
+          <div style={{ background: 'var(--white)', borderRadius: 18, width: 480, maxWidth: '95vw', boxShadow: '0 8px 40px rgba(0,0,0,0.18)', padding: 28 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-              <h2 style={{ fontSize: 16, fontWeight: 800, color: '#0f172a', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
-                <svg width="16" height="16" fill="none" stroke="#0d9488" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+              <h2 style={{ fontSize: 16, fontWeight: 800, color: 'var(--slate-900)', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <svg width="16" height="16" fill="none" stroke="var(--teal-600)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
                 Manage Badges
               </h2>
               <button onClick={() => setShowBadgeManager(false)}
-                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#f1f5f9'; (e.currentTarget as HTMLButtonElement).style.color = '#475569'; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'none'; (e.currentTarget as HTMLButtonElement).style.color = '#94a3b8'; }}
+                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--slate-100)'; (e.currentTarget as HTMLButtonElement).style.color = 'var(--slate-600)'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'none'; (e.currentTarget as HTMLButtonElement).style.color = 'var(--slate-400)'; }}
                 onMouseDown={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(0.88)'; }}
                 onMouseUp={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)'; }}
                 onMouseOut={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)'; }}
-                style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: 18, lineHeight: 1, padding: '5px 7px', borderRadius: 8, transition: 'background 0.15s, color 0.15s, transform 0.1s' }}>×</button>
+                style={{ background: 'none', border: 'none', color: 'var(--slate-400)', cursor: 'pointer', fontSize: 18, lineHeight: 1, padding: '5px 7px', borderRadius: 8, transition: 'background 0.15s, color 0.15s, transform 0.1s' }}>×</button>
             </div>
 
             {/* Badge list — scrollable */}
-            <div style={{ border: '1.5px solid #e2e8f0', borderRadius: 12, overflow: 'hidden', marginBottom: 16 }}>
+            <div style={{ border: '1.5px solid var(--slate-200)', borderRadius: 12, overflow: 'hidden', marginBottom: 16 }}>
               <div style={{ maxHeight: 240, overflowY: 'auto' }}>
                 {badges.map((b, i) => {
                   const isDefault = PAGE_DEFAULT_BADGES.includes(b);
                   return (
-                    <div key={b} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderBottom: i < badges.length - 1 ? '1px solid #f1f5f9' : 'none', background: '#fff' }}>
+                    <div key={b} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderBottom: i < badges.length - 1 ? '1px solid var(--slate-100)' : 'none', background: 'var(--white)' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#0d9488', flexShrink: 0 }} />
-                        <span style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }}>{b}</span>
-                        {isDefault && <span style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8', background: '#f1f5f9', borderRadius: 4, padding: '1px 6px' }}>built-in</span>}
+                        <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--teal-600)', flexShrink: 0 }} />
+                        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--slate-800)' }}>{b}</span>
+                        {isDefault && <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--slate-400)', background: 'var(--slate-100)', borderRadius: 4, padding: '1px 6px' }}>built-in</span>}
                       </div>
                       {!isDefault && (
                         <button
@@ -1508,12 +1508,12 @@ export default function AdminSubscriptionPlansPage() {
                             setBadges(updated);
                             try { localStorage.setItem('pupbox_badges', JSON.stringify(updated.filter(x => !PAGE_DEFAULT_BADGES.includes(x)))); } catch {}
                           }}
-                          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#fee2e2'; }}
-                          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = '#fef2f2'; }}
+                          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--red-100)'; }}
+                          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--red-50)'; }}
                           onMouseDown={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(0.93)'; }}
                           onMouseUp={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)'; }}
                           onMouseOut={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)'; }}
-                          style={{ background: '#fef2f2', border: 'none', color: '#dc2626', cursor: 'pointer', fontSize: 11, fontWeight: 700, borderRadius: 6, padding: '3px 8px', transition: 'background 0.15s, transform 0.1s' }}
+                          style={{ background: 'var(--red-50)', border: 'none', color: 'var(--red-600)', cursor: 'pointer', fontSize: 11, fontWeight: 700, borderRadius: 6, padding: '3px 8px', transition: 'background 0.15s, transform 0.1s' }}
                           title="Remove badge"
                         >Remove</button>
                       )}
@@ -1524,8 +1524,8 @@ export default function AdminSubscriptionPlansPage() {
             </div>
 
             {/* Add new badge */}
-            <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: 18 }}>
-              <p style={{ fontSize: 12, fontWeight: 700, color: '#374151', margin: '0 0 10px' }}>Add new badge</p>
+            <div style={{ borderTop: '1px solid var(--slate-100)', paddingTop: 18 }}>
+              <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--slate-700b)', margin: '0 0 10px' }}>Add new badge</p>
               <div style={{ display: 'flex', gap: 8 }}>
                 <input
                   autoFocus
@@ -1542,7 +1542,7 @@ export default function AdminSubscriptionPlansPage() {
                     }
                   }}
                   placeholder="Badge label, e.g. Flash Sale"
-                  style={{ padding: '7px 12px', fontSize: 13, border: '1.5px solid #e2e8f0', borderRadius: 9, outline: 'none', background: '#fff', flex: 1 }}
+                  style={{ padding: '7px 12px', fontSize: 13, border: '1.5px solid var(--slate-200)', borderRadius: 9, outline: 'none', background: 'var(--white)', flex: 1 }}
                 />
                 <button
                   onClick={() => {
@@ -1553,12 +1553,12 @@ export default function AdminSubscriptionPlansPage() {
                     try { localStorage.setItem('pupbox_badges', JSON.stringify(updated.filter(x => !PAGE_DEFAULT_BADGES.includes(x)))); } catch {}
                     setBadgeManagerInput('');
                   }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#0f766e'; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = '#0d9488'; }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--teal-700)'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--teal-600)'; }}
                   onMouseDown={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(0.96)'; }}
                   onMouseUp={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)'; }}
                   onMouseOut={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)'; }}
-                  style={{ padding: '7px 18px', fontSize: 13, fontWeight: 700, borderRadius: 9, border: 'none', background: '#0d9488', color: '#fff', cursor: 'pointer', whiteSpace: 'nowrap', transition: 'background 0.15s, transform 0.1s' }}
+                  style={{ padding: '7px 18px', fontSize: 13, fontWeight: 700, borderRadius: 9, border: 'none', background: 'var(--teal-600)', color: 'var(--white)', cursor: 'pointer', whiteSpace: 'nowrap', transition: 'background 0.15s, transform 0.1s' }}
                 >+ Add</button>
               </div>
             </div>
@@ -1569,22 +1569,22 @@ export default function AdminSubscriptionPlansPage() {
 
       {loading ? (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '80px 0' }}>
-          <div style={{ width: 32, height: 32, border: '4px solid #99f6e4', borderTopColor: '#0d9488', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+          <div style={{ width: 32, height: 32, border: '4px solid var(--teal-200)', borderTopColor: 'var(--teal-600)', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
         </div>
       ) : (
         <>
         {viewMode === 'list' && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '6px 18px', marginBottom: 2 }}>
-            <div style={{ flex: '0 0 180px', fontSize: 11, fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>Plan</div>
-            <div style={{ flex: '0 0 90px', fontSize: 11, fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>Price (₾)</div>
-            <div style={{ flex: '0 0 90px', fontSize: 11, fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>Per Month (₾)</div>
-            <div style={{ flex: '0 0 100px', fontSize: 11, fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>Duration</div>
-            <div style={{ flex: '0 0 80px', fontSize: 11, fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>Discount</div>
-            <div style={{ flex: '0 0 80px', fontSize: 11, fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>Boxes</div>
-            <div style={{ flex: '0 0 70px', fontSize: 11, fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>Orders</div>
-            <div style={{ flex: '0 0 120px', fontSize: 11, fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>Margin (₾)</div>
-            <div style={{ flex: '0 0 55px', fontSize: 11, fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>Status</div>
-            <div style={{ marginLeft: 'auto', fontSize: 11, fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>Actions</div>
+            <div style={{ flex: '0 0 180px', fontSize: 11, fontWeight: 600, color: 'var(--slate-400)', textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>Plan</div>
+            <div style={{ flex: '0 0 90px', fontSize: 11, fontWeight: 600, color: 'var(--slate-400)', textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>Price (₾)</div>
+            <div style={{ flex: '0 0 90px', fontSize: 11, fontWeight: 600, color: 'var(--slate-400)', textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>Per Month (₾)</div>
+            <div style={{ flex: '0 0 100px', fontSize: 11, fontWeight: 600, color: 'var(--slate-400)', textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>Duration</div>
+            <div style={{ flex: '0 0 80px', fontSize: 11, fontWeight: 600, color: 'var(--slate-400)', textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>Discount</div>
+            <div style={{ flex: '0 0 80px', fontSize: 11, fontWeight: 600, color: 'var(--slate-400)', textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>Boxes</div>
+            <div style={{ flex: '0 0 70px', fontSize: 11, fontWeight: 600, color: 'var(--slate-400)', textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>Orders</div>
+            <div style={{ flex: '0 0 120px', fontSize: 11, fontWeight: 600, color: 'var(--slate-400)', textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>Margin (₾)</div>
+            <div style={{ flex: '0 0 55px', fontSize: 11, fontWeight: 600, color: 'var(--slate-400)', textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>Status</div>
+            <div style={{ marginLeft: 'auto', fontSize: 11, fontWeight: 600, color: 'var(--slate-400)', textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>Actions</div>
           </div>
         )}
         <div style={viewMode === 'list' ? { display: 'flex', flexDirection: 'column', gap: 8 } : { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 20 }}>
@@ -1600,35 +1600,35 @@ export default function AdminSubscriptionPlansPage() {
             const isDisabled = !p.isActive;
 
             if (viewMode === 'list') return (
-              <div key={p.id} style={{ background: isDisabled ? '#f8fafc' : '#fff', borderRadius: 12, border: '1px solid #e8ecf0', padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 16, opacity: isDisabled ? 0.6 : 1 }}>
+              <div key={p.id} style={{ background: isDisabled ? 'var(--slate-50)' : 'var(--white)', borderRadius: 12, border: '1px solid var(--slate-200b)', padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 16, opacity: isDisabled ? 0.6 : 1 }}>
                 <div style={{ flex: '0 0 180px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontSize: 14, fontWeight: 800, color: isDisabled ? '#94a3b8' : '#0f172a' }}>{p.name}</span>
-                    {p.badge && <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 7px', borderRadius: 999, background: '#0d9488', color: '#fff' }}>{p.badge}</span>}
+                    <span style={{ fontSize: 14, fontWeight: 800, color: isDisabled ? 'var(--slate-400)' : 'var(--slate-900)' }}>{p.name}</span>
+                    {p.badge && <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 7px', borderRadius: 999, background: 'var(--teal-600)', color: 'var(--white)' }}>{p.badge}</span>}
                   </div>
                 </div>
                 <div style={{ flex: '0 0 90px' }}>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: isDisabled ? '#94a3b8' : '#0f172a' }}>{Number(p.price).toFixed(0)}</span>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: isDisabled ? 'var(--slate-400)' : 'var(--slate-900)' }}>{Number(p.price).toFixed(0)}</span>
                 </div>
                 <div style={{ flex: '0 0 90px' }}>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: isDisabled ? '#94a3b8' : '#374151' }}>{(Number(p.price) / (p.durationValue || 1)).toFixed(0)}</span>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: isDisabled ? 'var(--slate-400)' : 'var(--slate-700b)' }}>{(Number(p.price) / (p.durationValue || 1)).toFixed(0)}</span>
                 </div>
                 <div style={{ flex: '0 0 100px' }}>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: isDisabled ? '#94a3b8' : '#374151' }}>{p.durationValue} {p.durationUnit?.toLowerCase()}</span>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: isDisabled ? 'var(--slate-400)' : 'var(--slate-700b)' }}>{p.durationValue} {p.durationUnit?.toLowerCase()}</span>
                 </div>
                 <div style={{ flex: '0 0 80px' }}>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: isDisabled ? '#94a3b8' : (p.discountPercent ? '#0d9488' : '#94a3b8') }}>{p.discountPercent ? `-${p.discountPercent}%` : '—'}</span>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: isDisabled ? 'var(--slate-400)' : (p.discountPercent ? 'var(--teal-600)' : 'var(--slate-400)') }}>{p.discountPercent ? `-${p.discountPercent}%` : '—'}</span>
                 </div>
                 <div style={{ flex: '0 0 80px' }}>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: isDisabled ? '#94a3b8' : '#374151' }}>{p.boxCount}</span>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: isDisabled ? 'var(--slate-400)' : 'var(--slate-700b)' }}>{p.boxCount}</span>
                 </div>
                 <div style={{ flex: '0 0 70px' }}>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: isDisabled ? '#94a3b8' : '#374151' }}>{planOrderCounts[p.id] || 0}</span>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: isDisabled ? 'var(--slate-400)' : 'var(--slate-700b)' }}>{planOrderCounts[p.id] || 0}</span>
                 </div>
                 <div style={{ flex: '0 0 120px', fontSize: 11 }}>
-                  {hasConfig ? <span style={{ color: margin >= 0 ? '#15803d' : '#dc2626', fontWeight: 700 }}>{margin >= 0 ? '+' : ''}{margin.toFixed(2)}</span> : <span style={{ color: '#f59e0b' }}>⚠️ Not configured</span>}
+                  {hasConfig ? <span style={{ color: margin >= 0 ? 'var(--green-700)' : 'var(--red-600)', fontWeight: 700 }}>{margin >= 0 ? '+' : ''}{margin.toFixed(2)}</span> : <span style={{ color: 'var(--amber-500)' }}>⚠️ Not configured</span>}
                 </div>
-                <span style={{ flex: '0 0 55px', fontSize: 11, padding: '2px 8px', borderRadius: 999, fontWeight: 600, background: isDisabled ? '#f1f5f9' : '#f0fdf4', color: isDisabled ? '#94a3b8' : '#166534', textAlign: 'center' as const }}>{isDisabled ? 'Off' : 'Live'}</span>
+                <span style={{ flex: '0 0 55px', fontSize: 11, padding: '2px 8px', borderRadius: 999, fontWeight: 600, background: isDisabled ? 'var(--slate-100)' : 'var(--green-50)', color: isDisabled ? 'var(--slate-400)' : 'var(--green-800)', textAlign: 'center' as const }}>{isDisabled ? 'Off' : 'Live'}</span>
                 <RowActions
                   onView={() => setViewPlan(p)}
                   onConfigure={() => setBuilderPlan(p)}
@@ -1645,29 +1645,29 @@ export default function AdminSubscriptionPlansPage() {
               <div key={p.id}
                 onMouseEnter={e => { if (!isDisabled) { (e.currentTarget as HTMLDivElement).style.boxShadow = '0 6px 24px rgba(0,0,0,0.1)'; (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)'; } }}
                 onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.boxShadow = '0 1px 4px rgba(0,0,0,0.04)'; (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)'; }}
-                style={{ background: isDisabled ? '#f8fafc' : '#fff', borderRadius: 16, border: p.badge ? '2px solid #0d9488' : isDisabled ? '1px solid #e2e8f0' : '1px solid #e8ecf0', padding: 22, position: 'relative', boxShadow: '0 1px 4px rgba(0,0,0,0.04)', opacity: isDisabled ? 0.65 : 1, transition: 'box-shadow 0.18s, transform 0.18s' }}>
-                {p.badge && <span style={{ position: 'absolute', top: -12, left: '50%', transform: 'translateX(-50%)', background: '#0d9488', color: '#fff', fontSize: 10, fontWeight: 700, padding: '3px 12px', borderRadius: 999, whiteSpace: 'nowrap' as const }}>{p.badge}</span>}
+                style={{ background: isDisabled ? 'var(--slate-50)' : 'var(--white)', borderRadius: 16, border: p.badge ? '2px solid var(--teal-600)' : isDisabled ? '1px solid var(--slate-200)' : '1px solid var(--slate-200b)', padding: 22, position: 'relative', boxShadow: '0 1px 4px rgba(0,0,0,0.04)', opacity: isDisabled ? 0.65 : 1, transition: 'box-shadow 0.18s, transform 0.18s' }}>
+                {p.badge && <span style={{ position: 'absolute', top: -12, left: '50%', transform: 'translateX(-50%)', background: 'var(--teal-600)', color: 'var(--white)', fontSize: 10, fontWeight: 700, padding: '3px 12px', borderRadius: 999, whiteSpace: 'nowrap' as const }}>{p.badge}</span>}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
                   <div>
-                    <h3 style={{ fontSize: 16, fontWeight: 800, color: isDisabled ? '#94a3b8' : '#0f172a', margin: 0 }}>{p.name}</h3>
-                    <p style={{ fontSize: 11, color: '#94a3b8', margin: '3px 0 0' }}>{p.durationValue} {p.durationUnit.toLowerCase()} · {p.boxCount} box{p.boxCount > 1 ? 'es' : ''}</p>
+                    <h3 style={{ fontSize: 16, fontWeight: 800, color: isDisabled ? 'var(--slate-400)' : 'var(--slate-900)', margin: 0 }}>{p.name}</h3>
+                    <p style={{ fontSize: 11, color: 'var(--slate-400)', margin: '3px 0 0' }}>{p.durationValue} {p.durationUnit.toLowerCase()} · {p.boxCount} box{p.boxCount > 1 ? 'es' : ''}</p>
                   </div>
-                  <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 999, fontWeight: 600, background: isDisabled ? '#f1f5f9' : '#f0fdf4', color: isDisabled ? '#94a3b8' : '#166534' }}>{isDisabled ? 'Off' : 'Live'}</span>
+                  <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 999, fontWeight: 600, background: isDisabled ? 'var(--slate-100)' : 'var(--green-50)', color: isDisabled ? 'var(--slate-400)' : 'var(--green-800)' }}>{isDisabled ? 'Off' : 'Live'}</span>
                 </div>
-                <p style={{ fontSize: 26, fontWeight: 800, color: isDisabled ? '#94a3b8' : '#0f172a', margin: '0 0 2px' }}>₾{Number(p.price).toFixed(0)}</p>
-                {p.discountPercent && <p style={{ fontSize: 12, color: '#0d9488', fontWeight: 600, margin: '0 0 12px' }}>Save {p.discountPercent}%</p>}
+                <p style={{ fontSize: 26, fontWeight: 800, color: isDisabled ? 'var(--slate-400)' : 'var(--slate-900)', margin: '0 0 2px' }}>₾{Number(p.price).toFixed(0)}</p>
+                {p.discountPercent && <p style={{ fontSize: 12, color: 'var(--teal-600)', fontWeight: 600, margin: '0 0 12px' }}>Save {p.discountPercent}%</p>}
                 {hasConfig ? (
-                  <div style={{ background: '#f8fafc', borderRadius: 8, padding: '10px 12px', marginBottom: 14, fontSize: 11 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', color: '#64748b', marginBottom: 3 }}><span>📦 {itemCount} products</span><span>₾{productCost.toFixed(2)}</span></div>
-                    {opCost > 0 && <div style={{ display: 'flex', justifyContent: 'space-between', color: '#64748b', marginBottom: 3 }}><span>⚙️ Operational</span><span>₾{opCost.toFixed(2)}</span></div>}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', color: '#64748b', marginBottom: 6 }}><span>🚚 Delivery</span><span>{cfg?.deliveryFree ? 'Free' : `₾${delCost.toFixed(2)}`}</span></div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 5, borderTop: '1px solid #e8ecf0', fontWeight: 700 }}>
-                      <span style={{ color: margin >= 0 ? '#15803d' : '#dc2626' }}>{margin >= 0 ? '✅ Margin' : '❌ Loss'}</span>
-                      <span style={{ color: margin >= 0 ? '#15803d' : '#dc2626' }}>{margin >= 0 ? '+' : ''}₾{margin.toFixed(2)}</span>
+                  <div style={{ background: 'var(--slate-50)', borderRadius: 8, padding: '10px 12px', marginBottom: 14, fontSize: 11 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--slate-500)', marginBottom: 3 }}><span>📦 {itemCount} products</span><span>₾{productCost.toFixed(2)}</span></div>
+                    {opCost > 0 && <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--slate-500)', marginBottom: 3 }}><span>⚙️ Operational</span><span>₾{opCost.toFixed(2)}</span></div>}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--slate-500)', marginBottom: 6 }}><span>🚚 Delivery</span><span>{cfg?.deliveryFree ? 'Free' : `₾${delCost.toFixed(2)}`}</span></div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 5, borderTop: '1px solid var(--slate-200b)', fontWeight: 700 }}>
+                      <span style={{ color: margin >= 0 ? 'var(--green-700)' : 'var(--red-600)' }}>{margin >= 0 ? '✅ Margin' : '❌ Loss'}</span>
+                      <span style={{ color: margin >= 0 ? 'var(--green-700)' : 'var(--red-600)' }}>{margin >= 0 ? '+' : ''}₾{margin.toFixed(2)}</span>
                     </div>
                   </div>
                 ) : (
-                  <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, padding: '8px 12px', marginBottom: 14, fontSize: 11, color: '#92400e' }}>⚠️ Not configured — click Configure to add box items and costs</div>
+                  <div style={{ background: 'var(--amber-50)', border: '1px solid var(--amber-200)', borderRadius: 8, padding: '8px 12px', marginBottom: 14, fontSize: 11, color: 'var(--amber-800)' }}>⚠️ Not configured — click Configure to add box items and costs</div>
                 )}
                 <div style={{ display: 'flex', gap: 8 }}>
                   <button onClick={() => setViewPlan(p)}
@@ -1676,30 +1676,30 @@ export default function AdminSubscriptionPlansPage() {
                     onMouseDown={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(0.92)'; }}
                     onMouseUp={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)'; }}
                     onMouseOut={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)'; (e.currentTarget as HTMLButtonElement).style.background = 'rgba(13,148,136,0.08)'; }}
-                    style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(13,148,136,0.08)', color: '#0d9488', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.15s, transform 0.1s', flexShrink: 0 }}>
+                    style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(13,148,136,0.08)', color: 'var(--teal-600)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.15s, transform 0.1s', flexShrink: 0 }}>
                     <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3" fill="currentColor" stroke="none"/></svg>
                   </button>
                   <button onClick={() => setBuilderPlan(p)}
-                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#0f766e'; }}
-                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = '#0d9488'; }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--teal-700)'; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--teal-600)'; }}
                     onMouseDown={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(0.95)'; }}
                     onMouseUp={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)'; }}
                     onMouseOut={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)'; }}
-                    style={{ flex: 1, fontSize: 11, padding: '6px 10px', borderRadius: 8, background: '#0d9488', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: 700, transition: 'background 0.15s, transform 0.1s' }}>Configure</button>
+                    style={{ flex: 1, fontSize: 11, padding: '6px 10px', borderRadius: 8, background: 'var(--teal-600)', color: 'var(--white)', border: 'none', cursor: 'pointer', fontWeight: 700, transition: 'background 0.15s, transform 0.1s' }}>Configure</button>
                   <button onClick={() => toggleActive(p)}
-                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = isDisabled ? '#dcfce7' : '#e2e8f0'; }}
-                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = isDisabled ? '#f0fdf4' : '#f1f5f9'; }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = isDisabled ? 'var(--green-100)' : 'var(--slate-200)'; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = isDisabled ? 'var(--green-50)' : 'var(--slate-100)'; }}
                     onMouseDown={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(0.95)'; }}
                     onMouseUp={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)'; }}
                     onMouseOut={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)'; }}
-                    style={{ flex: 1, fontSize: 11, padding: '6px 10px', borderRadius: 8, background: isDisabled ? '#f0fdf4' : '#f1f5f9', color: isDisabled ? '#166534' : '#64748b', border: 'none', cursor: 'pointer', fontWeight: 600, transition: 'background 0.15s, transform 0.1s' }}>{isDisabled ? 'Enable' : 'Disable'}</button>
+                    style={{ flex: 1, fontSize: 11, padding: '6px 10px', borderRadius: 8, background: isDisabled ? 'var(--green-50)' : 'var(--slate-100)', color: isDisabled ? 'var(--green-800)' : 'var(--slate-500)', border: 'none', cursor: 'pointer', fontWeight: 600, transition: 'background 0.15s, transform 0.1s' }}>{isDisabled ? 'Enable' : 'Disable'}</button>
                   {canDelete && <button onClick={() => deletePlan(p)}
-                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#fee2e2'; }}
-                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = '#fef2f2'; }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--red-100)'; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--red-50)'; }}
                     onMouseDown={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(0.95)'; }}
                     onMouseUp={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)'; }}
                     onMouseOut={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)'; }}
-                    style={{ fontSize: 11, padding: '6px 10px', borderRadius: 8, background: '#fef2f2', color: '#dc2626', border: 'none', cursor: 'pointer', fontWeight: 600, transition: 'background 0.15s, transform 0.1s' }}>Delete</button>}
+                    style={{ fontSize: 11, padding: '6px 10px', borderRadius: 8, background: 'var(--red-50)', color: 'var(--red-600)', border: 'none', cursor: 'pointer', fontWeight: 600, transition: 'background 0.15s, transform 0.1s' }}>Delete</button>}
                 </div>
               </div>
             );
@@ -1743,24 +1743,24 @@ export default function AdminSubscriptionPlansPage() {
         const margin = Number(vp.price) - productCost - opCost - delCost;
         return (
           <div onClick={() => setViewPlan(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.45)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-            <div onClick={e => e.stopPropagation()} style={{ background: '#fff', borderRadius: 18, width: '100%', maxWidth: 680, maxHeight: '90vh', display: 'flex', flexDirection: 'column', boxShadow: '0 24px 64px rgba(0,0,0,0.18)' }}>
+            <div onClick={e => e.stopPropagation()} style={{ background: 'var(--white)', borderRadius: 18, width: '100%', maxWidth: 680, maxHeight: '90vh', display: 'flex', flexDirection: 'column', boxShadow: '0 24px 64px rgba(0,0,0,0.18)' }}>
               {/* Sticky header */}
-              <div style={{ padding: '28px 36px 20px', borderBottom: '1px solid #e2e8f0', flexShrink: 0 }}>
+              <div style={{ padding: '28px 36px 20px', borderBottom: '1px solid var(--slate-200)', flexShrink: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16 }}>
                   <div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' as const, marginBottom: 4 }}>
-                      <h2 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: '#0f172a' }}>{vp.name}</h2>
-                      {vp.badge && <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 10px', borderRadius: 999, background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0' }}>{vp.badge}</span>}
-                      <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 999, background: isDisabled ? '#f1f5f9' : '#f0fdf4', color: isDisabled ? '#94a3b8' : '#166534' }}>{isDisabled ? 'Disabled' : 'Live'}</span>
+                      <h2 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: 'var(--slate-900)' }}>{vp.name}</h2>
+                      {vp.badge && <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 10px', borderRadius: 999, background: 'var(--green-50)', color: 'var(--green-800)', border: '1px solid var(--green-200)' }}>{vp.badge}</span>}
+                      <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 999, background: isDisabled ? 'var(--slate-100)' : 'var(--green-50)', color: isDisabled ? 'var(--slate-400)' : 'var(--green-800)' }}>{isDisabled ? 'Disabled' : 'Live'}</span>
                     </div>
-                    <p style={{ margin: 0, fontSize: 13, color: '#64748b' }}>{vp.durationValue} month{vp.durationValue > 1 ? 's' : ''} · {vp.boxCount} box{vp.boxCount > 1 ? 'es' : ''}</p>
+                    <p style={{ margin: 0, fontSize: 13, color: 'var(--slate-500)' }}>{vp.durationValue} month{vp.durationValue > 1 ? 's' : ''} · {vp.boxCount} box{vp.boxCount > 1 ? 'es' : ''}</p>
                   </div>
                   <button onClick={() => setViewPlan(null)}
-                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#f1f5f9'; }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--slate-100)'; }}
                     onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
                     onMouseDown={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(0.9)'; }}
                     onMouseUp={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)'; }}
-                    style={{ width: 32, height: 32, borderRadius: 8, border: 'none', background: 'transparent', cursor: 'pointer', fontSize: 18, color: '#94a3b8', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.15s, transform 0.1s', flexShrink: 0 }}>×</button>
+                    style={{ width: 32, height: 32, borderRadius: 8, border: 'none', background: 'transparent', cursor: 'pointer', fontSize: 18, color: 'var(--slate-400)', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.15s, transform 0.1s', flexShrink: 0 }}>×</button>
                 </div>
                 {/* Stats row */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
@@ -1769,9 +1769,9 @@ export default function AdminSubscriptionPlansPage() {
                     { label: 'Orders', value: String(orderCount) },
                     { label: 'Discount', value: vp.discountPercent ? `-${vp.discountPercent}%` : '—' },
                   ].map(s => (
-                    <div key={s.label} style={{ background: '#f8fafc', borderRadius: 10, padding: '10px 14px' }}>
-                      <p style={{ margin: 0, fontSize: 11, color: '#94a3b8', marginBottom: 2 }}>{s.label}</p>
-                      <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: '#0f172a' }}>{s.value}</p>
+                    <div key={s.label} style={{ background: 'var(--slate-50)', borderRadius: 10, padding: '10px 14px' }}>
+                      <p style={{ margin: 0, fontSize: 11, color: 'var(--slate-400)', marginBottom: 2 }}>{s.label}</p>
+                      <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: 'var(--slate-900)' }}>{s.value}</p>
                     </div>
                   ))}
                 </div>
@@ -1783,87 +1783,87 @@ export default function AdminSubscriptionPlansPage() {
               {/* Description */}
               {(vp.description || vp.descriptionKa) && (
                 <div style={{ marginBottom: 18 }}>
-                  <p style={{ margin: '0 0 6px', fontSize: 12, fontWeight: 600, color: '#64748b', textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>Description</p>
-                  {vp.description && <p style={{ margin: '0 0 4px', fontSize: 13, color: '#374151' }}><strong>EN:</strong> {vp.description}</p>}
-                  {vp.descriptionKa && <p style={{ margin: 0, fontSize: 13, color: '#374151' }}><strong>KA:</strong> {vp.descriptionKa}</p>}
+                  <p style={{ margin: '0 0 6px', fontSize: 12, fontWeight: 600, color: 'var(--slate-500)', textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>Description</p>
+                  {vp.description && <p style={{ margin: '0 0 4px', fontSize: 13, color: 'var(--slate-700b)' }}><strong>EN:</strong> {vp.description}</p>}
+                  {vp.descriptionKa && <p style={{ margin: 0, fontSize: 13, color: 'var(--slate-700b)' }}><strong>KA:</strong> {vp.descriptionKa}</p>}
                 </div>
               )}
 
               {/* Delivery + Settings row */}
               <div style={{ marginBottom: 18, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' as const }}>
-                <span style={{ fontSize: 13, color: '#374151', background: 'rgba(241,245,249,0.7)', padding: '4px 12px', borderRadius: 8 }}>
+                <span style={{ fontSize: 13, color: 'var(--slate-700b)', background: 'rgba(241,245,249,0.7)', padding: '4px 12px', borderRadius: 8 }}>
                   Delivery: <strong>{cfg?.deliveryFree ? 'Free' : cfg ? `₾${Number(cfg.deliveryCost || 0).toFixed(2)}` : '—'}</strong>
                 </span>
-                <span style={{ fontSize: 13, color: vp.autoRenewal ? '#166534' : '#64748b', background: vp.autoRenewal ? 'rgba(240,253,244,0.7)' : 'rgba(241,245,249,0.7)', padding: '4px 12px', borderRadius: 8 }}>
+                <span style={{ fontSize: 13, color: vp.autoRenewal ? 'var(--green-800)' : 'var(--slate-500)', background: vp.autoRenewal ? 'rgba(240,253,244,0.7)' : 'rgba(241,245,249,0.7)', padding: '4px 12px', borderRadius: 8 }}>
                   Auto-Renewal: <strong>{vp.autoRenewal ? 'On' : 'Off'}</strong>
                 </span>
-                <span style={{ fontSize: 13, color: !isDisabled ? '#166534' : '#64748b', background: !isDisabled ? 'rgba(240,253,244,0.7)' : 'rgba(241,245,249,0.7)', padding: '4px 12px', borderRadius: 8 }}>
+                <span style={{ fontSize: 13, color: !isDisabled ? 'var(--green-800)' : 'var(--slate-500)', background: !isDisabled ? 'rgba(240,253,244,0.7)' : 'rgba(241,245,249,0.7)', padding: '4px 12px', borderRadius: 8 }}>
                   Active: <strong>{!isDisabled ? 'Live' : 'Hidden'}</strong>
                 </span>
               </div>
 
               {/* Products list */}
               <div style={{ marginBottom: 18 }}>
-                <p style={{ margin: '0 0 10px', fontSize: 12, fontWeight: 600, color: '#64748b', textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>Products Included</p>
+                <p style={{ margin: '0 0 10px', fontSize: 12, fontWeight: 600, color: 'var(--slate-500)', textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>Products Included</p>
                 {hasConfig ? (
-                  <div style={{ border: '1px solid #e2e8f0', borderRadius: 12, overflow: 'hidden' }}>
+                  <div style={{ border: '1px solid var(--slate-200)', borderRadius: 12, overflow: 'hidden' }}>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: 0 }}>
                       {/* Header */}
-                      <div style={{ padding: '8px 14px', fontSize: 11, fontWeight: 600, color: '#94a3b8', background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>Product</div>
-                      <div style={{ padding: '8px 14px', fontSize: 11, fontWeight: 600, color: '#94a3b8', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', textAlign: 'center' as const }}>Qty</div>
-                      <div style={{ padding: '8px 14px', fontSize: 11, fontWeight: 600, color: '#94a3b8', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', textAlign: 'right' as const }}>Cost</div>
+                      <div style={{ padding: '8px 14px', fontSize: 11, fontWeight: 600, color: 'var(--slate-400)', background: 'var(--slate-50)', borderBottom: '1px solid var(--slate-200)' }}>Product</div>
+                      <div style={{ padding: '8px 14px', fontSize: 11, fontWeight: 600, color: 'var(--slate-400)', background: 'var(--slate-50)', borderBottom: '1px solid var(--slate-200)', textAlign: 'center' as const }}>Qty</div>
+                      <div style={{ padding: '8px 14px', fontSize: 11, fontWeight: 600, color: 'var(--slate-400)', background: 'var(--slate-50)', borderBottom: '1px solid var(--slate-200)', textAlign: 'right' as const }}>Cost</div>
                       {/* Rows */}
                       {(cfg.planItems || []).map((it: any, ii: number) => (
                         <>
-                          <div key={`n${ii}`} style={{ padding: '10px 14px', fontSize: 13, color: '#374151', borderBottom: ii < cfg.planItems.length - 1 ? '1px solid #f1f5f9' : 'none' }}>{it.name || it.productName || '—'}</div>
-                          <div key={`q${ii}`} style={{ padding: '10px 14px', fontSize: 13, color: '#64748b', textAlign: 'center' as const, borderBottom: ii < cfg.planItems.length - 1 ? '1px solid #f1f5f9' : 'none' }}>×{it.qty || 1}</div>
-                          <div key={`p${ii}`} style={{ padding: '10px 14px', fontSize: 13, color: '#374151', fontWeight: 600, textAlign: 'right' as const, borderBottom: ii < cfg.planItems.length - 1 ? '1px solid #f1f5f9' : 'none' }}>₾{((it.price || 0) * (it.qty || 1)).toFixed(2)}</div>
+                          <div key={`n${ii}`} style={{ padding: '10px 14px', fontSize: 13, color: 'var(--slate-700b)', borderBottom: ii < cfg.planItems.length - 1 ? '1px solid var(--slate-100)' : 'none' }}>{it.name || it.productName || '—'}</div>
+                          <div key={`q${ii}`} style={{ padding: '10px 14px', fontSize: 13, color: 'var(--slate-500)', textAlign: 'center' as const, borderBottom: ii < cfg.planItems.length - 1 ? '1px solid var(--slate-100)' : 'none' }}>×{it.qty || 1}</div>
+                          <div key={`p${ii}`} style={{ padding: '10px 14px', fontSize: 13, color: 'var(--slate-700b)', fontWeight: 600, textAlign: 'right' as const, borderBottom: ii < cfg.planItems.length - 1 ? '1px solid var(--slate-100)' : 'none' }}>₾{((it.price || 0) * (it.qty || 1)).toFixed(2)}</div>
                         </>
                       ))}
                     </div>
                     {/* Totals */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 0, borderTop: '1px solid #e2e8f0', background: '#f8fafc' }}>
-                      <div style={{ padding: '8px 14px', fontSize: 12, color: '#64748b' }}>Products subtotal</div>
-                      <div style={{ padding: '8px 14px', fontSize: 12, fontWeight: 700, color: '#374151', textAlign: 'right' as const }}>₾{productCost.toFixed(2)}</div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 0, borderTop: '1px solid var(--slate-200)', background: 'var(--slate-50)' }}>
+                      <div style={{ padding: '8px 14px', fontSize: 12, color: 'var(--slate-500)' }}>Products subtotal</div>
+                      <div style={{ padding: '8px 14px', fontSize: 12, fontWeight: 700, color: 'var(--slate-700b)', textAlign: 'right' as const }}>₾{productCost.toFixed(2)}</div>
                       {opCost > 0 && <>
-                        <div style={{ padding: '4px 14px', fontSize: 12, color: '#64748b' }}>Operational cost</div>
-                        <div style={{ padding: '4px 14px', fontSize: 12, fontWeight: 600, color: '#374151', textAlign: 'right' as const }}>₾{opCost.toFixed(2)}</div>
+                        <div style={{ padding: '4px 14px', fontSize: 12, color: 'var(--slate-500)' }}>Operational cost</div>
+                        <div style={{ padding: '4px 14px', fontSize: 12, fontWeight: 600, color: 'var(--slate-700b)', textAlign: 'right' as const }}>₾{opCost.toFixed(2)}</div>
                       </>}
-                      <div style={{ padding: '4px 14px 8px', fontSize: 12, color: '#64748b' }}>Delivery</div>
-                      <div style={{ padding: '4px 14px 8px', fontSize: 12, fontWeight: 600, color: '#374151', textAlign: 'right' as const }}>{cfg?.deliveryFree ? 'Free' : `₾${delCost.toFixed(2)}`}</div>
+                      <div style={{ padding: '4px 14px 8px', fontSize: 12, color: 'var(--slate-500)' }}>Delivery</div>
+                      <div style={{ padding: '4px 14px 8px', fontSize: 12, fontWeight: 600, color: 'var(--slate-700b)', textAlign: 'right' as const }}>{cfg?.deliveryFree ? 'Free' : `₾${delCost.toFixed(2)}`}</div>
                     </div>
                   </div>
                 ) : (
-                  <p style={{ margin: 0, fontSize: 13, color: '#94a3b8', fontStyle: 'italic' }}>No products added yet</p>
+                  <p style={{ margin: 0, fontSize: 13, color: 'var(--slate-400)', fontStyle: 'italic' }}>No products added yet</p>
                 )}
               </div>
 
               {/* Margin summary */}
               {hasConfig ? (
-                <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 10, padding: '12px 16px', display: 'flex', justifyContent: 'space-between', fontSize: 13, fontWeight: 700 }}>
-                  <span style={{ color: margin >= 0 ? '#166534' : '#dc2626' }}>{margin >= 0 ? '✅ Margin' : '❌ Loss'}</span>
-                  <span style={{ color: margin >= 0 ? '#166534' : '#dc2626' }}>{margin >= 0 ? '+' : ''}₾{margin.toFixed(2)}</span>
+                <div style={{ background: 'var(--green-50)', border: '1px solid var(--green-200)', borderRadius: 10, padding: '12px 16px', display: 'flex', justifyContent: 'space-between', fontSize: 13, fontWeight: 700 }}>
+                  <span style={{ color: margin >= 0 ? 'var(--green-800)' : 'var(--red-600)' }}>{margin >= 0 ? '✅ Margin' : '❌ Loss'}</span>
+                  <span style={{ color: margin >= 0 ? 'var(--green-800)' : 'var(--red-600)' }}>{margin >= 0 ? '+' : ''}₾{margin.toFixed(2)}</span>
                 </div>
               ) : (
-                <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 10, padding: '12px 16px', fontSize: 13, color: '#92400e' }}>⚠️ Not configured — no box items or costs set yet</div>
+                <div style={{ background: 'var(--amber-50)', border: '1px solid var(--amber-200)', borderRadius: 10, padding: '12px 16px', fontSize: 13, color: 'var(--amber-800)' }}>⚠️ Not configured — no box items or costs set yet</div>
               )}
 
               </div>{/* end scrollable */}
 
               {/* Sticky footer */}
-              <div style={{ display: 'flex', gap: 10, padding: '16px 36px', borderTop: '1px solid #e2e8f0', background: '#fff', borderRadius: '0 0 18px 18px', flexShrink: 0 }}>
+              <div style={{ display: 'flex', gap: 10, padding: '16px 36px', borderTop: '1px solid var(--slate-200)', background: 'var(--white)', borderRadius: '0 0 18px 18px', flexShrink: 0 }}>
                 <button onClick={() => { setViewPlan(null); setBuilderPlan(vp); }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#0f766e'; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = '#0d9488'; }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--teal-700)'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--teal-600)'; }}
                   onMouseDown={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(0.97)'; }}
                   onMouseUp={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)'; }}
-                  style={{ flex: 1, padding: '11px 0', borderRadius: 10, background: '#0d9488', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: 13, transition: 'background 0.15s, transform 0.1s' }}>Configure</button>
+                  style={{ flex: 1, padding: '11px 0', borderRadius: 10, background: 'var(--teal-600)', color: 'var(--white)', border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: 13, transition: 'background 0.15s, transform 0.1s' }}>Configure</button>
                 <button onClick={() => setViewPlan(null)}
-                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#e2e8f0'; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = '#f1f5f9'; }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--slate-200)'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--slate-100)'; }}
                   onMouseDown={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(0.97)'; }}
                   onMouseUp={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)'; }}
-                  style={{ flex: 1, padding: '11px 0', borderRadius: 10, background: '#f1f5f9', color: '#374151', border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 13, transition: 'background 0.15s, transform 0.1s' }}>Close</button>
+                  style={{ flex: 1, padding: '11px 0', borderRadius: 10, background: 'var(--slate-100)', color: 'var(--slate-700b)', border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 13, transition: 'background 0.15s, transform 0.1s' }}>Close</button>
               </div>
             </div>
           </div>

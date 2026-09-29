@@ -4,12 +4,12 @@ import { useState, useEffect } from 'react';
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 
 const STATUS_COLORS: Record<string, { background: string; color: string; border: string }> = {
-  ACTIVE:         { background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0' },
-  PENDING:        { background: '#fffbeb', color: '#b45309', border: '1px solid #fde68a' },
-  PAUSED:         { background: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe' },
-  CANCELLED:      { background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca' },
-  EXPIRED:        { background: '#f8fafc', color: '#64748b', border: '1px solid #e2e8f0' },
-  PAYMENT_FAILED: { background: '#fef2f2', color: '#991b1b', border: '1px solid #fecaca' },
+  ACTIVE:         { background: 'var(--green-50)', color: 'var(--green-800)', border: '1px solid var(--green-200)' },
+  PENDING:        { background: 'var(--amber-50)', color: 'var(--amber-700)', border: '1px solid var(--amber-200)' },
+  PAUSED:         { background: 'var(--blue-50)', color: 'var(--blue-700)', border: '1px solid var(--blue-200)' },
+  CANCELLED:      { background: 'var(--red-50)', color: 'var(--red-600)', border: '1px solid var(--red-200)' },
+  EXPIRED:        { background: 'var(--slate-50)', color: 'var(--slate-500)', border: '1px solid var(--slate-200)' },
+  PAYMENT_FAILED: { background: 'var(--red-50)', color: 'var(--red-800)', border: '1px solid var(--red-200)' },
 };
 
 // ── Confirm modal ──────────────────────────────────────────────────────────
@@ -29,14 +29,14 @@ function ConfirmModal({ title, message, confirmLabel, confirmColor, onConfirm, o
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div onClick={onCancel} style={{ position: 'absolute', inset: 0, background: 'rgba(15,23,42,0.4)', backdropFilter: 'blur(2px)' }} />
-      <div style={{ position: 'relative', background: '#fff', borderRadius: 16, padding: 28, width: 380, boxShadow: '0 20px 60px rgba(0,0,0,0.15)', border: '1px solid #e8ecf0' }}>
-        <h3 style={{ margin: '0 0 8px', fontSize: 16, fontWeight: 700, color: '#0f172a' }}>{title}</h3>
-        <p style={{ margin: '0 0 24px', fontSize: 13, color: '#64748b', lineHeight: 1.6 }}>{message}</p>
+      <div style={{ position: 'relative', background: 'var(--white)', borderRadius: 16, padding: 28, width: 380, boxShadow: '0 20px 60px rgba(0,0,0,0.15)', border: '1px solid var(--slate-200b)' }}>
+        <h3 style={{ margin: '0 0 8px', fontSize: 16, fontWeight: 700, color: 'var(--slate-900)' }}>{title}</h3>
+        <p style={{ margin: '0 0 24px', fontSize: 13, color: 'var(--slate-500)', lineHeight: 1.6 }}>{message}</p>
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-          <button onClick={onCancel} style={{ padding: '8px 18px', borderRadius: 10, border: '1px solid #e2e8f0', background: '#fff', color: '#64748b', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+          <button onClick={onCancel} style={{ padding: '8px 18px', borderRadius: 10, border: '1px solid var(--slate-200)', background: 'var(--white)', color: 'var(--slate-500)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
             No, keep it
           </button>
-          <button onClick={onConfirm} style={{ padding: '8px 18px', borderRadius: 10, border: 'none', background: confirmColor, color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+          <button onClick={onConfirm} style={{ padding: '8px 18px', borderRadius: 10, border: 'none', background: confirmColor, color: 'var(--white)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
             {confirmLabel}
           </button>
         </div>
@@ -61,9 +61,9 @@ function DetailModal({ sub, onClose, onAction }: {
 
   function requestAction(status: string) {
     const configs: Record<string, typeof confirm> = {
-      PAUSED:    { status: 'PAUSED',    label: 'Yes, pause',   color: '#2563eb', title: 'Pause subscription?',   message: `Pause the subscription for ${sub.user?.firstName} ${sub.user?.lastName}? They won't be billed until resumed.` },
-      CANCELLED: { status: 'CANCELLED', label: 'Yes, cancel',  color: '#dc2626', title: 'Cancel subscription?',  message: `This will permanently cancel the subscription for ${sub.user?.firstName} ${sub.user?.lastName}. This cannot be undone.` },
-      ACTIVE:    { status: 'ACTIVE',    label: 'Yes, resume',  color: '#0d9488', title: 'Resume subscription?',  message: `Resume the subscription for ${sub.user?.firstName} ${sub.user?.lastName}? Billing will restart on the next cycle.` },
+      PAUSED:    { status: 'PAUSED',    label: 'Yes, pause',   color: 'var(--blue-600)', title: 'Pause subscription?',   message: `Pause the subscription for ${sub.user?.firstName} ${sub.user?.lastName}? They won't be billed until resumed.` },
+      CANCELLED: { status: 'CANCELLED', label: 'Yes, cancel',  color: 'var(--red-600)', title: 'Cancel subscription?',  message: `This will permanently cancel the subscription for ${sub.user?.firstName} ${sub.user?.lastName}. This cannot be undone.` },
+      ACTIVE:    { status: 'ACTIVE',    label: 'Yes, resume',  color: 'var(--teal-600)', title: 'Resume subscription?',  message: `Resume the subscription for ${sub.user?.firstName} ${sub.user?.lastName}? Billing will restart on the next cycle.` },
     };
     setConfirm(configs[status] || null);
   }
@@ -78,18 +78,18 @@ function DetailModal({ sub, onClose, onAction }: {
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div onClick={onClose} style={{ position: 'absolute', inset: 0, background: 'rgba(15,23,42,0.4)', backdropFilter: 'blur(2px)' }} />
-      <div style={{ position: 'relative', background: '#fff', borderRadius: 20, width: 560, maxHeight: '85vh', overflowY: 'auto', boxShadow: '0 24px 80px rgba(0,0,0,0.18)', border: '1px solid #e8ecf0' }}>
+      <div style={{ position: 'relative', background: 'var(--white)', borderRadius: 20, width: 560, maxHeight: '85vh', overflowY: 'auto', boxShadow: '0 24px 80px rgba(0,0,0,0.18)', border: '1px solid var(--slate-200b)' }}>
         {/* Header */}
-        <div style={{ padding: '22px 24px 18px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+        <div style={{ padding: '22px 24px 18px', borderBottom: '1px solid var(--slate-100)', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
           <div>
-            <h2 style={{ margin: 0, fontSize: 17, fontWeight: 800, color: '#0f172a' }}>
+            <h2 style={{ margin: 0, fontSize: 17, fontWeight: 800, color: 'var(--slate-900)' }}>
               {sub.user?.firstName} {sub.user?.lastName}
             </h2>
-            <p style={{ margin: '3px 0 0', fontSize: 12, color: '#94a3b8' }}>{sub.user?.email}</p>
+            <p style={{ margin: '3px 0 0', fontSize: 12, color: 'var(--slate-400)' }}>{sub.user?.email}</p>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <span style={{ ...sc, display: 'inline-flex', alignItems: 'center', padding: '3px 12px', borderRadius: 999, fontSize: 11, fontWeight: 700 }}>{sub.status}</span>
-            <button onClick={onClose} style={{ background: '#f8fafc', border: '1px solid #e8ecf0', borderRadius: 8, width: 32, height: 32, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: 18 }}>×</button>
+            <button onClick={onClose} style={{ background: 'var(--slate-50)', border: '1px solid var(--slate-200b)', borderRadius: 8, width: 32, height: 32, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--slate-400)', fontSize: 18 }}>×</button>
           </div>
         </div>
 
@@ -104,13 +104,13 @@ function DetailModal({ sub, onClose, onAction }: {
 
           {/* Progress bar */}
           {sub.boxesTotal > 0 && (
-            <div style={{ background: '#f8fafc', borderRadius: 10, padding: '12px 16px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6, fontSize: 11, color: '#94a3b8' }}>
+            <div style={{ background: 'var(--slate-50)', borderRadius: 10, padding: '12px 16px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6, fontSize: 11, color: 'var(--slate-400)' }}>
                 <span>Box progress</span>
                 <span>{Math.round((sub.boxesDelivered / sub.boxesTotal) * 100)}%</span>
               </div>
-              <div style={{ height: 8, background: '#e8ecf0', borderRadius: 999, overflow: 'hidden' }}>
-                <div style={{ height: '100%', background: '#0d9488', borderRadius: 999, width: `${Math.min(100, (sub.boxesDelivered / sub.boxesTotal) * 100)}%`, transition: 'width 0.4s' }} />
+              <div style={{ height: 8, background: 'var(--slate-200b)', borderRadius: 999, overflow: 'hidden' }}>
+                <div style={{ height: '100%', background: 'var(--teal-600)', borderRadius: 999, width: `${Math.min(100, (sub.boxesDelivered / sub.boxesTotal) * 100)}%`, transition: 'width 0.4s' }} />
               </div>
             </div>
           )}
@@ -133,20 +133,20 @@ function DetailModal({ sub, onClose, onAction }: {
         </div>
 
         {/* Actions footer */}
-        <div style={{ padding: '16px 24px', borderTop: '1px solid #f1f5f9', display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+        <div style={{ padding: '16px 24px', borderTop: '1px solid var(--slate-100)', display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
           {sub.status === 'PENDING' && (
-            <button onClick={() => requestAction('ACTIVE')} style={actionBtn('#0d9488')}>Activate</button>
+            <button onClick={() => requestAction('ACTIVE')} style={actionBtn('var(--teal-600)')}>Activate</button>
           )}
           {sub.status === 'ACTIVE' && (
             <>
-              <button onClick={() => requestAction('PAUSED')} style={actionBtn('#2563eb')}>Pause</button>
-              <button onClick={() => requestAction('CANCELLED')} style={actionBtn('#dc2626')}>Cancel</button>
+              <button onClick={() => requestAction('PAUSED')} style={actionBtn('var(--blue-600)')}>Pause</button>
+              <button onClick={() => requestAction('CANCELLED')} style={actionBtn('var(--red-600)')}>Cancel</button>
             </>
           )}
           {sub.status === 'PAUSED' && (
-            <button onClick={() => requestAction('ACTIVE')} style={actionBtn('#0d9488')}>Resume</button>
+            <button onClick={() => requestAction('ACTIVE')} style={actionBtn('var(--teal-600)')}>Resume</button>
           )}
-          <button onClick={onClose} style={{ padding: '8px 18px', borderRadius: 10, border: '1px solid #e2e8f0', background: '#fff', color: '#64748b', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Close</button>
+          <button onClick={onClose} style={{ padding: '8px 18px', borderRadius: 10, border: '1px solid var(--slate-200)', background: 'var(--white)', color: 'var(--slate-500)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Close</button>
         </div>
       </div>
 
@@ -167,8 +167,8 @@ function DetailModal({ sub, onClose, onAction }: {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
-      <p style={{ margin: '0 0 8px', fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{title}</p>
-      <div style={{ background: '#f8fafc', borderRadius: 10, overflow: 'hidden', border: '1px solid #f1f5f9' }}>
+      <p style={{ margin: '0 0 8px', fontSize: 10, fontWeight: 700, color: 'var(--slate-400)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{title}</p>
+      <div style={{ background: 'var(--slate-50)', borderRadius: 10, overflow: 'hidden', border: '1px solid var(--slate-100)' }}>
         {children}
       </div>
     </div>
@@ -177,15 +177,15 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 function Row({ label, value }: { label: string; value: string }) {
   return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '9px 14px', borderBottom: '1px solid #f1f5f9' }}>
-      <span style={{ fontSize: 12, color: '#94a3b8' }}>{label}</span>
-      <span style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }}>{value}</span>
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '9px 14px', borderBottom: '1px solid var(--slate-100)' }}>
+      <span style={{ fontSize: 12, color: 'var(--slate-400)' }}>{label}</span>
+      <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--slate-800)' }}>{value}</span>
     </div>
   );
 }
 
 function actionBtn(bg: string): React.CSSProperties {
-  return { padding: '8px 18px', borderRadius: 10, border: 'none', background: bg, color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer' };
+  return { padding: '8px 18px', borderRadius: 10, border: 'none', background: bg, color: 'var(--white)', fontSize: 13, fontWeight: 600, cursor: 'pointer' };
 }
 
 // ── Main page ──────────────────────────────────────────────────────────────
@@ -229,9 +229,9 @@ export default function AdminSubscriptionsPage() {
     e.stopPropagation();
     const name = `${sub.user?.firstName} ${sub.user?.lastName}`;
     const configs: Record<string, typeof confirm> = {
-      ACTIVE:    { id: sub.id, status: 'ACTIVE',    label: 'Yes, resume',  color: '#0d9488', title: 'Resume subscription?',  message: `Resume the subscription for ${name}? Billing will restart on the next cycle.` },
-      PAUSED:    { id: sub.id, status: 'PAUSED',    label: 'Yes, pause',   color: '#2563eb', title: 'Pause subscription?',   message: `Pause the subscription for ${name}? They won't be billed until resumed.` },
-      CANCELLED: { id: sub.id, status: 'CANCELLED', label: 'Yes, cancel',  color: '#dc2626', title: 'Cancel subscription?',  message: `This will permanently cancel the subscription for ${name}. This cannot be undone.` },
+      ACTIVE:    { id: sub.id, status: 'ACTIVE',    label: 'Yes, resume',  color: 'var(--teal-600)', title: 'Resume subscription?',  message: `Resume the subscription for ${name}? Billing will restart on the next cycle.` },
+      PAUSED:    { id: sub.id, status: 'PAUSED',    label: 'Yes, pause',   color: 'var(--blue-600)', title: 'Pause subscription?',   message: `Pause the subscription for ${name}? They won't be billed until resumed.` },
+      CANCELLED: { id: sub.id, status: 'CANCELLED', label: 'Yes, cancel',  color: 'var(--red-600)', title: 'Cancel subscription?',  message: `This will permanently cancel the subscription for ${name}. This cannot be undone.` },
     };
     setConfirm(configs[newStatus] || null);
   }
@@ -252,8 +252,8 @@ export default function AdminSubscriptionsPage() {
   return (
     <div style={{ padding: 32 }}>
       <div style={{ marginBottom: 28 }}>
-        <h1 style={{ fontSize: 24, fontWeight: 800, color: '#0f172a', margin: 0 }}>Subscriptions</h1>
-        <p style={{ fontSize: 13, color: '#94a3b8', marginTop: 4 }}>{total} subscriptions total</p>
+        <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--slate-900)', margin: 0 }}>Subscriptions</h1>
+        <p style={{ fontSize: 13, color: 'var(--slate-400)', marginTop: 4 }}>{total} subscriptions total</p>
       </div>
 
       {/* Status tabs */}
@@ -262,21 +262,21 @@ export default function AdminSubscriptionsPage() {
           <button
             key={t.val}
             onClick={() => setStatus(t.val)}
-            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer', border: status === t.val ? 'none' : '1px solid #e2e8f0', background: status === t.val ? '#0f172a' : '#fff', color: status === t.val ? '#fff' : '#64748b', transition: 'all 0.12s' }}
+            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer', border: status === t.val ? 'none' : '1px solid var(--slate-200)', background: status === t.val ? 'var(--slate-900)' : 'var(--white)', color: status === t.val ? 'var(--white)' : 'var(--slate-500)', transition: 'all 0.12s' }}
           >
             {t.label}
-            <span style={{ fontSize: 11, padding: '1px 7px', borderRadius: 999, background: status === t.val ? 'rgba(255,255,255,0.2)' : '#f1f5f9', color: status === t.val ? '#fff' : '#94a3b8' }}>{t.count}</span>
+            <span style={{ fontSize: 11, padding: '1px 7px', borderRadius: 999, background: status === t.val ? 'rgba(255,255,255,0.2)' : 'var(--slate-100)', color: status === t.val ? 'var(--white)' : 'var(--slate-400)' }}>{t.count}</span>
           </button>
         ))}
       </div>
 
-      <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #e8ecf0', overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
+      <div style={{ background: 'var(--white)', borderRadius: 16, border: '1px solid var(--slate-200b)', overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
         {loading ? (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '80px 0' }}>
-            <div style={{ width: 32, height: 32, border: '4px solid #99f6e4', borderTopColor: '#0d9488', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+            <div style={{ width: 32, height: 32, border: '4px solid var(--teal-200)', borderTopColor: 'var(--teal-600)', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
           </div>
         ) : subs.length === 0 ? (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 0', color: '#cbd5e1' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 0', color: 'var(--slate-300)' }}>
             <div style={{ fontSize: 40, marginBottom: 8 }}>🔄</div>
             <p style={{ fontSize: 13 }}>No subscriptions found</p>
           </div>
@@ -285,7 +285,7 @@ export default function AdminSubscriptionsPage() {
             <thead>
               <tr>
                 {['Customer', 'Plan', 'Dog', 'Status', 'Progress', 'Renewal', 'Actions'].map(h => (
-                  <th key={h} style={{ padding: '10px 18px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', borderBottom: '1px solid #e8ecf0', background: '#f8fafc', whiteSpace: 'nowrap' }}>{h}</th>
+                  <th key={h} style={{ padding: '10px 18px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: 'var(--slate-400)', textTransform: 'uppercase', letterSpacing: '0.06em', borderBottom: '1px solid var(--slate-200b)', background: 'var(--slate-50)', whiteSpace: 'nowrap' }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -296,46 +296,46 @@ export default function AdminSubscriptionsPage() {
                   <tr
                     key={s.id}
                     onClick={() => setSelected(s)}
-                    style={{ borderBottom: '1px solid #f8fafc', cursor: 'pointer', transition: 'background 0.1s' }}
-                    onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
+                    style={{ borderBottom: '1px solid var(--slate-50)', cursor: 'pointer', transition: 'background 0.1s' }}
+                    onMouseEnter={e => (e.currentTarget.style.background = 'var(--slate-50)')}
                     onMouseLeave={e => (e.currentTarget.style.background = '')}
                   >
                     <td style={{ padding: '14px 18px' }}>
-                      <p style={{ fontWeight: 600, color: '#1e293b', margin: 0 }}>{s.user?.firstName} {s.user?.lastName}</p>
-                      <p style={{ fontSize: 11, color: '#94a3b8', margin: '2px 0 0' }}>{s.user?.email}</p>
+                      <p style={{ fontWeight: 600, color: 'var(--slate-800)', margin: 0 }}>{s.user?.firstName} {s.user?.lastName}</p>
+                      <p style={{ fontSize: 11, color: 'var(--slate-400)', margin: '2px 0 0' }}>{s.user?.email}</p>
                     </td>
                     <td style={{ padding: '14px 18px' }}>
-                      <p style={{ fontWeight: 600, color: '#1e293b', margin: 0 }}>{s.plan?.name}</p>
-                      <p style={{ fontSize: 11, color: '#94a3b8', margin: '2px 0 0' }}>₾{Number(s.plan?.price ?? 0).toFixed(0)}</p>
+                      <p style={{ fontWeight: 600, color: 'var(--slate-800)', margin: 0 }}>{s.plan?.name}</p>
+                      <p style={{ fontSize: 11, color: 'var(--slate-400)', margin: '2px 0 0' }}>₾{Number(s.plan?.price ?? 0).toFixed(0)}</p>
                     </td>
-                    <td style={{ padding: '14px 18px', color: '#64748b' }}>{s.dog?.name || <span style={{ color: '#e2e8f0' }}>—</span>}</td>
+                    <td style={{ padding: '14px 18px', color: 'var(--slate-500)' }}>{s.dog?.name || <span style={{ color: 'var(--slate-200)' }}>—</span>}</td>
                     <td style={{ padding: '14px 18px' }}>
                       <span style={{ ...sc, display: 'inline-flex', alignItems: 'center', padding: '2px 10px', borderRadius: 999, fontSize: 11, fontWeight: 600 }}>{s.status}</span>
                     </td>
                     <td style={{ padding: '14px 18px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <div style={{ width: 60, height: 6, background: '#f1f5f9', borderRadius: 999, overflow: 'hidden' }}>
-                          <div style={{ height: '100%', background: '#0d9488', borderRadius: 999, width: `${s.boxesTotal ? Math.min(100, (s.boxesDelivered / s.boxesTotal) * 100) : 0}%` }} />
+                        <div style={{ width: 60, height: 6, background: 'var(--slate-100)', borderRadius: 999, overflow: 'hidden' }}>
+                          <div style={{ height: '100%', background: 'var(--teal-600)', borderRadius: 999, width: `${s.boxesTotal ? Math.min(100, (s.boxesDelivered / s.boxesTotal) * 100) : 0}%` }} />
                         </div>
-                        <span style={{ fontSize: 11, color: '#94a3b8' }}>{s.boxesDelivered}/{s.boxesTotal}</span>
+                        <span style={{ fontSize: 11, color: 'var(--slate-400)' }}>{s.boxesDelivered}/{s.boxesTotal}</span>
                       </div>
                     </td>
-                    <td style={{ padding: '14px 18px', fontSize: 12, color: '#64748b' }}>
+                    <td style={{ padding: '14px 18px', fontSize: 12, color: 'var(--slate-500)' }}>
                       {s.nextRenewalAt ? new Date(s.nextRenewalAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '—'}
                     </td>
                     <td style={{ padding: '14px 18px' }} onClick={e => e.stopPropagation()}>
                       <div style={{ display: 'flex', gap: 6 }}>
                         {s.status === 'PENDING' && (
-                          <button onClick={e => requestAction(s, 'ACTIVE', e)} style={{ fontSize: 12, padding: '5px 10px', borderRadius: 8, background: '#f0fdf4', color: '#166534', border: 'none', cursor: 'pointer', fontWeight: 600 }}>Activate</button>
+                          <button onClick={e => requestAction(s, 'ACTIVE', e)} style={{ fontSize: 12, padding: '5px 10px', borderRadius: 8, background: 'var(--green-50)', color: 'var(--green-800)', border: 'none', cursor: 'pointer', fontWeight: 600 }}>Activate</button>
                         )}
                         {s.status === 'ACTIVE' && (
                           <>
-                            <button onClick={e => requestAction(s, 'PAUSED', e)} style={{ fontSize: 12, padding: '5px 10px', borderRadius: 8, background: '#eff6ff', color: '#1d4ed8', border: 'none', cursor: 'pointer', fontWeight: 600 }}>Pause</button>
-                            <button onClick={e => requestAction(s, 'CANCELLED', e)} style={{ fontSize: 12, padding: '5px 10px', borderRadius: 8, background: '#fef2f2', color: '#dc2626', border: 'none', cursor: 'pointer', fontWeight: 600 }}>Cancel</button>
+                            <button onClick={e => requestAction(s, 'PAUSED', e)} style={{ fontSize: 12, padding: '5px 10px', borderRadius: 8, background: 'var(--blue-50)', color: 'var(--blue-700)', border: 'none', cursor: 'pointer', fontWeight: 600 }}>Pause</button>
+                            <button onClick={e => requestAction(s, 'CANCELLED', e)} style={{ fontSize: 12, padding: '5px 10px', borderRadius: 8, background: 'var(--red-50)', color: 'var(--red-600)', border: 'none', cursor: 'pointer', fontWeight: 600 }}>Cancel</button>
                           </>
                         )}
                         {s.status === 'PAUSED' && (
-                          <button onClick={e => requestAction(s, 'ACTIVE', e)} style={{ fontSize: 12, padding: '5px 10px', borderRadius: 8, background: '#f0fdf4', color: '#166534', border: 'none', cursor: 'pointer', fontWeight: 600 }}>Resume</button>
+                          <button onClick={e => requestAction(s, 'ACTIVE', e)} style={{ fontSize: 12, padding: '5px 10px', borderRadius: 8, background: 'var(--green-50)', color: 'var(--green-800)', border: 'none', cursor: 'pointer', fontWeight: 600 }}>Resume</button>
                         )}
                       </div>
                     </td>

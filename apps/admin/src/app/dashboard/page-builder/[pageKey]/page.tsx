@@ -305,16 +305,16 @@ function setNestedVal(data: any, lang: Lang, key: string, value: string) {
 
 function SectionEditor({ sectionDef, data, onChange }: { sectionDef: SectionDef; data: any; onChange: (d: any) => void }) {
   const [lang, setLang] = useState<Lang>('en');
-  const inp: any = { width: '100%', border: '1px solid #e2e8f0', borderRadius: 9, padding: '8px 12px', fontSize: 13, outline: 'none', background: '#fff', boxSizing: 'border-box' };
+  const inp: any = { width: '100%', border: '1px solid var(--slate-200)', borderRadius: 9, padding: '8px 12px', fontSize: 13, outline: 'none', background: 'var(--white)', boxSizing: 'border-box' };
 
   function val(key: string) { return getNestedVal(data, lang, key); }
   function set(key: string, value: string) { onChange(setNestedVal(data, lang, key, value)); }
 
   return (
     <div>
-      <div style={{ display: 'flex', gap: 0, marginBottom: 20, borderBottom: '1px solid #e8ecf0' }}>
+      <div style={{ display: 'flex', gap: 0, marginBottom: 20, borderBottom: '1px solid var(--slate-200b)' }}>
         {(['en', 'ka'] as Lang[]).map(l => (
-          <button key={l} onClick={() => setLang(l)} style={{ padding: '8px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer', border: 'none', background: 'none', color: lang === l ? '#0d9488' : '#94a3b8', borderBottom: lang === l ? '2px solid #0d9488' : '2px solid transparent' }}>
+          <button key={l} onClick={() => setLang(l)} style={{ padding: '8px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer', border: 'none', background: 'none', color: lang === l ? 'var(--teal-600)' : 'var(--slate-400)', borderBottom: lang === l ? '2px solid var(--teal-600)' : '2px solid transparent' }}>
             {l === 'en' ? '🇬🇧 English' : '🇬🇪 Georgian'}
           </button>
         ))}
@@ -324,7 +324,7 @@ function SectionEditor({ sectionDef, data, onChange }: { sectionDef: SectionDef;
         {sectionDef.fields.map(field => {
           if (field.type === 'info') {
             return (
-              <div key={field.key} style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 9, padding: '10px 14px', fontSize: 13, color: '#92400e' }}>
+              <div key={field.key} style={{ background: 'var(--amber-50)', border: '1px solid var(--amber-200)', borderRadius: 9, padding: '10px 14px', fontSize: 13, color: 'var(--amber-800)' }}>
                 {field.label}
               </div>
             );
@@ -343,24 +343,24 @@ function SectionEditor({ sectionDef, data, onChange }: { sectionDef: SectionDef;
             };
             return (
               <div key={field.key}>
-                <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>{field.label}</label>
+                <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--slate-400)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>{field.label}</label>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {items.map((item, idx) => (
-                    <div key={idx} style={{ background: '#f8fafc', borderRadius: 10, border: '1px solid #e8ecf0', padding: '12px 14px', position: 'relative' }}>
+                    <div key={idx} style={{ background: 'var(--slate-50)', borderRadius: 10, border: '1px solid var(--slate-200b)', padding: '12px 14px', position: 'relative' }}>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                         {(field.itemFields || []).map(sf => (
                           <div key={sf.key} style={{ gridColumn: sf.type === 'textarea' ? '1 / -1' : 'auto' }}>
-                            <label style={{ display: 'block', fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>{sf.label}</label>
+                            <label style={{ display: 'block', fontSize: 10, fontWeight: 700, color: 'var(--slate-400)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>{sf.label}</label>
                             {sf.type === 'textarea'
                               ? <textarea value={item[sf.key] || ''} onChange={e => { const ni = [...items]; ni[idx] = { ...ni[idx], [sf.key]: e.target.value }; setItems(ni); }} rows={2} style={{ ...inp, resize: 'vertical' }} placeholder={sf.placeholder} />
                               : <input value={item[sf.key] || ''} onChange={e => { const ni = [...items]; ni[idx] = { ...ni[idx], [sf.key]: e.target.value }; setItems(ni); }} style={inp} placeholder={sf.placeholder} />}
                           </div>
                         ))}
                       </div>
-                      <button onClick={() => setItems(items.filter((_, i) => i !== idx))} style={{ position: 'absolute', top: 8, right: 10, background: '#fef2f2', color: '#dc2626', border: 'none', borderRadius: 6, padding: '2px 8px', fontSize: 11, cursor: 'pointer', fontWeight: 600 }}>✕</button>
+                      <button onClick={() => setItems(items.filter((_, i) => i !== idx))} style={{ position: 'absolute', top: 8, right: 10, background: 'var(--red-50)', color: 'var(--red-600)', border: 'none', borderRadius: 6, padding: '2px 8px', fontSize: 11, cursor: 'pointer', fontWeight: 600 }}>✕</button>
                     </div>
                   ))}
-                  <button onClick={() => { const ni: any = {}; (field.itemFields || []).forEach(sf => ni[sf.key] = ''); setItems([...items, ni]); }} style={{ background: '#f0fdfa', color: '#0d9488', border: '1px dashed #99f6e4', borderRadius: 9, padding: '8px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                  <button onClick={() => { const ni: any = {}; (field.itemFields || []).forEach(sf => ni[sf.key] = ''); setItems([...items, ni]); }} style={{ background: 'var(--teal-50)', color: 'var(--teal-600)', border: '1px dashed var(--teal-200)', borderRadius: 9, padding: '8px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
                     + Add item
                   </button>
                 </div>
@@ -370,15 +370,15 @@ function SectionEditor({ sectionDef, data, onChange }: { sectionDef: SectionDef;
 
           return (
             <div key={field.key}>
-              <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--slate-400)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>
                 {field.label}
-                {isTranslatable && <span style={{ fontSize: 10, color: '#0d9488', marginLeft: 6 }}>({lang.toUpperCase()})</span>}
+                {isTranslatable && <span style={{ fontSize: 10, color: 'var(--teal-600)', marginLeft: 6 }}>({lang.toUpperCase()})</span>}
               </label>
               {field.type === 'image' ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                   <input value={val(field.key)} onChange={e => set(field.key, e.target.value)} style={inp} placeholder={field.placeholder || 'https://...'} />
-                  {val(field.key) && <img src={val(field.key)} alt="preview" style={{ height: 80, width: 140, objectFit: 'cover', borderRadius: 8, border: '1px solid #e2e8f0' }} onError={e => (e.currentTarget.style.display = 'none')} />}
-                  <p style={{ fontSize: 11, color: '#94a3b8' }}>Paste an image URL. Use external hosting (Cloudinary, Unsplash, etc.)</p>
+                  {val(field.key) && <img src={val(field.key)} alt="preview" style={{ height: 80, width: 140, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--slate-200)' }} onError={e => (e.currentTarget.style.display = 'none')} />}
+                  <p style={{ fontSize: 11, color: 'var(--slate-400)' }}>Paste an image URL. Use external hosting (Cloudinary, Unsplash, etc.)</p>
                 </div>
               ) : field.type === 'textarea' ? (
                 <textarea value={val(field.key)} onChange={e => set(field.key, e.target.value)} placeholder={field.placeholder} rows={3} style={{ ...inp, resize: 'vertical' }} />
@@ -457,7 +457,7 @@ export default function PageEditorPage() {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', flexDirection: 'column', gap: 12, fontFamily: 'sans-serif' }}>
         <div style={{ fontSize: 40 }}>🤔</div>
-        <p style={{ color: '#64748b', fontSize: 15 }}>Page not found: <strong>{pageKey}</strong></p>
+        <p style={{ color: 'var(--slate-500)', fontSize: 15 }}>Page not found: <strong>{pageKey}</strong></p>
       </div>
     );
   }
@@ -465,18 +465,18 @@ export default function PageEditorPage() {
   const previewUrl = `http://localhost:3000${pageDef.previewPath || '/'}`;
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f8fafc', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--slate-50)', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>
 
       {/* Header */}
-      <div style={{ background: '#fff', borderBottom: '1px solid #e8ecf0', padding: '16px 28px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 10 }}>
+      <div style={{ background: 'var(--white)', borderBottom: '1px solid var(--slate-200b)', padding: '16px 28px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 10 }}>
         <div>
-          <h1 style={{ fontSize: 18, fontWeight: 800, color: '#0f172a', margin: 0 }}>{pageDef.icon} {pageDef.label}</h1>
-          <p style={{ fontSize: 12, color: '#94a3b8', margin: '3px 0 0' }}>Edit sections, toggle visibility, and translate content to Georgian.</p>
+          <h1 style={{ fontSize: 18, fontWeight: 800, color: 'var(--slate-900)', margin: 0 }}>{pageDef.icon} {pageDef.label}</h1>
+          <p style={{ fontSize: 12, color: 'var(--slate-400)', margin: '3px 0 0' }}>Edit sections, toggle visibility, and translate content to Georgian.</p>
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          {saved && <span style={{ fontSize: 12, color: '#0d9488', fontWeight: 600 }}>✓ Saved!</span>}
-          <a href={previewUrl} target="_blank" rel="noreferrer" style={{ fontSize: 12, color: '#64748b', border: '1px solid #e2e8f0', borderRadius: 8, padding: '7px 12px', textDecoration: 'none' }}>Preview ↗</a>
-          <button onClick={save} disabled={saving} style={{ background: '#0d9488', color: '#fff', border: 'none', borderRadius: 9, padding: '8px 18px', fontSize: 13, fontWeight: 700, cursor: saving ? 'default' : 'pointer', opacity: saving ? 0.7 : 1 }}>
+          {saved && <span style={{ fontSize: 12, color: 'var(--teal-600)', fontWeight: 600 }}>✓ Saved!</span>}
+          <a href={previewUrl} target="_blank" rel="noreferrer" style={{ fontSize: 12, color: 'var(--slate-500)', border: '1px solid var(--slate-200)', borderRadius: 8, padding: '7px 12px', textDecoration: 'none' }}>Preview ↗</a>
+          <button onClick={save} disabled={saving} style={{ background: 'var(--teal-600)', color: 'var(--white)', border: 'none', borderRadius: 9, padding: '8px 18px', fontSize: 13, fontWeight: 700, cursor: saving ? 'default' : 'pointer', opacity: saving ? 0.7 : 1 }}>
             {saving ? 'Saving…' : '💾 Save page'}
           </button>
         </div>
@@ -485,7 +485,7 @@ export default function PageEditorPage() {
       {/* Sections */}
       {loading ? (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '80px 0' }}>
-          <div style={{ width: 32, height: 32, border: '4px solid #99f6e4', borderTopColor: '#0d9488', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+          <div style={{ width: 32, height: 32, border: '4px solid var(--teal-200)', borderTopColor: 'var(--teal-600)', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
           <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
         </div>
       ) : (
@@ -496,28 +496,28 @@ export default function PageEditorPage() {
             const sectionData = pageData[section.id] || {};
 
             return (
-              <div key={section.id} style={{ background: '#fff', borderRadius: 14, border: enabled ? '1px solid #e8ecf0' : '1px solid #f1f5f9', boxShadow: '0 1px 3px rgba(0,0,0,0.03)', opacity: enabled ? 1 : 0.65, transition: 'opacity 0.2s' }}>
+              <div key={section.id} style={{ background: 'var(--white)', borderRadius: 14, border: enabled ? '1px solid var(--slate-200b)' : '1px solid var(--slate-100)', boxShadow: '0 1px 3px rgba(0,0,0,0.03)', opacity: enabled ? 1 : 0.65, transition: 'opacity 0.2s' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 18px', cursor: 'pointer' }} onClick={() => setExpandedSection(expanded ? null : section.id)}>
-                  <div style={{ color: '#d1d5db', fontSize: 14, cursor: 'grab' }}>⠿</div>
+                  <div style={{ color: 'var(--slate-300b)', fontSize: 14, cursor: 'grab' }}>⠿</div>
                   <div
                     onClick={e => { e.stopPropagation(); toggleSection(section.id); }}
-                    style={{ width: 40, height: 22, borderRadius: 11, background: enabled ? '#0d9488' : '#e2e8f0', position: 'relative', cursor: 'pointer', transition: 'background 0.2s', flexShrink: 0 }}
+                    style={{ width: 40, height: 22, borderRadius: 11, background: enabled ? 'var(--teal-600)' : 'var(--slate-200)', position: 'relative', cursor: 'pointer', transition: 'background 0.2s', flexShrink: 0 }}
                   >
-                    <span style={{ position: 'absolute', top: 3, left: enabled ? 20 : 3, width: 16, height: 16, borderRadius: '50%', background: '#fff', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
+                    <span style={{ position: 'absolute', top: 3, left: enabled ? 20 : 3, width: 16, height: 16, borderRadius: '50%', background: 'var(--white)', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
                   </div>
                   <span style={{ fontSize: 18 }}>{section.icon}</span>
                   <div style={{ flex: 1 }}>
-                    <p style={{ fontWeight: 700, color: '#0f172a', margin: 0, fontSize: 14 }}>{section.label}</p>
-                    <p style={{ fontSize: 11, color: '#94a3b8', margin: '2px 0 0' }}>
+                    <p style={{ fontWeight: 700, color: 'var(--slate-900)', margin: 0, fontSize: 14 }}>{section.label}</p>
+                    <p style={{ fontSize: 11, color: 'var(--slate-400)', margin: '2px 0 0' }}>
                       {enabled ? 'Visible on website' : 'Hidden — toggle to show'} · {section.fields.filter(f => f.type !== 'info').length} field{section.fields.filter(f => f.type !== 'info').length !== 1 ? 's' : ''}
                     </p>
                   </div>
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ transform: expanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', color: '#94a3b8' }}>
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ transform: expanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', color: 'var(--slate-400)' }}>
                     <path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
                 </div>
                 {expanded && (
-                  <div style={{ borderTop: '1px solid #f1f5f9', padding: '20px 20px 24px' }}>
+                  <div style={{ borderTop: '1px solid var(--slate-100)', padding: '20px 20px 24px' }}>
                     <SectionEditor sectionDef={section} data={sectionData} onChange={newData => setPageData(pd => ({ ...pd, [section.id]: newData }))} />
                   </div>
                 )}

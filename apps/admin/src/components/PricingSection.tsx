@@ -101,7 +101,7 @@ export default function PricingSection({ price, salePrice, onChange, priceError,
     boxSizing: 'border-box' as const,
   });
 
-  const lbl: React.CSSProperties = { fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 6 };
+  const lbl: React.CSSProperties = { fontSize: 11, fontWeight: 700, color: 'var(--slate-400)', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 6 };
 
   return (
     <div>
@@ -116,7 +116,7 @@ export default function PricingSection({ price, salePrice, onChange, priceError,
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
         <div>
-          <label style={lbl}>Discount % <span style={{ color: '#cbd5e1', fontWeight: 400 }}>(auto-fills Customer Price)</span></label>
+          <label style={lbl}>Discount % <span style={{ color: 'var(--slate-300)', fontWeight: 400 }}>(auto-fills Customer Price)</span></label>
           <div style={{ position: 'relative' }}>
             <input
               style={{ ...inp(), paddingRight: 32 }}
@@ -125,11 +125,11 @@ export default function PricingSection({ price, salePrice, onChange, priceError,
               onChange={e => handleDiscountPct(e.target.value)}
               placeholder="e.g. 20"
             />
-            <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', fontSize: 13, pointerEvents: 'none' }}>%</span>
+            <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--slate-400)', fontSize: 13, pointerEvents: 'none' }}>%</span>
           </div>
         </div>
         <div>
-          <label style={lbl}>Discount Amount (₾) <span style={{ color: '#cbd5e1', fontWeight: 400 }}>(auto-fills Customer Price)</span></label>
+          <label style={lbl}>Discount Amount (₾) <span style={{ color: 'var(--slate-300)', fontWeight: 400 }}>(auto-fills Customer Price)</span></label>
           <div style={{ position: 'relative' }}>
             <input
               style={{ ...inp(), paddingLeft: 24 }}
@@ -138,38 +138,38 @@ export default function PricingSection({ price, salePrice, onChange, priceError,
               onChange={e => handleDiscountAmt(e.target.value)}
               placeholder="e.g. 5.00"
             />
-            <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', fontSize: 13, pointerEvents: 'none' }}>₾</span>
+            <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--slate-400)', fontSize: 13, pointerEvents: 'none' }}>₾</span>
           </div>
         </div>
       </div>
 
       {/* Summary row */}
-      <div style={{ background: hasDiscount ? '#f0fdfa' : '#f8fafc', border: `1px solid ${hasDiscount ? '#99f6e4' : '#e2e8f0'}`, borderRadius: 10, padding: '12px 16px', display: 'flex', gap: 32, alignItems: 'center', flexWrap: 'wrap' }}>
+      <div style={{ background: hasDiscount ? 'var(--teal-50)' : 'var(--slate-50)', border: `1px solid ${hasDiscount ? 'var(--teal-200)' : 'var(--slate-200)'}`, borderRadius: 10, padding: '12px 16px', display: 'flex', gap: 32, alignItems: 'center', flexWrap: 'wrap' }}>
         <div>
-          <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600, display: 'block', marginBottom: 2 }}>RRP</span>
-          <span style={{ fontSize: 15, fontWeight: 700, color: '#1e293b', textDecoration: hasDiscount ? 'line-through' : 'none' }}>₾{p > 0 ? p.toFixed(2) : '—'}</span>
+          <span style={{ fontSize: 11, color: 'var(--slate-400)', fontWeight: 600, display: 'block', marginBottom: 2 }}>RRP</span>
+          <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--slate-800)', textDecoration: hasDiscount ? 'line-through' : 'none' }}>₾{p > 0 ? p.toFixed(2) : '—'}</span>
         </div>
         {hasDiscount && (
           <>
-            <div style={{ color: '#94a3b8', fontSize: 18 }}>→</div>
+            <div style={{ color: 'var(--slate-400)', fontSize: 18 }}>→</div>
             <div>
-              <span style={{ fontSize: 11, color: '#0d9488', fontWeight: 600, display: 'block', marginBottom: 2 }}>Customer Pays</span>
-              <span style={{ fontSize: 15, fontWeight: 800, color: '#0d9488' }}>₾{s.toFixed(2)}</span>
+              <span style={{ fontSize: 11, color: 'var(--teal-600)', fontWeight: 600, display: 'block', marginBottom: 2 }}>Customer Pays</span>
+              <span style={{ fontSize: 15, fontWeight: 800, color: 'var(--teal-600)' }}>₾{s.toFixed(2)}</span>
             </div>
-            <div style={{ background: '#0d9488', color: '#fff', borderRadius: 6, padding: '4px 10px', fontSize: 12, fontWeight: 700 }}>
+            <div style={{ background: 'var(--teal-600)', color: 'var(--white)', borderRadius: 6, padding: '4px 10px', fontSize: 12, fontWeight: 700 }}>
               -{savingPct}%
             </div>
             <div>
-              <span style={{ fontSize: 11, color: '#64748b', fontWeight: 600, display: 'block', marginBottom: 2 }}>Customer Saves</span>
-              <span style={{ fontSize: 14, fontWeight: 700, color: '#64748b' }}>₾{saving}</span>
+              <span style={{ fontSize: 11, color: 'var(--slate-500)', fontWeight: 600, display: 'block', marginBottom: 2 }}>Customer Saves</span>
+              <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--slate-500)' }}>₾{saving}</span>
             </div>
           </>
         )}
         {!hasDiscount && p > 0 && (
-          <span style={{ fontSize: 13, color: '#94a3b8' }}>No discount — customer pays full RRP</span>
+          <span style={{ fontSize: 13, color: 'var(--slate-400)' }}>No discount — customer pays full RRP</span>
         )}
         {p === 0 && (
-          <span style={{ fontSize: 13, color: '#cbd5e1' }}>Enter RRP to see pricing summary</span>
+          <span style={{ fontSize: 13, color: 'var(--slate-300)' }}>Enter RRP to see pricing summary</span>
         )}
       </div>
     </div>

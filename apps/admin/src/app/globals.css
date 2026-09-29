@@ -2,6 +2,235 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Theme tokens ──────────────────────────────────────────────────────────
+   One CSS variable per hex literal used across the app. Light values are
+   identical to the original hardcoded hex (zero visual change in light
+   mode); dark values are hand-tuned per color family below. */
+
+:root {
+  /* neutrals (slate/gray/white) */
+  --slate-50: #f8fafc;
+  --slate-100: #f1f5f9;
+  --slate-200: #e2e8f0;
+  --slate-200b: #e8ecf0;
+  --slate-300: #cbd5e1;
+  --slate-300b: #d1d5db;
+  --slate-400: #94a3b8;
+  --slate-400b: #b0bac5;
+  --slate-500: #64748b;
+  --slate-600: #475569;
+  --slate-700: #334155;
+  --slate-700b: #374151;
+  --slate-800: #1e293b;
+  --slate-900: #0f172a;
+  --white: #fff;
+
+  /* teal (accent/brand) */
+  --teal-50: #f0fdfa;
+  --teal-50b: #f0fdf9;
+  --teal-100: #ccfbf1;
+  --teal-200: #99f6e4;
+  --teal-300: #5eead4;
+  --teal-400: #2dd4bf;
+  --teal-600: #0d9488;
+  --teal-700: #0f766e;
+  --teal-800: #115e59;
+  --teal-900: #134e4a;
+
+  /* green/emerald (success) */
+  --green-50: #f0fdf4;
+  --emerald-50: #ecfdf5;
+  --green-100: #dcfce7;
+  --green-200: #bbf7d0;
+  --green-300: #86efac;
+  --emerald-300: #6ee7b7;
+  --emerald-500: #10b981;
+  --emerald-600: #059669;
+  --green-600: #16a34a;
+  --green-700: #15803d;
+  --green-800: #166534;
+  --emerald-800: #065f46;
+
+  /* red/rose (danger) */
+  --red-50: #fef2f2;
+  --red-50b: #fff5f5;
+  --rose-50: #fff1f2;
+  --red-100: #fee2e2;
+  --red-200: #fecaca;
+  --red-300: #fca5a5;
+  --red-500: #ef4444;
+  --red-600: #dc2626;
+  --red-700: #b91c1c;
+  --red-800: #991b1b;
+  --rose-700: #be123c;
+
+  /* amber/yellow/orange (warning) */
+  --amber-50: #fffbeb;
+  --amber-50b: #fffdf5;
+  --yellow-50: #fefce8;
+  --orange-50: #fff7ed;
+  --yellow-100: #fef9c3;
+  --amber-100: #fef3c7;
+  --amber-200: #fde68a;
+  --amber-300: #fcd34d;
+  --amber-500: #f59e0b;
+  --amber-600: #d97706;
+  --amber-700: #b45309;
+  --amber-800: #92400e;
+  --yellow-800: #854d0e;
+
+  /* blue/sky/indigo (info) */
+  --blue-50: #eff6ff;
+  --indigo-50: #eef2ff;
+  --sky-100: #e0f2fe;
+  --blue-100: #dbeafe;
+  --blue-200: #bfdbfe;
+  --blue-300: #93c5fd;
+  --indigo-200: #c7d2fe;
+  --blue-500: #3b82f6;
+  --blue-600: #2563eb;
+  --blue-700: #1d4ed8;
+  --blue-800: #1e40af;
+  --sky-500: #0ea5e9;
+  --sky-700: #0369a1;
+
+  /* purple/violet/fuchsia (special) */
+  --purple-50: #faf5ff;
+  --violet-50: #f5f3ff;
+  --fuchsia-50: #fdf4ff;
+  --purple-100: #f3e8ff;
+  --purple-200: #e9d5ff;
+  --violet-200: #ddd6fe;
+  --violet-300: #c4b5fd;
+  --purple-400: #c084fc;
+  --violet-500: #8b5cf6;
+  --purple-500: #a855f7;
+  --purple-600: #9333ea;
+  --violet-600: #7c3aed;
+  --violet-700: #6d28d9;
+  --purple-700: #7e22ce;
+  --purple-800: #6b21a8;
+  --indigo-800: #3730a3;
+
+  /* semantic aliases used by the app shell (layout.tsx body) */
+  --bg-page: var(--slate-50);
+  --text-primary: var(--slate-900);
+}
+
+:root[data-theme='dark'] {
+  /* neutrals */
+  --slate-50: #0b1220;
+  --slate-100: #1b2536;
+  --slate-200: #2a3547;
+  --slate-200b: #2a3547;
+  --slate-300: #3a4a63;
+  --slate-300b: #475569;
+  --slate-400: #94a3b8;
+  --slate-400b: #93a1b5;
+  --slate-500: #94a3b8;
+  --slate-600: #cbd5e1;
+  --slate-700: #cbd5e1;
+  --slate-700b: #d1d5db;
+  --slate-800: #e2e8f0;
+  --slate-900: #f1f5f9;
+  --white: #111827;
+
+  /* teal */
+  --teal-50: rgba(13, 148, 136, 0.16);
+  --teal-50b: rgba(13, 148, 136, 0.14);
+  --teal-100: rgba(45, 212, 191, 0.22);
+  --teal-200: rgba(45, 212, 191, 0.4);
+  --teal-300: #5eead4;
+  --teal-400: #2dd4bf;
+  --teal-600: #14b8a6;
+  --teal-700: #2dd4bf;
+  --teal-800: #5eead4;
+  --teal-900: #99f6e4;
+
+  /* green/emerald */
+  --green-50: rgba(22, 163, 74, 0.16);
+  --emerald-50: rgba(16, 185, 129, 0.16);
+  --green-100: rgba(22, 163, 74, 0.22);
+  --green-200: rgba(74, 222, 128, 0.4);
+  --green-300: #4ade80;
+  --emerald-300: #6ee7b7;
+  --emerald-500: #34d399;
+  --emerald-600: #34d399;
+  --green-600: #4ade80;
+  --green-700: #86efac;
+  --green-800: #bbf7d0;
+  --emerald-800: #a7f3d0;
+
+  /* red/rose */
+  --red-50: rgba(220, 38, 38, 0.16);
+  --red-50b: rgba(220, 38, 38, 0.14);
+  --rose-50: rgba(190, 18, 60, 0.16);
+  --red-100: rgba(220, 38, 38, 0.22);
+  --red-200: rgba(248, 113, 113, 0.4);
+  --red-300: #f87171;
+  --red-500: #f87171;
+  --red-600: #f87171;
+  --red-700: #fca5a5;
+  --red-800: #fecaca;
+  --rose-700: #fb7185;
+
+  /* amber/yellow/orange */
+  --amber-50: rgba(217, 119, 6, 0.16);
+  --amber-50b: rgba(217, 119, 6, 0.14);
+  --yellow-50: rgba(202, 138, 4, 0.16);
+  --orange-50: rgba(234, 88, 12, 0.16);
+  --yellow-100: rgba(250, 204, 21, 0.22);
+  --amber-100: rgba(251, 191, 36, 0.22);
+  --amber-200: rgba(252, 211, 77, 0.4);
+  --amber-300: #fcd34d;
+  --amber-500: #fbbf24;
+  --amber-600: #fbbf24;
+  --amber-700: #fcd34d;
+  --amber-800: #fde68a;
+  --yellow-800: #fde68a;
+
+  /* blue/sky/indigo */
+  --blue-50: rgba(37, 99, 235, 0.16);
+  --indigo-50: rgba(79, 70, 229, 0.16);
+  --sky-100: rgba(14, 165, 233, 0.22);
+  --blue-100: rgba(59, 130, 246, 0.22);
+  --blue-200: rgba(96, 165, 250, 0.4);
+  --blue-300: #60a5fa;
+  --indigo-200: #a5b4fc;
+  --blue-500: #60a5fa;
+  --blue-600: #60a5fa;
+  --blue-700: #93c5fd;
+  --blue-800: #bfdbfe;
+  --sky-500: #38bdf8;
+  --sky-700: #7dd3fc;
+
+  /* purple/violet/fuchsia */
+  --purple-50: rgba(147, 51, 234, 0.16);
+  --violet-50: rgba(124, 58, 237, 0.16);
+  --fuchsia-50: rgba(192, 132, 252, 0.16);
+  --purple-100: rgba(168, 85, 247, 0.22);
+  --purple-200: rgba(196, 181, 253, 0.4);
+  --violet-200: #c4b5fd;
+  --violet-300: #c4b5fd;
+  --purple-400: #c084fc;
+  --violet-500: #a78bfa;
+  --purple-500: #c084fc;
+  --purple-600: #c084fc;
+  --violet-600: #c4b5fd;
+  --violet-700: #ddd6fe;
+  --purple-700: #ddd6fe;
+  --purple-800: #e9d5ff;
+  --indigo-800: #a5b4fc;
+
+  --bg-page: var(--slate-50);
+  --text-primary: var(--slate-900);
+}
+
+body {
+  background: var(--bg-page);
+  color: var(--text-primary);
+}
+
 @keyframes spin {
   to { transform: rotate(360deg); }
 }

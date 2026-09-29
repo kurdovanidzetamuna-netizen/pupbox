@@ -7,9 +7,9 @@ const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 const EMPTY = { title: '', slug: '', excerpt: '', content: '', featuredImage: '', authorName: '', status: 'DRAFT', seoTitle: '', seoDesc: '' };
 const EMPTY_KA = { title: '', excerpt: '', content: '', seoTitle: '', seoDesc: '' };
 
-const inp = { width: '100%', border: '1px solid #e2e8f0', borderRadius: 10, padding: '9px 14px', fontSize: 13, outline: 'none', boxSizing: 'border-box' as const };
-const lbl = { display: 'block', fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: 6 };
-const card = { background: '#fff', borderRadius: 14, border: '1px solid #e8ecf0', padding: 24, boxShadow: '0 1px 4px rgba(0,0,0,0.04)' };
+const inp = { width: '100%', border: '1px solid var(--slate-200)', borderRadius: 10, padding: '9px 14px', fontSize: 13, outline: 'none', boxSizing: 'border-box' as const };
+const lbl = { display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--slate-400)', textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: 6 };
+const card = { background: 'var(--white)', borderRadius: 14, border: '1px solid var(--slate-200b)', padding: 24, boxShadow: '0 1px 4px rgba(0,0,0,0.04)' };
 
 export default function AdminBlogPage() {
   const [posts, setPosts] = useState<any[]>([]);
@@ -62,9 +62,9 @@ export default function AdminBlogPage() {
   }
 
   const STATUS_BADGE: Record<string, any> = {
-    PUBLISHED: { background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0' },
-    DRAFT:     { background: '#fffbeb', color: '#b45309', border: '1px solid #fde68a' },
-    ARCHIVED:  { background: '#f1f5f9', color: '#64748b', border: '1px solid #e2e8f0' },
+    PUBLISHED: { background: 'var(--green-50)', color: 'var(--green-800)', border: '1px solid var(--green-200)' },
+    DRAFT:     { background: 'var(--amber-50)', color: 'var(--amber-700)', border: '1px solid var(--amber-200)' },
+    ARCHIVED:  { background: 'var(--slate-100)', color: 'var(--slate-500)', border: '1px solid var(--slate-200)' },
   };
 
   if (editing !== null) {
@@ -72,10 +72,10 @@ export default function AdminBlogPage() {
       <div style={{ padding: 32 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 28 }}>
           <div>
-            <h1 style={{ fontSize: 24, fontWeight: 800, color: '#0f172a', margin: 0 }}>{editing.id ? 'Edit Post' : 'New Post'}</h1>
-            <p style={{ fontSize: 13, color: '#94a3b8', marginTop: 4 }}>{editing.id ? `Editing: ${editing.title || 'Untitled'}` : 'Create a new blog post'}</p>
+            <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--slate-900)', margin: 0 }}>{editing.id ? 'Edit Post' : 'New Post'}</h1>
+            <p style={{ fontSize: 13, color: 'var(--slate-400)', marginTop: 4 }}>{editing.id ? `Editing: ${editing.title || 'Untitled'}` : 'Create a new blog post'}</p>
           </div>
-          <button onClick={() => setEditing(null)} style={{ fontSize: 13, color: '#94a3b8', background: 'none', border: 'none', cursor: 'pointer' }}>← Cancel</button>
+          <button onClick={() => setEditing(null)} style={{ fontSize: 13, color: 'var(--slate-400)', background: 'none', border: 'none', cursor: 'pointer' }}>← Cancel</button>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 20 }}>
@@ -124,7 +124,7 @@ export default function AdminBlogPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             {lang === 'en' && (
               <div style={card}>
-                <p style={{ fontSize: 13, fontWeight: 700, color: '#374151', margin: '0 0 14px' }}>Publish Settings</p>
+                <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--slate-700b)', margin: '0 0 14px' }}>Publish Settings</p>
                 <div style={{ marginBottom: 12 }}>
                   <FormField label="Status">
                     <select value={editing.status} onChange={e => setEditing({ ...editing, status: e.target.value })} style={inputClass()}>
@@ -147,7 +147,7 @@ export default function AdminBlogPage() {
               </div>
             )}
             <div style={card}>
-              <p style={{ fontSize: 13, fontWeight: 700, color: '#374151', margin: '0 0 14px' }}>SEO{lang === 'ka' ? ' (Georgian)' : ''}</p>
+              <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--slate-700b)', margin: '0 0 14px' }}>SEO{lang === 'ka' ? ' (Georgian)' : ''}</p>
               <div style={{ marginBottom: 12 }}>
                 <FormField label="Meta Title">
                   <input value={lang === 'en' ? editing.seoTitle : ka.seoTitle} onChange={e => lang === 'en' ? setEditing({ ...editing, seoTitle: e.target.value }) : setKa({ ...ka, seoTitle: e.target.value })} style={inputClass()} />
@@ -159,7 +159,7 @@ export default function AdminBlogPage() {
                 </FormField>
               </div>
             </div>
-            <button onClick={save} disabled={saving} style={{ background: '#0d9488', color: '#fff', border: 'none', borderRadius: 10, padding: '11px', fontSize: 13, fontWeight: 600, cursor: saving ? 'default' : 'pointer', opacity: saving ? 0.6 : 1, width: '100%' }}>
+            <button onClick={save} disabled={saving} style={{ background: 'var(--teal-600)', color: 'var(--white)', border: 'none', borderRadius: 10, padding: '11px', fontSize: 13, fontWeight: 600, cursor: saving ? 'default' : 'pointer', opacity: saving ? 0.6 : 1, width: '100%' }}>
               {saving ? 'Saving…' : (editing.id ? 'Save Changes' : 'Publish Post')}
             </button>
           </div>
@@ -172,21 +172,21 @@ export default function AdminBlogPage() {
     <div style={{ padding: 32 }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 28 }}>
         <div>
-          <h1 style={{ fontSize: 24, fontWeight: 800, color: '#0f172a', margin: 0 }}>Blog</h1>
-          <p style={{ fontSize: 13, color: '#94a3b8', marginTop: 4 }}>{total} posts</p>
+          <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--slate-900)', margin: 0 }}>Blog</h1>
+          <p style={{ fontSize: 13, color: 'var(--slate-400)', marginTop: 4 }}>{total} posts</p>
         </div>
-        <button onClick={() => { setEditing({ ...EMPTY }); setKa({ ...EMPTY_KA }); setLang('en'); }} style={{ background: '#0d9488', color: '#fff', border: 'none', borderRadius: 10, padding: '9px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+        <button onClick={() => { setEditing({ ...EMPTY }); setKa({ ...EMPTY_KA }); setLang('en'); }} style={{ background: 'var(--teal-600)', color: 'var(--white)', border: 'none', borderRadius: 10, padding: '9px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
           + New Post
         </button>
       </div>
 
-      <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #e8ecf0', overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
+      <div style={{ background: 'var(--white)', borderRadius: 16, border: '1px solid var(--slate-200b)', overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
         {loading ? (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '80px 0' }}>
-            <div style={{ width: 32, height: 32, border: '4px solid #99f6e4', borderTopColor: '#0d9488', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+            <div style={{ width: 32, height: 32, border: '4px solid var(--teal-200)', borderTopColor: 'var(--teal-600)', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
           </div>
         ) : posts.length === 0 ? (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 0', color: '#cbd5e1' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 0', color: 'var(--slate-300)' }}>
             <div style={{ fontSize: 40, marginBottom: 8 }}>✍️</div>
             <p style={{ fontSize: 13 }}>No posts yet — write your first</p>
           </div>
@@ -195,7 +195,7 @@ export default function AdminBlogPage() {
             <thead>
               <tr>
                 {['Title', 'Author', 'Status', 'Published', 'Actions'].map(h => (
-                  <th key={h} style={{ padding: '10px 18px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', borderBottom: '1px solid #e8ecf0', background: '#f8fafc' }}>{h}</th>
+                  <th key={h} style={{ padding: '10px 18px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: 'var(--slate-400)', textTransform: 'uppercase', letterSpacing: '0.06em', borderBottom: '1px solid var(--slate-200b)', background: 'var(--slate-50)' }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -203,22 +203,22 @@ export default function AdminBlogPage() {
               {posts.map((p) => {
                 const sb = STATUS_BADGE[p.status] || STATUS_BADGE.ARCHIVED;
                 return (
-                  <tr key={p.id} style={{ borderBottom: '1px solid #f8fafc' }}>
+                  <tr key={p.id} style={{ borderBottom: '1px solid var(--slate-50)' }}>
                     <td style={{ padding: '14px 18px' }}>
-                      <p style={{ fontWeight: 600, color: '#1e293b', margin: 0, maxWidth: 320, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.title}</p>
-                      <p style={{ fontSize: 11, color: '#94a3b8', fontFamily: 'monospace', margin: '3px 0 0' }}>/blog/{p.slug}</p>
+                      <p style={{ fontWeight: 600, color: 'var(--slate-800)', margin: 0, maxWidth: 320, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.title}</p>
+                      <p style={{ fontSize: 11, color: 'var(--slate-400)', fontFamily: 'monospace', margin: '3px 0 0' }}>/blog/{p.slug}</p>
                     </td>
-                    <td style={{ padding: '14px 18px', color: '#64748b' }}>{p.authorName || '—'}</td>
+                    <td style={{ padding: '14px 18px', color: 'var(--slate-500)' }}>{p.authorName || '—'}</td>
                     <td style={{ padding: '14px 18px' }}>
                       <span style={{ ...sb, display: 'inline-flex', alignItems: 'center', padding: '2px 10px', borderRadius: 999, fontSize: 11, fontWeight: 600 }}>{p.status}</span>
                     </td>
-                    <td style={{ padding: '14px 18px', fontSize: 12, color: '#94a3b8' }}>
+                    <td style={{ padding: '14px 18px', fontSize: 12, color: 'var(--slate-400)' }}>
                       {p.publishedAt ? new Date(p.publishedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
                     </td>
                     <td style={{ padding: '14px 18px' }}>
                       <div style={{ display: 'flex', gap: 6 }}>
-                        <button onClick={() => { setEditing(p); const kaData = p.translations?.ka; setKa(kaData ? { title: kaData.title || '', excerpt: kaData.excerpt || '', content: kaData.content || '', seoTitle: kaData.seoTitle || '', seoDesc: kaData.seoDesc || '' } : { ...EMPTY_KA }); setLang('en'); }} style={{ fontSize: 12, padding: '5px 10px', borderRadius: 8, background: '#eff6ff', color: '#2563eb', border: 'none', cursor: 'pointer', fontWeight: 600 }}>Edit</button>
-                        <button onClick={() => deletePost(p.id)} disabled={deleting === p.id} style={{ fontSize: 12, padding: '5px 10px', borderRadius: 8, background: '#fef2f2', color: '#dc2626', border: 'none', cursor: 'pointer', fontWeight: 600, opacity: deleting === p.id ? 0.5 : 1 }}>Delete</button>
+                        <button onClick={() => { setEditing(p); const kaData = p.translations?.ka; setKa(kaData ? { title: kaData.title || '', excerpt: kaData.excerpt || '', content: kaData.content || '', seoTitle: kaData.seoTitle || '', seoDesc: kaData.seoDesc || '' } : { ...EMPTY_KA }); setLang('en'); }} style={{ fontSize: 12, padding: '5px 10px', borderRadius: 8, background: 'var(--blue-50)', color: 'var(--blue-600)', border: 'none', cursor: 'pointer', fontWeight: 600 }}>Edit</button>
+                        <button onClick={() => deletePost(p.id)} disabled={deleting === p.id} style={{ fontSize: 12, padding: '5px 10px', borderRadius: 8, background: 'var(--red-50)', color: 'var(--red-600)', border: 'none', cursor: 'pointer', fontWeight: 600, opacity: deleting === p.id ? 0.5 : 1 }}>Delete</button>
                       </div>
                     </td>
                   </tr>

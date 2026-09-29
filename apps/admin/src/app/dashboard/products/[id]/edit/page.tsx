@@ -198,67 +198,67 @@ export default function EditProductPage() {
     }
   }
 
-  const sectionStyle: React.CSSProperties = { background: '#fff', border: '1px solid #e8ecf0', borderRadius: 16, padding: 24, marginBottom: 20 };
+  const sectionStyle: React.CSSProperties = { background: 'var(--white)', border: '1px solid var(--slate-200b)', borderRadius: 16, padding: 24, marginBottom: 20 };
   const isKa = lang === 'ka';
-  const disabledInput: React.CSSProperties = { ...inputClass(), background: '#f8fafc', color: '#94a3b8', cursor: 'not-allowed', borderColor: '#e2e8f0' };
+  const disabledInput: React.CSSProperties = { ...inputClass(), background: 'var(--slate-50)', color: 'var(--slate-400)', cursor: 'not-allowed', borderColor: 'var(--slate-200)' };
   const disabledSection: React.CSSProperties = { opacity: 0.55, pointerEvents: 'none', userSelect: 'none' };
   function DisabledBadge() {
-    return <span style={{ fontSize: 10, fontWeight: 700, background: '#f1f5f9', color: '#94a3b8', border: '1px solid #e2e8f0', borderRadius: 6, padding: '2px 7px', marginLeft: 8, letterSpacing: 0.3 }}>EN only</span>;
+    return <span style={{ fontSize: 10, fontWeight: 700, background: 'var(--slate-100)', color: 'var(--slate-400)', border: '1px solid var(--slate-200)', borderRadius: 6, padding: '2px 7px', marginLeft: 8, letterSpacing: 0.3 }}>EN only</span>;
   }
 
   if (loading) return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 300 }}>
-      <div style={{ width: 32, height: 32, border: '4px solid #99f6e4', borderTopColor: '#0d9488', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+      <div style={{ width: 32, height: 32, border: '4px solid var(--teal-200)', borderTopColor: 'var(--teal-600)', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
     </div>
   );
 
   return (
     <div style={{ padding: 32, maxWidth: 800 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 28 }}>
-        <button onClick={() => router.push('/dashboard/products')} style={{ fontSize: 13, color: '#94a3b8', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>← Products</button>
-        <h1 style={{ fontSize: 22, fontWeight: 800, color: '#0f172a', margin: 0 }}>Edit Product</h1>
+        <button onClick={() => router.push('/dashboard/products')} style={{ fontSize: 13, color: 'var(--slate-400)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>← Products</button>
+        <h1 style={{ fontSize: 22, fontWeight: 800, color: 'var(--slate-900)', margin: 0 }}>Edit Product</h1>
       </div>
 
       <ErrorPopup errors={popupErrors} onClose={() => setPopupErrors([])} />
-      {error && <div style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: 10, padding: '10px 14px', marginBottom: 16, fontSize: 13 }}>{error}</div>}
+      {error && <div style={{ background: 'var(--red-50)', color: 'var(--red-600)', border: '1px solid var(--red-200)', borderRadius: 10, padding: '10px 14px', marginBottom: 16, fontSize: 13 }}>{error}</div>}
 
       <form onSubmit={handleSubmit}>
         {/* Photos — always visible, above basic info */}
         <div style={sectionStyle}>
-          <p style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', margin: '0 0 16px' }}>Photos</p>
+          <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--slate-900)', margin: '0 0 16px' }}>Photos</p>
 
           {/* Existing images + inline add tile */}
           {images.length > 0 && (
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 16 }}>
               {images.map((img, i) => (
                 <div key={img.id} style={{ position: 'relative', width: 96, height: 96 }}>
-                  <img src={img.url} alt={img.altText || ''} style={{ width: 96, height: 96, objectFit: 'cover', borderRadius: 10, border: i === 0 ? '2px solid #0d9488' : '1px solid #e2e8f0', transition: 'box-shadow 0.15s' }}
+                  <img src={img.url} alt={img.altText || ''} style={{ width: 96, height: 96, objectFit: 'cover', borderRadius: 10, border: i === 0 ? '2px solid var(--teal-600)' : '1px solid var(--slate-200)', transition: 'box-shadow 0.15s' }}
                     onMouseEnter={e => { (e.currentTarget as HTMLImageElement).style.boxShadow = '0 4px 14px rgba(0,0,0,0.12)'; }}
                     onMouseLeave={e => { (e.currentTarget as HTMLImageElement).style.boxShadow = 'none'; }} />
-                  {i === 0 && <span style={{ position: 'absolute', bottom: 4, left: 4, fontSize: 9, fontWeight: 700, background: '#0d9488', color: '#fff', borderRadius: 4, padding: '1px 5px' }}>MAIN</span>}
+                  {i === 0 && <span style={{ position: 'absolute', bottom: 4, left: 4, fontSize: 9, fontWeight: 700, background: 'var(--teal-600)', color: 'var(--white)', borderRadius: 4, padding: '1px 5px' }}>MAIN</span>}
                   <button type="button" onClick={() => removeImage(img.id)}
-                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1.2)'; (e.currentTarget as HTMLButtonElement).style.background = '#b91c1c'; }}
-                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)'; (e.currentTarget as HTMLButtonElement).style.background = '#dc2626'; }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1.2)'; (e.currentTarget as HTMLButtonElement).style.background = 'var(--red-700)'; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)'; (e.currentTarget as HTMLButtonElement).style.background = 'var(--red-600)'; }}
                     onMouseDown={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(0.9)'; }}
                     onMouseUp={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1.2)'; }}
-                    style={{ position: 'absolute', top: -7, right: -7, width: 22, height: 22, borderRadius: '50%', background: '#dc2626', color: '#fff', border: '2px solid #fff', cursor: 'pointer', fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1, transition: 'transform 0.12s, background 0.12s' }}>×</button>
+                    style={{ position: 'absolute', top: -7, right: -7, width: 22, height: 22, borderRadius: '50%', background: 'var(--red-600)', color: 'var(--white)', border: '2px solid var(--white)', cursor: 'pointer', fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1, transition: 'transform 0.12s, background 0.12s' }}>×</button>
                 </div>
               ))}
 
               {/* Inline add tile */}
               <label
-                onMouseEnter={e => { if (!uploadingImage) { (e.currentTarget as HTMLLabelElement).style.borderColor = '#0d9488'; (e.currentTarget as HTMLLabelElement).style.background = '#f0fdf9'; (e.currentTarget as HTMLLabelElement).style.transform = 'scale(1.03)'; } }}
-                onMouseLeave={e => { (e.currentTarget as HTMLLabelElement).style.borderColor = '#cbd5e1'; (e.currentTarget as HTMLLabelElement).style.background = '#f8fafc'; (e.currentTarget as HTMLLabelElement).style.transform = 'scale(1)'; }}
+                onMouseEnter={e => { if (!uploadingImage) { (e.currentTarget as HTMLLabelElement).style.borderColor = 'var(--teal-600)'; (e.currentTarget as HTMLLabelElement).style.background = 'var(--teal-50b)'; (e.currentTarget as HTMLLabelElement).style.transform = 'scale(1.03)'; } }}
+                onMouseLeave={e => { (e.currentTarget as HTMLLabelElement).style.borderColor = 'var(--slate-300)'; (e.currentTarget as HTMLLabelElement).style.background = 'var(--slate-50)'; (e.currentTarget as HTMLLabelElement).style.transform = 'scale(1)'; }}
                 onMouseDown={e => { if (!uploadingImage) (e.currentTarget as HTMLLabelElement).style.transform = 'scale(0.96)'; }}
                 onMouseUp={e => { if (!uploadingImage) (e.currentTarget as HTMLLabelElement).style.transform = 'scale(1.03)'; }}
-                style={{ width: 96, height: 96, borderRadius: 10, border: '2px dashed #cbd5e1', background: '#f8fafc', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: uploadingImage ? 'not-allowed' : 'pointer', gap: 4, transition: 'border-color 0.15s, background 0.15s, transform 0.12s' }}>
+                style={{ width: 96, height: 96, borderRadius: 10, border: '2px dashed var(--slate-300)', background: 'var(--slate-50)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: uploadingImage ? 'not-allowed' : 'pointer', gap: 4, transition: 'border-color 0.15s, background 0.15s, transform 0.12s' }}>
                 <input type="file" accept=".jpg,.jpeg,.png,.svg,.webp" multiple style={{ display: 'none' }} disabled={uploadingImage} onChange={e => { handleImageFiles(e.target.files); (e.target as HTMLInputElement).value = ''; }} />
                 {uploadingImage ? (
-                  <div style={{ width: 20, height: 20, border: '3px solid #99f6e4', borderTopColor: '#0d9488', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+                  <div style={{ width: 20, height: 20, border: '3px solid var(--teal-200)', borderTopColor: 'var(--teal-600)', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
                 ) : (
                   <>
-                    <span style={{ fontSize: 24, color: '#94a3b8', lineHeight: 1, fontWeight: 300 }}>+</span>
-                    <span style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600 }}>Add</span>
+                    <span style={{ fontSize: 24, color: 'var(--slate-400)', lineHeight: 1, fontWeight: 300 }}>+</span>
+                    <span style={{ fontSize: 10, color: 'var(--slate-400)', fontWeight: 600 }}>Add</span>
                   </>
                 )}
               </label>
@@ -268,26 +268,26 @@ export default function EditProductPage() {
           {/* Empty state drop zone */}
           {images.length === 0 && (
             <label
-              onMouseEnter={e => { if (!uploadingImage) { (e.currentTarget as HTMLLabelElement).style.borderColor = '#0d9488'; (e.currentTarget as HTMLLabelElement).style.background = '#f0fdf9'; (e.currentTarget as HTMLLabelElement).style.transform = 'scale(1.01)'; } }}
-              onMouseLeave={e => { (e.currentTarget as HTMLLabelElement).style.borderColor = dropZoneDrag ? '#0d9488' : '#cbd5e1'; (e.currentTarget as HTMLLabelElement).style.background = dropZoneDrag ? '#f0fdf9' : '#f8fafc'; (e.currentTarget as HTMLLabelElement).style.transform = 'scale(1)'; }}
+              onMouseEnter={e => { if (!uploadingImage) { (e.currentTarget as HTMLLabelElement).style.borderColor = 'var(--teal-600)'; (e.currentTarget as HTMLLabelElement).style.background = 'var(--teal-50b)'; (e.currentTarget as HTMLLabelElement).style.transform = 'scale(1.01)'; } }}
+              onMouseLeave={e => { (e.currentTarget as HTMLLabelElement).style.borderColor = dropZoneDrag ? 'var(--teal-600)' : 'var(--slate-300)'; (e.currentTarget as HTMLLabelElement).style.background = dropZoneDrag ? 'var(--teal-50b)' : 'var(--slate-50)'; (e.currentTarget as HTMLLabelElement).style.transform = 'scale(1)'; }}
               onMouseDown={e => { if (!uploadingImage) (e.currentTarget as HTMLLabelElement).style.transform = 'scale(0.99)'; }}
               onMouseUp={e => { if (!uploadingImage) (e.currentTarget as HTMLLabelElement).style.transform = 'scale(1.01)'; }}
-              onDragEnter={e => { e.preventDefault(); setDropZoneDrag(true); (e.currentTarget as HTMLLabelElement).style.borderColor = '#0d9488'; (e.currentTarget as HTMLLabelElement).style.background = '#f0fdf9'; }}
+              onDragEnter={e => { e.preventDefault(); setDropZoneDrag(true); (e.currentTarget as HTMLLabelElement).style.borderColor = 'var(--teal-600)'; (e.currentTarget as HTMLLabelElement).style.background = 'var(--teal-50b)'; }}
               onDragOver={e => { e.preventDefault(); }}
-              onDragLeave={e => { setDropZoneDrag(false); (e.currentTarget as HTMLLabelElement).style.borderColor = '#cbd5e1'; (e.currentTarget as HTMLLabelElement).style.background = '#f8fafc'; }}
-              onDrop={e => { e.preventDefault(); setDropZoneDrag(false); (e.currentTarget as HTMLLabelElement).style.borderColor = '#cbd5e1'; (e.currentTarget as HTMLLabelElement).style.background = '#f8fafc'; handleImageFiles(e.dataTransfer.files); }}
-              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, minHeight: 150, borderRadius: 12, border: `2px dashed ${dropZoneDrag ? '#0d9488' : '#cbd5e1'}`, background: dropZoneDrag ? '#f0fdf9' : '#f8fafc', cursor: uploadingImage ? 'not-allowed' : 'pointer', transition: 'border-color 0.15s, background 0.15s, transform 0.12s' }}>
+              onDragLeave={e => { setDropZoneDrag(false); (e.currentTarget as HTMLLabelElement).style.borderColor = 'var(--slate-300)'; (e.currentTarget as HTMLLabelElement).style.background = 'var(--slate-50)'; }}
+              onDrop={e => { e.preventDefault(); setDropZoneDrag(false); (e.currentTarget as HTMLLabelElement).style.borderColor = 'var(--slate-300)'; (e.currentTarget as HTMLLabelElement).style.background = 'var(--slate-50)'; handleImageFiles(e.dataTransfer.files); }}
+              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, minHeight: 150, borderRadius: 12, border: `2px dashed ${dropZoneDrag ? 'var(--teal-600)' : 'var(--slate-300)'}`, background: dropZoneDrag ? 'var(--teal-50b)' : 'var(--slate-50)', cursor: uploadingImage ? 'not-allowed' : 'pointer', transition: 'border-color 0.15s, background 0.15s, transform 0.12s' }}>
               <input type="file" accept=".jpg,.jpeg,.png,.svg,.webp" multiple style={{ display: 'none' }} disabled={uploadingImage} onChange={e => { handleImageFiles(e.target.files); (e.target as HTMLInputElement).value = ''; }} />
               {uploadingImage ? (
-                <div style={{ width: 32, height: 32, border: '3px solid #99f6e4', borderTopColor: '#0d9488', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+                <div style={{ width: 32, height: 32, border: '3px solid var(--teal-200)', borderTopColor: 'var(--teal-600)', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
               ) : (
                 <>
-                  <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke={dropZoneDrag ? '#0d9488' : '#94a3b8'} strokeWidth="1.5" style={{ transition: 'stroke 0.15s' }}>
+                  <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke={dropZoneDrag ? 'var(--teal-600)' : 'var(--slate-400)'} strokeWidth="1.5" style={{ transition: 'stroke 0.15s' }}>
                     <path d="M4 16l4-4 4 4 4-6 4 6"/><rect x="3" y="3" width="18" height="18" rx="3"/>
                   </svg>
                   <div style={{ textAlign: 'center' }}>
-                    <p style={{ fontSize: 13, fontWeight: 700, color: dropZoneDrag ? '#0d9488' : '#475569', margin: '0 0 3px', transition: 'color 0.15s' }}>{dropZoneDrag ? 'Drop to upload' : 'Click or drag photos here'}</p>
-                    <p style={{ fontSize: 11, color: '#94a3b8', margin: 0 }}>JPG · PNG · SVG · WebP · max 10 MB each</p>
+                    <p style={{ fontSize: 13, fontWeight: 700, color: dropZoneDrag ? 'var(--teal-600)' : 'var(--slate-600)', margin: '0 0 3px', transition: 'color 0.15s' }}>{dropZoneDrag ? 'Drop to upload' : 'Click or drag photos here'}</p>
+                    <p style={{ fontSize: 11, color: 'var(--slate-400)', margin: 0 }}>JPG · PNG · SVG · WebP · max 10 MB each</p>
                   </div>
                 </>
               )}
@@ -296,19 +296,19 @@ export default function EditProductPage() {
 
           {/* Validation error */}
           {imageError && (
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '8px 12px', marginTop: 10 }}>
-              <span style={{ fontSize: 14, color: '#dc2626', lineHeight: 1, marginTop: 1 }}>⚠</span>
-              <p style={{ fontSize: 12, color: '#dc2626', margin: 0, lineHeight: 1.5 }}>{imageError}</p>
-              <button type="button" onClick={() => setImageError('')} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: '#dc2626', cursor: 'pointer', fontSize: 16, lineHeight: 1, padding: 0 }}>×</button>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, background: 'var(--red-50)', border: '1px solid var(--red-200)', borderRadius: 8, padding: '8px 12px', marginTop: 10 }}>
+              <span style={{ fontSize: 14, color: 'var(--red-600)', lineHeight: 1, marginTop: 1 }}>⚠</span>
+              <p style={{ fontSize: 12, color: 'var(--red-600)', margin: 0, lineHeight: 1.5 }}>{imageError}</p>
+              <button type="button" onClick={() => setImageError('')} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: 'var(--red-600)', cursor: 'pointer', fontSize: 16, lineHeight: 1, padding: 0 }}>×</button>
             </div>
           )}
 
-          {images.length > 0 && !imageError && <p style={{ fontSize: 11, color: '#94a3b8', margin: '8px 0 0' }}>First image is the main photo. You can delete and re-add to reorder.</p>}
+          {images.length > 0 && !imageError && <p style={{ fontSize: 11, color: 'var(--slate-400)', margin: '8px 0 0' }}>First image is the main photo. You can delete and re-add to reorder.</p>}
         </div>
 
         {/* Basic Information */}
         <div style={sectionStyle}>
-          <p style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', margin: '0 0 16px' }}>Basic Information</p>
+          <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--slate-900)', margin: '0 0 16px' }}>Basic Information</p>
           <LangTabs lang={lang} onChange={setLang} />
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginTop: 16 }}>
             <FormField label="Product Name" required error={isKa ? fieldErrors.kaName : fieldErrors.name}>
@@ -350,10 +350,10 @@ export default function EditProductPage() {
 
         {/* Pricing & Category */}
         <div style={sectionStyle}>
-          <p style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', margin: '0 0 4px', display: 'flex', alignItems: 'center' } as any}>
+          <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--slate-900)', margin: '0 0 4px', display: 'flex', alignItems: 'center' } as any}>
             Pricing & Category{isKa && <DisabledBadge />}
           </p>
-          {isKa && <p style={{ fontSize: 11, color: '#94a3b8', margin: '0 0 14px' }}>Switch to English to edit pricing.</p>}
+          {isKa && <p style={{ fontSize: 11, color: 'var(--slate-400)', margin: '0 0 14px' }}>Switch to English to edit pricing.</p>}
           <div style={isKa ? disabledSection : {}}>
             <PricingSection
               price={form.price}
@@ -371,11 +371,11 @@ export default function EditProductPage() {
               </FormField>
             </div>
             <div style={{ display: 'flex', gap: 20, marginTop: 14 }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#475569', cursor: 'pointer' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--slate-600)', cursor: 'pointer' }}>
                 <input type="checkbox" checked={form.includedInBox} onChange={e => set('includedInBox', e.target.checked)} />
                 Included in box
               </label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#475569', cursor: 'pointer' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--slate-600)', cursor: 'pointer' }}>
                 <input type="checkbox" checked={form.standaloneSale} onChange={e => set('standaloneSale', e.target.checked)} />
                 Standalone sale
               </label>
@@ -385,10 +385,10 @@ export default function EditProductPage() {
 
         {/* Inventory */}
         <div style={sectionStyle}>
-          <p style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', margin: '0 0 4px', display: 'flex', alignItems: 'center' } as any}>
+          <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--slate-900)', margin: '0 0 4px', display: 'flex', alignItems: 'center' } as any}>
             Inventory{isKa && <DisabledBadge />}
           </p>
-          {isKa && <p style={{ fontSize: 11, color: '#94a3b8', margin: '0 0 14px' }}>Switch to English to edit inventory.</p>}
+          {isKa && <p style={{ fontSize: 11, color: 'var(--slate-400)', margin: '0 0 14px' }}>Switch to English to edit inventory.</p>}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, ...(isKa ? disabledSection : {}) }}>
             <FormField label="Stock Quantity">
               <input style={isKa ? disabledInput : inputClass()} type="number" min="0" value={form.stockQuantity} onChange={e => set('stockQuantity', e.target.value)} disabled={isKa} />
@@ -401,7 +401,7 @@ export default function EditProductPage() {
 
         {/* SEO */}
         <div style={sectionStyle}>
-          <p style={{ fontSize: 13, fontWeight: 700, color: '#0f172a', margin: '0 0 16px' }}>SEO</p>
+          <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--slate-900)', margin: '0 0 16px' }}>SEO</p>
           <div style={{ marginBottom: 14 }}>
             <FormField label="SEO Title">
               <input
@@ -421,10 +421,10 @@ export default function EditProductPage() {
         </div>
 
         <div style={{ display: 'flex', gap: 10 }}>
-          <button type="submit" disabled={saving} style={{ background: '#0d9488', color: '#fff', border: 'none', borderRadius: 10, padding: '10px 24px', fontSize: 13, fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1 }}>
+          <button type="submit" disabled={saving} style={{ background: 'var(--teal-600)', color: 'var(--white)', border: 'none', borderRadius: 10, padding: '10px 24px', fontSize: 13, fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1 }}>
             {saving ? 'Saving…' : 'Save Changes'}
           </button>
-          <button type="button" onClick={() => router.push('/dashboard/products')} style={{ background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 10, padding: '10px 24px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
+          <button type="button" onClick={() => router.push('/dashboard/products')} style={{ background: 'var(--slate-100)', color: 'var(--slate-500)', border: 'none', borderRadius: 10, padding: '10px 24px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
             Cancel
           </button>
         </div>

@@ -77,10 +77,10 @@ const GROUPS = [
 const MODULES = GROUPS.flatMap(g => g.modules);
 
 const ACTION_COLORS: Record<string, string> = {
-  view: '#0369a1', create: '#166534', edit: '#92400e', delete: '#991b1b', export: '#6b21a8',
+  view: 'var(--sky-700)', create: 'var(--green-800)', edit: 'var(--amber-800)', delete: 'var(--red-800)', export: 'var(--purple-800)',
 };
 const ACTION_BG: Record<string, string> = {
-  view: '#e0f2fe', create: '#dcfce7', edit: '#fef9c3', delete: '#fee2e2', export: '#f3e8ff',
+  view: 'var(--sky-100)', create: 'var(--green-100)', edit: 'var(--yellow-100)', delete: 'var(--red-100)', export: 'var(--purple-100)',
 };
 
 interface RolePermission { permission: { key: string } }
@@ -89,9 +89,9 @@ interface Role {
   permissions: RolePermission[]; _count: { adminUsers: number };
 }
 
-const inp: React.CSSProperties = { width: '100%', border: '1px solid #e2e8f0', borderRadius: 10, padding: '8px 12px', fontSize: 13, outline: 'none', boxSizing: 'border-box', color: '#0f172a', background: '#fff' };
-const lbl: React.CSSProperties = { display: 'block', fontSize: 11, fontWeight: 600, color: '#64748b', marginBottom: 4 };
-const btnStyle = (color: string, text = '#fff'): React.CSSProperties => ({ background: color, border: 'none', borderRadius: 10, padding: '9px 20px', fontSize: 13, color: text, cursor: 'pointer', fontWeight: 600 });
+const inp: React.CSSProperties = { width: '100%', border: '1px solid var(--slate-200)', borderRadius: 10, padding: '8px 12px', fontSize: 13, outline: 'none', boxSizing: 'border-box', color: 'var(--slate-900)', background: 'var(--white)' };
+const lbl: React.CSSProperties = { display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--slate-500)', marginBottom: 4 };
+const btnStyle = (color: string, text = 'var(--white)'): React.CSSProperties => ({ background: color, border: 'none', borderRadius: 10, padding: '9px 20px', fontSize: 13, color: text, cursor: 'pointer', fontWeight: 600 });
 
 function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
   useEffect(() => {
@@ -102,10 +102,10 @@ function Modal({ title, onClose, children }: { title: string; onClose: () => voi
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)' }} onClick={onClose} />
-      <div style={{ position: 'relative', background: '#fff', borderRadius: 16, boxShadow: '0 20px 60px rgba(0,0,0,0.15)', width: '100%', maxWidth: 780, margin: '0 16px', padding: 24, maxHeight: '90vh', overflowY: 'auto' }}>
+      <div style={{ position: 'relative', background: 'var(--white)', borderRadius: 16, boxShadow: '0 20px 60px rgba(0,0,0,0.15)', width: '100%', maxWidth: 780, margin: '0 16px', padding: 24, maxHeight: '90vh', overflowY: 'auto' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-          <h2 style={{ margin: 0, fontSize: 17, fontWeight: 700, color: '#0f172a' }}>{title}</h2>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 22, color: '#94a3b8', cursor: 'pointer' }}>&times;</button>
+          <h2 style={{ margin: 0, fontSize: 17, fontWeight: 700, color: 'var(--slate-900)' }}>{title}</h2>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 22, color: 'var(--slate-400)', cursor: 'pointer' }}>&times;</button>
         </div>
         {children}
       </div>
@@ -115,8 +115,8 @@ function Modal({ title, onClose, children }: { title: string; onClose: () => voi
 
 function Checkbox({ checked, onChange }: { checked: boolean; onChange: () => void }) {
   return (
-    <div onClick={onChange} style={{ width: 16, height: 16, borderRadius: 4, border: `2px solid ${checked ? '#0d9488' : '#cbd5e1'}`, background: checked ? '#0d9488' : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
-      {checked && <svg width="9" height="9" viewBox="0 0 9 9" fill="none"><path d="M1 4.5l2.5 2.5 4.5-5" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>}
+    <div onClick={onChange} style={{ width: 16, height: 16, borderRadius: 4, border: `2px solid ${checked ? 'var(--teal-600)' : 'var(--slate-300)'}`, background: checked ? 'var(--teal-600)' : 'var(--white)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
+      {checked && <svg width="9" height="9" viewBox="0 0 9 9" fill="none"><path d="M1 4.5l2.5 2.5 4.5-5" stroke="var(--white)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>}
     </div>
   );
 }
@@ -217,14 +217,14 @@ export default function RolesPage() {
     <div style={{ padding: '28px 32px', maxWidth: 960, margin: '0 auto' }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 24 }}>
         <div>
-          <h1 style={{ margin: '0 0 4px', fontSize: 22, fontWeight: 700, color: '#0f172a' }}>Roles & Permissions</h1>
-          <p style={{ margin: 0, fontSize: 13, color: '#64748b' }}>Define what each role can access</p>
+          <h1 style={{ margin: '0 0 4px', fontSize: 22, fontWeight: 700, color: 'var(--slate-900)' }}>Roles & Permissions</h1>
+          <p style={{ margin: 0, fontSize: 13, color: 'var(--slate-500)' }}>Define what each role can access</p>
         </div>
-        <button onClick={openCreate} style={btnStyle('#0d9488')}>+ Create Role</button>
+        <button onClick={openCreate} style={btnStyle('var(--teal-600)')}>+ Create Role</button>
       </div>
 
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '80px 0', color: '#94a3b8' }}>Loading…</div>
+        <div style={{ textAlign: 'center', padding: '80px 0', color: 'var(--slate-400)' }}>Loading…</div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {roles.map(r => {
@@ -237,20 +237,20 @@ export default function RolesPage() {
               return acc;
             }, {});
             return (
-              <div key={r.id} style={{ background: '#fff', borderRadius: 14, border: '1px solid #e8ecf0', padding: '18px 20px' }}>
+              <div key={r.id} style={{ background: 'var(--white)', borderRadius: 14, border: '1px solid var(--slate-200b)', padding: '18px 20px' }}>
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                      <span style={{ fontSize: 15, fontWeight: 700, color: '#0f172a' }}>{r.name}</span>
-                      {r.isSystem && <span style={{ fontSize: 10, background: '#fef9c3', color: '#92400e', borderRadius: 20, padding: '2px 8px', fontWeight: 600 }}>System</span>}
+                      <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--slate-900)' }}>{r.name}</span>
+                      {r.isSystem && <span style={{ fontSize: 10, background: 'var(--yellow-100)', color: 'var(--amber-800)', borderRadius: 20, padding: '2px 8px', fontWeight: 600 }}>System</span>}
                     </div>
-                    {r.description && <p style={{ margin: '0 0 10px', fontSize: 12, color: '#64748b' }}>{r.description}</p>}
+                    {r.description && <p style={{ margin: '0 0 10px', fontSize: 12, color: 'var(--slate-500)' }}>{r.description}</p>}
                     {Object.keys(grouped).length > 0 ? (
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
                         {Object.entries(grouped).map(([mod, actions]) => {
                           const modLabel = MODULES.find(m => m.key === mod)?.label || mod;
                           return (
-                            <span key={mod} style={{ fontSize: 11, background: '#f8fafc', border: '1px solid #e2e8f0', color: '#334155', borderRadius: 8, padding: '3px 8px' }}>
+                            <span key={mod} style={{ fontSize: 11, background: 'var(--slate-50)', border: '1px solid var(--slate-200)', color: 'var(--slate-700)', borderRadius: 8, padding: '3px 8px' }}>
                               <strong>{modLabel}:</strong> {actions.map(a => (
                                 <span key={a} style={{ marginLeft: 4, background: ACTION_BG[a], color: ACTION_COLORS[a], borderRadius: 4, padding: '1px 5px', fontSize: 10, fontWeight: 600 }}>{a}</span>
                               ))}
@@ -259,19 +259,19 @@ export default function RolesPage() {
                         })}
                       </div>
                     ) : (
-                      <span style={{ fontSize: 12, color: '#94a3b8', fontStyle: 'italic' }}>No permissions assigned</span>
+                      <span style={{ fontSize: 12, color: 'var(--slate-400)', fontStyle: 'italic' }}>No permissions assigned</span>
                     )}
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
-                    <span style={{ fontSize: 12, color: '#94a3b8' }}>{r._count.adminUsers} user{r._count.adminUsers !== 1 ? 's' : ''}</span>
-                    <button onClick={() => openEdit(r)} style={{ background: 'none', border: 'none', color: '#0d9488', fontWeight: 600, fontSize: 12, cursor: 'pointer' }}>Edit</button>
-                    {!r.isSystem && <button onClick={() => setConfirmDelete(r)} style={{ background: 'none', border: 'none', color: '#ef4444', fontWeight: 600, fontSize: 12, cursor: 'pointer' }}>Delete</button>}
+                    <span style={{ fontSize: 12, color: 'var(--slate-400)' }}>{r._count.adminUsers} user{r._count.adminUsers !== 1 ? 's' : ''}</span>
+                    <button onClick={() => openEdit(r)} style={{ background: 'none', border: 'none', color: 'var(--teal-600)', fontWeight: 600, fontSize: 12, cursor: 'pointer' }}>Edit</button>
+                    {!r.isSystem && <button onClick={() => setConfirmDelete(r)} style={{ background: 'none', border: 'none', color: 'var(--red-500)', fontWeight: 600, fontSize: 12, cursor: 'pointer' }}>Delete</button>}
                   </div>
                 </div>
               </div>
             );
           })}
-          {roles.length === 0 && <div style={{ textAlign: 'center', padding: '60px 0', color: '#94a3b8' }}>No roles yet</div>}
+          {roles.length === 0 && <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--slate-400)' }}>No roles yet</div>}
         </div>
       )}
 
@@ -282,7 +282,7 @@ export default function RolesPage() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               <div>
                 <label style={lbl}>Role Name</label>
-                <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} disabled={editing?.isSystem} style={{ ...inp, background: editing?.isSystem ? '#f8fafc' : '#fff' }} placeholder="e.g. Content Manager" />
+                <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} disabled={editing?.isSystem} style={{ ...inp, background: editing?.isSystem ? 'var(--slate-50)' : 'var(--white)' }} placeholder="e.g. Content Manager" />
               </div>
               <div>
                 <label style={lbl}>Description</label>
@@ -295,15 +295,15 @@ export default function RolesPage() {
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
                 <label style={lbl}>Page Access ({selectedKeys.size} permissions)</label>
                 <div style={{ display: 'flex', gap: 12 }}>
-                  <button type="button" onClick={selectAll} style={{ background: 'none', border: 'none', color: '#0d9488', fontSize: 12, cursor: 'pointer', fontWeight: 600 }}>Select All</button>
-                  <button type="button" onClick={() => setSelectedKeys(new Set())} style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: 12, cursor: 'pointer', fontWeight: 600 }}>Clear All</button>
+                  <button type="button" onClick={selectAll} style={{ background: 'none', border: 'none', color: 'var(--teal-600)', fontSize: 12, cursor: 'pointer', fontWeight: 600 }}>Select All</button>
+                  <button type="button" onClick={() => setSelectedKeys(new Set())} style={{ background: 'none', border: 'none', color: 'var(--slate-400)', fontSize: 12, cursor: 'pointer', fontWeight: 600 }}>Clear All</button>
                 </div>
               </div>
 
-              <div style={{ border: '1px solid #e2e8f0', borderRadius: 12, overflow: 'hidden' }}>
+              <div style={{ border: '1px solid var(--slate-200)', borderRadius: 12, overflow: 'hidden' }}>
                 {/* Header row */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 72px 72px 72px 72px 72px', gap: 0, background: '#f8fafc', borderBottom: '1px solid #e2e8f0', padding: '8px 14px' }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b' }}>PAGE / MODULE</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 72px 72px 72px 72px 72px', gap: 0, background: 'var(--slate-50)', borderBottom: '1px solid var(--slate-200)', padding: '8px 14px' }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--slate-500)' }}>PAGE / MODULE</div>
                   {allActions.map(a => (
                     <div key={a} onClick={() => toggleAction(a)} style={{ textAlign: 'center', cursor: 'pointer' }}>
                       <span style={{ fontSize: 10, fontWeight: 700, background: ACTION_BG[a], color: ACTION_COLORS[a], borderRadius: 6, padding: '2px 8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{a}</span>
@@ -322,22 +322,22 @@ export default function RolesPage() {
                     <div key={grp.group}>
                       {/* Group header — clickable to expand/collapse */}
                       <div
-                        style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 14px', background: '#f1f5f9', borderTop: gi === 0 ? 'none' : '1px solid #e2e8f0', cursor: 'pointer', userSelect: 'none' }}
+                        style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 14px', background: 'var(--slate-100)', borderTop: gi === 0 ? 'none' : '1px solid var(--slate-200)', cursor: 'pointer', userSelect: 'none' }}
                       >
                         {/* Group-level checkbox */}
                         <div
                           onClick={e => { e.stopPropagation(); toggleGroupAll(grp); }}
-                          style={{ width: 16, height: 16, borderRadius: 4, border: `2px solid ${grpAllOn ? '#0d9488' : grpSomeOn ? '#5eead4' : '#cbd5e1'}`, background: grpAllOn ? '#0d9488' : grpSomeOn ? '#ccfbf1' : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+                          style={{ width: 16, height: 16, borderRadius: 4, border: `2px solid ${grpAllOn ? 'var(--teal-600)' : grpSomeOn ? 'var(--teal-300)' : 'var(--slate-300)'}`, background: grpAllOn ? 'var(--teal-600)' : grpSomeOn ? 'var(--teal-100)' : 'var(--white)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
                         >
-                          {(grpAllOn || grpSomeOn) && <svg width="9" height="9" viewBox="0 0 9 9" fill="none"><path d="M1 4.5l2.5 2.5 4.5-5" stroke={grpAllOn ? '#fff' : '#0d9488'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>}
+                          {(grpAllOn || grpSomeOn) && <svg width="9" height="9" viewBox="0 0 9 9" fill="none"><path d="M1 4.5l2.5 2.5 4.5-5" stroke={grpAllOn ? 'var(--white)' : 'var(--teal-600)'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>}
                         </div>
                         {/* Expand arrow + label */}
                         <div onClick={() => toggleGroup(grp.group)} style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1 }}>
                           <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ transform: isOpen ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.15s', flexShrink: 0 }}>
-                            <path d="M4 2l4 4-4 4" stroke="#64748b" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                            <path d="M4 2l4 4-4 4" stroke="var(--slate-500)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                           </svg>
-                          <span style={{ fontSize: 11, fontWeight: 800, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{grp.group}</span>
-                          <span style={{ fontSize: 11, color: '#94a3b8', marginLeft: 4 }}>({grpCount}/{grpKeys.length})</span>
+                          <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--slate-600)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{grp.group}</span>
+                          <span style={{ fontSize: 11, color: 'var(--slate-400)', marginLeft: 4 }}>({grpCount}/{grpKeys.length})</span>
                         </div>
                       </div>
 
@@ -347,10 +347,10 @@ export default function RolesPage() {
                         const allOn = rowKeys.every(k => selectedKeys.has(k));
                         const isSub = mod.label.includes('—');
                         return (
-                          <div key={mod.key} style={{ display: 'grid', gridTemplateColumns: '1fr 72px 72px 72px 72px 72px', alignItems: 'center', padding: '8px 14px', borderTop: '1px solid #f1f5f9', background: allOn ? '#f0fdf4' : '#fff' }}>
+                          <div key={mod.key} style={{ display: 'grid', gridTemplateColumns: '1fr 72px 72px 72px 72px 72px', alignItems: 'center', padding: '8px 14px', borderTop: '1px solid var(--slate-100)', background: allOn ? 'var(--green-50)' : 'var(--white)' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingLeft: isSub ? 24 : 0 }}>
                               <Checkbox checked={allOn} onChange={() => toggleRow(mod.key)} />
-                              <span style={{ fontSize: isSub ? 12 : 13, fontWeight: isSub ? 400 : 500, color: isSub ? '#64748b' : '#0f172a' }}>{mod.label}</span>
+                              <span style={{ fontSize: isSub ? 12 : 13, fontWeight: isSub ? 400 : 500, color: isSub ? 'var(--slate-500)' : 'var(--slate-900)' }}>{mod.label}</span>
                             </div>
                             {allActions.map(action => {
                               const key = `${mod.key}.${action}`;
@@ -361,7 +361,7 @@ export default function RolesPage() {
                                   {available ? (
                                     <Checkbox checked={checked} onChange={() => toggleKey(key)} />
                                   ) : (
-                                    <div style={{ width: 16, height: 16, borderRadius: 4, background: '#f1f5f9' }} />
+                                    <div style={{ width: 16, height: 16, borderRadius: 4, background: 'var(--slate-100)' }} />
                                   )}
                                 </div>
                               );
@@ -375,10 +375,10 @@ export default function RolesPage() {
               </div>
             </div>
 
-            {error && <p style={{ margin: 0, color: '#ef4444', fontSize: 13 }}>{error}</p>}
+            {error && <p style={{ margin: 0, color: 'var(--red-500)', fontSize: 13 }}>{error}</p>}
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, paddingTop: 4 }}>
-              <button onClick={() => setShowModal(false)} style={btnStyle('#f1f5f9', '#475569')}>Cancel</button>
-              <button onClick={save} disabled={saving} style={{ ...btnStyle('#0d9488'), opacity: saving ? 0.6 : 1 }}>
+              <button onClick={() => setShowModal(false)} style={btnStyle('var(--slate-100)', 'var(--slate-600)')}>Cancel</button>
+              <button onClick={save} disabled={saving} style={{ ...btnStyle('var(--teal-600)'), opacity: saving ? 0.6 : 1 }}>
                 {saving ? 'Saving…' : editing ? 'Save Changes' : 'Create Role'}
               </button>
             </div>
@@ -388,13 +388,13 @@ export default function RolesPage() {
 
       {confirmDelete && (
         <Modal title="Delete Role" onClose={() => setConfirmDelete(null)}>
-          <p style={{ margin: '0 0 8px', color: '#475569', fontSize: 14 }}>Delete role <strong>{confirmDelete.name}</strong>?</p>
+          <p style={{ margin: '0 0 8px', color: 'var(--slate-600)', fontSize: 14 }}>Delete role <strong>{confirmDelete.name}</strong>?</p>
           {confirmDelete._count.adminUsers > 0 && (
-            <p style={{ margin: '0 0 16px', color: '#d97706', fontSize: 13 }}>Has {confirmDelete._count.adminUsers} user{confirmDelete._count.adminUsers !== 1 ? 's' : ''} — unassign them first.</p>
+            <p style={{ margin: '0 0 16px', color: 'var(--amber-600)', fontSize: 13 }}>Has {confirmDelete._count.adminUsers} user{confirmDelete._count.adminUsers !== 1 ? 's' : ''} — unassign them first.</p>
           )}
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 20 }}>
-            <button onClick={() => setConfirmDelete(null)} style={btnStyle('#f1f5f9', '#475569')}>Cancel</button>
-            <button onClick={() => doDelete(confirmDelete)} disabled={confirmDelete._count.adminUsers > 0} style={{ ...btnStyle('#ef4444'), opacity: confirmDelete._count.adminUsers > 0 ? 0.5 : 1 }}>Delete</button>
+            <button onClick={() => setConfirmDelete(null)} style={btnStyle('var(--slate-100)', 'var(--slate-600)')}>Cancel</button>
+            <button onClick={() => doDelete(confirmDelete)} disabled={confirmDelete._count.adminUsers > 0} style={{ ...btnStyle('var(--red-500)'), opacity: confirmDelete._count.adminUsers > 0 ? 0.5 : 1 }}>Delete</button>
           </div>
         </Modal>
       )}
