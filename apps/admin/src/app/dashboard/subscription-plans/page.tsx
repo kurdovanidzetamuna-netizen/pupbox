@@ -44,6 +44,125 @@ function migrateConfig(saved: any, boxCount: number): typeof EMPTY_CONFIG {
 
 function num(v: any, fallback = 0) { const n = parseFloat(v); return isNaN(n) ? fallback : n; }
 
+/**
+ * A real on/off switch, rather than a checkbox buried in a paragraph.
+ * The long explanation lives behind the ⓘ disclosure so the settings read as
+ * a scannable list instead of three walls of text.
+ */
+function SettingRow({ icon, title, summary, detail, checked, onChange, accent = 'var(--teal-600)' }: {
+  icon: string; title: string; summary: string; detail: string;
+  checked: boolean; onChange: (v: boolean) => void; accent?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div style={{ borderBottom: '1px solid var(--slate-100)', padding: '12px 0' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <span style={{ fontSize: 16, width: 22, textAlign: 'center', flexShrink: 0 }}>{icon}</span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--slate-900)' }}>{title}</span>
+            <button type="button" onClick={() => setOpen(o => !o)} title="What does this do?"
+              style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--slate-400)', fontSize: 12, padding: 0, lineHeight: 1 }}>
+              {open ? '▲' : 'ⓘ'}
+            </button>
+          </div>
+          <div style={{ fontSize: 11.5, color: 'var(--slate-400)', marginTop: 1 }}>{summary}</div>
+        </div>
+        {/* Switch */}
+        <button type="button" role="switch" aria-checked={checked} aria-label={title} onClick={() => onChange(!checked)}
+          style={{ width: 42, height: 24, borderRadius: 999, border: 'none', cursor: 'pointer', flexShrink: 0, padding: 2,
+            background: checked ? accent : 'var(--slate-300)', transition: 'background 0.15s', display: 'flex',
+            justifyContent: checked ? 'flex-end' : 'flex-start', alignItems: 'center' }}>
+          <span style={{ width: 20, height: 20, borderRadius: '50%', background: 'var(--white)', boxShadow: '0 1px 3px rgba(0,0,0,0.25)', transition: 'all 0.15s' }} />
+        </button>
+      </div>
+      {open && (
+        <p style={{ fontSize: 11.5, color: 'var(--slate-500)', lineHeight: 1.6, margin: '8px 0 0 34px', paddingRight: 54 }}>{detail}</p>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Benefits are the bullet list customers read on the pricing card, but they
+ * were edited as newline-separated text in a textarea. Here each one is its
+ * own row that can be reordered or removed, with one-tap presets for the
+ * lines nearly every plan uses.
+ */
+const BENEFIT_PRESETS = ['Free delivery', 'Cancel anytime', '5–8 products per box', 'Priority support', 'Exclusive items', 'Personalised to your dog'];
+
+function BenefitsEditor({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const lines = value.split('\n').map(l => l.trim()).filter(Boolean);
+  const [draft, setDraft] = useState('');
+  const commit = (next: string[]) => onChange(next.join('\n'));
+  const add = (text: string) => {
+    const v = text.trim();
+    if (!v || lines.some(l => l.toLowerCase() === v.toLowerCase())) return;
+    commit([...lines, v]);
+    setDraft('');
+  };
+  const move = (i: number, by: number) => {
+    const next = [...lines];
+    const j = i + by;
+    if (j < 0 || j >= next.length) return;
+    [next[i], next[j]] = [next[j], next[i]];
+    commit(next);
+  };
+
+  const unused = BENEFIT_PRESETS.filter(p => !lines.some(l => l.toLowerCase() === p.toLowerCase()));
+
+  return (
+    <div>
+      {lines.length > 0 && (
+        <div style={{ border: '1px solid var(--slate-200)', borderRadius: 10, overflow: 'hidden', marginBottom: 8 }}>
+          {lines.map((l, i) => (
+            <div key={`${l}-${i}`} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', background: 'var(--white)', borderBottom: i < lines.length - 1 ? '1px solid var(--slate-100)' : 'none' }}>
+              <span style={{ color: 'var(--teal-600)', fontWeight: 700, fontSize: 13 }}>✓</span>
+              <input
+                value={l}
+                onChange={e => { const next = [...lines]; next[i] = e.target.value; commit(next); }}
+                style={{ flex: 1, border: 'none', outline: 'none', fontSize: 13, color: 'var(--slate-800)', background: 'transparent' }}
+              />
+              <button type="button" onClick={() => move(i, -1)} disabled={i === 0} title="Move up"
+                style={{ border: 'none', background: 'transparent', cursor: i === 0 ? 'default' : 'pointer', color: 'var(--slate-300)', fontSize: 11, padding: '0 2px' }}>▲</button>
+              <button type="button" onClick={() => move(i, 1)} disabled={i === lines.length - 1} title="Move down"
+                style={{ border: 'none', background: 'transparent', cursor: i === lines.length - 1 ? 'default' : 'pointer', color: 'var(--slate-300)', fontSize: 11, padding: '0 2px' }}>▼</button>
+              <button type="button" onClick={() => commit(lines.filter((_, x) => x !== i))} title="Remove"
+                style={{ border: 'none', background: 'var(--red-50)', color: 'var(--red-600)', borderRadius: 6, cursor: 'pointer', fontSize: 11, fontWeight: 700, padding: '2px 7px' }}>✕</button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
+        <input
+          value={draft}
+          onChange={e => setDraft(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); add(draft); } }}
+          placeholder="Add a benefit and press Enter…"
+          style={{ ...inputClass(), flex: 1 }}
+        />
+        <button type="button" onClick={() => add(draft)} disabled={!draft.trim()}
+          style={{ border: '1px solid var(--slate-200)', background: 'var(--white)', color: 'var(--slate-600)', borderRadius: 9, padding: '0 16px', fontSize: 13, fontWeight: 600, cursor: draft.trim() ? 'pointer' : 'default', opacity: draft.trim() ? 1 : 0.5 }}>
+          Add
+        </button>
+      </div>
+
+      {unused.length > 0 && (
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+          <span style={{ fontSize: 11, color: 'var(--slate-400)' }}>Quick add:</span>
+          {unused.map(p => (
+            <button key={p} type="button" onClick={() => add(p)}
+              style={{ border: '1px dashed var(--slate-300)', background: 'transparent', color: 'var(--slate-500)', borderRadius: 999, padding: '3px 10px', fontSize: 11.5, cursor: 'pointer' }}>
+              + {p}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Pill({ bg, color, border, children }: any) {
   return <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 10px', borderRadius: 999, fontSize: 11, fontWeight: 600, background: bg, color, border }}>{children}</span>;
 }
@@ -1063,8 +1182,8 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
                     </FormField>
                   </div>
                   <div style={{ marginBottom: 16 }}>
-                    <FormField label="Benefits (one per line)">
-                      <textarea value={form.benefits} onChange={e => setForm((x: any) => ({ ...x, benefits: e.target.value }))} rows={4} style={{ ...inputClass(), resize: 'none' } as any} />
+                    <FormField label="Benefits" hint="The ticked list customers see on this plan's pricing card">
+                      <BenefitsEditor value={form.benefits} onChange={v => setForm((x: any) => ({ ...x, benefits: v }))} />
                     </FormField>
                   </div>
                 </>
@@ -1129,8 +1248,8 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
                     </FormField>
                   </div>
                   <div style={{ marginBottom: 16 }}>
-                    <FormField label="Benefits (one per line)">
-                      <textarea value={ka.benefits} onChange={e => setKa((k: any) => ({ ...k, benefits: e.target.value }))} rows={4} placeholder={"უპირატესობა 1\nუპირატესობა 2"} style={{ ...inputClass(), resize: 'none' } as any} />
+                    <FormField label="Benefits" hint="Georgian translations of the benefit lines">
+                      <BenefitsEditor value={ka.benefits} onChange={v => setKa((k: any) => ({ ...k, benefits: v }))} />
                     </FormField>
                   </div>
                 </>
@@ -1145,48 +1264,57 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
               )}
               {/* Delivery */}
               <div style={{ background: 'var(--slate-50)', borderRadius: 12, border: '1px solid var(--slate-200b)', padding: '18px 20px', marginBottom: 20 }}>
-                <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--slate-900)', margin: '0 0 4px' }}>🚚 Delivery</p>
-                <p style={{ fontSize: 12, color: 'var(--slate-400)', margin: '0 0 14px' }}>Set delivery behaviour for subscribers on this plan.</p>
-                <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: 'var(--slate-800)' }}>
-                    <input type="checkbox" checked={cfg.deliveryFree} onChange={e => setCfg(c => ({ ...c, deliveryFree: e.target.checked }))} style={{ width: 16, height: 16, accentColor: 'var(--teal-600)' }} />
-                    <span><strong>Free delivery</strong> for all deliveries on this plan</span>
-                  </label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: 'var(--slate-800)' }}>
-                    <input type="checkbox" checked={form.deliveryIncluded} onChange={e => setForm((x: any) => ({ ...x, deliveryIncluded: e.target.checked }))} style={{ width: 16, height: 16, accentColor: 'var(--teal-600)' }} />
-                    <span>Show "Delivery included" badge on plan card</span>
-                  </label>
-                </div>
+                <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--slate-400)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 2px' }}>Delivery</p>
+                {/* The badge toggle moved into Plan behaviour; this block is now
+                    only about what delivery actually costs. */}
+                <SettingRow
+                  icon="🚚" title="Free delivery"
+                  summary={cfg.deliveryFree ? 'No delivery charge on this plan' : `Charged at ₾${Number(cfg.deliveryCost || 0).toFixed(2)} per box`}
+                  detail="Covers delivery for every box on this plan. Turn it off to charge a fixed amount per box instead — the cost feeds into the plan's total price calculation."
+                  checked={cfg.deliveryFree} onChange={v => setCfg(c => ({ ...c, deliveryFree: v }))}
+                />
                 {!cfg.deliveryFree && (
                   <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <label style={{ fontSize: 13, color: 'var(--slate-700b)', fontWeight: 600 }}>Fixed delivery cost per box: ₾</label>
-                    <input type="number" min="0" step="0.01" value={cfg.deliveryCost} onChange={e => setCfg(c => ({ ...c, deliveryCost: num(e.target.value) }))} style={{ width: 80, border: '1px solid var(--slate-200)', borderRadius: 9, padding: '7px 10px', fontSize: 13, outline: 'none' }} />
+                    <label style={{ fontSize: 12.5, color: 'var(--slate-600)', fontWeight: 600 }}>Cost per box</label>
+                    <div style={{ position: 'relative' }}>
+                      <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 13, color: 'var(--slate-400)' }}>₾</span>
+                      <input type="number" min="0" step="0.01" value={cfg.deliveryCost} onChange={e => setCfg(c => ({ ...c, deliveryCost: num(e.target.value) }))} style={{ width: 96, border: '1px solid var(--slate-200)', borderRadius: 9, padding: '7px 10px 7px 24px', fontSize: 13, outline: 'none' }} />
+                    </div>
                   </div>
                 )}
               </div>
 
-              <div style={{ display: 'flex', gap: 12, marginBottom: 24, flexWrap: 'wrap' }}>
-                <label style={{ flex: 1, minWidth: 220, display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer', background: form.autoRenewal ? 'var(--green-50)' : 'var(--slate-50)', border: `1.5px solid ${form.autoRenewal ? 'var(--green-300)' : 'var(--slate-200)'}`, borderRadius: 12, padding: '12px 14px', transition: 'all 0.15s' }}>
-                  <input type="checkbox" checked={form.autoRenewal} onChange={e => setForm((x: any) => ({ ...x, autoRenewal: e.target.checked }))} style={{ width: 16, height: 16, accentColor: 'var(--teal-600)', marginTop: 2, flexShrink: 0 }} />
-                  <div>
-                    <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--slate-900)', margin: '0 0 3px' }}>🔄 Auto Renewal</p>
-                    <p style={{ fontSize: 11, color: 'var(--slate-500)', margin: 0, lineHeight: 1.5 }}>When enabled, customers on this plan are automatically charged and receive the next box when their current period ends — no action needed from them. They can turn it off anytime from their account.</p>
-                  </div>
-                </label>
-                <label style={{ flex: 1, minWidth: 220, display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer', background: form.giftable ? 'var(--amber-50)' : 'var(--slate-50)', border: `1.5px solid ${form.giftable ? 'var(--amber-200)' : 'var(--slate-200)'}`, borderRadius: 12, padding: '12px 14px', transition: 'all 0.15s' }}>
-                  <input type="checkbox" checked={form.giftable} onChange={e => setForm((x: any) => ({ ...x, giftable: e.target.checked }))} style={{ width: 16, height: 16, accentColor: 'var(--amber-600)', marginTop: 2, flexShrink: 0 }} />
-                  <div>
-                    <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--slate-900)', margin: '0 0 3px' }}>🎁 Can be gifted</p>
-                    <p style={{ fontSize: 11, color: 'var(--slate-500)', margin: 0, lineHeight: 1.5 }}>Lets customers buy this plan for someone else&apos;s dog. The recipient gets an emailed gift card, then adds their own dog and address before the first box ships. Gifted subscriptions never auto-renew.</p>
-                  </div>
-                </label>
-                <label style={{ flex: 1, minWidth: 220, display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer', background: form.isActive ? 'var(--green-50)' : 'var(--slate-50)', border: `1.5px solid ${form.isActive ? 'var(--green-300)' : 'var(--slate-200)'}`, borderRadius: 12, padding: '12px 14px', transition: 'all 0.15s' }}>
-                  <input type="checkbox" checked={form.isActive} onChange={e => setForm((x: any) => ({ ...x, isActive: e.target.checked }))} style={{ width: 16, height: 16, accentColor: 'var(--teal-600)', marginTop: 2, flexShrink: 0 }} />
-                  <div>
-                    <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--slate-900)', margin: '0 0 3px' }}>✅ Active</p>
-                    <p style={{ fontSize: 11, color: 'var(--slate-500)', margin: 0, lineHeight: 1.5 }}>Makes this plan visible and purchasable on the website. Disable to hide the plan from customers without deleting it.</p>
-                  </div>
-                </label>
+              {/* Plan behaviour — switches with the detail tucked behind ⓘ so
+                  four settings read at a glance instead of four paragraphs. */}
+              <div style={{ background: 'var(--white)', border: '1px solid var(--slate-200b)', borderRadius: 12, padding: '4px 18px 10px', marginBottom: 20 }}>
+                <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--slate-400)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '14px 0 2px' }}>Plan behaviour</p>
+                <SettingRow
+                  icon="✅" title="Active"
+                  summary={form.isActive ? 'Visible and purchasable on the site' : 'Hidden from customers'}
+                  detail="Makes this plan visible and purchasable on the website. Disable to hide the plan from customers without deleting it."
+                  checked={form.isActive} onChange={v => setForm((x: any) => ({ ...x, isActive: v }))}
+                />
+                <SettingRow
+                  icon="🔄" title="Auto renewal"
+                  summary={form.autoRenewal ? 'Renews and charges automatically' : 'Ends after the final box'}
+                  detail="When enabled, customers on this plan are automatically charged and receive the next box when their current period ends — no action needed from them. They can turn it off anytime from their account."
+                  checked={form.autoRenewal} onChange={v => setForm((x: any) => ({ ...x, autoRenewal: v }))}
+                />
+                <SettingRow
+                  icon="🎁" title="Can be gifted" accent="var(--amber-600)"
+                  summary={form.giftable ? "Can be bought for someone else's dog" : 'Cannot be given as a gift'}
+                  detail="Lets customers buy this plan for someone else's dog. The recipient gets an emailed gift card, then adds their own dog and address before the first box ships. Gifted subscriptions never auto-renew, whatever this plan's auto-renewal setting says."
+                  checked={form.giftable} onChange={v => setForm((x: any) => ({ ...x, giftable: v }))}
+                />
+                <SettingRow
+                  icon="🏷️" title='Show "Delivery included" badge'
+                  summary={form.deliveryIncluded ? 'Badge shown on the plan card' : 'No badge'}
+                  detail="Displays a small “Delivery included” badge on this plan's card on the pricing page. Set the actual delivery charge under Delivery above."
+                  checked={form.deliveryIncluded} onChange={v => setForm((x: any) => ({ ...x, deliveryIncluded: v }))}
+                />
+              </div>
+
+              <div style={{ display: 'flex', marginBottom: 24 }}>
                 <button onClick={() => save()} disabled={saving}
                   onMouseEnter={e => { if (!saving) (e.currentTarget as HTMLButtonElement).style.background = 'var(--teal-700)'; }}
                   onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--teal-600)'; }}
