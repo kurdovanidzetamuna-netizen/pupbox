@@ -41,23 +41,28 @@ export class OrdersService {
 
   async adminList(page = 1, limit = 20, status?: string, type?: string, search?: string, sortBy = 'createdAt', sortDir = 'desc', planId?: string, dateFrom?: string, dateTo?: string) {
     const skip = (page - 1) * limit;
-    const where: any = {};
-    if (status) where.status = status;
-    if (type) where.type = type;
-    if (planId) where.items = { some: { subscriptionPlanId: planId } };
+
+    // Built without `type` so the type breakdown stays stable while a type is
+    // selected — otherwise picking one channel would hide the others' counts.
+    const whereWithoutType: any = {};
+    if (status) whereWithoutType.status = status;
+    if (planId) whereWithoutType.items = { some: { subscriptionPlanId: planId } };
     if (dateFrom || dateTo) {
-      where.createdAt = {};
-      if (dateFrom) where.createdAt.gte = new Date(dateFrom);
-      if (dateTo) { const d = new Date(dateTo); d.setHours(23, 59, 59, 999); where.createdAt.lte = d; }
+      whereWithoutType.createdAt = {};
+      if (dateFrom) whereWithoutType.createdAt.gte = new Date(dateFrom);
+      if (dateTo) { const d = new Date(dateTo); d.setHours(23, 59, 59, 999); whereWithoutType.createdAt.lte = d; }
     }
     if (search) {
-      where.OR = [
+      whereWithoutType.OR = [
         { orderNumber: { contains: search, mode: 'insensitive' } },
         { user: { email: { contains: search, mode: 'insensitive' } } },
         { user: { firstName: { contains: search, mode: 'insensitive' } } },
         { user: { lastName: { contains: search, mode: 'insensitive' } } },
       ];
     }
+
+    const where: any = { ...whereWithoutType };
+    if (type) where.type = type;
 
     const [orders, total] = await Promise.all([
       this.prisma.order.findMany({
@@ -78,7 +83,40 @@ export class OrdersService {
       }),
       this.prisma.order.count({ where }),
     ]);
-    return { orders, total, page, limit, pages: Math.ceil(total / limit) };
+
+    // Summary spans the whole filtered set, not just this page — a stat card
+    // that only described 20 rows would be worse than no stat card.
+    const [byType, byStatus, valueAgg, paidAgg] = await Promise.all([
+      this.prisma.order.groupBy({ by: ['type'], where: whereWithoutType, _count: { id: true }, _sum: { total: true } }),
+      this.prisma.order.groupBy({ by: ['status'], where, _count: { id: true } }),
+      this.prisma.order.aggregate({ where, _sum: { total: true } }),
+      this.prisma.payment.aggregate({ where: { status: 'PAID', order: where }, _sum: { amount: true } }),
+    ]);
+
+    const num = (v: unknown) => (v == null ? 0 : Number(v));
+    const statusCount = (s: string) => byStatus.find((r) => r.status === s)?._count.id ?? 0;
+
+    return {
+      orders,
+      total,
+      page,
+      limit,
+      pages: Math.ceil(total / limit),
+      summary: {
+        totalOrders: total,
+        totalValue: num(valueAgg._sum.total),
+        paidRevenue: num(paidAgg._sum.amount),
+        paidCount: statusCount('PAID') + statusCount('PROCESSING') + statusCount('PACKED') + statusCount('SHIPPED') + statusCount('DELIVERED'),
+        pendingCount: statusCount('PENDING'),
+        failedCount: statusCount('FAILED'),
+        refundedCount: statusCount('REFUNDED') + statusCount('CANCELLED'),
+        // Only types that actually occur — lets the UI hide filters that
+        // could never match anything.
+        byType: byType
+          .map((r) => ({ type: r.type, count: r._count.id, value: num(r._sum.total) }))
+          .sort((a, b) => b.count - a.count),
+      },
+    };
   }
 
   async adminGetOne(id: string) {
