@@ -64,6 +64,12 @@ interface InventoryAlerts {
   outOfStock: number; lowStock: number;
   items: { productId: string; name: string; sku: string; quantity: number; reservedQty: number; available: number; lowStockAlert: number; severity: 'out' | 'low'; includedInBox: boolean }[];
 }
+interface GiftSummary {
+  unclaimedCount: number;
+  unclaimedValue: number;
+  staleCount: number;
+  claimedCount: number;
+}
 interface BoxCampaign {
   campaignId: string; name: string; month: number; year: number; isCurrent: boolean;
   itemCount: number; boxCost: number; lowStockCount: number;
@@ -77,6 +83,7 @@ export default function DashboardPage() {
   const [plans, setPlans] = useState<TopPlan[]>([]);
   const [inventory, setInventory] = useState<InventoryAlerts | null>(null);
   const [boxes, setBoxes] = useState<BoxCampaign[]>([]);
+  const [gifts, setGifts] = useState<GiftSummary | null>(null);
   const [chartMetric, setChartMetric] = useState<'revenue' | 'orders'>('revenue');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -86,13 +93,15 @@ export default function DashboardPage() {
     setError(null);
     try {
       const headers = { Authorization: `Bearer ${localStorage.getItem('admin_token') || ''}` };
-      const [oRes, pRes, plRes, iRes, bRes] = await Promise.all([
+      const [oRes, pRes, plRes, iRes, bRes, gRes] = await Promise.all([
         fetch(`${API}/analytics/overview?range=${r}`, { headers }),
         fetch(`${API}/analytics/top-products?range=${r}&limit=6`, { headers }),
         fetch(`${API}/analytics/top-plans?range=${r}&limit=6`, { headers }),
         fetch(`${API}/analytics/inventory-alerts?limit=6`, { headers }),
         fetch(`${API}/analytics/box-items`, { headers }),
+        fetch(`${API}/admin/gifts/summary`, { headers }),
       ]);
+      setGifts(gRes.ok ? await gRes.json() : null);
       if (!oRes.ok) throw new Error(oRes.status === 401 ? 'Session expired — please sign in again.' : `Analytics request failed (${oRes.status})`);
       setOverview(await oRes.json());
       setProducts(pRes.ok ? await pRes.json() : []);
@@ -257,6 +266,19 @@ export default function DashboardPage() {
               value={sub.newSubs} change={sub.newSubsChange} sub="signed up in this period" />
             <MetricCard label="Churn rate" emoji="📉" accent={sub.churnRate > 10 ? 'var(--red-600)' : CHANNEL.subscription.accent} bg="var(--red-50)"
               value={`${sub.churnRate}%`} sub={`${sub.cancelled} cancelled in period`} />
+            {/* An unclaimed gift is money taken with nothing shipped — it needs
+                chasing, so it sits on the dashboard rather than only behind a filter. */}
+            <MetricCard
+              label="Unclaimed gifts" emoji="🎁" bg="var(--amber-50)"
+              accent={gifts && gifts.staleCount > 0 ? 'var(--red-600)' : gifts && gifts.unclaimedCount > 0 ? 'var(--amber-700)' : 'var(--emerald-600)'}
+              href="/dashboard/subscriptions?gifts=unclaimed"
+              value={gifts?.unclaimedCount ?? 0}
+              sub={
+                !gifts || gifts.unclaimedCount === 0
+                  ? 'all gifts claimed'
+                  : `${money(gifts.unclaimedValue)} paid, not yet shippable${gifts.staleCount > 0 ? ` · ${gifts.staleCount} over 14 days` : ''}`
+              }
+            />
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'minmax(280px, 1fr) minmax(320px, 1.4fr)', gap: 14, marginTop: 14 }}>

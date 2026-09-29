@@ -19,6 +19,8 @@ class CreatePlanDto {
   @IsOptional() @Type(() => Number) @IsNumber() monthlyEquivPrice?: number;
   @IsOptional() @IsBoolean() deliveryIncluded?: boolean;
   @IsOptional() @IsBoolean() autoRenewal?: boolean;
+  /** Whether this plan may be purchased for someone else's dog. */
+  @IsOptional() @IsBoolean() giftable?: boolean;
   @IsOptional() @IsString() description?: string;
   @IsOptional() @IsArray() benefits?: string[];
   @IsOptional() @IsString() badge?: string;

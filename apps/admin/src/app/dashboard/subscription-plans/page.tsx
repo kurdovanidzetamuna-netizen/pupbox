@@ -11,7 +11,7 @@ const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 const EMPTY_FORM = {
   name: '', slug: '', durationValue: 1, durationUnit: 'MONTH', boxCount: 1,
   monthlyPrice: '', discountPercent: '',
-  deliveryIncluded: true, autoRenewal: true, description: '', benefits: '',
+  deliveryIncluded: true, autoRenewal: true, giftable: true, description: '', benefits: '',
   badge: '', isActive: true, sortOrder: 0,
 };
 const EMPTY_KA = { name: '', description: '', benefits: '' };
@@ -298,6 +298,7 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
         isActive: form.isActive,
         deliveryIncluded: form.deliveryIncluded,
         autoRenewal: form.autoRenewal,
+        giftable: form.giftable,
         translations: {
           ...(hasKa ? { ka: { ...ka, benefits: ka.benefits ? ka.benefits.split('\n').filter(Boolean) : [] } } : {}),
           config: syncedCfg,
@@ -338,7 +339,7 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
                 name: p.name, slug: p.slug, durationValue: p.durationValue, durationUnit: p.durationUnit,
                 boxCount: p.boxCount, price: p.price, benefits: p.benefits ?? [],
                 sortOrder: p.sortOrder ?? 0, isActive: p.isActive,
-                deliveryIncluded: p.deliveryIncluded, autoRenewal: p.autoRenewal,
+                deliveryIncluded: p.deliveryIncluded, autoRenewal: p.autoRenewal, giftable: p.giftable ?? true,
                 translations: p.translations ?? {},
                 ...(p.discountPercent != null ? { discountPercent: p.discountPercent } : {}),
                 ...(p.monthlyEquivPrice != null ? { monthlyEquivPrice: p.monthlyEquivPrice } : {}),
@@ -1172,6 +1173,13 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
                     <p style={{ fontSize: 11, color: 'var(--slate-500)', margin: 0, lineHeight: 1.5 }}>When enabled, customers on this plan are automatically charged and receive the next box when their current period ends — no action needed from them. They can turn it off anytime from their account.</p>
                   </div>
                 </label>
+                <label style={{ flex: 1, minWidth: 220, display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer', background: form.giftable ? 'var(--amber-50)' : 'var(--slate-50)', border: `1.5px solid ${form.giftable ? 'var(--amber-200)' : 'var(--slate-200)'}`, borderRadius: 12, padding: '12px 14px', transition: 'all 0.15s' }}>
+                  <input type="checkbox" checked={form.giftable} onChange={e => setForm((x: any) => ({ ...x, giftable: e.target.checked }))} style={{ width: 16, height: 16, accentColor: 'var(--amber-600)', marginTop: 2, flexShrink: 0 }} />
+                  <div>
+                    <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--slate-900)', margin: '0 0 3px' }}>🎁 Can be gifted</p>
+                    <p style={{ fontSize: 11, color: 'var(--slate-500)', margin: 0, lineHeight: 1.5 }}>Lets customers buy this plan for someone else&apos;s dog. The recipient gets an emailed gift card, then adds their own dog and address before the first box ships. Gifted subscriptions never auto-renew.</p>
+                  </div>
+                </label>
                 <label style={{ flex: 1, minWidth: 220, display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer', background: form.isActive ? 'var(--green-50)' : 'var(--slate-50)', border: `1.5px solid ${form.isActive ? 'var(--green-300)' : 'var(--slate-200)'}`, borderRadius: 12, padding: '12px 14px', transition: 'all 0.15s' }}>
                   <input type="checkbox" checked={form.isActive} onChange={e => setForm((x: any) => ({ ...x, isActive: e.target.checked }))} style={{ width: 16, height: 16, accentColor: 'var(--teal-600)', marginTop: 2, flexShrink: 0 }} />
                   <div>
@@ -1365,7 +1373,7 @@ export default function AdminSubscriptionPlansPage() {
         boxCount: Number(form.boxCount), price: computedPrice,
         monthlyEquivPrice: Math.round((computedPrice / months) * 100) / 100,
         discountPercent: disc || null, benefits: [], sortOrder: 0, isActive: true,
-        deliveryIncluded: true, autoRenewal: true,
+        deliveryIncluded: true, autoRenewal: true, giftable: true,
       };
       const res = await fetch(`${API}/admin/subscription-plans`, { method: 'POST', headers: { Authorization: `Bearer ${token()}`, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
       if (!res.ok) {

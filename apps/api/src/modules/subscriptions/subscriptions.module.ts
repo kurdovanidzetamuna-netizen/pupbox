@@ -49,8 +49,13 @@ class SubscriptionsController {
 @Controller('admin/subscriptions')
 class AdminSubscriptionsController {
   constructor(private service: SubscriptionsService) {}
-  @Get() list(@Query('status') status?: string, @Query('page') page?: string, @Query('limit') limit?: string) {
-    return this.service.adminList({ status, page: page ? +page : 1, limit: limit ? +limit : 20 });
+  @Get() list(
+    @Query('status') status?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('gifts') gifts?: 'all' | 'unclaimed' | 'claimed',
+  ) {
+    return this.service.adminList({ status, page: page ? +page : 1, limit: limit ? +limit : 20, gifts });
   }
   @Get(':id') findOne(@Param('id') id: string) { return this.service.findOne(id); }
   @Patch(':id') update(@Param('id') id: string, @Body() dto: AdminUpdateDto) { return this.service.adminUpdate(id, dto as any); }

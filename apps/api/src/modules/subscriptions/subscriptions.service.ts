@@ -63,21 +63,54 @@ export class SubscriptionsService {
   }
 
   // Admin methods
-  async adminList(params: { status?: string; page?: number; limit?: number }) {
-    const { status, page = 1, limit = 20 } = params;
+  /**
+   * `gifts` narrows to gifted subscriptions: 'unclaimed' is the operational
+   * queue — paid for, but with no dog and no address, so nothing can ship yet.
+   */
+  async adminList(params: { status?: string; page?: number; limit?: number; gifts?: 'all' | 'unclaimed' | 'claimed' }) {
+    const { status, page = 1, limit = 20, gifts } = params;
     const where: any = {};
     if (status) where.status = status;
-    const [items, total] = await Promise.all([
+    if (gifts) {
+      where.isGift = true;
+      if (gifts === 'unclaimed') where.giftClaimedAt = null;
+      if (gifts === 'claimed') where.giftClaimedAt = { not: null };
+    }
+
+    const [items, total, unclaimedGifts] = await Promise.all([
       this.prisma.customerSubscription.findMany({
         where,
-        include: { plan: true, user: { select: { id: true, email: true, firstName: true, lastName: true } }, dog: true },
-        orderBy: { createdAt: 'desc' },
+        include: {
+          plan: true,
+          user: { select: { id: true, email: true, firstName: true, lastName: true } },
+          dog: true,
+          purchasedBy: { select: { email: true, firstName: true, lastName: true } },
+          orders: { select: { giftRecipientName: true, giftRecipientEmail: true }, take: 1 },
+        },
+        // Unclaimed gifts are chased oldest-first; everything else reads newest-first.
+        orderBy: { createdAt: gifts === 'unclaimed' ? 'asc' : 'desc' },
         skip: (page - 1) * limit,
         take: limit,
       }),
       this.prisma.customerSubscription.count({ where }),
+      this.prisma.customerSubscription.count({ where: { isGift: true, giftClaimedAt: null } }),
     ]);
-    return { items, total, page, limit, pages: Math.ceil(total / limit) };
+
+    const now = Date.now();
+    return {
+      items: items.map((s) => ({
+        ...s,
+        giftRecipientName: s.orders[0]?.giftRecipientName ?? null,
+        giftRecipientEmail: s.orders[0]?.giftRecipientEmail ?? null,
+        giftUnclaimed: s.isGift && s.giftClaimedAt === null,
+        daysOutstanding: s.isGift && !s.giftClaimedAt ? Math.floor((now - s.createdAt.getTime()) / 86400000) : null,
+      })),
+      total,
+      unclaimedGifts,
+      page,
+      limit,
+      pages: Math.ceil(total / limit),
+    };
   }
 
   async adminUpdate(id: string, data: { status?: string; cancelReason?: string; endDate?: Date; nextRenewalAt?: Date }) {
