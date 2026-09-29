@@ -10,3 +10,4 @@ build
 coverage
 prisma/migrations/*.sql
 .claude/settings.local.json
+*.tsbuildinfo
