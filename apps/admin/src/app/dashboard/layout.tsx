@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { useTheme } from '@/components/ThemeProvider';
 
 const NAV_GROUPS = [
   {
@@ -63,23 +64,24 @@ const NAV_GROUPS = [
 ];
 
 const S = {
-  sidebar: { position: 'fixed' as const, left: 0, top: 0, height: '100%', width: 224, display: 'flex', flexDirection: 'column' as const, zIndex: 40, backgroundColor: '#fff', borderRight: '1px solid #e8ecf0' },
-  logo: { padding: '20px 20px 16px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: 10 },
-  logoIcon: { width: 34, height: 34, borderRadius: 9, backgroundColor: '#0d9488', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 },
-  logoText: { color: '#0f172a', fontWeight: 700, fontSize: 14, lineHeight: 1 },
-  logoSub: { color: '#94a3b8', fontSize: 11, marginTop: 3 },
+  sidebar: { position: 'fixed' as const, left: 0, top: 0, height: '100%', width: 224, display: 'flex', flexDirection: 'column' as const, zIndex: 40, backgroundColor: 'var(--white)', borderRight: '1px solid var(--slate-200b)' },
+  logo: { padding: '20px 20px 16px', borderBottom: '1px solid var(--slate-100)', display: 'flex', alignItems: 'center', gap: 10 },
+  logoIcon: { width: 34, height: 34, borderRadius: 9, backgroundColor: 'var(--teal-600)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 },
+  logoText: { color: 'var(--slate-900)', fontWeight: 700, fontSize: 14, lineHeight: 1 },
+  logoSub: { color: 'var(--slate-400)', fontSize: 11, marginTop: 3 },
   nav: { flex: 1, overflowY: 'auto' as const, padding: '16px 12px' },
   groupHeader: (open: boolean) => ({
     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
     padding: '5px 8px', borderRadius: 6, cursor: 'pointer', marginBottom: open ? 4 : 0,
     userSelect: 'none' as const,
   }),
-  groupLabel: { color: '#b0bac5', fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' as const },
-  chevron: (open: boolean) => ({ color: '#b0bac5', transition: 'transform 0.18s', transform: open ? 'rotate(180deg)' : 'rotate(0deg)', display: 'flex' }),
-  navLink: (active: boolean) => ({ display: 'flex', alignItems: 'center', gap: 9, padding: '7px 10px', borderRadius: 8, fontSize: 13, fontWeight: active ? 600 : 400, textDecoration: 'none', color: active ? '#0d9488' : '#64748b', backgroundColor: active ? '#f0fdfa' : 'transparent', marginBottom: 1, transition: 'all 0.12s' }),
-  bottom: { padding: '12px', borderTop: '1px solid #f1f5f9' },
-  signOut: { display: 'flex', alignItems: 'center', gap: 9, width: '100%', padding: '8px 10px', borderRadius: 8, fontSize: 13, color: '#94a3b8', background: 'none', border: 'none', cursor: 'pointer' },
-  main: { marginLeft: 224, minHeight: '100vh', backgroundColor: '#f8fafc', width: 'calc(100vw - 224px)' },
+  groupLabel: { color: 'var(--slate-400b)', fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' as const },
+  chevron: (open: boolean) => ({ color: 'var(--slate-400b)', transition: 'transform 0.18s', transform: open ? 'rotate(180deg)' : 'rotate(0deg)', display: 'flex' }),
+  navLink: (active: boolean) => ({ display: 'flex', alignItems: 'center', gap: 9, padding: '7px 10px', borderRadius: 8, fontSize: 13, fontWeight: active ? 600 : 400, textDecoration: 'none', color: active ? 'var(--teal-600)' : 'var(--slate-500)', backgroundColor: active ? 'var(--teal-50)' : 'transparent', marginBottom: 1, transition: 'all 0.12s' }),
+  bottom: { padding: '12px', borderTop: '1px solid var(--slate-100)', display: 'flex', flexDirection: 'column' as const, gap: 2 },
+  themeToggle: { display: 'flex', alignItems: 'center', gap: 9, width: '100%', padding: '8px 10px', borderRadius: 8, fontSize: 13, color: 'var(--slate-400)', background: 'none', border: 'none', cursor: 'pointer' },
+  signOut: { display: 'flex', alignItems: 'center', gap: 9, width: '100%', padding: '8px 10px', borderRadius: 8, fontSize: 13, color: 'var(--slate-400)', background: 'none', border: 'none', cursor: 'pointer' },
+  main: { marginLeft: 224, minHeight: '100vh', backgroundColor: 'var(--slate-50)', width: 'calc(100vw - 224px)' },
 };
 
 function NavGroup({ group, isActive }: { group: typeof NAV_GROUPS[0]; isActive: (href: string, exact?: boolean) => boolean }) {
@@ -119,6 +121,7 @@ function NavGroup({ group, isActive }: { group: typeof NAV_GROUPS[0]; isActive: 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  const { theme, toggleTheme } = useTheme();
 
   useEffect(() => {
     const token = localStorage.getItem('admin_token');
@@ -149,6 +152,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
 
         <div style={S.bottom}>
+          <button onClick={toggleTheme} style={S.themeToggle}>
+            {theme === 'dark' ? (
+              <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24" style={{ flexShrink: 0 }}>
+                <circle cx="12" cy="12" r="4" />
+                <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
+              </svg>
+            ) : (
+              <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24" style={{ flexShrink: 0 }}>
+                <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" />
+              </svg>
+            )}
+            {theme === 'dark' ? 'Light mode' : 'Dark mode'}
+          </button>
           <button onClick={() => { localStorage.removeItem('admin_token'); router.push('/login'); }} style={S.signOut}>
             <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24" style={{ flexShrink: 0 }}>
               <path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />

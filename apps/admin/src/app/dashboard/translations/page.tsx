@@ -272,16 +272,16 @@ function TranslationRow({ s, onSave, onEdit, onDelete }: {
 
   const taStyle = (missing: boolean): React.CSSProperties => ({
     width: '100%', padding: '5px 9px', fontSize: 13,
-    border: `1px solid ${missing ? '#fde68a' : '#e2e8f0'}`, borderRadius: 7,
-    outline: 'none', background: missing ? '#fffbeb' : '#f8fafc',
-    color: '#0f172a', boxSizing: 'border-box', resize: 'vertical', fontFamily: 'inherit',
+    border: `1px solid ${missing ? 'var(--amber-200)' : 'var(--slate-200)'}`, borderRadius: 7,
+    outline: 'none', background: missing ? 'var(--amber-50)' : 'var(--slate-50)',
+    color: 'var(--slate-900)', boxSizing: 'border-box', resize: 'vertical', fontFamily: 'inherit',
   });
 
   return (
-    <tr style={{ borderBottom: '1px solid #f1f5f9', background: missingKa ? '#fffdf5' : 'transparent' }}>
+    <tr style={{ borderBottom: '1px solid var(--slate-100)', background: missingKa ? 'var(--amber-50b)' : 'transparent' }}>
       <td style={{ padding: '10px 16px', maxWidth: 160, verticalAlign: 'top' }}>
-        <span style={{ fontFamily: 'monospace', fontSize: 12, background: '#f1f5f9', color: '#475569', padding: '2px 7px', borderRadius: 5, wordBreak: 'break-all', display: 'inline-block' }}>{s.key}</span>
-        {missingKa && <span style={{ display: 'block', fontSize: 10, color: '#f59e0b', fontWeight: 700, marginTop: 3 }}>⚠ Missing KA</span>}
+        <span style={{ fontFamily: 'monospace', fontSize: 12, background: 'var(--slate-100)', color: 'var(--slate-600)', padding: '2px 7px', borderRadius: 5, wordBreak: 'break-all', display: 'inline-block' }}>{s.key}</span>
+        {missingKa && <span style={{ display: 'block', fontSize: 10, color: 'var(--amber-500)', fontWeight: 700, marginTop: 3 }}>⚠ Missing KA</span>}
       </td>
       <td style={{ padding: '6px 16px', minWidth: 200, verticalAlign: 'top' }}>
         <textarea value={en} onChange={e => setEn(e.target.value)} onFocus={() => setFocused(true)} onBlur={() => setFocused(false)} placeholder="English text…" rows={2} style={taStyle(false)} />
@@ -292,17 +292,17 @@ function TranslationRow({ s, onSave, onEdit, onDelete }: {
       <td style={{ padding: '10px 12px', verticalAlign: 'top', maxWidth: 160 }}>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
           {s.pages.length === 0
-            ? <span style={{ fontSize: 11, color: '#d1d5db', fontStyle: 'italic' }}>—</span>
+            ? <span style={{ fontSize: 11, color: 'var(--slate-300b)', fontStyle: 'italic' }}>—</span>
             : s.pages.map(pk => {
                 const pg = PAGES.find(p => p.key === pk);
-                return pg ? <span key={pk} style={{ fontSize: 10, background: '#f0fdfa', color: '#0d9488', border: '1px solid #99f6e4', borderRadius: 999, padding: '2px 7px', fontWeight: 600, whiteSpace: 'nowrap' }}>{pg.icon} {pg.label}</span> : null;
+                return pg ? <span key={pk} style={{ fontSize: 10, background: 'var(--teal-50)', color: 'var(--teal-600)', border: '1px solid var(--teal-200)', borderRadius: 999, padding: '2px 7px', fontWeight: 600, whiteSpace: 'nowrap' }}>{pg.icon} {pg.label}</span> : null;
               })}
         </div>
       </td>
       <td style={{ padding: '8px 12px', whiteSpace: 'nowrap', verticalAlign: 'top' }}>
         <div style={{ display: 'flex', gap: 4, alignItems: 'flex-start', flexWrap: 'wrap' }}>
           {showSave && (
-            <ActionButton onClick={() => { if (canSave) onSave(s.id, en, ka); }} disabled={!canSave} style={{ padding: '4px 10px', fontSize: 12, background: canSave ? '#0d9488' : '#e2e8f0', color: canSave ? '#fff' : '#94a3b8' }}>
+            <ActionButton onClick={() => { if (canSave) onSave(s.id, en, ka); }} disabled={!canSave} style={{ padding: '4px 10px', fontSize: 12, background: canSave ? 'var(--teal-600)' : 'var(--slate-200)', color: canSave ? 'var(--white)' : 'var(--slate-400)' }}>
               Save
             </ActionButton>
           )}
@@ -406,22 +406,22 @@ export default function TranslationsPage() {
   const missingTotal = strings.filter(s => !s.ka.trim()).length;
   const coverage = strings.length ? Math.round(((strings.length - missingTotal) / strings.length) * 100) : 100;
 
-  const inp: React.CSSProperties = { width: '100%', border: '1px solid #e2e8f0', borderRadius: 9, padding: '8px 11px', fontSize: 13, outline: 'none', background: '#fff', fontFamily: 'inherit', boxSizing: 'border-box' as const };
+  const inp: React.CSSProperties = { width: '100%', border: '1px solid var(--slate-200)', borderRadius: 9, padding: '8px 11px', fontSize: 13, outline: 'none', background: 'var(--white)', fontFamily: 'inherit', boxSizing: 'border-box' as const };
   const ta: React.CSSProperties = { ...inp, resize: 'vertical' as const, minHeight: 68 };
-  const labelStyle: React.CSSProperties = { display: 'block', fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 5 };
-  const chipStyle = (on: boolean): React.CSSProperties => ({ padding: '4px 10px', borderRadius: 999, fontSize: 11, fontWeight: 600, cursor: 'pointer', border: on ? '1.5px solid #0d9488' : '1.5px solid #e2e8f0', background: on ? '#f0fdfa' : '#fff', color: on ? '#0d9488' : '#94a3b8', userSelect: 'none' as const });
+  const labelStyle: React.CSSProperties = { display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--slate-600)', marginBottom: 5 };
+  const chipStyle = (on: boolean): React.CSSProperties => ({ padding: '4px 10px', borderRadius: 999, fontSize: 11, fontWeight: 600, cursor: 'pointer', border: on ? '1.5px solid var(--teal-600)' : '1.5px solid var(--slate-200)', background: on ? 'var(--teal-50)' : 'var(--white)', color: on ? 'var(--teal-600)' : 'var(--slate-400)', userSelect: 'none' as const });
 
   return (
     <div style={{ padding: 32 }}>
       {/* Header */}
       <div style={{ marginBottom: 24, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
         <div>
-          <h1 style={{ fontSize: 24, fontWeight: 800, color: '#0f172a', margin: '0 0 4px' }}>Front-end Translations</h1>
-          <p style={{ fontSize: 13, color: '#94a3b8', margin: 0 }}>Manage English and Georgian strings for the customer-facing website.</p>
+          <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--slate-900)', margin: '0 0 4px' }}>Front-end Translations</h1>
+          <p style={{ fontSize: 13, color: 'var(--slate-400)', margin: 0 }}>Manage English and Georgian strings for the customer-facing website.</p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          {saving && <span style={{ fontSize: 12, color: '#94a3b8' }}>Saving…</span>}
-          {saved && <span style={{ fontSize: 12, color: '#10b981', fontWeight: 600 }}>✓ Saved</span>}
+          {saving && <span style={{ fontSize: 12, color: 'var(--slate-400)' }}>Saving…</span>}
+          {saved && <span style={{ fontSize: 12, color: 'var(--emerald-500)', fontWeight: 600 }}>✓ Saved</span>}
           <ActionButton variant="secondary" onClick={() => {
             const rows: string[][] = [['Key', 'English', 'Georgian', 'Pages']];
             strings.forEach(s => rows.push([s.key, s.en, s.ka, s.pages.join(', ')]));
@@ -434,13 +434,13 @@ export default function TranslationsPage() {
       {/* Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 24 }}>
         {[
-          { label: 'Total strings',    value: strings.length,               color: '#0f172a' },
-          { label: 'Translated (KA)',  value: strings.length - missingTotal, color: '#16a34a' },
-          { label: 'Missing Georgian', value: missingTotal,                  color: missingTotal > 0 ? '#dc2626' : '#16a34a' },
-          { label: 'Coverage',         value: `${coverage}%`,               color: coverage === 100 ? '#16a34a' : coverage >= 80 ? '#b45309' : '#dc2626' },
+          { label: 'Total strings',    value: strings.length,               color: 'var(--slate-900)' },
+          { label: 'Translated (KA)',  value: strings.length - missingTotal, color: 'var(--green-600)' },
+          { label: 'Missing Georgian', value: missingTotal,                  color: missingTotal > 0 ? 'var(--red-600)' : 'var(--green-600)' },
+          { label: 'Coverage',         value: `${coverage}%`,               color: coverage === 100 ? 'var(--green-600)' : coverage >= 80 ? 'var(--amber-700)' : 'var(--red-600)' },
         ].map(s => (
-          <div key={s.label} style={{ background: '#fff', borderRadius: 14, border: '1px solid #e8ecf0', padding: '16px 20px' }}>
-            <p style={{ margin: '0 0 4px', fontSize: 11, color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{s.label}</p>
+          <div key={s.label} style={{ background: 'var(--white)', borderRadius: 14, border: '1px solid var(--slate-200b)', padding: '16px 20px' }}>
+            <p style={{ margin: '0 0 4px', fontSize: 11, color: 'var(--slate-400)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{s.label}</p>
             <p style={{ margin: 0, fontSize: 22, fontWeight: 800, color: s.color }}>{s.value}</p>
           </div>
         ))}
@@ -450,37 +450,37 @@ export default function TranslationsPage() {
       <div style={{ display: 'flex', gap: 10, marginBottom: 16, alignItems: 'center', flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
           <button onClick={() => setPageFilter('all')}
-            style={{ padding: '5px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer', border: 'none', background: pageFilter === 'all' ? '#0d9488' : '#f1f5f9', color: pageFilter === 'all' ? '#fff' : '#64748b', transition: 'all 0.12s' }}>
+            style={{ padding: '5px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer', border: 'none', background: pageFilter === 'all' ? 'var(--teal-600)' : 'var(--slate-100)', color: pageFilter === 'all' ? 'var(--white)' : 'var(--slate-500)', transition: 'all 0.12s' }}>
             🌐 All
           </button>
           {PAGES.map(p => (
             <button key={p.key} onClick={() => setPageFilter(p.key)}
-              style={{ padding: '5px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer', border: 'none', background: pageFilter === p.key ? '#0d9488' : '#f1f5f9', color: pageFilter === p.key ? '#fff' : '#64748b', transition: 'all 0.12s' }}>
+              style={{ padding: '5px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer', border: 'none', background: pageFilter === p.key ? 'var(--teal-600)' : 'var(--slate-100)', color: pageFilter === p.key ? 'var(--white)' : 'var(--slate-500)', transition: 'all 0.12s' }}>
               {p.icon} {p.label}
             </button>
           ))}
         </div>
         <button onClick={() => setShowMissing(m => !m)}
-          style={{ padding: '5px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer', border: `1.5px solid ${showMissing ? '#dc2626' : '#e2e8f0'}`, background: showMissing ? '#fef2f2' : '#fff', color: showMissing ? '#dc2626' : '#64748b' }}>
+          style={{ padding: '5px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer', border: `1.5px solid ${showMissing ? 'var(--red-600)' : 'var(--slate-200)'}`, background: showMissing ? 'var(--red-50)' : 'var(--white)', color: showMissing ? 'var(--red-600)' : 'var(--slate-500)' }}>
           ⚠ Missing only {missingTotal > 0 && `(${missingTotal})`}
         </button>
         <div style={{ marginLeft: 'auto', position: 'relative' }}>
-          <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 13, color: '#94a3b8', pointerEvents: 'none' }}>🔍</span>
+          <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 13, color: 'var(--slate-400)', pointerEvents: 'none' }}>🔍</span>
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search keys, English, Georgian…"
-            style={{ paddingLeft: 30, paddingRight: search ? 28 : 10, paddingTop: 7, paddingBottom: 7, fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 9, outline: 'none', width: 240, background: '#fff', color: '#0f172a' }} />
-          {search && <button onClick={() => setSearch('')} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, color: '#94a3b8', padding: 0 }}>×</button>}
+            style={{ paddingLeft: 30, paddingRight: search ? 28 : 10, paddingTop: 7, paddingBottom: 7, fontSize: 13, border: '1px solid var(--slate-200)', borderRadius: 9, outline: 'none', width: 240, background: 'var(--white)', color: 'var(--slate-900)' }} />
+          {search && <button onClick={() => setSearch('')} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, color: 'var(--slate-400)', padding: 0 }}>×</button>}
         </div>
       </div>
 
       {/* Table */}
-      <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #e8ecf0', overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
+      <div style={{ background: 'var(--white)', borderRadius: 16, border: '1px solid var(--slate-200b)', overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
         <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
         {loading ? (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '80px 0' }}>
-            <div style={{ width: 32, height: 32, border: '4px solid #99f6e4', borderTopColor: '#0d9488', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+            <div style={{ width: 32, height: 32, border: '4px solid var(--teal-200)', borderTopColor: 'var(--teal-600)', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
           </div>
         ) : filtered.length === 0 ? (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '80px 0', color: '#cbd5e1' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '80px 0', color: 'var(--slate-300)' }}>
             <div style={{ fontSize: 40, marginBottom: 8 }}>{strings.length === 0 ? '📝' : '🔍'}</div>
             <p style={{ fontSize: 13 }}>{strings.length === 0 ? 'No strings yet — click "+ Add string"' : 'No strings match your filters'}</p>
           </div>
@@ -489,7 +489,7 @@ export default function TranslationsPage() {
             <thead>
               <tr>
                 {['Key', '🇬🇧 English', '🇬🇪 Georgian', 'Pages', ''].map(h => (
-                  <th key={h} style={{ padding: '10px 16px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', borderBottom: '1px solid #e8ecf0', background: '#f8fafc', whiteSpace: 'nowrap' }}>{h}</th>
+                  <th key={h} style={{ padding: '10px 16px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: 'var(--slate-400)', textTransform: 'uppercase', letterSpacing: '0.06em', borderBottom: '1px solid var(--slate-200b)', background: 'var(--slate-50)', whiteSpace: 'nowrap' }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -505,26 +505,26 @@ export default function TranslationsPage() {
       {/* Add / Edit Modal */}
       {modal && (
         <div onClick={() => setModal(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.45)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-          <div onClick={e => e.stopPropagation()} style={{ background: '#fff', borderRadius: 18, width: '100%', maxWidth: 560, boxShadow: '0 24px 64px rgba(0,0,0,0.18)', overflow: 'hidden', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ padding: '24px 28px 18px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
-              <h2 style={{ margin: 0, fontSize: 17, fontWeight: 800, color: '#0f172a' }}>{modal === 'add' ? 'Add String' : 'Edit String'}</h2>
-              <button onClick={() => setModal(null)} style={{ width: 32, height: 32, borderRadius: 8, border: 'none', background: 'transparent', cursor: 'pointer', fontSize: 20, color: '#94a3b8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
+          <div onClick={e => e.stopPropagation()} style={{ background: 'var(--white)', borderRadius: 18, width: '100%', maxWidth: 560, boxShadow: '0 24px 64px rgba(0,0,0,0.18)', overflow: 'hidden', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ padding: '24px 28px 18px', borderBottom: '1px solid var(--slate-200)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+              <h2 style={{ margin: 0, fontSize: 17, fontWeight: 800, color: 'var(--slate-900)' }}>{modal === 'add' ? 'Add String' : 'Edit String'}</h2>
+              <button onClick={() => setModal(null)} style={{ width: 32, height: 32, borderRadius: 8, border: 'none', background: 'transparent', cursor: 'pointer', fontSize: 20, color: 'var(--slate-400)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
             </div>
             <div style={{ padding: '20px 28px', display: 'flex', flexDirection: 'column', gap: 16, overflowY: 'auto', flex: 1 }}>
               <div>
-                <label style={labelStyle}>Key <span style={{ color: '#dc2626' }}>*</span> <span style={{ color: '#94a3b8', fontWeight: 400, fontSize: 11 }}>(e.g. hero.heading)</span></label>
+                <label style={labelStyle}>Key <span style={{ color: 'var(--red-600)' }}>*</span> <span style={{ color: 'var(--slate-400)', fontWeight: 400, fontSize: 11 }}>(e.g. hero.heading)</span></label>
                 <input value={form.key} onChange={e => setForm(f => ({ ...f, key: e.target.value }))} placeholder="hero.heading" style={{ ...inp, fontFamily: 'monospace' }} />
               </div>
               <div>
-                <label style={labelStyle}>🇬🇧 English <span style={{ color: '#dc2626' }}>*</span></label>
+                <label style={labelStyle}>🇬🇧 English <span style={{ color: 'var(--red-600)' }}>*</span></label>
                 <textarea value={form.en} onChange={e => setForm(f => ({ ...f, en: e.target.value }))} placeholder="English text…" style={ta} rows={3} />
               </div>
               <div>
-                <label style={labelStyle}>🇬🇪 Georgian <span style={{ color: '#dc2626' }}>*</span></label>
-                <textarea value={form.ka} onChange={e => setForm(f => ({ ...f, ka: e.target.value }))} placeholder="Georgian text…" style={{ ...ta, borderColor: form.ka ? '#e2e8f0' : '#fde68a', background: form.ka ? '#fff' : '#fffbeb' }} rows={3} />
+                <label style={labelStyle}>🇬🇪 Georgian <span style={{ color: 'var(--red-600)' }}>*</span></label>
+                <textarea value={form.ka} onChange={e => setForm(f => ({ ...f, ka: e.target.value }))} placeholder="Georgian text…" style={{ ...ta, borderColor: form.ka ? 'var(--slate-200)' : 'var(--amber-200)', background: form.ka ? 'var(--white)' : 'var(--amber-50)' }} rows={3} />
               </div>
               <div>
-                <label style={labelStyle}>Assign to pages <span style={{ color: '#94a3b8', fontWeight: 400, fontSize: 11 }}>(reference only)</span></label>
+                <label style={labelStyle}>Assign to pages <span style={{ color: 'var(--slate-400)', fontWeight: 400, fontSize: 11 }}>(reference only)</span></label>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 6 }}>
                   {PAGES.map(p => {
                     const on = form.pages.includes(p.key);
@@ -537,7 +537,7 @@ export default function TranslationsPage() {
                 </div>
               </div>
             </div>
-            <div style={{ padding: '14px 28px', borderTop: '1px solid #e2e8f0', display: 'flex', gap: 10, flexShrink: 0 }}>
+            <div style={{ padding: '14px 28px', borderTop: '1px solid var(--slate-200)', display: 'flex', gap: 10, flexShrink: 0 }}>
               <ActionButton onClick={saveModal} disabled={!form.key.trim() || !form.en.trim() || !form.ka.trim()} style={{ flex: 2, padding: '10px 0', justifyContent: 'center' }}>
                 {modal === 'add' ? 'Add String' : 'Save Changes'}
               </ActionButton>
@@ -552,14 +552,14 @@ export default function TranslationsPage() {
       {/* Delete confirm */}
       {deleteId && (
         <div onClick={() => setDeleteId(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.45)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-          <div onClick={e => e.stopPropagation()} style={{ background: '#fff', borderRadius: 18, width: '100%', maxWidth: 380, boxShadow: '0 24px 64px rgba(0,0,0,0.18)', padding: '28px 28px 22px', display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: '#0f172a' }}>Delete this string?</h3>
-            <p style={{ margin: 0, fontSize: 13, color: '#64748b' }}>
-              Key: <code style={{ fontFamily: 'monospace', background: '#f1f5f9', padding: '1px 6px', borderRadius: 4 }}>{strings.find(s => s.id === deleteId)?.key}</code>
+          <div onClick={e => e.stopPropagation()} style={{ background: 'var(--white)', borderRadius: 18, width: '100%', maxWidth: 380, boxShadow: '0 24px 64px rgba(0,0,0,0.18)', padding: '28px 28px 22px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: 'var(--slate-900)' }}>Delete this string?</h3>
+            <p style={{ margin: 0, fontSize: 13, color: 'var(--slate-500)' }}>
+              Key: <code style={{ fontFamily: 'monospace', background: 'var(--slate-100)', padding: '1px 6px', borderRadius: 4 }}>{strings.find(s => s.id === deleteId)?.key}</code>
             </p>
-            <p style={{ margin: 0, fontSize: 12, color: '#94a3b8' }}>This will permanently remove the string and both translations.</p>
+            <p style={{ margin: 0, fontSize: 12, color: 'var(--slate-400)' }}>This will permanently remove the string and both translations.</p>
             <div style={{ display: 'flex', gap: 10 }}>
-              <ActionButton onClick={confirmDelete} style={{ flex: 1, padding: '10px 0', background: '#dc2626', justifyContent: 'center' }}>Delete</ActionButton>
+              <ActionButton onClick={confirmDelete} style={{ flex: 1, padding: '10px 0', background: 'var(--red-600)', justifyContent: 'center' }}>Delete</ActionButton>
               <ActionButton variant="secondary" onClick={() => setDeleteId(null)} style={{ flex: 1, padding: '10px 0', justifyContent: 'center' }}>Cancel</ActionButton>
             </div>
           </div>
