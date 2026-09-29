@@ -66,96 +66,7 @@ function StepHeading({ n, title, hint }: { n: number; title: string; hint: strin
   );
 }
 
-/**
- * The plan card as customers will actually see it on the pricing page.
- *
- * A plan is a thing people look at and choose between, not a database row —
- * but it was authored blind: you set a price, a discount and a badge, then
- * guessed at the result. Rendering it live turns the drawer into a builder.
- * Mirrors apps/web PlanCard; the two live in different apps so the styling is
- * duplicated deliberately rather than shared.
- */
-function PlanCardPreview({ name, badge, boxCount, months, total, monthlyEquivalent, savings, benefits, giftable, deliveryBadge }: {
-  name: string; badge: string; boxCount: number; months: number;
-  total: number; monthlyEquivalent: number; savings: number;
-  benefits: string[]; giftable: boolean; deliveryBadge: boolean;
-}) {
-  const badgeLabel = badge === 'popular' ? 'MOST POPULAR' : badge === 'best_value' ? 'BEST VALUE' : badge === 'new' ? 'NEW' : null;
-  return (
-    <div style={{ position: 'relative', background: 'var(--white)', border: `2px solid ${badgeLabel ? 'var(--teal-500, var(--teal-600))' : 'var(--slate-200)'}`, borderRadius: 16, padding: '22px 20px 20px', boxShadow: badgeLabel ? '0 6px 20px rgba(13,148,136,0.14)' : '0 1px 4px rgba(0,0,0,0.05)' }}>
-      {badgeLabel && (
-        <div style={{ position: 'absolute', top: -11, left: '50%', transform: 'translateX(-50%)', background: 'var(--teal-600)', color: 'var(--white)', fontSize: 9.5, fontWeight: 800, letterSpacing: '0.08em', padding: '4px 12px', borderRadius: 999, whiteSpace: 'nowrap' }}>
-          {badgeLabel}
-        </div>
-      )}
-      <p style={{ textAlign: 'center', fontSize: 16, fontWeight: 800, color: 'var(--slate-900)', margin: '2px 0 2px' }}>
-        {name || <span style={{ color: 'var(--slate-300)' }}>Plan name</span>}
-      </p>
-      <p style={{ textAlign: 'center', fontSize: 11, color: 'var(--slate-400)', margin: '0 0 12px' }}>
-        {boxCount} {boxCount === 1 ? 'box' : 'boxes'} over {months} {months === 1 ? 'month' : 'months'}
-      </p>
-      <p style={{ textAlign: 'center', margin: 0 }}>
-        {/* Show the exact figure: rounding ₾3.92 to "₾4" made the preview
-            disagree with the price actually being set. */}
-        <span style={{ fontSize: 30, fontWeight: 800, color: 'var(--teal-600)' }}>
-          ₾{total > 0 ? (Number.isInteger(total) ? total.toFixed(0) : total.toFixed(2)) : '—'}
-        </span>
-        <span style={{ fontSize: 11, color: 'var(--slate-400)', marginLeft: 4 }}>total</span>
-      </p>
-      <p style={{ textAlign: 'center', fontSize: 11, color: 'var(--slate-400)', margin: '3px 0 0' }}>
-        {monthlyEquivalent > 0 ? `≈ ₾${monthlyEquivalent.toFixed(2)}/month` : ''}
-      </p>
-      {savings > 0 && (
-        <p style={{ textAlign: 'center', fontSize: 11, fontWeight: 700, color: 'var(--amber-700)', margin: '6px 0 0' }}>
-          Save ₾{savings.toFixed(2)} vs monthly
-        </p>
-      )}
-      <div style={{ borderTop: '1px solid var(--slate-100)', margin: '14px 0 12px' }} />
-      {benefits.length === 0 ? (
-        <p style={{ fontSize: 11, color: 'var(--slate-300)', fontStyle: 'italic', textAlign: 'center', margin: 0 }}>No benefits listed yet</p>
-      ) : (
-        <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
-          {benefits.map((b, i) => (
-            <li key={i} style={{ display: 'flex', gap: 7, fontSize: 11.5, color: 'var(--slate-600)', lineHeight: 1.4 }}>
-              <span style={{ color: 'var(--teal-600)', fontWeight: 700, flexShrink: 0 }}>✓</span>{b}
-            </li>
-          ))}
-        </ul>
-      )}
-      <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginTop: 12 }}>
-        {deliveryBadge && <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 7px', borderRadius: 999, background: 'var(--teal-50)', color: 'var(--teal-600)', border: '1px solid var(--teal-200)' }}>🚚 DELIVERY INCLUDED</span>}
-        {giftable && <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 7px', borderRadius: 999, background: 'var(--amber-50)', color: 'var(--amber-700)', border: '1px solid var(--amber-200)' }}>🎁 GIFTABLE</span>}
-      </div>
-      <div style={{ marginTop: 14, background: 'var(--teal-600)', color: 'var(--white)', borderRadius: 999, padding: '9px 0', textAlign: 'center', fontSize: 12, fontWeight: 700 }}>
-        Choose this plan →
-      </div>
-    </div>
-  );
-}
 
-/**
- * What the plan earns. Box cost comes from the Box Builder tab, so a plan
- * priced below what it costs to fill shows up here rather than after launch.
- */
-function MarginLine({ price, cost }: { price: number; cost: number }) {
-  const known = cost > 0 && price > 0;
-  const profit = price - cost;
-  const margin = price > 0 ? (profit / price) * 100 : 0;
-  const tone = !known ? 'var(--slate-400)' : profit < 0 ? 'var(--red-600)' : margin < 25 ? 'var(--amber-700)' : 'var(--emerald-600)';
-  return (
-    <div style={{ borderTop: '1px solid var(--slate-200b)', paddingTop: 10, marginTop: 12 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, fontSize: 11 }}>
-        <span style={{ color: 'var(--slate-400)' }}>Costs <strong style={{ color: 'var(--slate-600)' }}>{cost > 0 ? `₾${cost.toFixed(2)}` : '—'}</strong></span>
-        <span style={{ color: tone, fontWeight: 700 }}>
-          {known ? `${profit < 0 ? '−' : '+'}₾${Math.abs(profit).toFixed(2)} · ${margin.toFixed(0)}% margin` : 'margin unknown'}
-        </span>
-      </div>
-      {cost > 0 && profit < 0 && (
-        <p style={{ fontSize: 10.5, color: 'var(--red-600)', margin: '5px 0 0', fontWeight: 600 }}>⚠ Sells below what the box costs to fill.</p>
-      )}
-    </div>
-  );
-}
 
 /**
  * A setting as a tile you tap, not a row with a switch on the end.
@@ -666,7 +577,7 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
           </div>
         </div>
       )}
-      <div style={{ position: 'fixed', top: 0, right: 0, width: 'min(1180px, 96vw)', height: '100%', background: 'var(--white)', zIndex: 51, overflowY: 'auto', boxShadow: '-8px 0 40px rgba(0,0,0,0.12)', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ position: 'fixed', top: 0, right: 0, width: 820, height: '100%', background: 'var(--white)', zIndex: 51, overflowY: 'auto', boxShadow: '-8px 0 40px rgba(0,0,0,0.12)', display: 'flex', flexDirection: 'column' }}>
 
         {/* Header */}
         <div style={{ position: 'sticky', top: 0, background: 'var(--slate-900)', padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', zIndex: 1, flexShrink: 0 }}>
@@ -723,8 +634,7 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
           })}
         </div>
 
-        <div style={{ flex: 1, display: 'flex', minHeight: 0 }}>
-        <div style={{ flex: 1, padding: 24, overflowY: 'auto', minWidth: 0 }}>
+        <div style={{ flex: 1, padding: 24, overflowY: 'auto' }}>
 
           {/* ── Global validation errors ── */}
           {Object.keys(formErrors).some(k => formErrors[k]) && (
@@ -1335,7 +1245,7 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
                   </div>
 
                   {/* ── 2 · Pricing ── */}
-                  <StepHeading n={2} title="What it costs" hint="Set a monthly rate and a discount — the totals update on the right" />
+                  <StepHeading n={2} title="What it costs" hint="Set a monthly rate and a discount — the totals work themselves out" />
                   <div style={{ background: 'var(--slate-50)', borderRadius: 14, border: '1px solid var(--slate-200)', padding: '20px 20px 16px', marginBottom: 20 }}>
 
                     {/* Inputs row */}
@@ -1366,9 +1276,27 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
                       </FormField>
                     </div>
 
-                    {/* The totals used to be repeated here as three tiles, but
-                        the preview already shows them larger and in context.
-                        One place for a number, not two. */}
+                    {/* The computed result of the three inputs above, on one
+                        line rather than three separate tiles. */}
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 16, flexWrap: 'wrap', marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--slate-200b)' }}>
+                      <div>
+                        <span style={{ fontSize: 22, fontWeight: 800, color: 'var(--teal-600)' }}>
+                          {pricingTotal > 0 ? `₾${Number.isInteger(pricingTotal) ? pricingTotal.toFixed(0) : pricingTotal.toFixed(2)}` : '₾—'}
+                        </span>
+                        <span style={{ fontSize: 11, color: 'var(--slate-400)', marginLeft: 5 }}>total</span>
+                      </div>
+                      {pricingEffectiveMonthly > 0 && (
+                        <span style={{ fontSize: 12, color: 'var(--slate-500)' }}>≈ ₾{pricingEffectiveMonthly.toFixed(2)}/month</span>
+                      )}
+                      {pricingSavings > 0 && (
+                        <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--amber-700)' }}>saves ₾{pricingSavings.toFixed(2)}</span>
+                      )}
+                      {totalCost > 0 && pricingTotal > 0 && (
+                        <span style={{ fontSize: 12, marginLeft: 'auto', fontWeight: 700, color: pricingTotal - totalCost < 0 ? 'var(--red-600)' : 'var(--emerald-600)' }}>
+                          {pricingTotal - totalCost < 0 ? '−' : '+'}₾{Math.abs(pricingTotal - totalCost).toFixed(2)} · {(((pricingTotal - totalCost) / pricingTotal) * 100).toFixed(0)}% margin
+                        </span>
+                      )}
+                    </div>
                   </div>
                   {/* ── 3 · How it's sold ── */}
                   <StepHeading n={3} title="How it's sold" hint="The words on the pricing card" />
@@ -1606,52 +1534,6 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
               </div>
             </div>
           )}
-        </div>
-
-        {/* ── Live preview ────────────────────────────────────────────────
-            A plan is something customers look at and choose between. Showing
-            the real card while it is edited is the difference between
-            designing one and filling in a form about one. */}
-        <aside style={{ width: 300, flexShrink: 0, borderLeft: '1px solid var(--slate-200b)', background: 'var(--slate-50)', padding: 20, overflowY: 'auto' }}>
-          <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--slate-400)', textTransform: 'uppercase', letterSpacing: '0.07em', margin: '0 0 3px' }}>Live preview</p>
-          <p style={{ fontSize: 11, color: 'var(--slate-400)', margin: '0 0 12px' }}>How this looks on the pricing page</p>
-
-          {/* One panel, not three. */}
-          <div style={{ background: 'var(--white)', border: '1px solid var(--slate-200b)', borderRadius: 14, padding: 14 }}>
-          <PlanCardPreview
-            name={form.name}
-            badge={form.badge || ''}
-            boxCount={boxCount}
-            months={Number(form.durationValue) || 1}
-            total={pricingTotal}
-            monthlyEquivalent={pricingEffectiveMonthly}
-            savings={pricingSavings}
-            benefits={benefitLines}
-            giftable={!!form.giftable}
-            deliveryBadge={!!form.deliveryIncluded}
-          />
-
-          {/* Economics and what-is-missing were separate bordered boxes
-              stacked under the card, which read as three competing panels.
-              Folded into the one panel: card, a single line of economics,
-              then anything outstanding. */}
-          <MarginLine price={pricingTotal} cost={totalCost} />
-
-          {(blockers.length > 0 || warnings.length > 0) && (
-            <div style={{ borderTop: '1px solid var(--slate-200b)', paddingTop: 10, marginTop: 10 }}>
-              <p style={{ fontSize: 10, fontWeight: 700, color: blockers.length > 0 ? 'var(--red-600)' : 'var(--amber-700)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 6px' }}>
-                {blockers.length > 0 ? `${blockers.length} still needed` : 'Ready to create'}
-              </p>
-              {[...blockers.map(b => ({ ...b, blocking: true })), ...warnings.map(w => ({ ...w, blocking: false, lang: undefined }))].map(item => (
-                <button key={item.label} type="button" onClick={() => { setTab(item.tab); if (item.lang) setLang(item.lang); }}
-                  style={{ display: 'flex', alignItems: 'flex-start', gap: 6, width: '100%', textAlign: 'left', background: 'transparent', border: 'none', padding: '3px 0', cursor: 'pointer', fontSize: 11, lineHeight: 1.4, color: item.blocking ? 'var(--slate-700)' : 'var(--slate-400)' }}>
-                  <span style={{ color: item.blocking ? 'var(--red-500)' : 'var(--amber-500)', flexShrink: 0 }}>{item.blocking ? '•' : '△'}</span>{item.label}
-                </button>
-              ))}
-            </div>
-          )}
-          </div>
-        </aside>
         </div>
       </div>
       {showNewBoxItemDrawer && <QuickAddBoxItemModal onClose={() => setShowNewBoxItemDrawer(false)} onCreated={loadBoxItems} />}
