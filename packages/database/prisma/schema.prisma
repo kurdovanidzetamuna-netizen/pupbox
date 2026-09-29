@@ -165,6 +165,7 @@ model User {
   dogs           Dog[]
   orders         Order[]
   subscriptions  CustomerSubscription[]
+  giftsPurchased CustomerSubscription[] @relation("GiftPurchaser")
   payments       Payment[]
   referralsSent  Referral[]  @relation("ReferralInviter")
   referralsReceived Referral[] @relation("ReferralInvited")
@@ -406,6 +407,10 @@ model SubscriptionPlan {
   monthlyEquivPrice   Decimal?     @db.Decimal(10, 2)
   deliveryIncluded    Boolean      @default(false)
   autoRenewal         Boolean      @default(true)
+  /// Whether this plan may be bought as a gift for someone else's dog.
+  /// Gifting is a property of the purchase, not a separate kind of plan —
+  /// one plan row serves both, and this flag just allows or forbids it.
+  giftable            Boolean      @default(true)
   description         String?
   benefits            String[]
   badge               String?      // "popular", "best_value", "new"
@@ -443,6 +448,16 @@ model CustomerSubscription {
   createdAt     DateTime           @default(now())
   updatedAt     DateTime           @updatedAt
 
+  /// Gifted subscriptions. Between payment and claim the row belongs to the
+  /// buyer with no dog attached — paid for but unshippable — so `userId`
+  /// moves to the recipient once they claim it and `purchasedByUserId` keeps
+  /// the paper trail back to whoever actually paid.
+  isGift             Boolean   @default(false)
+  purchasedByUserId  String?
+  purchasedBy        User?     @relation("GiftPurchaser", fields: [purchasedByUserId], references: [id])
+  giftClaimToken     String?   @unique
+  giftClaimedAt      DateTime?
+
   orders        Order[]
 
   // Active-subscriber counts, churn (status + updatedAt) and per-plan
@@ -451,6 +466,8 @@ model CustomerSubscription {
   @@index([planId])
   @@index([userId])
   @@index([createdAt])
+  // Unclaimed gifts are an operational queue: paid for, nothing shipped.
+  @@index([isGift, giftClaimedAt])
 }
 
 // ─── DELIVERY ────────────────────────────────────────────────────────────────
@@ -539,6 +556,16 @@ model Order {
   internalNotes    String?
   shippedAt        DateTime?
   deliveredAt      DateTime?
+
+  /// Gift purchases. The buyer pays and writes the card; the recipient
+  /// supplies the dog and the address later, because the buyer usually knows
+  /// neither. Captured here rather than on a plan so one plan serves both.
+  isGift             Boolean   @default(false)
+  giftRecipientName  String?
+  giftRecipientEmail String?
+  giftMessage        String?
+  /// When the gift card email should reach the recipient; null = immediately.
+  giftDeliverOn      DateTime?
   createdAt        DateTime              @default(now())
   updatedAt        DateTime              @updatedAt
 
