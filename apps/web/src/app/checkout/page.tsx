@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
+import DogProfileForm, { emptyDogProfile, toDogPayload, type DogProfile } from '@/components/DogProfileForm';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 
@@ -33,10 +34,10 @@ export default function CheckoutPage() {
   const [form, setForm] = useState({
     email: '', password: '', firstName: '', lastName: '', phone: '',
     city: '', addressLine1: '', addressLine2: '',
-    dogName: '', dogBreed: '', dogSize: '', dogGender: '',
     giftRecipientName: '', giftRecipientEmail: '', giftMessage: '',
     isNewAccount: true,
   });
+  const [dog, setDog] = useState<DogProfile>(emptyDogProfile);
 
   const token = getToken();
   const isLoggedIn = !!token;
@@ -78,15 +79,24 @@ export default function CheckoutPage() {
   }
 
   async function handleDogStep() {
-    setError(''); setLoading(true);
+    setError('');
+    if (cart?.hasSubscription && !dog.name.trim()) { setError("Please tell us your dog's name") ; return; }
+    setLoading(true);
     try {
-      if (form.dogName && cart?.hasSubscription) {
+      if (dog.name.trim() && cart?.hasSubscription) {
         const t = localStorage.getItem('pupbox_token');
-        await fetch(`${API_URL}/me/dogs`, {
+        // Sends the full profile — allergies and preferences included — rather
+        // than just name/breed/size/gender as before, so the personalisation
+        // fields the schema has always had actually get populated.
+        const res = await fetch(`${API_URL}/me/dogs`, {
           method: 'POST',
           headers: { Authorization: `Bearer ${t}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: form.dogName, breed: form.dogBreed || undefined, size: form.dogSize || undefined, gender: form.dogGender || undefined }),
+          body: JSON.stringify(toDogPayload(dog)),
         });
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          throw new Error(Array.isArray(body.message) ? body.message[0] : body.message || 'Could not save your dog');
+        }
       }
       setStep(2);
     } catch (e: any) { setError(e.message); }
@@ -245,28 +255,13 @@ export default function CheckoutPage() {
             {/* Step 1: Dog Profile */}
             {step === 1 && !isGift && (
               <div className="bg-white rounded-xl border border-gray-100 p-8">
-                <h2 className="text-xl font-bold text-gray-900 mb-2">Dog Profile</h2>
-                <p className="text-sm text-gray-500 mb-6">{cart?.hasSubscription ? 'Tell us about your dog so we can personalise the box.' : 'Optional — skip if no subscription.'}</p>
-                <div className="space-y-4">
-                  <div><label className="block text-sm font-medium text-gray-700 mb-1">Dog Name {cart?.hasSubscription && <span className="text-teal-600">*</span>}</label>
-                    <input value={form.dogName} onChange={e => updateForm('dogName', e.target.value)} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400" placeholder="e.g. Buddy" /></div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div><label className="block text-sm font-medium text-gray-700 mb-1">Breed</label>
-                      <input value={form.dogBreed} onChange={e => updateForm('dogBreed', e.target.value)} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400" placeholder="e.g. Labrador" /></div>
-                    <div><label className="block text-sm font-medium text-gray-700 mb-1">Size</label>
-                      <select value={form.dogSize} onChange={e => updateForm('dogSize', e.target.value)} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none">
-                        <option value="">Select size</option>
-                        {['EXTRA_SMALL','SMALL','MEDIUM','LARGE','EXTRA_LARGE'].map(s => <option key={s} value={s}>{s.replace('_',' ')}</option>)}
-                      </select></div>
-                  </div>
-                  <div><label className="block text-sm font-medium text-gray-700 mb-1">Gender</label>
-                    <div className="flex gap-3">
-                      {['MALE','FEMALE'].map(g => (
-                        <button key={g} onClick={() => updateForm('dogGender', g)} className={`px-4 py-2 rounded-lg text-sm font-medium border transition ${form.dogGender === g ? 'border-teal-600 bg-teal-50 text-teal-700' : 'border-gray-200 text-gray-600'}`}>{g === 'MALE' ? '♂ Male' : '♀ Female'}</button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
+                <h2 className="text-xl font-bold text-gray-900 mb-2">Tell us about your dog</h2>
+                <p className="text-sm text-gray-500 mb-6">
+                  {cart?.hasSubscription
+                    ? 'Every box is picked for your dog specifically — the more we know, the better we can tailor it.'
+                    : 'Optional — skip if you are not subscribing.'}
+                </p>
+                <DogProfileForm value={dog} onChange={setDog} />
                 {error && <p className="text-red-500 text-sm mt-4">{error}</p>}
                 <div className="flex gap-3 mt-6">
                   <button onClick={() => setStep(0)} className="flex-1 border border-gray-200 text-gray-600 py-3 rounded-xl font-medium hover:bg-gray-50">← Back</button>

@@ -2,9 +2,9 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import DogProfileForm, { emptyDogProfile, toDogPayload, type DogProfile } from '@/components/DogProfileForm';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
-const DOG_SIZES = ['EXTRA_SMALL', 'SMALL', 'MEDIUM', 'LARGE', 'EXTRA_LARGE'];
 
 interface Preview {
   alreadyClaimed: boolean;
@@ -35,7 +35,7 @@ export default function ClaimGiftPage() {
   const [signedIn, setSignedIn] = useState(false);
 
   const [account, setAccount] = useState({ email: '', password: '', firstName: '', lastName: '', isNew: true });
-  const [dog, setDog] = useState({ name: '', breed: '', size: '', gender: '', weightKg: '', allergies: '' });
+  const [dog, setDog] = useState<DogProfile>(emptyDogProfile);
   const [address, setAddress] = useState({ firstName: '', lastName: '', phone: '', city: '', addressLine1: '', addressLine2: '', postalCode: '' });
 
   useEffect(() => {
@@ -89,14 +89,7 @@ export default function ClaimGiftPage() {
         method: 'POST',
         headers: { Authorization: `Bearer ${t}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          dog: {
-            name: dog.name.trim(),
-            breed: dog.breed || undefined,
-            size: dog.size || undefined,
-            gender: dog.gender || undefined,
-            weightKg: dog.weightKg ? Number(dog.weightKg) : undefined,
-            allergies: dog.allergies ? dog.allergies.split(',').map((s) => s.trim()).filter(Boolean) : [],
-          },
+          dog: toDogPayload(dog),
           address: {
             firstName: address.firstName, lastName: address.lastName, phone: address.phone,
             city: address.city, addressLine1: address.addressLine1,
@@ -105,6 +98,14 @@ export default function ClaimGiftPage() {
         }),
       });
       const data = await res.json();
+      if (res.status === 401) {
+        // A stored token can be stale — expired, or for an account that no
+        // longer exists. Without this the account fields stay hidden and the
+        // page just says "Unauthorized" with no way to recover.
+        localStorage.removeItem('pupbox_token');
+        setSignedIn(false);
+        throw new Error('Your session has expired — please sign in again to claim this gift.');
+      }
       if (!res.ok) throw new Error(Array.isArray(data.message) ? data.message[0] : data.message || 'Could not claim this gift');
       setDone(true);
     } catch (e: any) {
@@ -202,33 +203,7 @@ export default function ClaimGiftPage() {
             </div>
           )}
 
-          <div className="space-y-4">
-            <div><label className={label}>Dog&apos;s name <span className="text-teal-600">*</span></label>
-              <input value={dog.name} onChange={(e) => setDog((d) => ({ ...d, name: e.target.value }))} className={field} placeholder="e.g. Rex" /></div>
-            <div className="grid grid-cols-2 gap-4">
-              <div><label className={label}>Breed</label><input value={dog.breed} onChange={(e) => setDog((d) => ({ ...d, breed: e.target.value }))} className={field} placeholder="e.g. Labrador" /></div>
-              <div><label className={label}>Size</label>
-                <select value={dog.size} onChange={(e) => setDog((d) => ({ ...d, size: e.target.value }))} className={field}>
-                  <option value="">Select size</option>
-                  {DOG_SIZES.map((s) => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
-                </select></div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div><label className={label}>Weight (kg)</label><input type="number" min="0" step="0.1" value={dog.weightKg} onChange={(e) => setDog((d) => ({ ...d, weightKg: e.target.value }))} className={field} placeholder="e.g. 18" /></div>
-              <div><label className={label}>Gender</label>
-                <div className="flex gap-2">
-                  {['MALE', 'FEMALE'].map((g) => (
-                    <button key={g} onClick={() => setDog((d) => ({ ...d, gender: d.gender === g ? '' : g }))}
-                      className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium border transition ${dog.gender === g ? 'border-teal-600 bg-teal-50 text-teal-700' : 'border-gray-200 text-gray-600'}`}>
-                      {g === 'MALE' ? '♂ Male' : '♀ Female'}
-                    </button>
-                  ))}
-                </div></div>
-            </div>
-            <div><label className={label}>Allergies</label>
-              <input value={dog.allergies} onChange={(e) => setDog((d) => ({ ...d, allergies: e.target.value }))} className={field} placeholder="e.g. chicken, wheat — comma separated" />
-              <p className="text-xs text-gray-400 mt-1">We&apos;ll keep these out of every box.</p></div>
-          </div>
+          <DogProfileForm value={dog} onChange={setDog} />
 
           <h2 className="text-lg font-bold text-gray-900 mt-8 mb-1">Where should we send it?</h2>
           <p className="text-sm text-gray-500 mb-4">Your address — the sender didn&apos;t need to know it.</p>
