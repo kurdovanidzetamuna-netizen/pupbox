@@ -92,20 +92,29 @@ function SettingTile({ icon, title, onLabel, offLabel, detail, checked, onChange
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
       style={{
-        position: 'relative', display: 'inline-flex', alignItems: 'center', gap: 7,
+        position: 'relative', display: 'inline-flex', alignItems: 'center', gap: 8,
         cursor: 'pointer', whiteSpace: 'nowrap',
         // On reads as a solid, filled chip; off as a plain outline. The
         // difference is the fill itself, not a small indicator to decode.
         background: checked ? accent : 'var(--white)',
         border: `1.5px solid ${checked ? accent : 'var(--slate-300)'}`,
         color: checked ? 'var(--white)' : 'var(--slate-500)',
-        borderRadius: 999, padding: '6px 13px 6px 10px', transition: 'all 0.12s',
-        fontSize: 12.5, fontWeight: 600,
+        borderRadius: 999, padding: '7px 15px 7px 8px', transition: 'all 0.12s',
+        fontSize: 13, fontWeight: 700,
+        boxShadow: checked ? '0 2px 8px rgba(0,0,0,0.18)' : 'none',
+        transform: checked ? 'translateY(-1px)' : 'none',
       }}
     >
-      <span style={{ fontSize: 13, lineHeight: 1, filter: checked ? 'none' : 'grayscale(1)', opacity: checked ? 1 : 0.45 }}>{icon}</span>
+      {/* The icon sits in its own disc that fills in when selected, so a
+          glance at the row shows which are on without reading the labels. */}
+      <span style={{
+        width: 24, height: 24, borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+        fontSize: 13, lineHeight: 1, flexShrink: 0, transition: 'all 0.12s',
+        background: checked ? 'rgba(255,255,255,0.28)' : 'var(--slate-100)',
+        filter: checked ? 'none' : 'grayscale(1)', opacity: checked ? 1 : 0.5,
+      }}>{icon}</span>
       <span>{title}</span>
-      <span style={{ fontWeight: 800, fontSize: 12, opacity: checked ? 0.9 : 0.5 }}>{checked ? '✓' : '＋'}</span>
+      <span style={{ fontWeight: 900, fontSize: 13, opacity: checked ? 1 : 0.45 }}>{checked ? '✓' : '＋'}</span>
 
       {hover && (
         <span style={{ position: 'absolute', bottom: 'calc(100% + 6px)', left: 0, zIndex: 5, minWidth: 220, maxWidth: 300, background: 'var(--slate-900)', color: 'var(--white)', fontSize: 11, fontWeight: 400, lineHeight: 1.5, borderRadius: 9, padding: '8px 11px', boxShadow: '0 6px 20px rgba(0,0,0,0.25)', pointerEvents: 'none', whiteSpace: 'normal', textAlign: 'left' }}>
@@ -603,7 +612,7 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
               onMouseUp={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)'; }}
               title={plan.id ? 'Save changes to this plan' : canCreate ? 'Create this plan' : `Still needed: ${blockers.map(b => b.label).join(', ')}`}
               style={{ background: plan.id || canCreate ? 'var(--teal-600)' : 'var(--slate-600)', color: 'var(--white)', border: 'none', borderRadius: 9, padding: '8px 18px', fontSize: 13, fontWeight: 700, cursor: saving ? 'default' : 'pointer', opacity: saving ? 0.6 : plan.id || canCreate ? 1 : 0.55, transition: 'background 0.15s, transform 0.1s' }}>
-              {saving ? 'Saving…' : plan.id ? 'Save changes' : canCreate ? 'Create plan' : `Create plan · ${blockers.length} left`}
+              {saving ? 'Saving…' : plan.id ? '✓ Save All' : canCreate ? '✓ Save All' : `Save All · ${blockers.length} left`}
             </button>
             <button onClick={tryClose} style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(255,255,255,0.1)', border: 'none', color: 'var(--white)', cursor: 'pointer', fontSize: 18, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
           </div>
@@ -611,24 +620,21 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
 
         {/* Tab bar */}
         <div style={{ display: 'flex', gap: 0, borderBottom: '1px solid var(--slate-200b)', flexShrink: 0 }}>
-          {/* Tabs carry state: a tick when that part is done, and a reason
-              when it cannot be opened yet. Previously Box Builder and
-              Discounts looked available on a new plan and silently did
-              nothing, because there is no plan to attach them to. */}
+          {/* Every tab stays reachable so the next steps are visible from the
+              start; a tick marks the ones already done. */}
           {([
-            { t: 'form' as const, label: 'Plan Settings', icon: '⚙️', done: blockers.length === 0, lockedReason: '' },
-            { t: 'builder' as const, label: 'Box Builder', icon: '📦', done: allProductTotal > 0, lockedReason: plan.id ? '' : 'Create the plan first' },
-            { t: 'discounts' as const, label: 'Discounts', icon: '🏷️', done: (cfg.couponIds || []).length > 0, lockedReason: plan.id ? '' : 'Create the plan first' },
-          ]).map(({ t, label, icon, done, lockedReason }) => {
-            const locked = !!lockedReason;
+            { t: 'form' as const, label: 'Plan Settings', icon: '⚙️', done: blockers.length === 0 },
+            { t: 'builder' as const, label: 'Box Builder', icon: '📦', done: allProductTotal > 0 },
+            { t: 'discounts' as const, label: 'Discounts', icon: '🏷️', done: (cfg.couponIds || []).length > 0 },
+          ]).map(({ t, label, icon, done }) => {
             const active = tab === t;
             return (
-              <button key={t} disabled={locked} title={lockedReason || undefined}
-                onClick={() => { if (locked) return; setTab(t); if (t === 'builder') setActiveBox(0); }}
-                style={{ padding: '12px 20px', fontSize: 13, fontWeight: 600, cursor: locked ? 'not-allowed' : 'pointer', border: 'none', background: 'none', display: 'flex', alignItems: 'center', gap: 7, opacity: locked ? 0.45 : 1, color: active ? 'var(--teal-600)' : 'var(--slate-500)', borderBottom: active ? '2px solid var(--teal-600)' : '2px solid transparent' }}>
-                <span>{locked ? '🔒' : icon}</span>
+              <button key={t}
+                onClick={() => { setTab(t); if (t === 'builder') setActiveBox(0); }}
+                style={{ padding: '12px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer', border: 'none', background: 'none', display: 'flex', alignItems: 'center', gap: 7, color: active ? 'var(--teal-600)' : 'var(--slate-500)', borderBottom: active ? '2px solid var(--teal-600)' : '2px solid transparent' }}>
+                <span>{icon}</span>
                 <span>{label}</span>
-                {!locked && done && <span style={{ fontSize: 10, color: 'var(--emerald-600)', fontWeight: 800 }}>✓</span>}
+                {done && <span style={{ fontSize: 10, color: 'var(--emerald-600)', fontWeight: 800 }}>✓</span>}
               </button>
             );
           })}
@@ -1107,6 +1113,24 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
                       🎁 {g.label}{g.description ? ` — ${g.description}` : ''}
                     </p>
                   ))}
+
+                  {/* Whatever is switched on under "How it behaves" shows up
+                      here, so the effect of those chips is visible. */}
+                  <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginTop: 10, paddingTop: 10, borderTop: '1px solid var(--teal-200)' }}>
+                    {[
+                      { on: form.isActive, icon: '✅', label: 'Live on site', c: 'var(--green-800)', bg: 'var(--green-50)', b: 'var(--green-200)' },
+                      { on: form.autoRenewal, icon: '🔄', label: 'Auto renews', c: 'var(--teal-700)', bg: 'var(--teal-50)', b: 'var(--teal-200)' },
+                      { on: form.giftable, icon: '🎁', label: 'Giftable', c: 'var(--amber-700)', bg: 'var(--amber-50)', b: 'var(--amber-200)' },
+                      { on: form.deliveryIncluded, icon: '🚚', label: 'Delivery included', c: 'var(--teal-700)', bg: 'var(--teal-50)', b: 'var(--teal-200)' },
+                    ].filter(x => x.on).map(x => (
+                      <span key={x.label} style={{ fontSize: 10, fontWeight: 700, padding: '3px 9px', borderRadius: 999, background: x.bg, color: x.c, border: `1px solid ${x.b}`, whiteSpace: 'nowrap' }}>
+                        {x.icon} {x.label}
+                      </span>
+                    ))}
+                    {![form.isActive, form.autoRenewal, form.giftable, form.deliveryIncluded].some(Boolean) && (
+                      <span style={{ fontSize: 11, color: 'var(--slate-400)', fontStyle: 'italic' }}>Nothing switched on under “How it behaves”</span>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -1125,7 +1149,7 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
 
           {/* ── PLAN SETTINGS TAB ── */}
           {tab === 'form' && (
-            <div style={{ maxWidth: 600 }}>
+            <div>
               {formErrors.kaName && (
                 <div onClick={() => setLang('ka')} style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--amber-100)', border: '1.5px solid var(--amber-300)', borderRadius: 10, padding: '10px 14px', cursor: 'pointer', marginBottom: 12 }}>
                   <svg width="14" height="14" fill="none" stroke="var(--amber-600)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
@@ -1313,14 +1337,11 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
 
                   {/* Rarely touched, so folded away rather than sitting at the
                       same weight as the plan's name. */}
-                  <details style={{ marginBottom: 20 }}>
-                    <summary style={{ fontSize: 12, color: 'var(--slate-400)', cursor: 'pointer', userSelect: 'none' }}>Advanced</summary>
-                    <div style={{ marginTop: 10, maxWidth: 200 }}>
-                      <FormField label="Sort order" hint="Lower numbers appear first on the pricing page">
-                        <input type="number" value={form.sortOrder ?? ''} onChange={e => setForm((x: any) => ({ ...x, sortOrder: e.target.value }))} placeholder="0" style={inputClass()} />
-                      </FormField>
-                    </div>
-                  </details>
+                  <div style={{ marginBottom: 20, maxWidth: 220 }}>
+                    <FormField label="Sort order" hint="Lower numbers appear first on the pricing page">
+                      <input type="number" value={form.sortOrder ?? ''} onChange={e => setForm((x: any) => ({ ...x, sortOrder: e.target.value }))} placeholder="0" style={inputClass()} />
+                    </FormField>
+                  </div>
                 </>
               ) : (
                 <>
@@ -1450,14 +1471,22 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
                 </div>
               )}
 
-              {/* No second save button here: one primary action lives in the
-                  header, so there is never a question of which one commits what. */}
+              {/* Per-tab save, matching Box Builder and Discounts. The header's
+                  Save All commits everything at once. */}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--slate-200b)', marginBottom: 24 }}>
+                <button onClick={() => save()} disabled={saving}
+                  onMouseEnter={e => { if (!saving) (e.currentTarget as HTMLButtonElement).style.background = 'var(--teal-700)'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--teal-600)'; }}
+                  style={{ background: 'var(--teal-600)', color: 'var(--white)', border: 'none', borderRadius: 9, padding: '8px 22px', fontSize: 13, fontWeight: 700, cursor: saving ? 'default' : 'pointer', opacity: saving ? 0.6 : 1, transition: 'background 0.15s' }}>
+                  {saving ? 'Saving…' : '💾 Save Settings'}
+                </button>
+              </div>
             </div>
           )}
 
           {/* ── DISCOUNTS TAB ── */}
           {tab === 'discounts' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 20, maxWidth: 600 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
               {/* Referral discount */}
               <div style={{ background: 'var(--slate-50)', borderRadius: 12, border: '1px solid var(--slate-200b)', padding: '18px 20px' }}>
