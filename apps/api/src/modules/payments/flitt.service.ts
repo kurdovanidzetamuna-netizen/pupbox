@@ -26,10 +26,22 @@ export class FlittService {
   }
 
   verifySignature(params: Record<string, string | number>): boolean {
+    // With no secret the hash is computed over values the caller already
+    // controls, so anyone who knows the payload shape can forge a callback and
+    // mark an order paid. Refuse rather than fail open.
+    if (!this.secretKey) {
+      this.logger.error('FLITT_SECRET_KEY is not configured — webhook signatures cannot be trusted');
+      if (this.config.get('NODE_ENV') === 'production') return false;
+      this.logger.warn('Accepting an unverified webhook because NODE_ENV is not production. Never run like this in production.');
+    }
+
     const { response_signature_string, signature, ...rest } = params as any;
     const expected = this.buildSignature(rest);
     const received = (signature || response_signature_string || '') as string;
-    return expected === received;
+    if (expected.length !== received.length) return false;
+    // Constant-time compare so a wrong signature cannot be recovered byte by
+    // byte from response timing.
+    return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(received));
   }
 
   async createCheckout(opts: {

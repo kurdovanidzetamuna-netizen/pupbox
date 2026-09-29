@@ -136,7 +136,7 @@ export class PaymentsService {
         }
       }
     } else if (paymentStatus === 'FAILED') {
-      await this.prisma.order.update({ where: { id: order_id }, data: { status: 'CANCELLED' as any } });
+      await this.prisma.order.update({ where: { id: order_id }, data: { status: 'CANCELLED' } });
       // Release reserved inventory
       const productItems = await this.prisma.orderItem.findMany({
         where: { orderId: order_id, productId: { not: null } },
