@@ -1,7 +1,8 @@
 import { Module } from '@nestjs/common';
 import { CartService } from './cart.service';
-import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, Request, Query, Headers } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, Request, Query, Headers, BadRequestException } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+import { OptionalJwtGuard } from '../auth/optional-jwt.guard';
 import { ApiBearerAuth, ApiTags, ApiOperation } from '@nestjs/swagger';
 import { IsOptional, IsString, IsNumber, IsUUID, Min } from 'class-validator';
 import { Type } from 'class-transformer';
@@ -21,6 +22,11 @@ class ApplyCouponDto {
 }
 
 @ApiTags('Cart')
+@ApiBearerAuth()
+// Optional, not required: guests must still be able to build a cart. Without
+// any guard `req.user` was never populated, so signed-in customers shared the
+// single `sessionId: 'guest'` cart and checkout never found their items.
+@UseGuards(OptionalJwtGuard)
 @Controller('cart')
 export class CartController {
   constructor(private service: CartService) {}
@@ -28,7 +34,10 @@ export class CartController {
   private resolveSession(req: any, headers: any): { userId?: string; sessionId?: string } {
     if (req.user?.id) return { userId: req.user.id };
     const sid = headers['x-session-id'] as string;
-    return { sessionId: sid || 'guest' };
+    // Falling back to a literal 'guest' pools every anonymous visitor into one
+    // shared cart. Require a real session id instead.
+    if (!sid) throw new BadRequestException('Sign in or provide an x-session-id header to use a cart');
+    return { sessionId: sid };
   }
 
   @Get()
