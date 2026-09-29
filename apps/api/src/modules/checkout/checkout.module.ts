@@ -4,7 +4,20 @@ import { CartModule } from '../cart/cart.module';
 import { Controller, Post, Get, Body, UseGuards, Request, Query } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth, ApiTags, ApiOperation } from '@nestjs/swagger';
-import { IsString, IsOptional } from 'class-validator';
+import { IsString, IsOptional, IsEmail, ValidateNested, IsDateString, MaxLength } from 'class-validator';
+import { Type } from 'class-transformer';
+
+/**
+ * Buying a subscription for someone else's dog. The recipient supplies the dog
+ * and address later via the claim link, so nothing about them is required here
+ * beyond a name to address the card to and an email to send it to.
+ */
+class GiftDetailsDto {
+  @IsString() @MaxLength(120) recipientName: string;
+  @IsEmail() recipientEmail: string;
+  @IsOptional() @IsString() @MaxLength(1000) message?: string;
+  @IsOptional() @IsDateString() deliverOn?: string;
+}
 
 class PrepareCheckoutDto {
   @IsString() deliveryMethodId: string;
@@ -22,6 +35,7 @@ class CreateOrderDto {
   @IsString() city: string;
   @IsString() addressLine1: string;
   @IsOptional() @IsString() addressLine2?: string;
+  @IsOptional() @ValidateNested() @Type(() => GiftDetailsDto) gift?: GiftDetailsDto;
 }
 
 @ApiTags('Checkout')

@@ -1,6 +1,15 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
+import * as crypto from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { CartService } from '../cart/cart.service';
+
+export interface GiftDetails {
+  recipientName: string;
+  recipientEmail: string;
+  message?: string;
+  /** When the gift card email should go out; null/absent means immediately. */
+  deliverOn?: string;
+}
 
 @Injectable()
 export class CheckoutService {
@@ -33,9 +42,27 @@ export class CheckoutService {
     city: string;
     addressLine1: string;
     addressLine2?: string;
+    gift?: GiftDetails;
   }) {
     const cart = await this.cartService.getOrCreate(userId);
     if (!cart.items.length) throw new BadRequestException('Cart is empty');
+
+    const gift = data.gift;
+    if (gift) {
+      if (!gift.recipientName?.trim()) throw new BadRequestException('Recipient name is required for a gift');
+      if (!/^\S+@\S+\.\S+$/.test(gift.recipientEmail ?? '')) throw new BadRequestException('A valid recipient email is required for a gift');
+
+      const planItems = cart.items.filter((i: any) => i.subscriptionPlanId);
+      if (planItems.length === 0) throw new BadRequestException('Only subscriptions can be gifted');
+
+      // Respect the per-plan switch rather than assuming every plan is giftable.
+      const plans = await this.prisma.subscriptionPlan.findMany({
+        where: { id: { in: planItems.map((i: any) => i.subscriptionPlanId) } },
+        select: { id: true, name: true, slug: true, giftable: true },
+      });
+      const blocked = plans.find((p) => !p.giftable);
+      if (blocked) throw new BadRequestException(`"${blocked.name || blocked.slug}" cannot be given as a gift`);
+    }
 
     const deliveryMethod = await this.prisma.deliveryMethod.findFirst({ where: { id: data.deliveryMethodId, isActive: true } });
     if (!deliveryMethod) throw new BadRequestException('Invalid delivery method');
@@ -60,12 +87,18 @@ export class CheckoutService {
     const order = await this.prisma.order.create({
       data: {
         userId,
-        dogId: data.dogId || null,
+        // A gift is for someone else's dog, which is not in our database yet.
+        dogId: gift ? null : data.dogId || null,
         addressId: address.id,
         deliveryMethodId: data.deliveryMethodId,
         couponId: cart.couponId || null,
         type: orderType as any,
         status: 'PENDING',
+        isGift: !!gift,
+        giftRecipientName: gift?.recipientName?.trim() || null,
+        giftRecipientEmail: gift?.recipientEmail?.trim().toLowerCase() || null,
+        giftMessage: gift?.message?.trim() || null,
+        giftDeliverOn: gift?.deliverOn ? new Date(gift.deliverOn) : null,
         subtotal: cart.subtotal,
         deliveryCost,
         discountAmount: cart.discountAmount,
@@ -87,10 +120,34 @@ export class CheckoutService {
 
     // Create pending subscription if subscription in cart
     if (hasSubscription) {
+      let firstSubscriptionId: string | null = null;
       for (const item of cart.items.filter((i: any) => i.subscriptionPlanId)) {
-        await this.prisma.customerSubscription.create({
-          data: { userId, planId: item.subscriptionPlanId, dogId: data.dogId || null, status: 'PENDING', boxesTotal: item.subscriptionPlan.boxCount },
+        const created = await this.prisma.customerSubscription.create({
+          data: {
+            // Until claimed a gift belongs to the buyer: they paid for it, and
+            // the recipient has no account yet.
+            userId,
+            planId: item.subscriptionPlanId,
+            dogId: gift ? null : data.dogId || null,
+            status: 'PENDING',
+            boxesTotal: item.subscriptionPlan.boxCount,
+            isGift: !!gift,
+            purchasedByUserId: gift ? userId : null,
+            // Opaque, unguessable — this token is the only credential guarding
+            // the claim link that arrives by email.
+            giftClaimToken: gift ? crypto.randomBytes(24).toString('base64url') : null,
+            // Never keep billing the buyer for someone else's dog.
+            autoRenewal: gift ? false : true,
+          },
+          select: { id: true },
         });
+        if (!firstSubscriptionId) firstSubscriptionId = created.id;
+      }
+      // Link the order to its subscription so the payment webhook can activate
+      // exactly this one. It previously activated every PENDING subscription
+      // belonging to the user, which fired on unrelated purchases.
+      if (firstSubscriptionId) {
+        await this.prisma.order.update({ where: { id: order.id }, data: { subscriptionId: firstSubscriptionId } });
       }
     }
 

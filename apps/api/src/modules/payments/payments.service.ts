@@ -85,15 +85,44 @@ export class PaymentsService {
         data: { status: 'PAID' },
       });
 
-      // Activate pending subscriptions for this order
-      const orderItems = await this.prisma.orderItem.findMany({
-        where: { orderId: order_id, subscriptionPlanId: { not: null } },
-      });
-      if (orderItems.length > 0) {
-        await this.prisma.customerSubscription.updateMany({
-          where: { userId: order.userId, status: 'PENDING' },
-          data: { status: 'ACTIVE', startDate: new Date() },
+      // Activate this order's subscription — and only this one. Matching on
+      // "any PENDING subscription for this user" activated unrelated ones the
+      // customer had not paid for yet.
+      if (order.subscriptionId) {
+        const sub = await this.prisma.customerSubscription.findUnique({
+          where: { id: order.subscriptionId },
+          select: { id: true, isGift: true, giftClaimToken: true },
         });
+
+        if (sub && !sub.isGift) {
+          await this.prisma.customerSubscription.update({
+            where: { id: sub.id },
+            data: { status: 'ACTIVE', startDate: new Date() },
+          });
+        } else if (sub?.isGift) {
+          // A paid gift stays PENDING: there is no dog and no address yet, so
+          // it is not shippable. It activates when the recipient claims it.
+          const full = await this.prisma.order.findUnique({
+            where: { id: order_id },
+            include: { user: { select: { firstName: true, lastName: true } }, items: { select: { name: true, subscriptionPlanId: true } } },
+          });
+          const planName = full?.items.find((i) => i.subscriptionPlanId)?.name ?? 'a Pupbox subscription';
+          const buyerName = [full?.user?.firstName, full?.user?.lastName].filter(Boolean).join(' ') || 'A friend';
+
+          // Honour a scheduled send date; a dated gift is delivered by the
+          // scheduled job rather than immediately.
+          const sendNow = !full?.giftDeliverOn || full.giftDeliverOn <= new Date();
+          if (sendNow && full?.giftRecipientEmail && sub.giftClaimToken) {
+            this.email.sendGiftCard({
+              recipientEmail: full.giftRecipientEmail,
+              recipientName: full.giftRecipientName ?? 'there',
+              buyerName,
+              planName,
+              message: full.giftMessage ?? undefined,
+              claimToken: sub.giftClaimToken,
+            }).catch((e) => this.logger.error(`Gift card email failed for order ${order_id}: ${e.message}`));
+          }
+        }
       }
 
       // Deduct reserved inventory from actual stock

@@ -19,6 +19,7 @@ import { OrdersModule } from './modules/orders/orders.module';
 import { CmsModule } from './modules/cms/cms.module';
 import { BlogModule } from './modules/blog/blog.module';
 import { ReferralsModule } from './modules/referrals/referrals.module';
+import { GiftsModule } from './modules/gifts/gifts.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { BoxCampaignsModule } from './modules/box-campaigns/box-campaigns.module';
@@ -56,6 +57,7 @@ import { UploadModule } from './modules/upload/upload.module';
     CmsModule,
     BlogModule,
     ReferralsModule,
+    GiftsModule,
     AnalyticsModule,
     ReportsModule,
     EmailModule,
