@@ -1,10 +1,19 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 
 export async function fetchAPI<T>(path: string, options?: RequestInit): Promise<T> {
+  const { cache, next, headers, ...rest } = (options ?? {}) as RequestInit & { next?: { revalidate?: number } };
+
+  // `cache` and `next.revalidate` are mutually exclusive. Spreading caller
+  // options over a default `next: { revalidate: 60 }` left both set whenever a
+  // caller asked for 'no-store', which makes Next's static generation hang
+  // until the build worker is SIGTERM'd — it failed the production build
+  // on / and /prices rather than surfacing as a runtime error.
+  const caching = cache ? { cache } : { next: next ?? { revalidate: 60 } };
+
   const res = await fetch(`${API_URL}${path}`, {
-    next: { revalidate: 60 },
-    ...options,
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    ...rest,
+    ...caching,
+    headers: { 'Content-Type': 'application/json', ...headers },
   });
   if (!res.ok) throw new Error(`API error: ${res.status}`);
   return res.json();
