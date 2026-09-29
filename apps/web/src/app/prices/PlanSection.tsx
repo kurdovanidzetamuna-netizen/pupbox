@@ -1,10 +1,10 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import PlanCard from '@/components/PlanCard';
 import { useLanguage } from '@/context/LanguageContext';
 
-export default function PlanSection({ plans }: { plans: any[] }) {
+function PlanSectionInner({ plans }: { plans: any[] }) {
   const params = useSearchParams();
   const [mode, setMode] = useState<'self' | 'gift'>(params.get('gift') === 'true' ? 'gift' : 'self');
   const { t } = useLanguage();
@@ -76,5 +76,18 @@ export default function PlanSection({ plans }: { plans: any[] }) {
         }
       `}</style>
     </div>
+  );
+}
+
+/**
+ * Reads the ?gift=true query param, so Next 14 needs a Suspense boundary to
+ * prerender it. This component is rendered by both / and /prices — without the
+ * wrapper the production build fails on both pages.
+ */
+export default function PlanSection({ plans }: { plans: any[] }) {
+  return (
+    <Suspense fallback={null}>
+      <PlanSectionInner plans={plans} />
+    </Suspense>
   );
 }

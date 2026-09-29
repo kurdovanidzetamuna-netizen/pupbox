@@ -38,10 +38,13 @@ export default async function ShopPage({
   if (searchParams.search) params.search = searchParams.search;
   if (searchParams.page) params.page = searchParams.page;
 
+  // Caught per-promise rather than on the Promise.all: a single catch collapsed
+  // the tuple into a union TypeScript couldn't destructure, and it also threw
+  // away the products whenever only the categories request failed.
   const [{ items: rawProducts, pages }, categories] = await Promise.all([
-    api.products.list(params),
-    api.categories.list(),
-  ]).catch(() => [{ items: [], total: 0, pages: 0 }, []]);
+    api.products.list(params).catch(() => ({ items: [] as any[], total: 0, pages: 0 })),
+    api.categories.list().catch(() => [] as any[]),
+  ]);
 
   // Build brands from product tags, grouped by category name
   // Falls back to product.brand field if tags not available
