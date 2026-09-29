@@ -1,5 +1,6 @@
 import { Injectable, BadRequestException, NotFoundException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { PaymentStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { FlittService } from './flitt.service';
 import { EmailService } from '../email/email.service';
@@ -72,16 +73,16 @@ export class PaymentsService {
     await this.prisma.payment.updateMany({
       where: { orderId: order_id, providerPaymentId: payment_id },
       data: {
-        status: paymentStatus as any,
-        paidAt: paymentStatus === 'COMPLETED' ? new Date() : null,
+        status: paymentStatus,
+        paidAt: paymentStatus === 'PAID' ? new Date() : null,
         webhookData: body,
       },
     });
 
-    if (paymentStatus === 'COMPLETED') {
+    if (paymentStatus === 'PAID') {
       await this.prisma.order.update({
         where: { id: order_id },
-        data: { status: 'CONFIRMED' as any },
+        data: { status: 'PAID' },
       });
 
       // Activate pending subscriptions for this order
@@ -120,7 +121,7 @@ export class PaymentsService {
       if (fullOrder?.user) {
         this.email.sendPaymentConfirmation({ id: order_id, total: Number(order.total), user: fullOrder.user }).catch(() => {});
         // Complete referral if this is the referred user's first confirmed order
-        const confirmedOrders = await this.prisma.order.count({ where: { userId: order.userId, status: 'CONFIRMED' as any } });
+        const confirmedOrders = await this.prisma.order.count({ where: { userId: order.userId, status: 'PAID' } });
         if (confirmedOrders === 1) {
           const result = await this.referrals.completeReferral(order.userId).catch(() => null);
           if (result?.couponCode) {
@@ -167,10 +168,10 @@ export class PaymentsService {
     return order;
   }
 
-  private mapFlittStatus(flittStatus: string): string {
+  private mapFlittStatus(flittStatus: string): PaymentStatus {
     switch (flittStatus) {
       case 'approved':
-        return 'COMPLETED';
+        return 'PAID';
       case 'declined':
       case 'expired':
         return 'FAILED';

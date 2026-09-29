@@ -114,7 +114,7 @@ export class ReportsService {
   }
 
   async revenueReport(from?: string, to?: string): Promise<string> {
-    const where: any = { status: 'COMPLETED' };
+    const where: any = { status: 'PAID' };
     if (from || to) {
       where.createdAt = {};
       if (from) where.createdAt.gte = new Date(from);
