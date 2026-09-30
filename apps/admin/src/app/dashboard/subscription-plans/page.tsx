@@ -1155,56 +1155,8 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
                       Name leads, because it is the decision. The slug is
                       derived from it and stays hidden: exposing it is how the
                       catalogue ended up with a plan slugged "3---month". */}
-                  {/* ── 1 · How it behaves ───────────────────────────────
-                      Leads the form: what a plan does is the decision that
-                      shapes everything under it. */}
-                  <StepHeading n={1} title="How it behaves" hint="Tap to turn on or off — hover for what each does" />
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, marginBottom: 12 }}>
-                    <SettingTile
-                      icon="✅" title="Active"
-                      onLabel="Live on the pricing page" offLabel="Hidden from customers"
-                      detail="Makes this plan visible and purchasable on the website. Disable to hide the plan from customers without deleting it."
-                      checked={form.isActive} onChange={v => setForm((x: any) => ({ ...x, isActive: v }))}
-                      accent="var(--emerald-600)" tint="var(--green-50)"
-                    />
-                    <SettingTile
-                      icon="🔄" title="Auto renewal"
-                      onLabel="Renews and charges automatically" offLabel="Ends after the final box"
-                      detail="When enabled, customers on this plan are automatically charged and receive the next box when their current period ends — no action needed from them. They can turn it off anytime from their account."
-                      checked={form.autoRenewal} onChange={v => setForm((x: any) => ({ ...x, autoRenewal: v }))}
-                    />
-                    <SettingTile
-                      icon="🎁" title="Can be gifted"
-                      onLabel="Buyable for someone else's dog" offLabel="Cannot be given as a gift"
-                      detail="Lets customers buy this plan for someone else's dog. The recipient gets an emailed gift card, then adds their own dog and address before the first box ships. Gifted subscriptions never auto-renew, whatever this plan's auto-renewal setting says."
-                      checked={form.giftable} onChange={v => setForm((x: any) => ({ ...x, giftable: v }))}
-                      accent="var(--amber-700)" tint="var(--amber-50)"
-                    />
-                    <SettingTile
-                      icon="🚚" title="Free delivery"
-                      onLabel="No delivery charge" offLabel={`₾${Number(cfg.deliveryCost || 0).toFixed(2)} per box`}
-                      detail="Covers delivery for every box on this plan. Turn it off to charge a fixed amount per box instead — the cost feeds into the plan's total price calculation."
-                      checked={cfg.deliveryFree} onChange={v => setCfg(c => ({ ...c, deliveryFree: v }))}
-                    />
-                    <SettingTile
-                      icon="🏷️" title="Delivery badge"
-                      onLabel="Badge shown on the card" offLabel="No badge shown"
-                      detail="Displays a small “Delivery included” badge on this plan's card on the pricing page. Set the actual delivery charge with the Free delivery chip."
-                      checked={form.deliveryIncluded} onChange={v => setForm((x: any) => ({ ...x, deliveryIncluded: v }))}
-                    />
-                  </div>
-                  {!cfg.deliveryFree && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20, background: 'var(--slate-50)', borderRadius: 10, padding: '9px 13px' }}>
-                      <label style={{ fontSize: 12, color: 'var(--slate-600)', fontWeight: 600 }}>Delivery cost per box</label>
-                      <div style={{ position: 'relative' }}>
-                        <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 13, color: 'var(--slate-400)' }}>₾</span>
-                        <input type="number" min="0" step="0.01" value={cfg.deliveryCost} onChange={e => setCfg(c => ({ ...c, deliveryCost: num(e.target.value) }))} style={{ width: 92, border: '1px solid var(--slate-200)', borderRadius: 8, padding: '6px 10px 6px 24px', fontSize: 13, outline: 'none' }} />
-                      </div>
-                    </div>
-                  )}
-
-                  {/* ── 2 · What the plan is ───────────────────────────── */}
-                  <StepHeading n={2} title="What the plan is" hint="The name customers see, and how it is listed" />
+                  {/* ── 1 · What the plan is ───────────────────────────── */}
+                  <StepHeading n={1} title="What the plan is" hint="The name customers see, and how it is listed" />
                   {/* Name, boxes, badge and sort order on one row: four short
                       answers that belong together, rather than a tall stack. */}
                   <div style={{ display: 'grid', gridTemplateColumns: 'minmax(180px, 2.2fr) 110px minmax(150px, 1.4fr) 100px', gap: 10, alignItems: 'start', marginBottom: 6 }}>
@@ -1307,6 +1259,54 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
                         placeholder="6-months" style={{ ...inputClass(), width: 200, fontFamily: 'monospace', fontSize: 12, padding: '4px 8px', ...(formErrors.slug ? { borderColor: 'var(--red-500)' } : {}) }} />
                     )}
                   </div>
+
+                  {/* ── 2 · How it behaves ───────────────────────────────
+                      Leads the form: what a plan does is the decision that
+                      shapes everything under it. */}
+                  <StepHeading n={2} title="How it behaves" hint="Tap to turn on or off — hover for what each does" />
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, marginBottom: 12 }}>
+                    <SettingTile
+                      icon="✅" title="Active"
+                      onLabel="Live on the pricing page" offLabel="Hidden from customers"
+                      detail="Makes this plan visible and purchasable on the website. Disable to hide the plan from customers without deleting it."
+                      checked={form.isActive} onChange={v => setForm((x: any) => ({ ...x, isActive: v }))}
+                      accent="var(--emerald-600)" tint="var(--green-50)"
+                    />
+                    <SettingTile
+                      icon="🔄" title="Auto renewal"
+                      onLabel="Renews and charges automatically" offLabel="Ends after the final box"
+                      detail="When enabled, customers on this plan are automatically charged and receive the next box when their current period ends — no action needed from them. They can turn it off anytime from their account."
+                      checked={form.autoRenewal} onChange={v => setForm((x: any) => ({ ...x, autoRenewal: v }))}
+                    />
+                    <SettingTile
+                      icon="🎁" title="Can be gifted"
+                      onLabel="Buyable for someone else's dog" offLabel="Cannot be given as a gift"
+                      detail="Lets customers buy this plan for someone else's dog. The recipient gets an emailed gift card, then adds their own dog and address before the first box ships. Gifted subscriptions never auto-renew, whatever this plan's auto-renewal setting says."
+                      checked={form.giftable} onChange={v => setForm((x: any) => ({ ...x, giftable: v }))}
+                      accent="var(--amber-700)" tint="var(--amber-50)"
+                    />
+                    <SettingTile
+                      icon="🚚" title="Free delivery"
+                      onLabel="No delivery charge" offLabel={`₾${Number(cfg.deliveryCost || 0).toFixed(2)} per box`}
+                      detail="Covers delivery for every box on this plan. Turn it off to charge a fixed amount per box instead — the cost feeds into the plan's total price calculation."
+                      checked={cfg.deliveryFree} onChange={v => setCfg(c => ({ ...c, deliveryFree: v }))}
+                    />
+                    <SettingTile
+                      icon="🏷️" title="Delivery badge"
+                      onLabel="Badge shown on the card" offLabel="No badge shown"
+                      detail="Displays a small “Delivery included” badge on this plan's card on the pricing page. Set the actual delivery charge with the Free delivery chip."
+                      checked={form.deliveryIncluded} onChange={v => setForm((x: any) => ({ ...x, deliveryIncluded: v }))}
+                    />
+                  </div>
+                  {!cfg.deliveryFree && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20, background: 'var(--slate-50)', borderRadius: 10, padding: '9px 13px' }}>
+                      <label style={{ fontSize: 12, color: 'var(--slate-600)', fontWeight: 600 }}>Delivery cost per box</label>
+                      <div style={{ position: 'relative' }}>
+                        <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 13, color: 'var(--slate-400)' }}>₾</span>
+                        <input type="number" min="0" step="0.01" value={cfg.deliveryCost} onChange={e => setCfg(c => ({ ...c, deliveryCost: num(e.target.value) }))} style={{ width: 92, border: '1px solid var(--slate-200)', borderRadius: 8, padding: '6px 10px 6px 24px', fontSize: 13, outline: 'none' }} />
+                      </div>
+                    </div>
+                  )}
 
                   {/* ── 3 · Pricing ── */}
                   <StepHeading n={3} title="What it costs" hint="Set a monthly rate and a discount — the totals work themselves out" />

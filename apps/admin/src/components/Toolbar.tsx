@@ -35,31 +35,47 @@ export function CustomSelect({ value, onChange, options, placeholder = 'Selectâ€
     <div ref={ref} style={{ position: 'relative', ...style }}>
       <button
         type="button"
+        aria-haspopup="listbox"
+        aria-expanded={open}
         onClick={() => setOpen(o => !o)}
         style={{
           width: '100%',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: '8px 12px',
+          gap: 8,
+          padding: '8px 10px 8px 12px',
           fontSize: 13,
           fontWeight: active ? 600 : 400,
           borderRadius: 8,
-          // Borderless, filled field rather than a ringed box â€” matches the
-          // behaviour chips and reads quieter in a dense form.
-          border: '1px solid transparent',
+          // Borderless filled field. Opening lifts it with a focus ring
+          // instead of drawing a permanent box around it.
+          border: 'none',
           background: active ? 'var(--teal-50)' : 'var(--slate-100)',
           color: active ? 'var(--teal-600)' : 'var(--slate-400)',
+          boxShadow: open ? '0 0 0 2px var(--teal-200)' : 'none',
           cursor: 'pointer',
           outline: 'none',
           textAlign: 'left',
+          transition: 'box-shadow 0.12s, background 0.12s',
         }}
       >
-        <span>{selected ? selected.label : placeholder}</span>
-        <svg width="10" height="6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 10 6"
-          style={{ flexShrink: 0, marginLeft: 8, transition: 'transform 0.15s', transform: open ? 'rotate(180deg)' : 'none' }}>
-          <path d="M1 1l4 4 4-4"/>
-        </svg>
+        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {selected ? selected.label : placeholder}
+        </span>
+        {/* Chevron in its own subtle well, so the control reads as openable
+            without an outline around the whole field. */}
+        <span style={{
+          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+          width: 18, height: 18, borderRadius: 5, flexShrink: 0,
+          background: open ? 'var(--teal-100)' : 'transparent',
+          transition: 'transform 0.15s, background 0.12s',
+          transform: open ? 'rotate(180deg)' : 'none',
+        }}>
+          <svg width="10" height="6" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 10 6">
+            <path d="M1 1l4 4 4-4"/>
+          </svg>
+        </span>
       </button>
 
       {open && (
@@ -67,7 +83,10 @@ export function CustomSelect({ value, onChange, options, placeholder = 'Selectâ€
           position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, zIndex: 200,
           background: 'var(--white)', borderRadius: 12, border: '1px solid var(--slate-200b)',
           boxShadow: '0 10px 34px rgba(0,0,0,0.18)', overflow: 'hidden', padding: 4,
+          // Slides down on open rather than appearing abruptly.
+          animation: 'csFade 0.12s ease-out',
         }}>
+          <style>{'@keyframes csFade{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}'}</style>
           <div style={{ maxHeight: 220, overflowY: 'auto' }}>
             {options.map((opt, i) => (
               <React.Fragment key={opt.value}>
