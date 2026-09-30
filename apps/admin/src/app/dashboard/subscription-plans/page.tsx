@@ -53,6 +53,73 @@ function slugify(name: string): string {
     .replace(/^-|-$/g, '');
 }
 
+/**
+ * Number field with a custom stepper.
+ *
+ * Browsers draw their own tiny up/down arrows on input[type=number], which
+ * look nothing like the rest of the form and are an awkwardly small target.
+ * Those are hidden and replaced with a −/+ pair sized to actually hit, in the
+ * same filled, borderless style as the select and the behaviour chips.
+ */
+function NumberField({ value, onChange, min, max, step = 1, prefix, suffix, placeholder, error, width }: {
+  value: string | number;
+  onChange: (v: string) => void;
+  min?: number; max?: number; step?: number;
+  prefix?: string; suffix?: string; placeholder?: string; error?: boolean; width?: number | string;
+}) {
+  const clampAndSet = (next: number) => {
+    let v = next;
+    if (min !== undefined && v < min) v = min;
+    if (max !== undefined && v > max) v = max;
+    // Keep one decimal place only where the step actually needs it.
+    onChange(String(Number.isInteger(step) ? Math.round(v) : +v.toFixed(2)));
+  };
+  const bump = (dir: 1 | -1) => clampAndSet((parseFloat(String(value)) || 0) + dir * step);
+
+  const btn: React.CSSProperties = {
+    width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center',
+    border: 'none', background: 'transparent', color: 'var(--slate-400)', cursor: 'pointer',
+    fontSize: 14, fontWeight: 700, lineHeight: 1, borderRadius: 6, padding: 0, transition: 'all 0.1s',
+  };
+
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 4, width: width ?? '100%',
+      background: 'var(--slate-100)', borderRadius: 8, padding: '2px 4px 2px 10px',
+      boxShadow: error ? 'inset 0 0 0 1.5px var(--red-500)' : 'none',
+      boxSizing: 'border-box',
+    }}>
+      {/* Hides the browser's own spinner; the −/+ below replace it. */}
+      <style>{'.pb-num::-webkit-outer-spin-button,.pb-num::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}.pb-num{-moz-appearance:textfield}'}</style>
+      {prefix && <span style={{ fontSize: 13, color: 'var(--slate-400)', flexShrink: 0 }}>{prefix}</span>}
+      <input
+        className="pb-num"
+        type="number"
+        inputMode="decimal"
+        min={min} max={max} step={step}
+        value={value ?? ''}
+        onChange={e => onChange(e.target.value)}
+        placeholder={placeholder}
+        style={{
+          flex: 1, minWidth: 0, border: 'none', background: 'transparent', outline: 'none',
+          fontSize: 13, fontWeight: 600, color: 'var(--slate-900)', padding: '6px 0',
+        }}
+      />
+      {suffix && <span style={{ fontSize: 12, color: 'var(--slate-400)', flexShrink: 0 }}>{suffix}</span>}
+      <div style={{ display: 'flex', gap: 1, flexShrink: 0 }}>
+        <button type="button" tabIndex={-1} aria-label="Decrease" onClick={() => bump(-1)}
+          onMouseEnter={e => { e.currentTarget.style.background = 'var(--slate-200)'; e.currentTarget.style.color = 'var(--slate-700)'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--slate-400)'; }}
+          style={btn}>−</button>
+        <button type="button" tabIndex={-1} aria-label="Increase" onClick={() => bump(1)}
+          onMouseEnter={e => { e.currentTarget.style.background = 'var(--slate-200)'; e.currentTarget.style.color = 'var(--slate-700)'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--slate-400)'; }}
+          style={btn}>+</button>
+      </div>
+    </div>
+  );
+}
+
 /** Numbered section heading, so a long form reads as a sequence of decisions. */
 function StepHeading({ n, title, hint }: { n: number; title: string; hint: string }) {
   return (
@@ -1180,8 +1247,8 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
                       />
                     </FormField>
                     <FormField label="Boxes" required error={formErrors.boxCount}>
-                      <input type="number" min="1" value={form.boxCount ?? ''} onChange={e => { setForm((x: any) => ({ ...x, boxCount: e.target.value })); setFormErrors((e2: any) => ({ ...e2, boxCount: '' })); }}
-                        placeholder="6" style={{ ...inputClass(), ...(formErrors.boxCount ? { borderColor: 'var(--red-500)' } : {}) }} />
+                      <NumberField min={1} value={form.boxCount ?? ''} placeholder="6" error={!!formErrors.boxCount}
+                        onChange={v => { setForm((x: any) => ({ ...x, boxCount: v })); setFormErrors((e2: any) => ({ ...e2, boxCount: '' })); }} />
                     </FormField>
                     <div>
                       <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--slate-700b)', marginBottom: 6 }}>Badge</label>
@@ -1242,7 +1309,8 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
                       <p style={{ fontSize: 10.5, color: 'var(--slate-400)', margin: '4px 0 0', lineHeight: 1.35 }}>One per label across all plans.</p>
                     </div>
                     <FormField label="Order" hint="Lowest first">
-                      <input type="number" value={form.sortOrder ?? ''} onChange={e => setForm((x: any) => ({ ...x, sortOrder: e.target.value }))} placeholder="0" style={inputClass()} />
+                      <NumberField min={0} value={form.sortOrder ?? ''} placeholder="0"
+                        onChange={v => setForm((x: any) => ({ ...x, sortOrder: v }))} />
                     </FormField>
                   </div>
 
@@ -1301,10 +1369,8 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
                   {!cfg.deliveryFree && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20, background: 'var(--slate-50)', borderRadius: 10, padding: '9px 13px' }}>
                       <label style={{ fontSize: 12, color: 'var(--slate-600)', fontWeight: 600 }}>Delivery cost per box</label>
-                      <div style={{ position: 'relative' }}>
-                        <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 13, color: 'var(--slate-400)' }}>₾</span>
-                        <input type="number" min="0" step="0.01" value={cfg.deliveryCost} onChange={e => setCfg(c => ({ ...c, deliveryCost: num(e.target.value) }))} style={{ width: 92, border: '1px solid var(--slate-200)', borderRadius: 8, padding: '6px 10px 6px 24px', fontSize: 13, outline: 'none' }} />
-                      </div>
+                      <NumberField min={0} step={0.01} prefix="₾" width={132}
+                        value={cfg.deliveryCost} onChange={v => setCfg(c => ({ ...c, deliveryCost: num(v) }))} />
                     </div>
                   )}
 
@@ -1315,28 +1381,16 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
                     {/* Inputs row */}
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 16 }}>
                       <FormField label="Months" required error={formErrors.durationValue}>
-                        <input
-                          type="number" min="1" value={form.durationValue ?? ''}
-                          onChange={e => { setForm((x: any) => ({ ...x, durationValue: e.target.value })); setFormErrors((e2: any) => ({ ...e2, durationValue: '' })); }}
-                          placeholder="3"
-                          style={{ ...inputClass(), ...(formErrors.durationValue ? { borderColor: 'var(--red-500)' } : {}) }}
-                        />
+                        <NumberField min={1} value={form.durationValue ?? ''} placeholder="3" error={!!formErrors.durationValue}
+                          onChange={v => { setForm((x: any) => ({ ...x, durationValue: v })); setFormErrors((e2: any) => ({ ...e2, durationValue: '' })); }} />
                       </FormField>
-                      <FormField label="Monthly price (₾)" required error={formErrors.monthlyPrice}>
-                        <input
-                          type="number" min="0" step="0.01" value={form.monthlyPrice ?? ''}
-                          onChange={e => { setForm((x: any) => ({ ...x, monthlyPrice: e.target.value })); setFormErrors((e2: any) => ({ ...e2, monthlyPrice: '' })); }}
-                          placeholder="50.00"
-                          style={{ ...inputClass(), ...(formErrors.monthlyPrice ? { borderColor: 'var(--red-500)' } : {}) }}
-                        />
+                      <FormField label="Monthly price" required error={formErrors.monthlyPrice}>
+                        <NumberField min={0} step={0.01} prefix="₾" value={form.monthlyPrice ?? ''} placeholder="50.00" error={!!formErrors.monthlyPrice}
+                          onChange={v => { setForm((x: any) => ({ ...x, monthlyPrice: v })); setFormErrors((e2: any) => ({ ...e2, monthlyPrice: '' })); }} />
                       </FormField>
-                      <FormField label="Discount %">
-                        <input
-                          type="number" min="0" max="100" step="1" value={form.discountPercent ?? ''}
-                          onChange={e => setForm((x: any) => ({ ...x, discountPercent: e.target.value }))}
-                          placeholder="0"
-                          style={inputClass()}
-                        />
+                      <FormField label="Discount">
+                        <NumberField min={0} max={100} suffix="%" value={form.discountPercent ?? ''} placeholder="0"
+                          onChange={v => setForm((x: any) => ({ ...x, discountPercent: v }))} />
                       </FormField>
                     </div>
 
