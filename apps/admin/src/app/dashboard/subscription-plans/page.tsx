@@ -94,12 +94,12 @@ function SettingTile({ icon, title, onLabel, offLabel, detail, checked, onChange
       style={{
         position: 'relative', display: 'inline-flex', alignItems: 'center', gap: 6,
         cursor: 'pointer', whiteSpace: 'nowrap',
-        // Tinted, not saturated: a light wash with a coloured edge and
-        // coloured text reads as selected without shouting.
-        background: checked ? tint : 'transparent',
-        border: `1px solid ${checked ? border : 'var(--slate-200)'}`,
+        // Borderless: the tinted fill alone carries the state, which reads
+        // cleaner than a chip ringed in colour.
+        background: checked ? tint : 'var(--slate-100)',
+        border: 'none',
         color: checked ? accent : 'var(--slate-400)',
-        borderRadius: 8, padding: '5px 10px', transition: 'all 0.12s',
+        borderRadius: 8, padding: '6px 11px', transition: 'all 0.12s',
         fontSize: 12, fontWeight: 600, lineHeight: 1.3,
       }}
     >
@@ -1155,8 +1155,59 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
                       Name leads, because it is the decision. The slug is
                       derived from it and stays hidden: exposing it is how the
                       catalogue ended up with a plan slugged "3---month". */}
-                  <StepHeading n={1} title="What the plan is" hint="The name customers see, and how long it runs" />
-                  <div style={{ marginBottom: 14 }}>
+                  {/* ── 1 · How it behaves ───────────────────────────────
+                      Leads the form: what a plan does is the decision that
+                      shapes everything under it. */}
+                  <StepHeading n={1} title="How it behaves" hint="Tap to turn on or off — hover for what each does" />
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, marginBottom: 12 }}>
+                    <SettingTile
+                      icon="✅" title="Active"
+                      onLabel="Live on the pricing page" offLabel="Hidden from customers"
+                      detail="Makes this plan visible and purchasable on the website. Disable to hide the plan from customers without deleting it."
+                      checked={form.isActive} onChange={v => setForm((x: any) => ({ ...x, isActive: v }))}
+                      accent="var(--emerald-600)" tint="var(--green-50)"
+                    />
+                    <SettingTile
+                      icon="🔄" title="Auto renewal"
+                      onLabel="Renews and charges automatically" offLabel="Ends after the final box"
+                      detail="When enabled, customers on this plan are automatically charged and receive the next box when their current period ends — no action needed from them. They can turn it off anytime from their account."
+                      checked={form.autoRenewal} onChange={v => setForm((x: any) => ({ ...x, autoRenewal: v }))}
+                    />
+                    <SettingTile
+                      icon="🎁" title="Can be gifted"
+                      onLabel="Buyable for someone else's dog" offLabel="Cannot be given as a gift"
+                      detail="Lets customers buy this plan for someone else's dog. The recipient gets an emailed gift card, then adds their own dog and address before the first box ships. Gifted subscriptions never auto-renew, whatever this plan's auto-renewal setting says."
+                      checked={form.giftable} onChange={v => setForm((x: any) => ({ ...x, giftable: v }))}
+                      accent="var(--amber-700)" tint="var(--amber-50)"
+                    />
+                    <SettingTile
+                      icon="🚚" title="Free delivery"
+                      onLabel="No delivery charge" offLabel={`₾${Number(cfg.deliveryCost || 0).toFixed(2)} per box`}
+                      detail="Covers delivery for every box on this plan. Turn it off to charge a fixed amount per box instead — the cost feeds into the plan's total price calculation."
+                      checked={cfg.deliveryFree} onChange={v => setCfg(c => ({ ...c, deliveryFree: v }))}
+                    />
+                    <SettingTile
+                      icon="🏷️" title="Delivery badge"
+                      onLabel="Badge shown on the card" offLabel="No badge shown"
+                      detail="Displays a small “Delivery included” badge on this plan's card on the pricing page. Set the actual delivery charge with the Free delivery chip."
+                      checked={form.deliveryIncluded} onChange={v => setForm((x: any) => ({ ...x, deliveryIncluded: v }))}
+                    />
+                  </div>
+                  {!cfg.deliveryFree && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20, background: 'var(--slate-50)', borderRadius: 10, padding: '9px 13px' }}>
+                      <label style={{ fontSize: 12, color: 'var(--slate-600)', fontWeight: 600 }}>Delivery cost per box</label>
+                      <div style={{ position: 'relative' }}>
+                        <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 13, color: 'var(--slate-400)' }}>₾</span>
+                        <input type="number" min="0" step="0.01" value={cfg.deliveryCost} onChange={e => setCfg(c => ({ ...c, deliveryCost: num(e.target.value) }))} style={{ width: 92, border: '1px solid var(--slate-200)', borderRadius: 8, padding: '6px 10px 6px 24px', fontSize: 13, outline: 'none' }} />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ── 2 · What the plan is ───────────────────────────── */}
+                  <StepHeading n={2} title="What the plan is" hint="The name customers see, and how it is listed" />
+                  {/* Name, boxes, badge and sort order on one row: four short
+                      answers that belong together, rather than a tall stack. */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'minmax(180px, 2.2fr) 110px minmax(150px, 1.4fr) 100px', gap: 10, alignItems: 'start', marginBottom: 6 }}>
                     <FormField label="Plan name" required error={formErrors.name}>
                       <input
                         value={form.name ?? ''}
@@ -1173,29 +1224,10 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
                           setFormErrors((e2: any) => ({ ...e2, name: '', slug: '' }));
                         }}
                         placeholder="e.g. 6 Months"
-                        style={{ ...inputClass(), fontSize: 15, fontWeight: 600, ...(formErrors.name ? { borderColor: 'var(--red-500)' } : {}) }}
+                        style={{ ...inputClass(), fontWeight: 600, ...(formErrors.name ? { borderColor: 'var(--red-500)' } : {}) }}
                       />
                     </FormField>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 5, fontSize: 11, color: 'var(--slate-400)' }}>
-                      <span>Web address:</span>
-                      <code style={{ background: 'var(--slate-100)', borderRadius: 5, padding: '1px 6px', color: 'var(--slate-600)' }}>/prices/{form.slug || '…'}</code>
-                      <button type="button" onClick={() => setSlugTouched(t => !t)}
-                        style={{ background: 'none', border: 'none', color: 'var(--teal-600)', cursor: 'pointer', fontSize: 11, padding: 0, textDecoration: 'underline' }}>
-                        {slugTouched ? 'use the name' : 'edit'}
-                      </button>
-                    </div>
-                    {slugTouched && (
-                      <div style={{ marginTop: 6 }}>
-                        <FormField label="" error={formErrors.slug}>
-                          <input value={form.slug ?? ''} onChange={e => { setForm((x: any) => ({ ...x, slug: e.target.value })); setFormErrors((e2: any) => ({ ...e2, slug: '' })); }}
-                            placeholder="6-months" style={{ ...inputClass(), fontFamily: 'monospace', fontSize: 12, ...(formErrors.slug ? { borderColor: 'var(--red-500)' } : {}) }} />
-                        </FormField>
-                      </div>
-                    )}
-                  </div>
-
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 20 }}>
-                    <FormField label="Boxes included" required error={formErrors.boxCount} hint="How many boxes they receive in total">
+                    <FormField label="Boxes" required error={formErrors.boxCount}>
                       <input type="number" min="1" value={form.boxCount ?? ''} onChange={e => { setForm((x: any) => ({ ...x, boxCount: e.target.value })); setFormErrors((e2: any) => ({ ...e2, boxCount: '' })); }}
                         placeholder="6" style={{ ...inputClass(), ...(formErrors.boxCount ? { borderColor: 'var(--red-500)' } : {}) }} />
                     </FormField>
@@ -1255,12 +1287,29 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
                           </div>
                         </div>
                       )}
-                      <p style={{ fontSize: 11, color: 'var(--slate-400)', margin: '5px 0 0' }}>One badge per label across all plans — assigning it here removes it from any other plan.</p>
+                      <p style={{ fontSize: 10.5, color: 'var(--slate-400)', margin: '4px 0 0', lineHeight: 1.35 }}>One per label across all plans.</p>
                     </div>
+                    <FormField label="Order" hint="Lowest first">
+                      <input type="number" value={form.sortOrder ?? ''} onChange={e => setForm((x: any) => ({ ...x, sortOrder: e.target.value }))} placeholder="0" style={inputClass()} />
+                    </FormField>
                   </div>
 
-                  {/* ── 2 · Pricing ── */}
-                  <StepHeading n={2} title="What it costs" hint="Set a monthly rate and a discount — the totals work themselves out" />
+                  {/* Derived from the name; only shown as a reminder of the URL. */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 20, fontSize: 11, color: 'var(--slate-400)' }}>
+                    <span>Web address:</span>
+                    <code style={{ background: 'var(--slate-100)', borderRadius: 5, padding: '1px 6px', color: 'var(--slate-600)' }}>/prices/{form.slug || '…'}</code>
+                    <button type="button" onClick={() => setSlugTouched(t => !t)}
+                      style={{ background: 'none', border: 'none', color: 'var(--teal-600)', cursor: 'pointer', fontSize: 11, padding: 0, textDecoration: 'underline' }}>
+                      {slugTouched ? 'use the name' : 'edit'}
+                    </button>
+                    {slugTouched && (
+                      <input value={form.slug ?? ''} onChange={e => { setForm((x: any) => ({ ...x, slug: e.target.value })); setFormErrors((e2: any) => ({ ...e2, slug: '' })); }}
+                        placeholder="6-months" style={{ ...inputClass(), width: 200, fontFamily: 'monospace', fontSize: 12, padding: '4px 8px', ...(formErrors.slug ? { borderColor: 'var(--red-500)' } : {}) }} />
+                    )}
+                  </div>
+
+                  {/* ── 3 · Pricing ── */}
+                  <StepHeading n={3} title="What it costs" hint="Set a monthly rate and a discount — the totals work themselves out" />
                   <div style={{ background: 'var(--slate-50)', borderRadius: 14, border: '1px solid var(--slate-200)', padding: '20px 20px 16px', marginBottom: 20 }}>
 
                     {/* Inputs row */}
@@ -1331,7 +1380,7 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
                     </div>
                   </div>
                   {/* ── 3 · How it's sold ── */}
-                  <StepHeading n={3} title="How it's sold" hint="The words on the pricing card" />
+                  <StepHeading n={4} title="How it's sold" hint="The words on the pricing card" />
                   <div style={{ marginBottom: 14 }}>
                     <FormField label="Description" hint="One line under the plan name — optional">
                       <input value={form.description || ''} onChange={e => setForm((x: any) => ({ ...x, description: e.target.value }))} placeholder="e.g. Our most popular commitment" style={inputClass()} />
@@ -1343,13 +1392,6 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
                     </FormField>
                   </div>
 
-                  {/* Rarely touched, so folded away rather than sitting at the
-                      same weight as the plan's name. */}
-                  <div style={{ marginBottom: 20, maxWidth: 220 }}>
-                    <FormField label="Sort order" hint="Lower numbers appear first on the pricing page">
-                      <input type="number" value={form.sortOrder ?? ''} onChange={e => setForm((x: any) => ({ ...x, sortOrder: e.target.value }))} placeholder="0" style={inputClass()} />
-                    </FormField>
-                  </div>
                 </>
               ) : (
                 <>
@@ -1426,59 +1468,6 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
                   <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--amber-800)' }}>Georgian translation is incomplete — <u>click to fill it in</u></span>
                 </div>
               )}
-              {/* ── 4 · How it behaves ──────────────────────────────────
-                  One grid of tappable tiles rather than two stacked panels of
-                  switch rows. Each tile is the target, says ON or OFF in
-                  words, and lights up when active, so the whole configuration
-                  reads in a glance. */}
-              <StepHeading n={4} title="How it behaves" hint="Filled means on — tap to change, hover for what it does" />
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, marginBottom: 14 }}>
-                <SettingTile
-                  icon="✅" title="Active"
-                  onLabel="Live on the pricing page" offLabel="Hidden from customers"
-                  detail="Makes this plan visible and purchasable on the website. Disable to hide the plan from customers without deleting it."
-                  checked={form.isActive} onChange={v => setForm((x: any) => ({ ...x, isActive: v }))}
-                  accent="var(--emerald-600)" tint="var(--green-50)" border="var(--green-300)"
-                />
-                <SettingTile
-                  icon="🔄" title="Auto renewal"
-                  onLabel="Renews and charges automatically" offLabel="Ends after the final box"
-                  detail="When enabled, customers on this plan are automatically charged and receive the next box when their current period ends — no action needed from them. They can turn it off anytime from their account."
-                  checked={form.autoRenewal} onChange={v => setForm((x: any) => ({ ...x, autoRenewal: v }))}
-                />
-                <SettingTile
-                  icon="🎁" title="Can be gifted"
-                  onLabel="Buyable for someone else's dog" offLabel="Cannot be given as a gift"
-                  detail="Lets customers buy this plan for someone else's dog. The recipient gets an emailed gift card, then adds their own dog and address before the first box ships. Gifted subscriptions never auto-renew, whatever this plan's auto-renewal setting says."
-                  checked={form.giftable} onChange={v => setForm((x: any) => ({ ...x, giftable: v }))}
-                  accent="var(--amber-600)" tint="var(--amber-50)" border="var(--amber-200)"
-                />
-                <SettingTile
-                  icon="🚚" title="Free delivery"
-                  onLabel="No delivery charge" offLabel={`₾${Number(cfg.deliveryCost || 0).toFixed(2)} per box`}
-                  detail="Covers delivery for every box on this plan. Turn it off to charge a fixed amount per box instead — the cost feeds into the plan's total price calculation."
-                  checked={cfg.deliveryFree} onChange={v => setCfg(c => ({ ...c, deliveryFree: v }))}
-                />
-                <SettingTile
-                  icon="🏷️" title="Delivery badge"
-                  onLabel="Badge shown on the card" offLabel="No badge shown"
-                  detail="Displays a small “Delivery included” badge on this plan's card on the pricing page. Set the actual delivery charge with the Free delivery tile."
-                  checked={form.deliveryIncluded} onChange={v => setForm((x: any) => ({ ...x, deliveryIncluded: v }))}
-                />
-              </div>
-
-              {/* Only asked for when it applies. */}
-              {!cfg.deliveryFree && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20, background: 'var(--slate-50)', border: '1px solid var(--slate-200b)', borderRadius: 10, padding: '10px 14px' }}>
-                  <label style={{ fontSize: 12.5, color: 'var(--slate-600)', fontWeight: 600 }}>Delivery cost per box</label>
-                  <div style={{ position: 'relative' }}>
-                    <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 13, color: 'var(--slate-400)' }}>₾</span>
-                    <input type="number" min="0" step="0.01" value={cfg.deliveryCost} onChange={e => setCfg(c => ({ ...c, deliveryCost: num(e.target.value) }))} style={{ width: 96, border: '1px solid var(--slate-200)', borderRadius: 9, padding: '7px 10px 7px 24px', fontSize: 13, outline: 'none' }} />
-                  </div>
-                  <span style={{ fontSize: 11, color: 'var(--slate-400)' }}>added to the plan total</span>
-                </div>
-              )}
-
               {/* Per-tab save, matching Box Builder and Discounts. The header's
                   Save All commits everything at once. */}
               <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--slate-200b)', marginBottom: 24 }}>

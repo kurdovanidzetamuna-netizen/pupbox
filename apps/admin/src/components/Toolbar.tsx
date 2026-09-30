@@ -41,12 +41,14 @@ export function CustomSelect({ value, onChange, options, placeholder = 'Selectâ€
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: '7px 12px',
+          padding: '8px 12px',
           fontSize: 13,
           fontWeight: active ? 600 : 400,
-          borderRadius: 9,
-          border: `1.5px solid ${active ? 'var(--teal-600)' : 'var(--slate-200)'}`,
-          background: active ? 'var(--teal-50)' : 'var(--white)',
+          borderRadius: 8,
+          // Borderless, filled field rather than a ringed box â€” matches the
+          // behaviour chips and reads quieter in a dense form.
+          border: '1px solid transparent',
+          background: active ? 'var(--teal-50)' : 'var(--slate-100)',
           color: active ? 'var(--teal-600)' : 'var(--slate-400)',
           cursor: 'pointer',
           outline: 'none',
@@ -63,8 +65,8 @@ export function CustomSelect({ value, onChange, options, placeholder = 'Selectâ€
       {open && (
         <div style={{
           position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, zIndex: 200,
-          background: 'var(--white)', borderRadius: 10, border: '1.5px solid var(--slate-200)',
-          boxShadow: '0 4px 20px rgba(0,0,0,0.10)', overflow: 'hidden',
+          background: 'var(--white)', borderRadius: 12, border: '1px solid var(--slate-200b)',
+          boxShadow: '0 10px 34px rgba(0,0,0,0.18)', overflow: 'hidden', padding: 4,
         }}>
           <div style={{ maxHeight: 220, overflowY: 'auto' }}>
             {options.map((opt, i) => (
@@ -78,16 +80,17 @@ export function CustomSelect({ value, onChange, options, placeholder = 'Selectâ€
                     display: 'flex',
                     alignItems: 'center',
                     gap: 8,
-                    padding: '9px 12px',
+                    padding: '8px 10px',
                     fontSize: 13,
                     fontWeight: opt.value === value ? 600 : 400,
                     border: 'none',
+                    borderRadius: 8,
                     background: opt.value === value ? 'var(--teal-50)' : 'transparent',
                     color: opt.value === value ? 'var(--teal-600)' : 'var(--slate-800)',
                     cursor: 'pointer',
                     textAlign: 'left',
                   }}
-                  onMouseEnter={e => { if (opt.value !== value) (e.currentTarget as HTMLButtonElement).style.background = 'var(--slate-50)'; }}
+                  onMouseEnter={e => { if (opt.value !== value) (e.currentTarget as HTMLButtonElement).style.background = 'var(--slate-100)'; }}
                   onMouseLeave={e => { if (opt.value !== value) (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
                 >
                   {opt.value === value && (
