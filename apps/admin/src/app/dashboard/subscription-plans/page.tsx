@@ -92,29 +92,20 @@ function SettingTile({ icon, title, onLabel, offLabel, detail, checked, onChange
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
       style={{
-        position: 'relative', display: 'inline-flex', alignItems: 'center', gap: 8,
+        position: 'relative', display: 'inline-flex', alignItems: 'center', gap: 6,
         cursor: 'pointer', whiteSpace: 'nowrap',
-        // On reads as a solid, filled chip; off as a plain outline. The
-        // difference is the fill itself, not a small indicator to decode.
-        background: checked ? accent : 'var(--white)',
-        border: `1.5px solid ${checked ? accent : 'var(--slate-300)'}`,
-        color: checked ? 'var(--white)' : 'var(--slate-500)',
-        borderRadius: 999, padding: '7px 15px 7px 8px', transition: 'all 0.12s',
-        fontSize: 13, fontWeight: 700,
-        boxShadow: checked ? '0 2px 8px rgba(0,0,0,0.18)' : 'none',
-        transform: checked ? 'translateY(-1px)' : 'none',
+        // Tinted, not saturated: a light wash with a coloured edge and
+        // coloured text reads as selected without shouting.
+        background: checked ? tint : 'transparent',
+        border: `1px solid ${checked ? border : 'var(--slate-200)'}`,
+        color: checked ? accent : 'var(--slate-400)',
+        borderRadius: 8, padding: '5px 10px', transition: 'all 0.12s',
+        fontSize: 12, fontWeight: 600, lineHeight: 1.3,
       }}
     >
-      {/* The icon sits in its own disc that fills in when selected, so a
-          glance at the row shows which are on without reading the labels. */}
-      <span style={{
-        width: 24, height: 24, borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: 13, lineHeight: 1, flexShrink: 0, transition: 'all 0.12s',
-        background: checked ? 'rgba(255,255,255,0.28)' : 'var(--slate-100)',
-        filter: checked ? 'none' : 'grayscale(1)', opacity: checked ? 1 : 0.5,
-      }}>{icon}</span>
+      <span style={{ fontSize: 12, lineHeight: 1, flexShrink: 0, filter: checked ? 'none' : 'grayscale(1)', opacity: checked ? 1 : 0.4 }}>{icon}</span>
       <span>{title}</span>
-      <span style={{ fontWeight: 900, fontSize: 13, opacity: checked ? 1 : 0.45 }}>{checked ? '✓' : '＋'}</span>
+      {checked && <span style={{ fontSize: 11, fontWeight: 800 }}>✓</span>}
 
       {hover && (
         <span style={{ position: 'absolute', bottom: 'calc(100% + 6px)', left: 0, zIndex: 5, minWidth: 220, maxWidth: 300, background: 'var(--slate-900)', color: 'var(--white)', fontSize: 11, fontWeight: 400, lineHeight: 1.5, borderRadius: 9, padding: '8px 11px', boxShadow: '0 6px 20px rgba(0,0,0,0.25)', pointerEvents: 'none', whiteSpace: 'normal', textAlign: 'left' }}>
@@ -1320,6 +1311,23 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
                           {pricingTotal - totalCost < 0 ? '−' : '+'}₾{Math.abs(pricingTotal - totalCost).toFixed(2)} · {(((pricingTotal - totalCost) / pricingTotal) * 100).toFixed(0)}% margin
                         </span>
                       )}
+                    </div>
+
+                    {/* What is switched on under How it behaves, shown on the
+                        same tab as the chips so their effect is immediate
+                        rather than only visible over in Box Builder. */}
+                    <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginTop: 10 }}>
+                      {[
+                        { on: form.isActive, icon: '✅', label: 'Live on site', c: 'var(--emerald-600)', bg: 'var(--green-50)', b: 'var(--green-200)' },
+                        { on: form.autoRenewal, icon: '🔄', label: 'Auto renews', c: 'var(--teal-700)', bg: 'var(--teal-50)', b: 'var(--teal-200)' },
+                        { on: form.giftable, icon: '🎁', label: 'Giftable', c: 'var(--amber-700)', bg: 'var(--amber-50)', b: 'var(--amber-200)' },
+                        { on: cfg.deliveryFree, icon: '🚚', label: 'Free delivery', c: 'var(--teal-700)', bg: 'var(--teal-50)', b: 'var(--teal-200)' },
+                        { on: form.deliveryIncluded, icon: '🏷️', label: 'Delivery badge', c: 'var(--teal-700)', bg: 'var(--teal-50)', b: 'var(--teal-200)' },
+                      ].filter(x => x.on).map(x => (
+                        <span key={x.label} style={{ fontSize: 10.5, fontWeight: 600, padding: '2px 8px', borderRadius: 6, background: x.bg, color: x.c, border: `1px solid ${x.b}`, whiteSpace: 'nowrap' }}>
+                          {x.icon} {x.label}
+                        </span>
+                      ))}
                     </div>
                   </div>
                   {/* ── 3 · How it's sold ── */}
