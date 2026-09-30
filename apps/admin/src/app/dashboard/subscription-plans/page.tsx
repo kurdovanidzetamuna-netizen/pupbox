@@ -318,6 +318,24 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
 
   const boxCount = Number(form.boxCount) || 1;
 
+  // Every live plan ships one box per month, and the only plans where the two
+  // numbers disagreed were test plans where they had drifted apart unnoticed —
+  // they used to sit in different sections of this form. So boxes follows
+  // months while the two agree, and stops as soon as a count is set by hand.
+  //
+  // "Agreeing" is the whole state: there is no separate linked flag, because a
+  // flag can contradict the numbers — unlink at 8/9, step months to 9, and the
+  // form would claim they were out of sync while showing 9 and 9.
+  const boxesLinked = Number(form.boxCount) === Number(form.durationValue);
+  const setMonths = (v: string) => {
+    setForm((x: any) => ({ ...x, durationValue: v, ...(boxesLinked ? { boxCount: v } : {}) }));
+    setFormErrors((e2: any) => ({ ...e2, durationValue: '', ...(boxesLinked ? { boxCount: '' } : {}) }));
+  };
+  const setBoxes = (v: string) => {
+    setForm((x: any) => ({ ...x, boxCount: v }));
+    setFormErrors((e2: any) => ({ ...e2, boxCount: '' }));
+  };
+
   // ── Pricing calculations ──────────────────────────────────────────────────
   const pricingMonths = Number(form.durationValue) || 1;
   const pricingMonthly = Number(form.monthlyPrice) || 0;
@@ -1223,10 +1241,13 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
                       derived from it and stays hidden: exposing it is how the
                       catalogue ended up with a plan slugged "3---month". */}
                   {/* ── 1 · What the plan is ───────────────────────────── */}
-                  <StepHeading n={1} title="What the plan is" hint="The name customers see, and how it is listed" />
-                  {/* Name, boxes, badge and sort order on one row: four short
-                      answers that belong together, rather than a tall stack. */}
-                  <div style={{ display: 'grid', gridTemplateColumns: 'minmax(180px, 2.2fr) 110px minmax(150px, 1.4fr) 100px', gap: 10, alignItems: 'start', marginBottom: 6 }}>
+                  <StepHeading n={1} title="What the plan is" hint="Its name, its length, and how it is listed" />
+                  {/* Name, length, badge and sort order on one row: four short
+                      answers that belong together, rather than a tall stack.
+                      Months and boxes share a cell because they are one
+                      decision — "six boxes over six months" — and splitting
+                      them across sections is how they drifted apart before. */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'minmax(160px, 1.9fr) minmax(190px, 1.5fr) minmax(130px, 1.1fr) 84px', gap: 10, alignItems: 'start', marginBottom: 6 }}>
                     <FormField label="Plan name" required error={formErrors.name}>
                       <input
                         value={form.name ?? ''}
@@ -1246,10 +1267,45 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
                         style={{ ...inputClass(), fontWeight: 600, ...(formErrors.name ? { borderColor: 'var(--red-500)' } : {}) }}
                       />
                     </FormField>
-                    <FormField label="Boxes" required error={formErrors.boxCount}>
-                      <NumberField min={1} value={form.boxCount ?? ''} placeholder="6" error={!!formErrors.boxCount}
-                        onChange={v => { setForm((x: any) => ({ ...x, boxCount: v })); setFormErrors((e2: any) => ({ ...e2, boxCount: '' })); }} />
-                    </FormField>
+                    <div>
+                      <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--slate-700b)', marginBottom: 6 }}>
+                        Length <span style={{ color: 'var(--red-500)' }}>*</span>
+                      </label>
+                      {/* minmax(0,…) rather than 1fr: a number input carries a
+                          wide intrinsic size, so plain 1fr lets the pair
+                          overflow the cell instead of shrinking. The unit
+                          sits underneath rather than inline for the same
+                          reason — there is no room for it beside the digits. */}
+                      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 6 }}>
+                        {[
+                          { v: form.durationValue, on: setMonths, cap: pricingMonths === 1 ? 'month' : 'months', err: !!formErrors.durationValue },
+                          { v: form.boxCount, on: setBoxes, cap: boxCount === 1 ? 'box' : 'boxes', err: !!formErrors.boxCount },
+                        ].map(f => (
+                          <div key={f.cap}>
+                            <NumberField min={1} value={f.v ?? ''} placeholder="6" error={f.err} onChange={f.on} />
+                            <p style={{ fontSize: 10, color: 'var(--slate-400)', margin: '3px 0 0', textAlign: 'center' }}>{f.cap}</p>
+                          </div>
+                        ))}
+                      </div>
+                      {/* Says which of the two is in charge, so the box count
+                          moving on its own is never a surprise. */}
+                      {boxesLinked ? (
+                        <p style={{ fontSize: 10.5, color: 'var(--slate-400)', margin: '4px 0 0', lineHeight: 1.35 }}>
+                          One box a month — set your own count to change it.
+                        </p>
+                      ) : (
+                        <p style={{ fontSize: 10.5, color: 'var(--amber-700)', margin: '4px 0 0', lineHeight: 1.35 }}>
+                          {boxCount} box{boxCount === 1 ? '' : 'es'} over {pricingMonths} month{pricingMonths === 1 ? '' : 's'} ·{' '}
+                          <button type="button" onClick={() => setBoxes(String(form.durationValue ?? ''))}
+                            style={{ background: 'none', border: 'none', padding: 0, font: 'inherit', color: 'var(--teal-600)', cursor: 'pointer', textDecoration: 'underline' }}>
+                            match months
+                          </button>
+                        </p>
+                      )}
+                      {(formErrors.durationValue || formErrors.boxCount) && (
+                        <p style={{ fontSize: 10.5, color: 'var(--red-600)', margin: '3px 0 0' }}>{formErrors.durationValue || formErrors.boxCount}</p>
+                      )}
+                    </div>
                     <div>
                       <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--slate-700b)', marginBottom: 6 }}>Badge</label>
                       <CustomSelect
@@ -1375,15 +1431,14 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
                   )}
 
                   {/* ── 3 · Pricing ── */}
-                  <StepHeading n={3} title="What it costs" hint="Set a monthly rate and a discount — the totals work themselves out" />
+                  <StepHeading n={3} title="What it costs" hint={`Set a monthly rate and a discount — multiplied over the ${pricingMonths} month${pricingMonths === 1 ? '' : 's'} set above`} />
                   <div style={{ background: 'var(--slate-50)', borderRadius: 14, border: '1px solid var(--slate-200)', padding: '20px 20px 16px', marginBottom: 20 }}>
 
                     {/* Inputs row */}
+                    {/* Money only. Months lives with boxes up in section 1 —
+                        it is the plan's shape, not its price — so it appears
+                        here as read-only context for the multiplication. */}
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 16 }}>
-                      <FormField label="Months" required error={formErrors.durationValue}>
-                        <NumberField min={1} value={form.durationValue ?? ''} placeholder="3" error={!!formErrors.durationValue}
-                          onChange={v => { setForm((x: any) => ({ ...x, durationValue: v })); setFormErrors((e2: any) => ({ ...e2, durationValue: '' })); }} />
-                      </FormField>
                       <FormField label="Monthly price" required error={formErrors.monthlyPrice}>
                         <NumberField min={0} step={0.01} prefix="₾" value={form.monthlyPrice ?? ''} placeholder="50.00" error={!!formErrors.monthlyPrice}
                           onChange={v => { setForm((x: any) => ({ ...x, monthlyPrice: v })); setFormErrors((e2: any) => ({ ...e2, monthlyPrice: '' })); }} />
@@ -1392,6 +1447,13 @@ function PlanBuilder({ plan, onClose, onSaved, badges, setBadges }: { plan: any;
                         <NumberField min={0} max={100} suffix="%" value={form.discountPercent ?? ''} placeholder="0"
                           onChange={v => setForm((x: any) => ({ ...x, discountPercent: v }))} />
                       </FormField>
+                      <div>
+                        <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--slate-400)', marginBottom: 6 }}>Charged over</label>
+                        <div style={{ display: 'flex', alignItems: 'center', height: 34, padding: '0 10px', borderRadius: 8, background: 'transparent', boxShadow: 'inset 0 0 0 1px var(--slate-200b)', fontSize: 13, fontWeight: 600, color: 'var(--slate-500)', boxSizing: 'border-box' }}>
+                          {pricingMonths} month{pricingMonths === 1 ? '' : 's'} · {boxCount} box{boxCount === 1 ? '' : 'es'}
+                        </div>
+                        <p style={{ fontSize: 10.5, color: 'var(--slate-400)', margin: '4px 0 0' }}>Set in step 1.</p>
+                      </div>
                     </div>
 
                     {/* The computed result of the three inputs above, on one
