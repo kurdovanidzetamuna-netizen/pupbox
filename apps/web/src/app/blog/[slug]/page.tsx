@@ -1,9 +1,10 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
+import { API_URL } from '@/lib/api';
 
 async function getPost(slug: string) {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/blog/posts/${slug}`, { next: { revalidate: 300 } });
+  const res = await fetch(`${API_URL}/blog/posts/${slug}`, { next: { revalidate: 300 } });
   if (!res.ok) return null;
   return res.json();
 }
@@ -28,7 +29,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
 
 export async function generateStaticParams() {
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/blog/slugs`, { next: { revalidate: 300 } });
+    const res = await fetch(`${API_URL}/blog/slugs`, { next: { revalidate: 300 } });
     if (!res.ok) return [];
     const slugs = await res.json();
     return slugs.map((s: any) => ({ slug: s.slug }));

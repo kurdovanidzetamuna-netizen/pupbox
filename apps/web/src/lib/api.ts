@@ -1,4 +1,10 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
+/**
+ * The API base, with the local default. Import this rather than reading
+ * process.env.NEXT_PUBLIC_API_URL directly: the web app has no .env of its
+ * own, so the bare variable is undefined in development and requests went to
+ * "undefined/auth/login" — which is how /login and /register broke.
+ */
+export const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 
 export async function fetchAPI<T>(path: string, options?: RequestInit): Promise<T> {
   const { cache, next, headers, ...rest } = (options ?? {}) as RequestInit & { next?: { revalidate?: number } };

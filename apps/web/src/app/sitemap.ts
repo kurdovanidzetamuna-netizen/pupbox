@@ -1,10 +1,11 @@
 import { MetadataRoute } from 'next';
+import { API_URL } from '@/lib/api';
 
 const BASE = process.env.NEXT_PUBLIC_SITE_URL || 'https://pupbox.ge';
 
 async function fetchJson(path: string) {
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}${path}`, { next: { revalidate: 3600 } });
+    const res = await fetch(`${API_URL}${path}`, { next: { revalidate: 3600 } });
     if (!res.ok) return [];
     return res.json();
   } catch {

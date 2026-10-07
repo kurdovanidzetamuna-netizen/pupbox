@@ -1,16 +1,17 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
+import { API_URL } from '@/lib/api';
 
 async function getCategory(slug: string) {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/blog/categories`, { next: { revalidate: 600 } });
+  const res = await fetch(`${API_URL}/blog/categories`, { next: { revalidate: 600 } });
   if (!res.ok) return null;
   const cats = await res.json();
   return cats.find((c: any) => c.slug === slug) || null;
 }
 
 async function getPosts(categorySlug: string, page = 1) {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/blog/posts?category=${categorySlug}&page=${page}&limit=9`, { next: { revalidate: 300 } });
+  const res = await fetch(`${API_URL}/blog/posts?category=${categorySlug}&page=${page}&limit=9`, { next: { revalidate: 300 } });
   if (!res.ok) return { posts: [], pages: 0 };
   return res.json();
 }
