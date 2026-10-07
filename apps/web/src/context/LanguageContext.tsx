@@ -11,7 +11,11 @@ const FB: Record<string, { en: string; ka: string }> = {
   'nav.blog':                { en: 'Blog',                       ka: 'ბლოგი' },
   'nav.signIn':              { en: 'Sign In',                    ka: 'შესვლა' },
   'nav.subscribe':           { en: 'Subscribe',                  ka: 'გამოწერა' },
-  'hero.badge':              { en: '🐶 Monthly Dog Subscription Boxes · Georgia', ka: '🐶 ყოველთვიური კუთხის გამოწერა · საქართველო' },
+  'nav.cart':                { en: 'Cart',                       ka: 'კალათა' },
+  'nav.account':             { en: 'My account',                 ka: 'ჩემი ანგარიში' },
+  'nav.menu':                { en: 'Menu',                       ka: 'მენიუ' },
+  'nav.language':            { en: 'Language',                   ka: 'ენა' },
+  'hero.badge':              { en: '🐶 Monthly Dog Subscription Boxes · Georgia', ka: '🐶 ყოველთვიური ყუთის გამოწერა · საქართველო' },
   'hero.heading':            { en: 'Your dog deserves a surprise every month', ka: 'შენი ძაღლი იმსახურებს სიურპრიზს ყოველ თვე' },
   'hero.headingAccent':      { en: 'a surprise every month',     ka: 'სიურპრიზს ყოველ თვე' },
   'hero.description':        { en: "Curated boxes of premium treats, toys and accessories — tailored to your dog's size and breed. Delivered across Georgia.", ka: 'პრემიუმ საჭმლის, სათამაშოებისა და აქსესუარების კურირებული კოლოფი — მორგებული შენი ძაღლის ზომასა და ჯიშზე. მიწოდება მთელ საქართველოში.' },
@@ -216,6 +220,9 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
       })
       .catch(() => {});
   }, []);
+
+  // Screen readers and search engines read the page language from <html>.
+  useEffect(() => { document.documentElement.lang = lang; }, [lang]);
 
   function setLang(l: Lang) {
     setLangState(l);

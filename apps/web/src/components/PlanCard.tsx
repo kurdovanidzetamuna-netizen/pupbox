@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
 import { useLanguage } from '@/context/LanguageContext';
+import { gel } from '@/lib/format';
 
 interface Props {
   plan: any;
@@ -16,9 +17,13 @@ export default function PlanCard({ plan, showFullBenefits = false, isGift = fals
   const [loading, setLoading] = useState(false);
   const { t } = useLanguage();
 
-  const isPopular = plan.badge === 'popular';
-  const isBest = plan.badge === 'best_value';
-  const featured = isPopular || isBest;
+  // Admin stores the badge label as shown there ("Most Popular", "Best Value",
+  // or a custom one like "Limited"); older data used slugs. Matching only the
+  // slugs meant no badge ever appeared on the site.
+  const badge = String(plan.badge || '').trim();
+  const isPopular = /popular/i.test(badge);
+  const isBest = /best[\s_-]*value/i.test(badge);
+  const featured = !!badge;
 
   async function handleChoose() {
     setLoading(true);
@@ -56,7 +61,12 @@ export default function PlanCard({ plan, showFullBenefits = false, isGift = fals
   return (
     <div
       onClick={handleChoose}
-      className={`relative flex flex-col rounded-2xl p-6 cursor-pointer transition-all hover:shadow-lg hover:-translate-y-0.5 ${
+      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleChoose(); } }}
+      role="button"
+      tabIndex={0}
+      aria-label={`${plan.name}, ${gel(plan.price)}`}
+      aria-busy={loading}
+      className={`relative flex flex-col rounded-2xl p-6 cursor-pointer transition-all hover:shadow-lg hover:-translate-y-0.5 focus:outline-none focus-visible:ring-4 focus-visible:ring-teal-300 ${
         isGift
           ? featured
             ? 'border-2 border-amber-400 bg-white shadow-xl'
@@ -66,7 +76,7 @@ export default function PlanCard({ plan, showFullBenefits = false, isGift = fals
             : 'border border-gray-100 bg-white shadow-sm hover:border-teal-200'
       }`}
     >
-      {(isPopular || isBest) && (
+      {featured && (
         <span className={`absolute -top-3 left-1/2 -translate-x-1/2 text-xs font-bold px-4 py-1 rounded-full whitespace-nowrap ${
           isGift
             ? 'bg-amber-400 text-white'
@@ -76,7 +86,9 @@ export default function PlanCard({ plan, showFullBenefits = false, isGift = fals
             ? t('pricing.planCard.gift')
             : isPopular
               ? t('pricing.planCard.popular')
-              : t('pricing.planCard.bestValue')}
+              : isBest
+                ? t('pricing.planCard.bestValue')
+                : badge}
         </span>
       )}
 
@@ -90,13 +102,13 @@ export default function PlanCard({ plan, showFullBenefits = false, isGift = fals
       </p>
 
       <div className="mb-1">
-        <span className="text-3xl font-extrabold text-teal-600">₾{Number(plan.price).toFixed(0)}</span>
+        <span className="text-3xl font-extrabold text-teal-600">{gel(plan.price)}</span>
         <span className="text-sm text-gray-400 ml-1">total</span>
       </div>
       {plan.monthlyEquivPrice && (
-        <p className="text-xs text-gray-400 mb-1">≈ ₾{Number(plan.monthlyEquivPrice).toFixed(0)}{t('global.perMonth')}</p>
+        <p className="text-xs text-gray-400 mb-1">≈ {gel(Number(plan.monthlyEquivPrice).toFixed(2))}{t('global.perMonth')}</p>
       )}
-      {plan.discountPercent && (
+      {Number(plan.discountPercent) > 0 && (
         <p className="text-xs text-yellow-500 font-semibold mb-4">
           {t('global.savePercent')} {plan.discountPercent}% {t('global.vsMonthly')}
         </p>

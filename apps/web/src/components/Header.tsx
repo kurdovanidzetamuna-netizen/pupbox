@@ -1,70 +1,149 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useEffect, useRef, useState } from 'react';
 import { useLanguage } from '@/context/LanguageContext';
+import { useCart } from '@/context/CartContext';
+
+const NAV = [
+  { href: '/how-it-works', key: 'nav.howItWorks' },
+  { href: '/prices', key: 'nav.pricing', also: '/subscribe' },
+  { href: '/shop', key: 'nav.shop' },
+  { href: '/blog', key: 'nav.blog' },
+];
 
 export default function Header() {
   const { lang, setLang, t } = useLanguage();
+  const { cart } = useCart();
   const pathname = usePathname();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [langOpen, setLangOpen] = useState(false);
+  const [signedIn, setSignedIn] = useState(false);
+  const langRef = useRef<HTMLDivElement>(null);
 
-  const isActive = (href: string) =>
-    href === '/' ? pathname === '/' : pathname.startsWith(href);
+  const count = cart?.itemCount ?? 0;
+  const isActive = (href: string, also?: string) =>
+    href === '/' ? pathname === '/' : pathname.startsWith(href) || (!!also && pathname.startsWith(also));
+
+  // Read after every navigation: signing in and out happen on other pages.
+  useEffect(() => {
+    setSignedIn(!!localStorage.getItem('pupbox_token'));
+    setMenuOpen(false);
+    setLangOpen(false);
+  }, [pathname]);
+
+  // The language menu opens on click (not hover) so it works by touch and
+  // keyboard; it closes on an outside click or Escape.
+  useEffect(() => {
+    if (!langOpen) return;
+    const onDown = (e: MouseEvent) => { if (!langRef.current?.contains(e.target as Node)) setLangOpen(false); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setLangOpen(false); };
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => { document.removeEventListener('mousedown', onDown); document.removeEventListener('keydown', onKey); };
+  }, [langOpen]);
+
+  const chooseLang = (l: 'en' | 'ka') => { setLang(l); setLangOpen(false); };
+  const account = signedIn ? { href: '/account', label: t('nav.account') } : { href: '/login', label: t('nav.signIn') };
 
   return (
     <header className="sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-gray-100">
-      <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-        <Link href="/" className="text-2xl font-extrabold text-teal-600 flex items-center gap-1">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-3">
+        <Link href="/" className="text-2xl font-extrabold text-teal-600 flex items-center gap-1 shrink-0">
           🐾 Pupbox
         </Link>
 
-        <nav className="hidden md:flex gap-8 text-sm font-medium text-gray-600">
-          <Link href="/how-it-works" className={`transition-colors hover:text-teal-600 ${isActive('/how-it-works') ? 'text-teal-600 font-semibold' : ''}`}>
-            {t('nav.howItWorks')}
-          </Link>
-          <Link href="/prices" className={`transition-colors hover:text-teal-600 ${isActive('/prices') || isActive('/subscribe') ? 'text-teal-600 font-semibold' : ''}`}>
-            {t('nav.pricing')}
-          </Link>
-          <Link href="/shop" className={`transition-colors hover:text-teal-600 ${isActive('/shop') ? 'text-teal-600 font-semibold' : ''}`}>
-            {t('nav.shop')}
-          </Link>
-          <Link href="/blog" className={`transition-colors hover:text-teal-600 ${isActive('/blog') ? 'text-teal-600 font-semibold' : ''}`}>
-            {t('nav.blog')}
-          </Link>
+        <nav className="hidden md:flex gap-8 text-sm font-medium text-gray-600" aria-label="Main">
+          {NAV.map(n => (
+            <Link key={n.href} href={n.href} aria-current={isActive(n.href, n.also) ? 'page' : undefined}
+              className={`transition-colors hover:text-teal-600 ${isActive(n.href, n.also) ? 'text-teal-600 font-semibold' : ''}`}>
+              {t(n.key)}
+            </Link>
+          ))}
         </nav>
 
-        <div className="flex items-center gap-3">
-          <Link href="/login" className="hidden sm:block text-sm font-bold text-gray-600 hover:text-teal-600 border border-gray-200 hover:border-teal-400 px-5 py-2 rounded-xl transition-colors">
-            {t('nav.signIn')}
+        <div className="flex items-center gap-2 sm:gap-3">
+          <Link href={account.href} className="hidden md:block text-sm font-bold text-gray-600 hover:text-teal-600 border border-gray-200 hover:border-teal-400 px-5 py-2 rounded-xl transition-colors">
+            {account.label}
           </Link>
-          <Link href="/prices" className="inline-flex items-center justify-center bg-teal-600 text-white text-sm font-bold px-5 py-2 rounded-lg hover:bg-teal-700 transition shadow-sm">
+          <Link href="/prices" className="hidden sm:inline-flex items-center justify-center bg-teal-600 text-white text-sm font-bold px-5 py-2 rounded-lg hover:bg-teal-700 transition shadow-sm">
             {t('nav.subscribe')}
           </Link>
 
-          {/* Language switcher */}
-          <div className="relative group">
-            <button className="flex items-center gap-1 text-sm font-bold text-gray-600 hover:text-teal-600 border border-gray-200 hover:border-teal-400 rounded-lg px-5 py-2 transition-colors">
+          {/* Cart — the only way back to the basket from any page. */}
+          <Link href="/cart" aria-label={`${t('nav.cart')}${count ? ` (${count})` : ''}`}
+            className="relative inline-flex items-center justify-center w-10 h-10 rounded-full text-gray-700 hover:bg-gray-100 hover:text-teal-600 transition">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.3 2.3c-.6.6-.2 1.7.7 1.7H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
+            {count > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 bg-teal-600 text-white text-[11px] font-bold min-w-[20px] h-5 px-1 rounded-full flex items-center justify-center">
+                {count > 9 ? '9+' : count}
+              </span>
+            )}
+          </Link>
+
+          {/* Language */}
+          <div className="relative hidden md:block" ref={langRef}>
+            <button type="button" onClick={() => setLangOpen(o => !o)} aria-haspopup="menu" aria-expanded={langOpen} aria-label={t('nav.language')}
+              className="flex items-center gap-1 text-sm font-bold text-gray-600 hover:text-teal-600 border border-gray-200 hover:border-teal-400 rounded-lg px-4 py-2 transition-colors">
               {lang === 'en' ? 'EN' : 'KA'}
-              <svg className="w-3 h-3 ml-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <svg className={`w-3 h-3 ml-0.5 transition-transform ${langOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
               </svg>
             </button>
-            <div className="absolute right-0 top-full mt-1.5 w-28 bg-white border border-gray-100 rounded-xl shadow-lg overflow-hidden opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 z-50">
-              <button
-                onClick={() => setLang('ka')}
-                className={`w-full px-4 py-2.5 text-sm font-medium text-left transition-colors ${lang === 'ka' ? 'bg-teal-50 text-teal-700' : 'text-gray-600 hover:bg-gray-50'}`}
-              >
-                ქართული
-              </button>
-              <button
-                onClick={() => setLang('en')}
-                className={`w-full px-4 py-2.5 text-sm font-medium text-left transition-colors ${lang === 'en' ? 'bg-teal-50 text-teal-700' : 'text-gray-600 hover:bg-gray-50'}`}
-              >
-                English
-              </button>
-            </div>
+            {langOpen && (
+              <div role="menu" className="absolute right-0 top-full mt-1.5 w-32 bg-white border border-gray-100 rounded-xl shadow-lg overflow-hidden z-50">
+                {([['ka', 'ქართული'], ['en', 'English']] as const).map(([code, label]) => (
+                  <button key={code} type="button" role="menuitemradio" aria-checked={lang === code} onClick={() => chooseLang(code)}
+                    className={`w-full px-4 py-2.5 text-sm font-medium text-left transition-colors ${lang === code ? 'bg-teal-50 text-teal-700' : 'text-gray-600 hover:bg-gray-50'}`}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
+
+          {/* Phone & tablet menu */}
+          <button type="button" onClick={() => setMenuOpen(o => !o)} aria-expanded={menuOpen} aria-controls="mobile-menu" aria-label={t('nav.menu')}
+            className="md:hidden inline-flex items-center justify-center w-10 h-10 rounded-lg text-gray-700 hover:bg-gray-100">
+            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
+              {menuOpen
+                ? <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                : <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />}
+            </svg>
+          </button>
         </div>
       </div>
+
+      {menuOpen && (
+        <nav id="mobile-menu" aria-label="Main" className="md:hidden border-t border-gray-100 bg-white px-4 pb-5 pt-2">
+          <ul className="flex flex-col">
+            {NAV.map(n => (
+              <li key={n.href}>
+                <Link href={n.href} aria-current={isActive(n.href, n.also) ? 'page' : undefined}
+                  className={`block py-3 text-base font-semibold border-b border-gray-50 ${isActive(n.href, n.also) ? 'text-teal-600' : 'text-gray-800'}`}>
+                  {t(n.key)}
+                </Link>
+              </li>
+            ))}
+            <li>
+              <Link href={account.href} className="block py-3 text-base font-semibold text-gray-800 border-b border-gray-50">{account.label}</Link>
+            </li>
+          </ul>
+          <Link href="/prices" className="mt-4 flex w-full items-center justify-center bg-teal-600 text-white font-bold py-3 rounded-xl hover:bg-teal-700">
+            {t('nav.subscribe')}
+          </Link>
+          <div className="mt-4 flex gap-2" role="group" aria-label={t('nav.language')}>
+            {([['ka', 'ქართული'], ['en', 'English']] as const).map(([code, label]) => (
+              <button key={code} type="button" onClick={() => chooseLang(code)} aria-pressed={lang === code}
+                className={`flex-1 py-2.5 rounded-xl text-sm font-bold border ${lang === code ? 'border-teal-600 bg-teal-50 text-teal-700' : 'border-gray-200 text-gray-600'}`}>
+                {label}
+              </button>
+            ))}
+          </div>
+        </nav>
+      )}
     </header>
   );
 }
