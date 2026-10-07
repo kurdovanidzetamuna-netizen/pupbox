@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Suspense } from 'react';
 import { api } from '@/lib/api';
 import ShopControls from './ShopControls';
+import T, { L } from '@/components/T';
 
 export const metadata = {
   title: 'Shop — Premium Dog Products',
@@ -22,10 +23,10 @@ function PriceDisplay({ price, salePrice }: { price: number; salePrice?: number 
 
 function StockBadge({ inventory }: { inventory: any }) {
   if (!inventory || inventory.quantity === 0)
-    return <span className="text-xs text-red-500 font-medium">Out of stock</span>;
+    return <span className="text-xs text-red-500 font-medium"><T k="shop.outOfStock" /></span>;
   if (inventory.quantity <= inventory.lowStockAlert)
-    return <span className="text-xs text-amber-500 font-medium">Low stock</span>;
-  return <span className="text-xs text-teal-600 font-medium">In stock</span>;
+    return <span className="text-xs text-amber-500 font-medium"><T k="shop.lowStock" /></span>;
+  return <span className="text-xs text-teal-600 font-medium"><T k="shop.inStock" /></span>;
 }
 
 export default async function ShopPage({
@@ -98,8 +99,8 @@ export default async function ShopPage({
 
         {/* Page header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-extrabold text-gray-900 mb-1">Shop</h1>
-          <p className="text-sm text-gray-400">{products.length} products</p>
+          <h1 className="text-3xl font-extrabold text-gray-900 mb-1"><T k="shop.title" /></h1>
+          <p className="text-sm text-gray-400"><T k="shop.count" vars={{ n: products.length }} /></p>
         </div>
 
         <div className="flex gap-8">
@@ -109,11 +110,11 @@ export default async function ShopPage({
 
             {/* Categories */}
             <div>
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Categories</p>
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2"><T k="shop.categories" /></p>
               <ul className="space-y-0.5">
                 <li>
                   <Link href="/shop" className={`block px-3 py-2 rounded-xl text-sm font-medium transition ${!searchParams.category ? 'bg-teal-50 text-teal-700' : 'text-gray-600 hover:bg-gray-50'}`}>
-                    All Products
+                    <T k="shop.allProducts" />
                   </Link>
                 </li>
                 {(categories as any[]).map((cat: any) => (
@@ -122,7 +123,7 @@ export default async function ShopPage({
                       href={`/shop?category=${cat.slug}`}
                       className={`block px-3 py-2 rounded-xl text-sm font-medium transition ${searchParams.category === cat.slug ? 'bg-teal-50 text-teal-700' : 'text-gray-600 hover:bg-gray-50'}`}
                     >
-                      {cat.name}
+                      <L en={cat.name} ka={cat.translations?.ka?.name} />
                     </Link>
                   </li>
                 ))}
@@ -131,14 +132,14 @@ export default async function ShopPage({
 
             {/* Brands */}
             <div>
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Brands</p>
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2"><T k="shop.brands" /></p>
               <ul className="space-y-0.5">
                 <li>
                   <Link
                     href={`/shop?${new URLSearchParams(baseParams).toString()}`}
                     className={`block px-3 py-2 rounded-xl text-sm font-medium transition ${!searchParams.brand ? 'bg-teal-50 text-teal-700' : 'text-gray-600 hover:bg-gray-50'}`}
                   >
-                    All
+                    <T k="shop.allBrands" />
                   </Link>
                 </li>
                 {allBrands.map(b => {
@@ -161,7 +162,7 @@ export default async function ShopPage({
                     </li>
                   );
                 })}
-                {allBrands.length === 0 && <p className="text-xs text-gray-300 px-3">No brands yet</p>}
+                {allBrands.length === 0 && <p className="text-xs text-gray-300 px-3"><T k="shop.noBrands" /></p>}
               </ul>
             </div>
           </aside>
@@ -173,7 +174,7 @@ export default async function ShopPage({
             <div className="flex items-center justify-between mb-6 pb-5 border-b border-gray-100">
               <p className="text-sm text-gray-400">
                 {searchParams.brand && <span className="inline-flex items-center gap-1 bg-teal-50 text-teal-700 text-xs font-semibold px-2 py-0.5 rounded-lg mr-2">{searchParams.brand}</span>}
-                {products.length} result{products.length !== 1 ? 's' : ''}
+                <T k="shop.results" vars={{ n: products.length }} />
               </p>
               <Suspense fallback={null}>
                 <ShopControls brands={allBrands} />
@@ -183,8 +184,8 @@ export default async function ShopPage({
             {/* Grid */}
             {products.length === 0 ? (
               <div className="text-center py-20 text-gray-400">
-                <p className="text-lg mb-2">No products found.</p>
-                <Link href="/shop" className="text-sm text-teal-600 hover:underline">Clear all filters</Link>
+                <p className="text-lg mb-2"><T k="shop.none" /></p>
+                <Link href="/shop" className="text-sm text-teal-600 hover:underline"><T k="shop.clearFilters" /></Link>
               </div>
             ) : (
               <div className="grid grid-cols-2 lg:grid-cols-3 gap-5">
@@ -203,12 +204,12 @@ export default async function ShopPage({
                     </div>
                     <div>
                       <p className="text-xs text-gray-400 font-medium mb-0.5">
-                        {product.brand || product.category?.name || ''}
+                        {product.brand || (product.category ? <L en={product.category.name} ka={product.category.translations?.ka?.name} /> : '')}
                       </p>
                       <h3 className="font-semibold text-gray-900 text-sm mb-1 group-hover:text-teal-600 transition leading-snug">
-                        {product.name}
+                        <L en={product.name} ka={product.translations?.ka?.name} />
                       </h3>
-                      <p className="text-xs text-gray-400 mb-2 line-clamp-2">{product.shortDescription}</p>
+                      <p className="text-xs text-gray-400 mb-2 line-clamp-2"><L en={product.shortDescription || ''} ka={product.translations?.ka?.shortDescription} /></p>
                       <div className="flex items-center justify-between">
                         <PriceDisplay price={product.price} salePrice={product.salePrice} />
                         <StockBadge inventory={product.inventory} />

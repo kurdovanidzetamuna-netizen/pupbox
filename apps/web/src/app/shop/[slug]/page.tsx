@@ -2,6 +2,8 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { api } from '@/lib/api';
 import AddToCartButton from '@/components/AddToCartButton';
+import T, { L } from '@/components/T';
+import { gel } from '@/lib/format';
 
 export async function generateMetadata({ params }: { params: { slug: string } }) {
   try {
@@ -23,23 +25,24 @@ export default async function ProductDetailPage({ params }: { params: { slug: st
   const primaryImage = product.images?.find((i: any) => i.isPrimary) || product.images?.[0];
   const otherImages = product.images?.filter((i: any) => !i.isPrimary).slice(0, 4) || [];
   const inStock = product.inventory?.quantity > 0;
+  const ka = product.translations?.ka || {};
 
   return (
     <main className="min-h-screen bg-white">
       <div className="max-w-6xl mx-auto px-6 py-10">
         {/* Breadcrumb */}
         <nav className="text-sm text-gray-400 mb-8 flex gap-2">
-          <Link href="/shop" className="hover:text-teal-600">Shop</Link>
+          <Link href="/shop" className="hover:text-teal-600"><T k="shop.title" /></Link>
           <span>/</span>
           {product.category && (
             <>
               <Link href={`/shop?category=${product.category.slug}`} className="hover:text-teal-600">
-                {product.category.name}
+                <L en={product.category.name} ka={product.category.translations?.ka?.name} />
               </Link>
               <span>/</span>
             </>
           )}
-          <span className="text-gray-700">{product.name}</span>
+          <span className="text-gray-700"><L en={product.name} ka={ka.name} /></span>
         </nav>
 
         <div className="grid md:grid-cols-2 gap-12">
@@ -74,25 +77,25 @@ export default async function ProductDetailPage({ params }: { params: { slug: st
               {product.brand && product.category && <span className="text-gray-200">·</span>}
               {product.category && (
                 <Link href={`/shop?category=${product.category.slug}`} className="text-sm text-teal-600 font-medium hover:underline">
-                  {product.category.name}
+                  <L en={product.category.name} ka={product.category.translations?.ka?.name} />
                 </Link>
               )}
             </div>
-            <h1 className="text-3xl font-bold text-gray-900 mt-1 mb-3">{product.name}</h1>
-            <p className="text-gray-500 mb-4">{product.shortDescription}</p>
+            <h1 className="text-3xl font-bold text-gray-900 mt-1 mb-3"><L en={product.name} ka={ka.name} /></h1>
+            <p className="text-gray-500 mb-4"><L en={product.shortDescription || ''} ka={ka.shortDescription} /></p>
 
             {/* Price */}
             <div className="flex items-center gap-3 mb-2">
               {product.salePrice ? (
                 <>
-                  <span className="text-3xl font-bold text-teal-600">₾{Number(product.salePrice).toFixed(2)}</span>
-                  <span className="text-xl text-gray-400 line-through">₾{Number(product.price).toFixed(2)}</span>
+                  <span className="text-3xl font-bold text-teal-600">{gel(product.salePrice)}</span>
+                  <span className="text-xl text-gray-400 line-through">{gel(product.price)}</span>
                   <span className="bg-red-100 text-red-600 text-xs font-bold px-2 py-1 rounded">
                     -{Math.round((1 - product.salePrice / product.price) * 100)}%
                   </span>
                 </>
               ) : (
-                <span className="text-3xl font-bold text-gray-900">₾{Number(product.price).toFixed(2)}</span>
+                <span className="text-3xl font-bold text-gray-900">{gel(product.price)}</span>
               )}
             </div>
 
@@ -101,12 +104,12 @@ export default async function ProductDetailPage({ params }: { params: { slug: st
               {inStock ? (
                 <span className="inline-flex items-center gap-1 text-green-600 text-sm font-medium">
                   <span className="w-2 h-2 bg-green-500 rounded-full inline-block"></span>
-                  In stock ({product.inventory.quantity} available)
+                  <T k="pdp.available" vars={{ n: product.inventory.quantity }} />
                 </span>
               ) : (
                 <span className="inline-flex items-center gap-1 text-red-500 text-sm font-medium">
                   <span className="w-2 h-2 bg-red-400 rounded-full inline-block"></span>
-                  Out of stock
+                  <T k="shop.outOfStock" />
                 </span>
               )}
             </div>
@@ -116,10 +119,10 @@ export default async function ProductDetailPage({ params }: { params: { slug: st
 
             {/* SKU, Brand & Tags */}
             <div className="border-t border-gray-100 pt-4 space-y-2 text-sm text-gray-400">
-              {product.brand && <p>Brand: <span className="text-gray-700 font-medium">{product.brand}</span></p>}
-              <p>SKU: <span className="text-gray-600">{product.sku}</span></p>
+              {product.brand && <p><T k="pdp.brand" />: <span className="text-gray-700 font-medium">{product.brand}</span></p>}
+              <p><T k="pdp.sku" />: <span className="text-gray-600">{product.sku}</span></p>
               {product.tags?.length > 0 && (
-                <p>Tags: {product.tags.map((t: any) => (
+                <p><T k="pdp.tags" />: {product.tags.map((t: any) => (
                   <span key={t.tag.id} className="inline-block bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-xs mr-1">{t.tag.name}</span>
                 ))}</p>
               )}
@@ -130,8 +133,8 @@ export default async function ProductDetailPage({ params }: { params: { slug: st
         {/* Description */}
         {product.description && (
           <div className="mt-12 border-t border-gray-100 pt-10">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Product Description</h2>
-            <p className="text-gray-600 leading-relaxed">{product.description}</p>
+            <h2 className="text-xl font-bold text-gray-900 mb-4"><T k="pdp.description" /></h2>
+            <p className="text-gray-600 leading-relaxed"><L en={product.description} ka={ka.description} /></p>
           </div>
         )}
       </div>
