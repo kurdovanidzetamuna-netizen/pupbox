@@ -3,7 +3,7 @@ import { Metadata } from 'next';
 import HomePageClient from '@/components/HomePageClient';
 
 export const metadata: Metadata = {
-  title: 'Pupbox — ყოველთვიური კუთხის გამოწერა საქართველოში',
+  title: 'Pupbox — ყოველთვიური ყუთის გამოწერა საქართველოში',
   description: 'პრემიუმ საჭმლის, სათამაშოებისა და აქსესუარების კურირებული ყოველთვიური კოლოფი შენი ძაღლისთვის. მიწოდება მთელ საქართველოში.',
 };
 

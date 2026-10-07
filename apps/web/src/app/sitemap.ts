@@ -27,7 +27,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE}/blog`, lastModified: new Date(), changeFrequency: 'daily', priority: 0.8 },
   ];
 
-  const productPages: MetadataRoute.Sitemap = (products?.products || products || []).map((p: any) => ({
+  // The products endpoint returns { items, total, pages }; reading `.products`
+  // dropped every product from the sitemap.
+  const productList = products?.items ?? products?.products ?? (Array.isArray(products) ? products : []);
+  const productPages: MetadataRoute.Sitemap = productList.map((p: any) => ({
     url: `${BASE}/shop/${p.slug}`,
     lastModified: new Date(p.updatedAt || Date.now()),
     changeFrequency: 'weekly' as const,
