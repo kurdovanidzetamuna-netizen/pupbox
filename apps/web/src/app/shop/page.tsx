@@ -34,61 +34,19 @@ export default async function ShopPage({
 }: {
   searchParams: { category?: string; search?: string; page?: string; sort?: string; brand?: string };
 }) {
+  // Category, search, brand, sort and page all go to the API, so ordering
+  // and filtering apply to the whole catalogue rather than one page of it.
   const params: Record<string, string> = {};
-  if (searchParams.category) params.category = searchParams.category;
-  if (searchParams.search) params.search = searchParams.search;
-  if (searchParams.page) params.page = searchParams.page;
-
-  // Caught per-promise rather than on the Promise.all: a single catch collapsed
-  // the tuple into a union TypeScript couldn't destructure, and it also threw
-  // away the products whenever only the categories request failed.
-  const [{ items: rawProducts, pages }, categories] = await Promise.all([
-    api.products.list(params).catch(() => ({ items: [] as any[], total: 0, pages: 0 })),
-    api.categories.list().catch(() => [] as any[]),
-  ]);
-
-  // Build brands from product tags, grouped by category name
-  // Falls back to product.brand field if tags not available
-  const brandsByCategory: Record<string, Set<string>> = {};
-  (rawProducts as any[]).forEach((p: any) => {
-    const catName = p.category?.name || 'Other';
-    if (!brandsByCategory[catName]) brandsByCategory[catName] = new Set();
-    // Try brand field first, then tags (tags are objects {tag: {name}})
-    if (p.brand) {
-      brandsByCategory[catName].add(p.brand);
-    } else if (Array.isArray(p.tags)) {
-      p.tags.forEach((t: any) => {
-        const name = typeof t === 'string' ? t : t?.tag?.name || t?.name;
-        if (name) brandsByCategory[catName].add(name);
-      });
-    }
-  });
-  // Convert sets to sorted arrays, drop empty categories
-  const brandsByCat: Record<string, string[]> = {};
-  Object.entries(brandsByCategory).forEach(([cat, set]) => {
-    if (set.size > 0) brandsByCat[cat] = Array.from(set).sort();
-  });
-
-  const allBrands = Array.from(new Set(Object.values(brandsByCat).flat()));
-
-  // Apply brand filter
-  let products: any[] = rawProducts as any[];
-  if (searchParams.brand) {
-    products = products.filter((p: any) =>
-      p.brand === searchParams.brand ||
-      (Array.isArray(p.tags) && p.tags.some((t: any) => {
-        const name = typeof t === 'string' ? t : t?.tag?.name || t?.name;
-        return name === searchParams.brand;
-      }))
-    );
+  for (const k of ['category', 'search', 'page', 'sort', 'brand'] as const) {
+    if (searchParams[k]) params[k] = searchParams[k]!;
   }
 
-  // Apply sort
-  const sort = searchParams.sort || '';
-  if (sort === 'price_asc') products = [...products].sort((a, b) => Number(a.salePrice || a.price) - Number(b.salePrice || b.price));
-  if (sort === 'price_desc') products = [...products].sort((a, b) => Number(b.salePrice || b.price) - Number(a.salePrice || a.price));
-  if (sort === 'name_asc') products = [...products].sort((a, b) => a.name.localeCompare(b.name));
-  if (sort === 'name_desc') products = [...products].sort((a, b) => b.name.localeCompare(a.name));
+  // Caught per-promise: one failing request shouldn't blank the whole page.
+  const [{ items: products, total, pages }, categories, allBrands] = await Promise.all([
+    api.products.list(params).catch(() => ({ items: [] as any[], total: 0, pages: 0 })),
+    api.categories.list().catch(() => [] as any[]),
+    api.products.brands().catch(() => [] as string[]),
+  ]);
 
   const currentPage = Number(searchParams.page || 1);
   const baseParams = Object.fromEntries(Object.entries(searchParams).filter(([k]) => !['brand', 'page'].includes(k)));
@@ -100,7 +58,7 @@ export default async function ShopPage({
         {/* Page header */}
         <div className="mb-8">
           <h1 className="text-3xl font-extrabold text-gray-900 mb-1"><T k="shop.title" /></h1>
-          <p className="text-sm text-gray-400"><T k="shop.count" vars={{ n: products.length }} /></p>
+          <p className="text-sm text-gray-400"><T k="shop.count" vars={{ n: total }} /></p>
         </div>
 
         <div className="flex gap-8">
@@ -174,7 +132,7 @@ export default async function ShopPage({
             <div className="flex items-center justify-between mb-6 pb-5 border-b border-gray-100">
               <p className="text-sm text-gray-400">
                 {searchParams.brand && <span className="inline-flex items-center gap-1 bg-teal-50 text-teal-700 text-xs font-semibold px-2 py-0.5 rounded-lg mr-2">{searchParams.brand}</span>}
-                <T k="shop.results" vars={{ n: products.length }} />
+                <T k="shop.results" vars={{ n: total }} />
               </p>
               <Suspense fallback={null}>
                 <ShopControls brands={allBrands} />

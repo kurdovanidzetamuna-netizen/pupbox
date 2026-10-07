@@ -21,8 +21,12 @@ export class ProductsService {
     status?: string;
     adminView?: boolean;
     includedInBox?: boolean;
+    /** price_asc | price_desc | name_asc | name_desc; default is the catalogue order. */
+    sort?: string;
+    /** A brand, or a tag name for products filed under a tag instead. */
+    brand?: string;
   }) {
-    const { page = 1, limit = 20, categorySlug, search, status, adminView = false, includedInBox } = params;
+    const { page = 1, limit = 20, categorySlug, search, status, adminView = false, includedInBox, sort, brand } = params;
     const skip = (page - 1) * limit;
 
     const where: any = { deletedAt: null };
@@ -40,26 +44,62 @@ export class ProductsService {
 
     if (includedInBox !== undefined) where.includedInBox = includedInBox;
 
+    const and: any[] = [];
     if (search) {
-      where.OR = [
+      and.push({ OR: [
         { name: { contains: search, mode: 'insensitive' } },
         { sku: { contains: search, mode: 'insensitive' } },
         { shortDescription: { contains: search, mode: 'insensitive' } },
-      ];
+      ] });
+    }
+    if (brand) {
+      and.push({ OR: [{ brand }, { tags: { some: { tag: { name: brand } } } }] });
+    }
+    if (and.length) where.AND = and;
+
+    // Sorting and filtering happen here, across the whole catalogue. The shop
+    // used to sort one page of results in the browser, so page 2 restarted
+    // the order and a brand filter could leave pages empty.
+    if (sort === 'price_asc' || sort === 'price_desc') {
+      // Customers pay the sale price when there is one, so that is what
+      // "price" sorts by. Prisma can't order by COALESCE, so order the ids
+      // here (a light query) and fetch only the page.
+      const all = await this.prisma.product.findMany({ where, select: { id: true, price: true, salePrice: true } });
+      const dir = sort === 'price_asc' ? 1 : -1;
+      const ordered = all
+        .map(p => ({ id: p.id, effective: Number(p.salePrice ?? p.price) }))
+        .sort((a, b) => dir * (a.effective - b.effective));
+      const pageIds = ordered.slice(skip, skip + limit).map(p => p.id);
+      const rows = await this.prisma.product.findMany({ where: { id: { in: pageIds } }, include: productInclude });
+      const items = pageIds.map(id => rows.find(r => r.id === id)!).filter(Boolean);
+      return { items, total: all.length, page, limit, pages: Math.ceil(all.length / limit) };
     }
 
+    const orderBy: any[] =
+      sort === 'name_asc' ? [{ name: 'asc' }] :
+      sort === 'name_desc' ? [{ name: 'desc' }] :
+      [{ sortOrder: 'asc' }, { createdAt: 'desc' }];
+
     const [items, total] = await Promise.all([
-      this.prisma.product.findMany({
-        where,
-        include: productInclude,
-        orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
-        skip,
-        take: limit,
-      }),
+      this.prisma.product.findMany({ where, include: productInclude, orderBy, skip, take: limit }),
       this.prisma.product.count({ where }),
     ]);
 
     return { items, total, page, limit, pages: Math.ceil(total / limit) };
+  }
+
+  /** Every brand (or tag, where products have no brand) in the live catalogue, for the shop's filter list. */
+  async brands(): Promise<string[]> {
+    const products = await this.prisma.product.findMany({
+      where: { deletedAt: null, status: 'ACTIVE', standaloneSale: true },
+      select: { brand: true, tags: { select: { tag: { select: { name: true, isActive: true } } } } },
+    });
+    const names = new Set<string>();
+    for (const p of products) {
+      if (p.brand) names.add(p.brand);
+      else p.tags.forEach(t => { if (t.tag.isActive) names.add(t.tag.name); });
+    }
+    return [...names].sort((a, b) => a.localeCompare(b));
   }
 
   async findOne(slug: string, adminView = false) {

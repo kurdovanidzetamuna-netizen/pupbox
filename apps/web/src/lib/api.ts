@@ -32,6 +32,7 @@ export const api = {
       return fetchAPI<{ items: any[]; total: number; pages: number }>(`/products${qs}`);
     },
     get: (slug: string) => fetchAPI<any>(`/products/${slug}`),
+    brands: () => fetchAPI<string[]>('/products/brands'),
   },
   categories: {
     list: () => fetchAPI<any[]>('/categories'),

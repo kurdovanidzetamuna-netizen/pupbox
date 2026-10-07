@@ -14,12 +14,17 @@ async function fetchJson(path: string) {
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [products, plans, blogSlugs, categories] = await Promise.all([
-    fetchJson('/products?limit=500'),
-    fetchJson('/subscription-plans'),
+  const [blogSlugs, categories] = await Promise.all([
     fetchJson('/blog/slugs'),
     fetchJson('/categories'),
   ]);
+  // The products endpoint pages at most 100 at a time; walk every page.
+  const productList: any[] = [];
+  for (let page = 1; page <= 50; page++) {
+    const res = await fetchJson(`/products?limit=100&page=${page}`);
+    productList.push(...(res?.items ?? []));
+    if (!res?.pages || page >= res.pages) break;
+  }
 
   const staticPages: MetadataRoute.Sitemap = [
     { url: BASE, lastModified: new Date(), changeFrequency: 'weekly', priority: 1 },
@@ -28,9 +33,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE}/blog`, lastModified: new Date(), changeFrequency: 'daily', priority: 0.8 },
   ];
 
-  // The products endpoint returns { items, total, pages }; reading `.products`
-  // dropped every product from the sitemap.
-  const productList = products?.items ?? products?.products ?? (Array.isArray(products) ? products : []);
   const productPages: MetadataRoute.Sitemap = productList.map((p: any) => ({
     url: `${BASE}/shop/${p.slug}`,
     lastModified: new Date(p.updatedAt || Date.now()),

@@ -13,18 +13,32 @@ export class ProductsController {
   @ApiQuery({ name: 'limit', required: false })
   @ApiQuery({ name: 'category', required: false })
   @ApiQuery({ name: 'search', required: false })
+  @ApiQuery({ name: 'sort', required: false, enum: ['price_asc', 'price_desc', 'name_asc', 'name_desc'] })
+  @ApiQuery({ name: 'brand', required: false })
   findAll(
     @Query('page') page?: string,
     @Query('limit') limit?: string,
     @Query('category') categorySlug?: string,
     @Query('search') search?: string,
+    @Query('sort') sort?: string,
+    @Query('brand') brand?: string,
   ) {
     return this.service.findAll({
-      page: page ? +page : 1,
-      limit: limit ? +limit : 20,
+      page: page ? Math.max(1, +page || 1) : 1,
+      // Capped so a crafted ?limit= can't ask for the whole table in one go.
+      limit: limit ? Math.min(100, Math.max(1, +limit || 20)) : 20,
       categorySlug,
       search,
+      sort,
+      brand,
     });
+  }
+
+  // Declared before ':slug' so "brands" isn't read as a product slug.
+  @Get('brands')
+  @ApiOperation({ summary: 'Brands (or tags) present in the live catalogue' })
+  brands() {
+    return this.service.brands();
   }
 
   @Get(':slug')

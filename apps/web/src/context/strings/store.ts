@@ -10,9 +10,10 @@ export const STORE_STRINGS: Record<string, { en: string; ka: string }> = {
   'shop.results':           { en: '{n} results',                ka: '{n} შედეგი' },
   'shop.categories':        { en: 'Categories',                 ka: 'კატეგორიები' },
   'shop.allProducts':       { en: 'All products',               ka: 'ყველა პროდუქტი' },
-  'shop.brands':            { en: 'Brands',                     ka: 'ბრენდები' },
+  // Holds brands and, for products without one, their tags ("Bestseller"), so not "Brands".
+  'shop.brands':            { en: 'Collections',                ka: 'კოლექციები' },
   'shop.allBrands':         { en: 'All',                        ka: 'ყველა' },
-  'shop.noBrands':          { en: 'No brands yet',              ka: 'ბრენდები ჯერ არ არის' },
+  'shop.noBrands':          { en: 'No collections yet',         ka: 'კოლექციები ჯერ არ არის' },
   'shop.none':              { en: 'No products found.',         ka: 'პროდუქტი ვერ მოიძებნა.' },
   'shop.clearFilters':      { en: 'Clear all filters',          ka: 'ფილტრების გასუფთავება' },
   'shop.search':            { en: 'Search products…',           ka: 'პროდუქტის ძიება…' },
