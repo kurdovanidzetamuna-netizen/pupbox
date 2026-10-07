@@ -7,6 +7,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { fill } from '@/context/strings/purchase';
 import { gel } from '@/lib/format';
 import { itemName } from '@/lib/localize';
+import LegalNotice from '@/components/LegalNotice';
 import DogProfileForm, { emptyDogProfile, toDogPayload, fromDog, type DogProfile } from '@/components/DogProfileForm';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
@@ -358,6 +359,7 @@ export default function CheckoutPage() {
                   {input('email', t('co.f.email'), { type: 'email', placeholder: 'you@example.com', autoComplete: 'email' })}
                   {input('password', t('co.f.password'), { type: 'password', hint: isNewAccount ? t('co.f.passwordHint') : undefined, autoComplete: isNewAccount ? 'new-password' : 'current-password' })}
                   {error && <p className="text-red-500 text-sm" role="alert">{error}</p>}
+                  {isNewAccount && <LegalNotice />}
                   <button type="submit" disabled={loading} className={primary}>{loading ? t('co.wait') : t('co.continue')}</button>
                 </form>
               </section>

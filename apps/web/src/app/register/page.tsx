@@ -5,6 +5,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useLanguage } from '@/context/LanguageContext';
 import { useCart } from '@/context/CartContext';
 import { safeRedirect } from '@/lib/safeRedirect';
+import LegalNotice from '@/components/LegalNotice';
+import { API_URL } from '@/lib/api';
 
 function RegisterForm() {
   const router = useRouter();
@@ -33,7 +35,7 @@ function RegisterForm() {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/register`, {
+      const res = await fetch(`${API_URL}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...form, referralCode: form.referralCode || undefined }),
@@ -95,6 +97,7 @@ function RegisterForm() {
               <input value={form.referralCode} onChange={e => setForm({ ...form, referralCode: e.target.value })} className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400" />
             </div>
           )}
+          <LegalNotice />
           <button type="submit" disabled={loading} className="w-full bg-teal-600 text-white py-3 rounded-xl font-semibold hover:bg-teal-700 transition disabled:opacity-50">
             {loading ? t('register.loading') : t('register.btn')}
           </button>
