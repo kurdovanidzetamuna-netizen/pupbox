@@ -1,7 +1,6 @@
 import { api } from '@/lib/api';
 import PlanSection from './PlanSection';
 import BoxContents from './BoxContents';
-import CustomBox from './CustomBox';
 import { PricesHeader, PricesIncludes } from './PricesHeader';
 
 export const metadata = { title: 'Pricing — Pupbox Subscription Plans', description: 'Choose the best Pupbox subscription plan for your dog.' };
@@ -24,7 +23,6 @@ export default async function PricesPage() {
       </section>
 
       <BoxContents />
-      <CustomBox />
       <PricesIncludes />
     </main>
   );
