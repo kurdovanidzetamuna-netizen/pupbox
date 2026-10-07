@@ -40,15 +40,15 @@ export default function HomePageClient({ plans, enabled, faqItems }: Props) {
                   <p className="text-lg text-gray-500 mb-10 leading-relaxed">{t('hero.description')}</p>
                 </HeroAnimate>
                 <HeroAnimate delay={300}>
-                  <div className="flex flex-col sm:flex-row gap-3 mb-10 flex-wrap">
-                    <Link href="/prices" className="inline-flex items-center justify-center bg-teal-600 text-white font-semibold px-6 py-3 rounded-xl text-base hover:bg-teal-700 transition shadow-md shadow-teal-100">
+                  {/* One primary action and one alternative. "How it works" is in the
+                      nav and summarised by the steps right below, so a third
+                      button only competed with the two that matter. */}
+                  <div className="flex flex-col sm:flex-row gap-3 mb-10">
+                    <Link href="/prices" className="inline-flex whitespace-nowrap items-center justify-center bg-teal-600 text-white font-semibold px-7 py-3.5 rounded-xl text-base hover:bg-teal-700 transition shadow-md shadow-teal-100">
                       {t('hero.cta1')}
                     </Link>
-                    <Link href="/prices?gift=true" className="inline-flex items-center justify-center bg-amber-400 hover:bg-amber-500 text-white font-semibold px-6 py-3 rounded-xl text-base transition shadow-md shadow-amber-100">
+                    <Link href="/prices?gift=true" className="inline-flex whitespace-nowrap items-center justify-center border-2 border-amber-300 text-amber-700 font-semibold px-6 py-3 rounded-xl text-base hover:bg-amber-50 transition">
                       {t('hero.cta2')}
-                    </Link>
-                    <Link href="/how-it-works" className="inline-flex items-center justify-center border border-gray-200 text-gray-600 font-medium px-6 py-3 rounded-2xl text-base hover:border-teal-400 hover:text-teal-600 transition">
-                      {t('hero.cta3')}
                     </Link>
                   </div>
                 </HeroAnimate>
@@ -56,10 +56,11 @@ export default function HomePageClient({ plans, enabled, faqItems }: Props) {
                   <div className="w-full max-w-md">
                     <div className="flex items-center justify-between">
                       {[
-                        { n: 1, emoji: '👤', labelKey: 'hero.step1' },
+                        // The order a customer actually goes through, matching "How it works".
+                        { n: 1, emoji: '📋', labelKey: 'hero.step1' },
                         { n: 2, emoji: '🐾', labelKey: 'hero.step2' },
-                        { n: 3, emoji: '📦', labelKey: 'hero.step3' },
-                        { n: 4, emoji: '💳', labelKey: 'hero.step4' },
+                        { n: 3, emoji: '🎁', labelKey: 'hero.step3' },
+                        { n: 4, emoji: '🚚', labelKey: 'hero.step4' },
                       ].map((step, i, arr) => (
                         <div key={step.n} className="flex items-center flex-1">
                           <div className="flex flex-col items-center flex-1">
@@ -85,13 +86,14 @@ export default function HomePageClient({ plans, enabled, faqItems }: Props) {
                   <div className="absolute bottom-5 left-5 bg-white/90 backdrop-blur-sm rounded-2xl px-4 py-3 shadow-lg flex items-center gap-3">
                     <span className="text-2xl">📦</span>
                     <div>
-                      <p className="font-bold text-gray-900 text-sm">Monthly Box</p>
-                      <p className="text-xs text-teal-600">5–8 premium products</p>
+                      <p className="font-bold text-gray-900 text-sm">{t('hero.card.title')}</p>
+                      <p className="text-xs text-teal-600">{t('hero.card.sub')}</p>
                     </div>
                   </div>
                   <div className="absolute top-5 right-5 bg-white/90 backdrop-blur-sm rounded-2xl px-3 py-2 shadow-lg">
                     <div className="flex gap-0.5 text-amber-400 text-sm">★★★★★</div>
-                    <p className="text-xs text-gray-500 font-medium">500+ happy pups</p>
+                    {/* Placeholder social proof — kept during development by decision, remove before launch. */}
+                    <p className="text-xs text-gray-500 font-medium">{t('hero.card.rating')}</p>
                   </div>
                 </div>
               </HeroAnimate>
