@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useCart } from '@/context/CartContext';
+import { useCart, cartHeaders } from '@/context/CartContext';
 import DogProfileForm, { emptyDogProfile, toDogPayload, type DogProfile } from '@/components/DogProfileForm';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
@@ -10,7 +10,10 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1
 function getToken() { return typeof window !== 'undefined' ? localStorage.getItem('pupbox_token') : null; }
 
 export default function CheckoutPage() {
-  const { cart, refresh } = useCart();
+  const { cart, ready, refresh } = useCart();
+  // Set once the order exists, so emptying the cart on the way to payment
+  // doesn't flash the empty-cart screen.
+  const [orderPlaced, setOrderPlaced] = useState(false);
   const router = useRouter();
   const [step, setStep] = useState(0);
   // Arrives as /checkout?gift=true from the "Gift This Plan" buttons. Read in
@@ -38,16 +41,35 @@ export default function CheckoutPage() {
     isNewAccount: true,
   });
   const [dog, setDog] = useState<DogProfile>(emptyDogProfile);
+  const [dogId, setDogId] = useState<string | null>(null);
+  const [addrErrors, setAddrErrors] = useState<Record<string, string>>({});
 
   const token = getToken();
   const isLoggedIn = !!token;
 
+  // Priced against this cart on the server, so a plan with delivery included
+  // shows as free here exactly as it will be charged.
   useEffect(() => {
     if (cart?.subtotal !== undefined) {
-      fetch(`${API_URL}/cart/delivery-methods?total=${cart.subtotal}`)
+      fetch(`${API_URL}/cart/delivery-methods`, { headers: cartHeaders() })
         .then(r => r.json()).then(setDeliveryMethods).catch(() => {});
     }
-  }, [cart?.subtotal]);
+  }, [cart?.subtotal, cart?.deliveryIncluded]);
+
+  // A signed-in customer shouldn't retype what their profile already holds.
+  // Runs on arrival and again right after signing in at the account step.
+  function prefillFromProfile() {
+    const t = getToken();
+    if (!t) return;
+    fetch(`${API_URL}/users/me`, { headers: { Authorization: `Bearer ${t}` } })
+      .then(r => (r.ok ? r.json() : null))
+      .then(u => {
+        if (!u) return;
+        setForm(f => ({ ...f, firstName: f.firstName || u.firstName || '', lastName: f.lastName || u.lastName || '', phone: f.phone || u.phone || '' }));
+      })
+      .catch(() => {});
+  }
+  useEffect(prefillFromProfile, []);
 
   function updateForm(key: string, value: string | boolean) {
     setForm(prev => ({ ...prev, [key]: value }));
@@ -63,8 +85,12 @@ export default function CheckoutPage() {
           : { email: form.email, password: form.password };
         const res = await fetch(`${API_URL}${endpoint}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
         const data = await res.json();
-        if (!res.ok) throw new Error(data.message);
+        if (!res.ok) throw new Error(Array.isArray(data.message) ? data.message[0] : data.message);
         localStorage.setItem('pupbox_token', data.token);
+        // Moves what they added as a guest into the account cart; without
+        // this the order would be placed against an empty account cart.
+        await refresh();
+        prefillFromProfile();
       }
       setStep(1);
     } catch (e: any) { setError(e.message); }
@@ -88,8 +114,10 @@ export default function CheckoutPage() {
         // Sends the full profile — allergies and preferences included — rather
         // than just name/breed/size/gender as before, so the personalisation
         // fields the schema has always had actually get populated.
-        const res = await fetch(`${API_URL}/me/dogs`, {
-          method: 'POST',
+        // Saved once: going Back and Continue again updates the same dog
+        // instead of creating a duplicate.
+        const res = await fetch(dogId ? `${API_URL}/me/dogs/${dogId}` : `${API_URL}/me/dogs`, {
+          method: dogId ? 'PUT' : 'POST',
           headers: { Authorization: `Bearer ${t}`, 'Content-Type': 'application/json' },
           body: JSON.stringify(toDogPayload(dog)),
         });
@@ -97,16 +125,31 @@ export default function CheckoutPage() {
           const body = await res.json().catch(() => ({}));
           throw new Error(Array.isArray(body.message) ? body.message[0] : body.message || 'Could not save your dog');
         }
+        const saved = await res.json().catch(() => null);
+        if (saved?.id) setDogId(saved.id);
       }
       setStep(2);
     } catch (e: any) { setError(e.message); }
     finally { setLoading(false); }
   }
 
+  function validateAddress() {
+    const e: Record<string, string> = {};
+    if (!form.firstName.trim()) e.firstName = 'First name is required';
+    if (!form.lastName.trim()) e.lastName = 'Last name is required';
+    if (!/^\+?[0-9\s()-]{7,20}$/.test(form.phone.trim())) e.phone = 'Enter a valid phone number, e.g. +995 599 123 456';
+    if (!form.city.trim()) e.city = 'City is required';
+    if (!form.addressLine1.trim()) e.addressLine1 = 'Address is required';
+    setAddrErrors(e);
+    return e;
+  }
+
   async function handleDeliveryStep() {
+    setError('');
+    const e = validateAddress();
+    if (Object.keys(e).length) { setError('Please complete the delivery details'); return; }
     if (!selectedDelivery) { setError('Please select a delivery method'); return; }
     setStep(3);
-    setError('');
   }
 
   async function placeOrder() {
@@ -118,6 +161,7 @@ export default function CheckoutPage() {
         headers: { Authorization: `Bearer ${t}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
           deliveryMethodId: selectedDelivery,
+          ...(dogId && !isGift ? { dogId } : {}),
           firstName: form.firstName,
           lastName: form.lastName,
           phone: form.phone,
@@ -137,7 +181,8 @@ export default function CheckoutPage() {
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message);
+      if (!res.ok) throw new Error(Array.isArray(data.message) ? data.message[0] : data.message);
+      setOrderPlaced(true);
       await refresh();
       router.push(`/checkout/thank-you?order=${data.id}`);
     } catch (e: any) { setError(e.message); }
@@ -147,6 +192,22 @@ export default function CheckoutPage() {
   const selectedMethod = deliveryMethods.find(m => m.id === selectedDelivery);
   const deliveryCost = selectedMethod?.effectivePrice ?? 0;
   const finalTotal = ((cart?.total ?? 0) + deliveryCost).toFixed(2);
+
+  if (ready && !orderPlaced && !(cart?.itemCount > 0)) {
+    return (
+      <main className="min-h-screen bg-gray-50 flex items-center justify-center px-6">
+        <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center max-w-md">
+          <div className="text-5xl mb-4">🛒</div>
+          <h1 className="text-xl font-bold text-gray-900 mb-2">Your cart is empty</h1>
+          <p className="text-sm text-gray-500 mb-6">Choose a plan or add a product, then come back to check out.</p>
+          <div className="flex gap-3 justify-center">
+            <Link href="/prices" className="bg-teal-600 text-white px-5 py-2.5 rounded-xl font-bold hover:bg-teal-700">View plans</Link>
+            <Link href="/shop" className="border border-gray-200 text-gray-700 px-5 py-2.5 rounded-xl font-medium hover:bg-gray-50">Shop</Link>
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-gray-50">
@@ -279,16 +340,21 @@ export default function CheckoutPage() {
                 <div className="space-y-4 mb-6">
                   <div className="grid grid-cols-2 gap-4">
                     <div><label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
-                      <input value={form.firstName} onChange={e => updateForm('firstName', e.target.value)} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400" /></div>
+                      <input value={form.firstName} onChange={e => { updateForm('firstName', e.target.value); setAddrErrors(x => ({ ...x, firstName: '' })); }} aria-invalid={!!addrErrors.firstName} className={`w-full border  rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 ${addrErrors.firstName ? 'border-red-400 bg-red-50' : 'border-gray-200'}`} />
+                      {addrErrors.firstName && <p className="text-red-500 text-xs mt-1">{addrErrors.firstName}</p>}</div>
                     <div><label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
-                      <input value={form.lastName} onChange={e => updateForm('lastName', e.target.value)} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400" /></div>
+                      <input value={form.lastName} onChange={e => { updateForm('lastName', e.target.value); setAddrErrors(x => ({ ...x, lastName: '' })); }} aria-invalid={!!addrErrors.lastName} className={`w-full border  rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 ${addrErrors.lastName ? 'border-red-400 bg-red-50' : 'border-gray-200'}`} />
+                      {addrErrors.lastName && <p className="text-red-500 text-xs mt-1">{addrErrors.lastName}</p>}</div>
                   </div>
                   <div><label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-                    <input value={form.phone} onChange={e => updateForm('phone', e.target.value)} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400" /></div>
+                    <input value={form.phone} onChange={e => { updateForm('phone', e.target.value); setAddrErrors(x => ({ ...x, phone: '' })); }} aria-invalid={!!addrErrors.phone} className={`w-full border  rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 ${addrErrors.phone ? 'border-red-400 bg-red-50' : 'border-gray-200'}`} />
+                      {addrErrors.phone && <p className="text-red-500 text-xs mt-1">{addrErrors.phone}</p>}</div>
                   <div><label className="block text-sm font-medium text-gray-700 mb-1">City</label>
-                    <input value={form.city} onChange={e => updateForm('city', e.target.value)} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400" /></div>
+                    <input value={form.city} onChange={e => { updateForm('city', e.target.value); setAddrErrors(x => ({ ...x, city: '' })); }} aria-invalid={!!addrErrors.city} className={`w-full border  rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 ${addrErrors.city ? 'border-red-400 bg-red-50' : 'border-gray-200'}`} />
+                      {addrErrors.city && <p className="text-red-500 text-xs mt-1">{addrErrors.city}</p>}</div>
                   <div><label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
-                    <input value={form.addressLine1} onChange={e => updateForm('addressLine1', e.target.value)} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400" placeholder="Street, building, apartment" /></div>
+                    <input value={form.addressLine1} onChange={e => { updateForm('addressLine1', e.target.value); setAddrErrors(x => ({ ...x, addressLine1: '' })); }} aria-invalid={!!addrErrors.addressLine1} className={`w-full border  rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 ${addrErrors.addressLine1 ? 'border-red-400 bg-red-50' : 'border-gray-200'}`} placeholder="Street, building, apartment" />
+                      {addrErrors.addressLine1 && <p className="text-red-500 text-xs mt-1">{addrErrors.addressLine1}</p>}</div>
                   <div><label className="block text-sm font-medium text-gray-700 mb-1">Address Line 2 (optional)</label>
                     <input value={form.addressLine2} onChange={e => updateForm('addressLine2', e.target.value)} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400" /></div>
                 </div>
@@ -305,7 +371,9 @@ export default function CheckoutPage() {
                         </div>
                       </div>
                       <div className="text-right">
-                        {m.isFree ? (
+                        {m.includedWithPlan ? (
+                          <span className="text-green-600 font-bold text-sm">Included with your plan</span>
+                        ) : m.isFree ? (
                           <span className="text-green-600 font-bold text-sm">FREE</span>
                         ) : (
                           <span className="font-bold text-sm">₾{Number(m.price).toFixed(2)}</span>

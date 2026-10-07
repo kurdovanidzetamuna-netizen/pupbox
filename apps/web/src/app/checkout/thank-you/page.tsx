@@ -12,9 +12,11 @@ function ThankyouContent() {
   const [paying, setPaying] = useState(false);
   const [error, setError] = useState('');
 
-  // If Flitt redirected back with success, show success
-  const isSuccess = paymentStatus === 'approved' || !paymentStatus;
-  const isFailed = paymentStatus === 'declined' || paymentStatus === 'expired';
+  // Only an explicit approval is a success. A missing or unrecognised status
+  // used to fall through to "Payment confirmed!", so opening this page directly
+  // told people they had paid when they hadn't.
+  const isApproved = paymentStatus === 'approved';
+  const isFailed = paymentStatus === 'declined' || paymentStatus === 'expired' || paymentStatus === 'reversed';
 
   async function handlePay() {
     if (!orderId) return;
@@ -76,6 +78,29 @@ function ThankyouContent() {
           {paying ? 'Redirecting to payment...' : '💳 Pay Now'}
         </button>
         <Link href="/shop" className="text-sm text-gray-400 hover:underline">Cancel — continue shopping</Link>
+      </main>
+    );
+  }
+
+  // Nothing to show: no order, or a status we can't vouch for yet.
+  if (!isApproved) {
+    return (
+      <main className="min-h-screen bg-white flex flex-col items-center justify-center px-6 text-center">
+        <div className="text-6xl mb-6">{paymentStatus ? '⏳' : '🐾'}</div>
+        <h1 className="text-3xl font-extrabold text-gray-900 mb-3">{paymentStatus ? 'Confirming your payment' : 'No order to show'}</h1>
+        <p className="text-lg text-gray-500 mb-8 max-w-md">
+          {paymentStatus
+            ? "We haven't received confirmation from the bank yet. Your order will update in My Orders as soon as it arrives."
+            : 'Your orders and their payment status are always in your account.'}
+        </p>
+        <div className="flex gap-4">
+          <Link href="/account/orders" className="inline-flex items-center justify-center bg-teal-600 text-white px-6 py-3 rounded-xl font-medium hover:bg-teal-700 transition">
+            View My Orders
+          </Link>
+          <Link href="/shop" className="inline-flex items-center justify-center border border-gray-200 text-gray-600 px-6 py-3 rounded-2xl font-medium hover:bg-gray-50 transition">
+            Continue Shopping
+          </Link>
+        </div>
       </main>
     );
   }

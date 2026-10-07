@@ -4,8 +4,11 @@ import { CartModule } from '../cart/cart.module';
 import { Controller, Post, Get, Body, UseGuards, Request, Query } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth, ApiTags, ApiOperation } from '@nestjs/swagger';
-import { IsString, IsOptional, IsEmail, IsBoolean, ValidateNested, IsDateString, MaxLength } from 'class-validator';
-import { Type } from 'class-transformer';
+import { IsString, IsOptional, IsEmail, IsBoolean, ValidateNested, IsDateString, MaxLength, IsNotEmpty, Matches } from 'class-validator';
+import { Type, Transform } from 'class-transformer';
+
+/** Trims strings so a field of only spaces counts as empty. */
+const Trim = () => Transform(({ value }) => (typeof value === 'string' ? value.trim() : value));
 
 /**
  * Buying a subscription for someone else's dog. The recipient supplies the dog
@@ -29,12 +32,14 @@ class CreateOrderDto {
   @IsString() deliveryMethodId: string;
   @IsOptional() @IsString() addressId?: string;
   @IsOptional() @IsString() dogId?: string;
-  @IsString() firstName: string;
-  @IsString() lastName: string;
-  @IsString() phone: string;
-  @IsString() city: string;
-  @IsString() addressLine1: string;
-  @IsOptional() @IsString() addressLine2?: string;
+  // A courier needs every one of these; an order with a blank address used
+  // to be accepted and could never be delivered.
+  @Trim() @IsString() @IsNotEmpty({ message: 'First name is required' }) @MaxLength(80) firstName: string;
+  @Trim() @IsString() @IsNotEmpty({ message: 'Last name is required' }) @MaxLength(80) lastName: string;
+  @Trim() @IsString() @Matches(/^\+?[0-9\s()-]{7,20}$/, { message: 'Enter a valid phone number' }) phone: string;
+  @Trim() @IsString() @IsNotEmpty({ message: 'City is required' }) @MaxLength(80) city: string;
+  @Trim() @IsString() @IsNotEmpty({ message: 'Address is required' }) @MaxLength(200) addressLine1: string;
+  @IsOptional() @Trim() @IsString() @MaxLength(200) addressLine2?: string;
   /**
    * The customer's auto-renewal choice. The checkout page has always sent
    * this; because it was missing here, forbidNonWhitelisted rejected every
