@@ -3,11 +3,14 @@ import Link from 'next/link';
 import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useLanguage } from '@/context/LanguageContext';
+import { useCart } from '@/context/CartContext';
+import { safeRedirect } from '@/lib/safeRedirect';
 
 function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
-  const redirect = params.get('redirect') || '/account/orders';
+  const redirect = safeRedirect(params.get('redirect'));
+  const { refresh: refreshCart } = useCart();
   const { t } = useLanguage();
 
   const [form, setForm] = useState({ email: '', password: '' });
@@ -34,6 +37,7 @@ function LoginForm() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Login failed');
       localStorage.setItem('pupbox_token', data.token);
+      await refreshCart(); // merges anything added as a guest into the account cart
       router.push(redirect);
     } catch (e: any) {
       setError(e.message);
