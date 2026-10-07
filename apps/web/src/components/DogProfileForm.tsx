@@ -1,5 +1,7 @@
 'use client';
 import { useState } from 'react';
+import { useLanguage } from '@/context/LanguageContext';
+import { fill } from '@/context/strings/purchase';
 
 /**
  * Tell-us-about-your-dog, as tappable choices rather than a form.
@@ -31,6 +33,16 @@ export const emptyDogProfile: DogProfile = {
   allergies: [], foodPreferences: [], toyPreferences: [], chewingStrength: '', specialNotes: '',
 };
 
+/** A saved dog from the API, back into the form's shape. */
+export function fromDog(d: any): DogProfile {
+  return {
+    name: d?.name || '', breed: d?.breed || '', size: d?.size || '', gender: d?.gender || '',
+    weightKg: d?.weightKg != null ? String(d.weightKg) : '',
+    allergies: d?.allergies || [], foodPreferences: d?.foodPreferences || [], toyPreferences: d?.toyPreferences || [],
+    chewingStrength: d?.chewingStrength || '', specialNotes: d?.specialNotes || '',
+  };
+}
+
 /** Shape the API expects, with the UI's strings coerced and blanks dropped. */
 export function toDogPayload(d: DogProfile) {
   return {
@@ -47,18 +59,20 @@ export function toDogPayload(d: DogProfile) {
   };
 }
 
+
+// Values are what the API stores; labels come from translations (dog.size.*, dog.opt.*).
 const SIZES = [
-  { value: 'EXTRA_SMALL', emoji: '🐕', label: 'Extra small', hint: 'under 5 kg' },
-  { value: 'SMALL', emoji: '🐕', label: 'Small', hint: '5–10 kg' },
-  { value: 'MEDIUM', emoji: '🐕‍🦺', label: 'Medium', hint: '10–25 kg' },
-  { value: 'LARGE', emoji: '🦮', label: 'Large', hint: '25–40 kg' },
-  { value: 'EXTRA_LARGE', emoji: '🐕‍🦺', label: 'Extra large', hint: 'over 40 kg' },
+  { value: 'EXTRA_SMALL', emoji: '🐕' },
+  { value: 'SMALL', emoji: '🐕' },
+  { value: 'MEDIUM', emoji: '🐕‍🦺' },
+  { value: 'LARGE', emoji: '🦮' },
+  { value: 'EXTRA_LARGE', emoji: '🐕‍🦺' },
 ];
 
 const CHEW_LEVELS = [
-  { value: 'GENTLE', emoji: '🪶', label: 'Gentle', hint: 'Toys last for ages' },
-  { value: 'AVERAGE', emoji: '🦴', label: 'Average', hint: 'Normal wear and tear' },
-  { value: 'POWER', emoji: '💪', label: 'Power chewer', hint: 'Destroys everything' },
+  { value: 'GENTLE', emoji: '🪶' },
+  { value: 'AVERAGE', emoji: '🦴' },
+  { value: 'POWER', emoji: '💪' },
 ];
 
 const COMMON_ALLERGIES = ['Chicken', 'Beef', 'Lamb', 'Fish', 'Wheat', 'Dairy', 'Soy', 'Eggs'];
@@ -97,6 +111,7 @@ function Chip({ active, onClick, children, tone = 'teal' }: { active: boolean; o
 function ChipGroup({ options, selected, onChange, tone = 'teal', addLabel }: {
   options: string[]; selected: string[]; onChange: (v: string[]) => void; tone?: 'teal' | 'red'; addLabel: string;
 }) {
+  const { t } = useLanguage();
   const [custom, setCustom] = useState('');
   const toggle = (v: string) => onChange(selected.includes(v) ? selected.filter((x) => x !== v) : [...selected, v]);
   const addCustom = () => {
@@ -111,7 +126,7 @@ function ChipGroup({ options, selected, onChange, tone = 'teal', addLabel }: {
   return (
     <div>
       <div className="flex flex-wrap gap-2">
-        {options.map((o) => <Chip key={o} active={selected.includes(o)} onClick={() => toggle(o)} tone={tone}>{o}</Chip>)}
+        {options.map((o) => <Chip key={o} active={selected.includes(o)} onClick={() => toggle(o)} tone={tone}>{t(`dog.opt.${o}`, o)}</Chip>)}
         {extras.map((e) => <Chip key={e} active onClick={() => toggle(e)} tone={tone}>{e}</Chip>)}
       </div>
       <div className="flex gap-2 mt-2.5">
@@ -124,37 +139,52 @@ function ChipGroup({ options, selected, onChange, tone = 'teal', addLabel }: {
         />
         <button type="button" onClick={addCustom} disabled={!custom.trim()}
           className="px-4 rounded-lg text-sm font-medium border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40">
-          Add
+          {t('dog.add')}
         </button>
       </div>
     </div>
   );
 }
 
-export default function DogProfileForm({ value, onChange, showOptional = true }: {
+export default function DogProfileForm({ value, onChange, showOptional = true, compact = false, nameError }: {
   value: DogProfile;
   onChange: (d: DogProfile) => void;
   /** Hide the preference sections where a shorter form matters more. */
   showOptional?: boolean;
+  /**
+   * Checkout: ask only what a first box needs (name, size, allergies) and
+   * fold the rest behind "Tell us more". Allergies stay visible because
+   * getting them wrong is a safety problem, not a personalisation one.
+   */
+  compact?: boolean;
+  nameError?: string;
 }) {
+  const { t } = useLanguage();
+  const [expanded, setExpanded] = useState(false);
   const set = <K extends keyof DogProfile>(k: K, v: DogProfile[K]) => onChange({ ...value, [k]: v });
   const field = 'w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400';
   const allergySet = new Set(value.allergies.map((a) => a.toLowerCase()));
+  const hiddenFoods = FOOD_LIKES.filter((f) => allergySet.has(f.toLowerCase()));
+  const showDetails = !compact || expanded;
 
   return (
     <div className="space-y-7">
-      <div className="grid sm:grid-cols-2 gap-4">
+      <div className={`grid gap-4 ${showDetails ? 'sm:grid-cols-2' : ''}`}>
         <div>
-          <label className="text-sm font-semibold text-gray-900 block mb-2.5">Name <span className="text-teal-600">*</span></label>
-          <input value={value.name} onChange={(e) => set('name', e.target.value)} className={field} placeholder="e.g. Rex" />
+          <label htmlFor="dog-name" className="text-sm font-semibold text-gray-900 block mb-2.5">{t('dog.name')} <span className="text-teal-600">*</span></label>
+          <input id="dog-name" value={value.name} onChange={(e) => set('name', e.target.value)} aria-invalid={!!nameError}
+            className={`${field} ${nameError ? 'border-red-400 bg-red-50' : ''}`} placeholder={t('dog.namePh')} />
+          {nameError && <p className="text-red-500 text-xs mt-1">{nameError}</p>}
         </div>
-        <div>
-          <label className="text-sm font-semibold text-gray-900 block mb-2.5">Breed</label>
-          <input value={value.breed} onChange={(e) => set('breed', e.target.value)} className={field} placeholder="e.g. Labrador, or a mix" />
-        </div>
+        {showDetails && (
+          <div>
+            <label htmlFor="dog-breed" className="text-sm font-semibold text-gray-900 block mb-2.5">{t('dog.breed')}</label>
+            <input id="dog-breed" value={value.breed} onChange={(e) => set('breed', e.target.value)} className={field} placeholder={t('dog.breedPh')} />
+          </div>
+        )}
       </div>
 
-      <Section title="How big are they?" hint="This decides the size of treats and toys we send">
+      <Section title={t('dog.size')} hint={t('dog.sizeHint')}>
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
           {SIZES.map((s) => {
             const active = value.size === s.value;
@@ -162,31 +192,15 @@ export default function DogProfileForm({ value, onChange, showOptional = true }:
               <button key={s.value} type="button" onClick={() => set('size', active ? '' : s.value)} aria-pressed={active}
                 className={`p-3 rounded-xl border text-center transition ${active ? 'border-teal-500 bg-teal-50 ring-1 ring-teal-400' : 'border-gray-200 bg-white hover:border-gray-300'}`}>
                 <div className="text-2xl leading-none mb-1.5">{s.emoji}</div>
-                <div className={`text-xs font-semibold ${active ? 'text-teal-700' : 'text-gray-700'}`}>{s.label}</div>
-                <div className="text-[11px] text-gray-400 mt-0.5">{s.hint}</div>
+                <div className={`text-xs font-semibold ${active ? 'text-teal-700' : 'text-gray-700'}`}>{t(`dog.size.${s.value}`)}</div>
+                <div className="text-[11px] text-gray-400 mt-0.5">{t(`dog.sizeHint.${s.value}`)}</div>
               </button>
             );
           })}
         </div>
       </Section>
 
-      <div className="grid sm:grid-cols-2 gap-6">
-        <Section title="Gender">
-          <div className="flex gap-2">
-            {[{ v: 'MALE', l: '♂ Male' }, { v: 'FEMALE', l: '♀ Female' }].map((g) => (
-              <Chip key={g.v} active={value.gender === g.v} onClick={() => set('gender', value.gender === g.v ? '' : g.v)}>{g.l}</Chip>
-            ))}
-          </div>
-        </Section>
-        <Section title="Weight" hint="Optional — helps us get portions right">
-          <div className="relative max-w-[160px]">
-            <input type="number" min="0" step="0.1" value={value.weightKg} onChange={(e) => set('weightKg', e.target.value)} className={`${field} pr-10`} placeholder="18" />
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">kg</span>
-          </div>
-        </Section>
-      </div>
-
-      <Section title="Anything they can't eat?" hint="Tap any allergies — we'll keep them out of every box">
+      <Section title={t('dog.allergies')} hint={t('dog.allergiesHint')}>
         <ChipGroup
           options={COMMON_ALLERGIES}
           selected={value.allergies}
@@ -202,32 +216,57 @@ export default function DogProfileForm({ value, onChange, showOptional = true }:
             });
           }}
           tone="red"
-          addLabel="Something else they react to…"
+          addLabel={t('dog.allergiesAdd')}
         />
       </Section>
 
-      {showOptional && (
+      {compact && (
+        <button type="button" onClick={() => setExpanded(e => !e)} aria-expanded={expanded}
+          className="text-sm font-semibold text-teal-700 hover:text-teal-800 inline-flex items-center gap-1.5">
+          <span aria-hidden="true">{expanded ? '−' : '+'}</span>{expanded ? t('dog.less') : t('dog.more')}
+        </button>
+      )}
+
+      {showDetails && (
+        <div className="grid sm:grid-cols-2 gap-6">
+          <Section title={t('dog.gender')}>
+            <div className="flex gap-2">
+              {[{ v: 'MALE', k: 'dog.male' }, { v: 'FEMALE', k: 'dog.female' }].map((g) => (
+                <Chip key={g.v} active={value.gender === g.v} onClick={() => set('gender', value.gender === g.v ? '' : g.v)}>{t(g.k)}</Chip>
+              ))}
+            </div>
+          </Section>
+          <Section title={t('dog.weight')} hint={t('dog.weightHint')}>
+            <div className="relative max-w-[160px]">
+              <input type="number" min="0" step="0.1" value={value.weightKg} onChange={(e) => set('weightKg', e.target.value)} className={`${field} pr-10`} placeholder="18" />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">{t('dog.kg')}</span>
+            </div>
+          </Section>
+        </div>
+      )}
+
+      {showDetails && showOptional && (
         <>
-          <Section title="What do they love to eat?" hint="Optional — we'll lean towards these">
+          <Section title={t('dog.food')} hint={t('dog.foodHint')}>
             <ChipGroup
               // An allergen is never offered as a favourite.
               options={FOOD_LIKES.filter((f) => !allergySet.has(f.toLowerCase()))}
               selected={value.foodPreferences}
               onChange={(v) => set('foodPreferences', v.filter((f) => !allergySet.has(f.toLowerCase())))}
-              addLabel="Another favourite…"
+              addLabel={t('dog.foodAdd')}
             />
-            {FOOD_LIKES.some((f) => allergySet.has(f.toLowerCase())) && (
+            {hiddenFoods.length > 0 && (
               <p className="text-xs text-gray-400 mt-2">
-                Hidden because you listed {FOOD_LIKES.filter((f) => allergySet.has(f.toLowerCase())).join(', ')} as an allergy.
+                {fill(t('dog.foodHidden'), { list: hiddenFoods.map((f) => t(`dog.opt.${f}`, f)).join(', ') })}
               </p>
             )}
           </Section>
 
-          <Section title="Favourite kind of toy?" hint="Optional">
-            <ChipGroup options={TOY_LIKES} selected={value.toyPreferences} onChange={(v) => set('toyPreferences', v)} addLabel="Another kind…" />
+          <Section title={t('dog.toys')} hint={t('dog.optional')}>
+            <ChipGroup options={TOY_LIKES} selected={value.toyPreferences} onChange={(v) => set('toyPreferences', v)} addLabel={t('dog.toysAdd')} />
           </Section>
 
-          <Section title="How hard do they chew?" hint="So we send toys that survive them">
+          <Section title={t('dog.chew')} hint={t('dog.chewHint')}>
             <div className="grid grid-cols-3 gap-2">
               {CHEW_LEVELS.map((c) => {
                 const active = value.chewingStrength === c.value;
@@ -235,17 +274,17 @@ export default function DogProfileForm({ value, onChange, showOptional = true }:
                   <button key={c.value} type="button" onClick={() => set('chewingStrength', active ? '' : c.value)} aria-pressed={active}
                     className={`p-3 rounded-xl border text-center transition ${active ? 'border-teal-500 bg-teal-50 ring-1 ring-teal-400' : 'border-gray-200 bg-white hover:border-gray-300'}`}>
                     <div className="text-xl leading-none mb-1.5">{c.emoji}</div>
-                    <div className={`text-xs font-semibold ${active ? 'text-teal-700' : 'text-gray-700'}`}>{c.label}</div>
-                    <div className="text-[11px] text-gray-400 mt-0.5 leading-tight">{c.hint}</div>
+                    <div className={`text-xs font-semibold ${active ? 'text-teal-700' : 'text-gray-700'}`}>{t(`dog.chew.${c.value}`)}</div>
+                    <div className="text-[11px] text-gray-400 mt-0.5 leading-tight">{t(`dog.chewHint.${c.value}`)}</div>
                   </button>
                 );
               })}
             </div>
           </Section>
 
-          <Section title="Anything else we should know?" hint="Optional">
+          <Section title={t('dog.notes')} hint={t('dog.optional')}>
             <textarea value={value.specialNotes} onChange={(e) => set('specialNotes', e.target.value)} rows={2} maxLength={500}
-              className={`${field} resize-y`} placeholder="e.g. rescue dog, nervous around loud squeakers" />
+              className={`${field} resize-y`} placeholder={t('dog.notesPh')} />
           </Section>
         </>
       )}

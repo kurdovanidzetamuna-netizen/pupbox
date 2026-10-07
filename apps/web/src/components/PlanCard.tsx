@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { gel } from '@/lib/format';
+import { planText, planBenefits } from '@/lib/localize';
 
 interface Props {
   plan: any;
@@ -15,7 +16,8 @@ export default function PlanCard({ plan, showFullBenefits = false, isGift = fals
   const { addPlan } = useCart();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
+  const name = planText(plan, 'name', lang);
 
   // Admin stores the badge label as shown there ("Most Popular", "Best Value",
   // or a custom one like "Limited"); older data used slugs. Matching only the
@@ -55,7 +57,15 @@ export default function PlanCard({ plan, showFullBenefits = false, isGift = fals
     return b;
   }
 
-  const rawBenefits = showFullBenefits ? (plan.benefits || []) : (plan.benefits || []).slice(0, 4);
+  // Georgian benefits written in admin win over the built-in phrase map.
+  const localBenefits = planBenefits(plan, lang);
+  const source: string[] = localBenefits || plan.benefits || [];
+  const rawBenefits = showFullBenefits ? source : source.slice(0, 4);
+  // Most plans already list "Free delivery" as a benefit; adding the
+  // deliveryIncluded line as well showed it twice. The CMS label also carries
+  // its own tick, which doubled the ✓.
+  const freeDeliveryLabel = t('pricing.planCard.freeDelivery').replace(/^\s*✓\s*/, '');
+  const benefitsMentionDelivery = source.some(b => /free delivery|უფასო მიწოდება/i.test(b));
   const benefits = rawBenefits;
 
   return (
@@ -64,7 +74,7 @@ export default function PlanCard({ plan, showFullBenefits = false, isGift = fals
       onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleChoose(); } }}
       role="button"
       tabIndex={0}
-      aria-label={`${plan.name}, ${gel(plan.price)}`}
+      aria-label={`${name}, ${gel(plan.price)}`}
       aria-busy={loading}
       className={`relative flex flex-col rounded-2xl p-6 cursor-pointer transition-all hover:shadow-lg hover:-translate-y-0.5 focus:outline-none focus-visible:ring-4 focus-visible:ring-teal-300 ${
         isGift
@@ -96,9 +106,9 @@ export default function PlanCard({ plan, showFullBenefits = false, isGift = fals
         <div className="absolute top-3 right-3 text-lg opacity-30 select-none">🎁</div>
       )}
 
-      <h3 className="text-lg font-bold text-teal-800 mb-1">{plan.name}</h3>
+      <h3 className="text-lg font-bold text-teal-800 mb-1">{name}</h3>
       <p className="text-xs text-gray-400 mb-4">
-        {isGift ? `Gift a ${plan.name} subscription` : plan.description}
+        {isGift ? `Gift a ${name} subscription` : planText(plan, 'description', lang)}
       </p>
 
       <div className="mb-1">
@@ -117,13 +127,13 @@ export default function PlanCard({ plan, showFullBenefits = false, isGift = fals
       <ul className="space-y-2 mb-6 flex-1">
         {benefits.map((b: string, i: number) => (
           <li key={i} className="flex items-start gap-2 text-sm text-gray-600">
-            <span className={`shrink-0 mt-0.5 ${isGift ? 'text-amber-400' : 'text-teal-500'}`}>✓</span>{translateBenefit(b)}
+            <span className={`shrink-0 mt-0.5 ${isGift ? 'text-amber-400' : 'text-teal-500'}`}>✓</span>{localBenefits ? b : translateBenefit(b)}
           </li>
         ))}
-        {plan.deliveryIncluded && (
+        {plan.deliveryIncluded && !benefitsMentionDelivery && (
           <li className="flex items-start gap-2 text-sm text-gray-600">
             <span className={`shrink-0 mt-0.5 ${isGift ? 'text-amber-400' : 'text-teal-500'}`}>✓</span>
-            {t('pricing.planCard.freeDelivery')}
+            {freeDeliveryLabel}
           </li>
         )}
         {isGift && (
