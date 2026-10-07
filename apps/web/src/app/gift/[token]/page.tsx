@@ -2,6 +2,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useLanguage } from '@/context/LanguageContext';
+import { fill } from '@/context/strings/purchase';
 import DogProfileForm, { emptyDogProfile, toDogPayload, type DogProfile } from '@/components/DogProfileForm';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
@@ -25,6 +27,8 @@ export default function ClaimGiftPage() {
   const params = useParams();
   const router = useRouter();
   const token = String(params?.token ?? '');
+  // `tr`, not `t`: this component already uses `t` for the login token.
+  const { t: tr } = useLanguage();
 
   const [preview, setPreview] = useState<Preview | null>(null);
   const [loadError, setLoadError] = useState('');
@@ -79,8 +83,8 @@ export default function ClaimGiftPage() {
 
   async function claim() {
     setError('');
-    if (!dog.name.trim()) { setError("Please tell us your dog's name"); return; }
-    if (!address.addressLine1.trim() || !address.city.trim() || !address.phone.trim()) { setError('Please complete the delivery address'); return; }
+    if (!dog.name.trim()) { setError(tr('gc.e.dog')); return; }
+    if (!address.addressLine1.trim() || !address.city.trim() || !address.phone.trim()) { setError(tr('gc.e.address')); return; }
 
     setSubmitting(true);
     try {
@@ -104,7 +108,7 @@ export default function ClaimGiftPage() {
         // page just says "Unauthorized" with no way to recover.
         localStorage.removeItem('pupbox_token');
         setSignedIn(false);
-        throw new Error('Your session has expired — please sign in again to claim this gift.');
+        throw new Error(tr('gc.e.expired'));
       }
       if (!res.ok) throw new Error(Array.isArray(data.message) ? data.message[0] : data.message || 'Could not claim this gift');
       setDone(true);
@@ -119,7 +123,7 @@ export default function ClaimGiftPage() {
   const label = 'block text-sm font-medium text-gray-700 mb-1';
 
   if (loading) {
-    return <main className="min-h-screen bg-gray-50 flex items-center justify-center"><p className="text-gray-400 text-sm">Loading your gift…</p></main>;
+    return <main className="min-h-screen bg-gray-50 flex items-center justify-center"><p className="text-gray-400 text-sm">{tr('gc.loading')}</p></main>;
   }
 
   if (loadError || !preview) {
@@ -127,9 +131,9 @@ export default function ClaimGiftPage() {
       <main className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
         <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center max-w-md">
           <div className="text-4xl mb-3">🔗</div>
-          <h1 className="text-xl font-bold text-gray-900 mb-2">This gift link isn&apos;t valid</h1>
-          <p className="text-sm text-gray-500 mb-6">{loadError || 'We couldn&apos;t find a gift for this link. It may have already been claimed.'}</p>
-          <Link href="/" className="inline-block bg-teal-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-teal-700">Go to Pupbox</Link>
+          <h1 className="text-xl font-bold text-gray-900 mb-2">{tr('gc.invalid')}</h1>
+          <p className="text-sm text-gray-500 mb-6">{tr('gc.invalidSub')}</p>
+          <Link href="/" className="inline-block bg-teal-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-teal-700">{tr('gc.home')}</Link>
         </div>
       </main>
     );
@@ -140,14 +144,14 @@ export default function ClaimGiftPage() {
       <main className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
         <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center max-w-md">
           <div className="text-5xl mb-3">{done ? '🎉' : '✅'}</div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">{done ? "You're all set!" : 'Already claimed'}</h1>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">{done ? tr('gc.done') : tr('gc.already')}</h1>
           <p className="text-sm text-gray-500 mb-6">
             {done
-              ? `${dog.name}'s first box is being prepared. We'll email you when it ships.`
-              : 'This gift has already been claimed. If that was you, sign in to see your subscription.'}
+              ? fill(tr('gc.doneSub'), { dog: dog.name })
+              : tr('gc.alreadySub')}
           </p>
           <button onClick={() => router.push('/account/orders')} className="bg-teal-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-teal-700">
-            Go to my account
+            {tr('gc.toAccount')}
           </button>
         </div>
       </main>
@@ -161,11 +165,10 @@ export default function ClaimGiftPage() {
         <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center mb-6">
           <div className="text-5xl mb-3">🎁</div>
           <h1 className="text-2xl font-bold text-gray-900 mb-2">
-            {preview.recipientName ? `${preview.recipientName}, you` : 'You'}&apos;ve been given a Pupbox!
+            {preview.recipientName ? fill(tr('gc.headingNamed'), { name: preview.recipientName }) : tr('gc.heading')}
           </h1>
           <p className="text-gray-600">
-            <strong>{preview.buyerName}</strong> has given your dog a <strong>{preview.plan.name}</strong> subscription
-            {preview.plan.boxCount > 0 && <> — {preview.plan.boxCount} {preview.plan.boxCount === 1 ? 'box' : 'boxes'} over {preview.plan.duration}</>}.
+            {fill(tr('gc.from'), { buyer: preview.buyerName, plan: preview.plan.name })}
           </p>
           {preview.message && (
             <div className="mt-5 bg-amber-50 border border-amber-200 rounded-xl p-4 text-left">
@@ -176,13 +179,13 @@ export default function ClaimGiftPage() {
         </div>
 
         <div className="bg-white rounded-2xl border border-gray-100 p-8">
-          <h2 className="text-lg font-bold text-gray-900 mb-1">Tell us about your dog</h2>
-          <p className="text-sm text-gray-500 mb-6">Every box is picked for your dog specifically, so the more we know the better we can tailor it.</p>
+          <h2 className="text-lg font-bold text-gray-900 mb-1">{tr('gc.dogTitle')}</h2>
+          <p className="text-sm text-gray-500 mb-6">{tr('gc.dogSub')}</p>
 
           {!signedIn && (
             <div className="mb-6 pb-6 border-b border-gray-100">
               <div className="flex gap-2 mb-4">
-                {[{ k: true, l: 'Create account' }, { k: false, l: 'I already have one' }].map((o) => (
+                {[{ k: true, l: tr('gc.newAccount') }, { k: false, l: tr('gc.haveAccount') }].map((o) => (
                   <button key={String(o.k)} onClick={() => setAccount((a) => ({ ...a, isNew: o.k }))}
                     className={`px-4 py-2 rounded-lg text-sm font-medium border transition ${account.isNew === o.k ? 'border-teal-600 bg-teal-50 text-teal-700' : 'border-gray-200 text-gray-600'}`}>
                     {o.l}
@@ -192,34 +195,34 @@ export default function ClaimGiftPage() {
               <div className="space-y-3">
                 {account.isNew && (
                   <div className="grid grid-cols-2 gap-3">
-                    <div><label className={label}>First name</label><input value={account.firstName} onChange={(e) => setAccount((a) => ({ ...a, firstName: e.target.value }))} className={field} /></div>
-                    <div><label className={label}>Last name</label><input value={account.lastName} onChange={(e) => setAccount((a) => ({ ...a, lastName: e.target.value }))} className={field} /></div>
+                    <div><label className={label}>{tr('co.f.firstName')}</label><input value={account.firstName} onChange={(e) => setAccount((a) => ({ ...a, firstName: e.target.value }))} className={field} /></div>
+                    <div><label className={label}>{tr('co.f.lastName')}</label><input value={account.lastName} onChange={(e) => setAccount((a) => ({ ...a, lastName: e.target.value }))} className={field} /></div>
                   </div>
                 )}
-                <div><label className={label}>Email</label><input type="email" value={account.email} onChange={(e) => setAccount((a) => ({ ...a, email: e.target.value }))} className={field} placeholder="you@example.com" /></div>
-                <div><label className={label}>Password</label><input type="password" value={account.password} onChange={(e) => setAccount((a) => ({ ...a, password: e.target.value }))} className={field} placeholder="••••••••" /></div>
-                <p className="text-xs text-gray-400">You need an account to manage the subscription, pause it or update your address.</p>
+                <div><label className={label}>{tr('co.f.email')}</label><input type="email" value={account.email} onChange={(e) => setAccount((a) => ({ ...a, email: e.target.value }))} className={field} placeholder="you@example.com" /></div>
+                <div><label className={label}>{tr('co.f.password')}</label><input type="password" value={account.password} onChange={(e) => setAccount((a) => ({ ...a, password: e.target.value }))} className={field} placeholder="••••••••" /></div>
+                <p className="text-xs text-gray-400">{tr('gc.accountNote')}</p>
               </div>
             </div>
           )}
 
           <DogProfileForm value={dog} onChange={setDog} />
 
-          <h2 className="text-lg font-bold text-gray-900 mt-8 mb-1">Where should we send it?</h2>
-          <p className="text-sm text-gray-500 mb-4">Your address — the sender didn&apos;t need to know it.</p>
+          <h2 className="text-lg font-bold text-gray-900 mt-8 mb-1">{tr('gc.addressTitle')}</h2>
+          <p className="text-sm text-gray-500 mb-4">{tr('gc.addressSub')}</p>
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
-              <div><label className={label}>First name</label><input value={address.firstName} onChange={(e) => setAddress((a) => ({ ...a, firstName: e.target.value }))} className={field} /></div>
-              <div><label className={label}>Last name</label><input value={address.lastName} onChange={(e) => setAddress((a) => ({ ...a, lastName: e.target.value }))} className={field} /></div>
+              <div><label className={label}>{tr('co.f.firstName')}</label><input value={address.firstName} onChange={(e) => setAddress((a) => ({ ...a, firstName: e.target.value }))} className={field} /></div>
+              <div><label className={label}>{tr('co.f.lastName')}</label><input value={address.lastName} onChange={(e) => setAddress((a) => ({ ...a, lastName: e.target.value }))} className={field} /></div>
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <div><label className={label}>Phone <span className="text-teal-600">*</span></label><input value={address.phone} onChange={(e) => setAddress((a) => ({ ...a, phone: e.target.value }))} className={field} placeholder="+995 5xx xxx xxx" /></div>
-              <div><label className={label}>City <span className="text-teal-600">*</span></label><input value={address.city} onChange={(e) => setAddress((a) => ({ ...a, city: e.target.value }))} className={field} placeholder="Tbilisi" /></div>
+              <div><label className={label}>{tr('co.f.phone')} <span className="text-teal-600">*</span></label><input value={address.phone} onChange={(e) => setAddress((a) => ({ ...a, phone: e.target.value }))} className={field} placeholder="+995 5xx xxx xxx" /></div>
+              <div><label className={label}>{tr('co.f.city')} <span className="text-teal-600">*</span></label><input value={address.city} onChange={(e) => setAddress((a) => ({ ...a, city: e.target.value }))} className={field} placeholder="Tbilisi" /></div>
             </div>
-            <div><label className={label}>Address <span className="text-teal-600">*</span></label><input value={address.addressLine1} onChange={(e) => setAddress((a) => ({ ...a, addressLine1: e.target.value }))} className={field} placeholder="Street and number" /></div>
+            <div><label className={label}>{tr('co.f.address')} <span className="text-teal-600">*</span></label><input value={address.addressLine1} onChange={(e) => setAddress((a) => ({ ...a, addressLine1: e.target.value }))} className={field} placeholder="Street and number" /></div>
             <div className="grid grid-cols-2 gap-4">
-              <div><label className={label}>Apartment, floor</label><input value={address.addressLine2} onChange={(e) => setAddress((a) => ({ ...a, addressLine2: e.target.value }))} className={field} /></div>
-              <div><label className={label}>Postal code</label><input value={address.postalCode} onChange={(e) => setAddress((a) => ({ ...a, postalCode: e.target.value }))} className={field} /></div>
+              <div><label className={label}>{tr('co.f.address2')}</label><input value={address.addressLine2} onChange={(e) => setAddress((a) => ({ ...a, addressLine2: e.target.value }))} className={field} /></div>
+              <div><label className={label}>{tr('gc.postal')}</label><input value={address.postalCode} onChange={(e) => setAddress((a) => ({ ...a, postalCode: e.target.value }))} className={field} /></div>
             </div>
           </div>
 
@@ -227,9 +230,9 @@ export default function ClaimGiftPage() {
 
           <button onClick={claim} disabled={submitting}
             className="w-full mt-6 bg-teal-600 text-white py-4 rounded-xl font-bold hover:bg-teal-700 disabled:opacity-60">
-            {submitting ? 'Claiming…' : '🎁 Claim my gift'}
+            {submitting ? tr('gc.claiming') : tr('gc.claim')}
           </button>
-          <p className="text-xs text-gray-400 text-center mt-3">Nothing to pay — {preview.buyerName} has already covered it.</p>
+          <p className="text-xs text-gray-400 text-center mt-3">{fill(tr('gc.free'), { buyer: preview.buyerName })}</p>
         </div>
       </div>
     </main>

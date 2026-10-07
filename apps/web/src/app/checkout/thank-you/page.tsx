@@ -61,8 +61,11 @@ function ThankyouContent() {
     return (
       <Screen icon="❌" title={t('ty.failed.title')} sub={t('ty.failed.sub')}>
         {orderRef}{errorLine}
+        {/* A declined payment cancels the order and releases its stock
+            (payments.service handleWebhook), so retrying this order would
+            fail — the honest next step is to choose again. */}
         <div className="flex gap-4">
-          <button onClick={handlePay} disabled={paying} className={primary}>{paying ? t('ty.redirecting') : t('ty.tryAgain')}</button>
+          <Link href="/prices" className={primary}>{t('ty.tryAgain')}</Link>
           <Link href="/account/orders" className={secondary}>{t('ty.viewOrders')}</Link>
         </div>
       </Screen>

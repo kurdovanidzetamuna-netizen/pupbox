@@ -10,6 +10,7 @@ function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
   const redirect = safeRedirect(params.get('redirect'));
+  const sessionExpired = params.get('expired') === '1';
   const { refresh: refreshCart } = useCart();
   const { t } = useLanguage();
 
@@ -51,6 +52,7 @@ function LoginForm() {
       <Link href="/" className="text-3xl font-bold text-teal-600 mb-8">🐾 Pupbox</Link>
       <div className="bg-white rounded-2xl border border-gray-100 p-8 w-full max-w-md shadow-sm">
         <h1 className="text-2xl font-bold text-gray-900 mb-6">{t('login.heading')}</h1>
+        {sessionExpired && !error && <p className="text-amber-800 text-sm mb-4 bg-amber-50 px-3 py-2 rounded-lg" role="status">{t('acc.sessionExpired')}</p>}
         {error && <p className="text-red-500 text-sm mb-4 bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
