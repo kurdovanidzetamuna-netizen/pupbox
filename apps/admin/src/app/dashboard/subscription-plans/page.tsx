@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { ActionButton, SortBar, ViewToggle, Toolbar, StatCard, StatCards, PlanHighlightCard, FilterSelect, CustomSelect, RowActions, Pagination, type ViewMode } from '@/components/Toolbar';
+import { ActionButton, SortBar, ViewToggle, Toolbar, StatCard, StatCards, PlanHighlightCard, RowActions, Pagination, type ViewMode } from '@/components/Toolbar';
 import QuickAddBoxItemModal from '@/components/QuickAddBoxItemModal';
 import Link from 'next/link';
 import { API, EMPTY_FORM, DEFAULT_BADGES as PAGE_DEFAULT_BADGES } from './_lib/constants';
@@ -22,11 +22,7 @@ export default function AdminSubscriptionPlansPage() {
   const [showBoxItemModal, setShowBoxItemModal] = useState(false);
   const [plans, setPlans] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showCreate, setShowCreate] = useState(false);
   const [builderPlan, setBuilderPlan] = useState<any>(null);
-  const [form, setForm] = useState<any>(EMPTY_FORM);
-  const [saving, setSaving] = useState(false);
-  const [createErrors, setCreateErrors] = useState<Record<string, string>>({});
   const [sort, setSort] = useState('date_desc');
   const [viewMode, setViewMode] = useState<ViewMode>('card');
   const [planOrderCounts, setPlanOrderCounts] = useState<Record<string, number>>({});
@@ -66,46 +62,11 @@ export default function AdminSubscriptionPlansPage() {
   useEffect(() => { load(); }, []);
   useEffect(() => {
     const h = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') { setViewPlan(null); setShowCreate(false); setShowBadgeManager(false); }
+      if (e.key === 'Escape') { setViewPlan(null); setShowBadgeManager(false); }
     };
     window.addEventListener('keydown', h);
     return () => window.removeEventListener('keydown', h);
   }, []);
-
-  async function create() {
-    const errors: Record<string, string> = {};
-    if (!form.name?.trim()) errors.name = 'Required';
-    if (!form.slug?.trim()) errors.slug = 'Required';
-    else if (!/^[a-z0-9-]+$/.test(form.slug)) errors.slug = 'Lowercase, numbers & hyphens only';
-    if (!form.monthlyPrice || isNaN(Number(form.monthlyPrice)) || Number(form.monthlyPrice) <= 0) errors.monthlyPrice = 'Must be > 0';
-    if (!form.boxCount || isNaN(Number(form.boxCount)) || Number(form.boxCount) < 1) errors.boxCount = 'Min 1';
-    if (Object.keys(errors).length) { setCreateErrors(errors); return; }
-    setCreateErrors({});
-    setSaving(true);
-    try {
-      const months = Number(form.durationValue) || 1;
-      const monthly = Number(form.monthlyPrice) || 0;
-      const disc = Number(form.discountPercent) || 0;
-      const computedPrice = Math.round(monthly * months * (1 - disc / 100) * 100) / 100;
-      const body = {
-        name: form.name, slug: form.slug, durationValue: months, durationUnit: form.durationUnit || 'MONTH',
-        boxCount: Number(form.boxCount), price: computedPrice,
-        monthlyEquivPrice: Math.round((computedPrice / months) * 100) / 100,
-        discountPercent: disc || null, benefits: [], sortOrder: 0, isActive: true,
-        deliveryIncluded: true, autoRenewal: true, giftable: true,
-      };
-      const res = await fetch(`${API}/admin/subscription-plans`, { method: 'POST', headers: { Authorization: `Bearer ${token()}`, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        const msg = err.message || `Error ${res.status}`;
-        setCreateErrors({ slug: Array.isArray(msg) ? msg.join(', ') : String(msg) });
-        return;
-      }
-      setShowCreate(false);
-      setForm(EMPTY_FORM);
-      load();
-    } finally { setSaving(false); }
-  }
 
   async function toggleActive(p: any) {
     await fetch(`${API}/admin/subscription-plans/${p.id}`, { method: 'PUT', headers: { Authorization: `Bearer ${token()}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ ...p, isActive: !p.isActive }) });
@@ -197,7 +158,7 @@ export default function AdminSubscriptionPlansPage() {
         </div>
       </Toolbar>
 
-      {/* Quick-create form */}
+      {/* Badge manager */}
       {showBadgeManager && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(15,23,42,0.45)' }}
           onClick={e => { if (e.target === e.currentTarget) setShowBadgeManager(false); }}>
