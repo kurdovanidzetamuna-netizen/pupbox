@@ -1,7 +1,6 @@
 'use client';
 import FormField, { inputClass } from '@/components/FormField';
 import { CustomSelect } from '@/components/Toolbar';
-import { DEFAULT_BADGES } from '../../_lib/constants';
 import { num, slugify } from '../../_lib/plan-config';
 import NumberField from '../ui/NumberField';
 import StepHeading from '../ui/StepHeading';
@@ -12,7 +11,7 @@ import type { PlanBuilderState } from './usePlanBuilder';
 /** English side of Plan Settings: the four numbered steps that define a plan. */
 export default function PlanSettingsEnglish({ b }: { b: PlanBuilderState }) {
   const {
-    plan, badges, setBadges, formErrors, setFormErrors, showNewBadge, setShowNewBadge,
+    plan, badges, addBadge, formErrors, setFormErrors, showNewBadge, setShowNewBadge,
     slugTouched, setSlugTouched, newBadgeInput, setNewBadgeInput, form, setForm, boxCount,
     boxesLinked, setMonths, setBoxes, pricingMonths, pricingTotal, pricingEffectiveMonthly,
     pricingSavings, cfg, setCfg, totalCost
@@ -114,9 +113,7 @@ export default function PlanSettingsEnglish({ b }: { b: PlanBuilderState }) {
                 onKeyDown={e => {
                   if (e.key === 'Enter' && newBadgeInput.trim()) {
                     const label = newBadgeInput.trim();
-                    const updated = [...new Set([...badges, label])];
-                    setBadges(updated);
-                    try { localStorage.setItem('pupbox_badges', JSON.stringify(updated.filter(b => !DEFAULT_BADGES.includes(b)))); } catch {}
+                    addBadge(label);
                     setForm((x: any) => ({ ...x, badge: label }));
                     setNewBadgeInput(''); setShowNewBadge(false);
                   }
@@ -130,9 +127,7 @@ export default function PlanSettingsEnglish({ b }: { b: PlanBuilderState }) {
                 onClick={() => {
                   const label = newBadgeInput.trim();
                   if (!label) return;
-                  const updated = [...new Set([...badges, label])];
-                  setBadges(updated);
-                  try { localStorage.setItem('pupbox_badges', JSON.stringify(updated.filter(b => !DEFAULT_BADGES.includes(b)))); } catch {}
+                  addBadge(label);
                   setForm((x: any) => ({ ...x, badge: label }));
                   setNewBadgeInput(''); setShowNewBadge(false);
                 }}

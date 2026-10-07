@@ -8,7 +8,7 @@ import { savePlan, clearBadgeFromOtherPlans, fetchBoxItems, fetchActiveCoupons }
 
 export type BuilderTab = 'builder' | 'form' | 'discounts';
 
-export type PlanBuilderProps = { plan: any; onClose: () => void; onSaved: () => void; badges: string[]; setBadges: (b: string[]) => void };
+export type PlanBuilderProps = { plan: any; onClose: () => void; onSaved: () => void; badges: string[]; addBadge: (label: string) => void };
 
 /**
  * All state, derived figures and actions of the plan drawer, in one place.
@@ -17,7 +17,7 @@ export type PlanBuilderProps = { plan: any; onClose: () => void; onSaved: () => 
  * each tab is deliberate: tabs unmount when you switch away, and searches or
  * a half-typed badge would otherwise be lost on every switch.
  */
-export function usePlanBuilder({ plan, onClose, onSaved, badges, setBadges }: PlanBuilderProps) {
+export function usePlanBuilder({ plan, onClose, onSaved, badges, addBadge }: PlanBuilderProps) {
   const [tab, setTab] = useState<BuilderTab>('form');
   const [boxItems, setBoxItems] = useState<any[]>([]);
   const [coupons, setCoupons] = useState<any[]>([]);
@@ -332,7 +332,7 @@ export function usePlanBuilder({ plan, onClose, onSaved, badges, setBadges }: Pl
   const unaddedItems = boxItems.filter(b => !activeItems.find(i => i.productId === b.id));
 
   return {
-    plan, onClose, badges, setBadges, tab, setTab, boxItems, coupons, saving, lang, setLang,
+    plan, onClose, badges, addBadge, tab, setTab, boxItems, coupons, saving, lang, setLang,
     formErrors, setFormErrors, toast, setToast, showNewBadge, setShowNewBadge, slugTouched,
     setSlugTouched, newBadgeInput, setNewBadgeInput, form, setForm, ka, setKa, boxCount,
     boxesLinked, setMonths, setBoxes, pricingMonths, pricingMonthly, pricingDiscount,
