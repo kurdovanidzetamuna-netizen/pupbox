@@ -22,7 +22,7 @@ export class CheckoutService {
     const deliveryMethod = await this.prisma.deliveryMethod.findFirst({ where: { id: data.deliveryMethodId, isActive: true } });
     if (!deliveryMethod) throw new BadRequestException('Invalid delivery method');
 
-    const deliveryCost = deliveryMethod.freeThreshold && cart.subtotal >= Number(deliveryMethod.freeThreshold) ? 0 : Number(deliveryMethod.price);
+    const deliveryCost = this.cartService.deliveryCostFor(deliveryMethod, cart);
     const total = cart.total + deliveryCost;
 
     return {
@@ -68,7 +68,7 @@ export class CheckoutService {
     const deliveryMethod = await this.prisma.deliveryMethod.findFirst({ where: { id: data.deliveryMethodId, isActive: true } });
     if (!deliveryMethod) throw new BadRequestException('Invalid delivery method');
 
-    const deliveryCost = deliveryMethod.freeThreshold && cart.subtotal >= Number(deliveryMethod.freeThreshold) ? 0 : Number(deliveryMethod.price);
+    const deliveryCost = this.cartService.deliveryCostFor(deliveryMethod, cart);
     const total = +(cart.total + deliveryCost).toFixed(2);
 
     // Determine order type

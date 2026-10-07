@@ -32,8 +32,10 @@ export class CartController {
   constructor(private service: CartService) {}
 
   private resolveSession(req: any, headers: any): { userId?: string; sessionId?: string } {
-    if (req.user?.id) return { userId: req.user.id };
     const sid = headers['x-session-id'] as string;
+    // Signed in: the session id travels along so the guest cart built before
+    // signing in can be merged into the account cart.
+    if (req.user?.id) return { userId: req.user.id, sessionId: sid || undefined };
     // Falling back to a literal 'guest' pools every anonymous visitor into one
     // shared cart. Require a real session id instead.
     if (!sid) throw new BadRequestException('Sign in or provide an x-session-id header to use a cart');
@@ -79,8 +81,15 @@ export class CartController {
   }
 
   @Get('delivery-methods')
-  getDeliveryMethods(@Query('total') total?: string) {
-    return this.service.getDeliveryMethods(total ? +total : 0);
+  async getDeliveryMethods(@Request() req: any, @Headers() headers: any, @Query('total') total?: string) {
+    // Priced against the shopper's actual cart when we know who they are, so
+    // a plan that includes delivery shows it as free here, exactly as checkout
+    // will charge it. `total` remains for callers without a cart.
+    if (req.user?.id || headers['x-session-id']) {
+      const { userId, sessionId } = this.resolveSession(req, headers);
+      return this.service.getDeliveryMethods(await this.service.getOrCreate(userId, sessionId));
+    }
+    return this.service.getDeliveryMethods({ subtotal: total ? +total : 0 });
   }
 }
 

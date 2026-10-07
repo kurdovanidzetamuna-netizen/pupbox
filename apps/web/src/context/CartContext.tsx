@@ -10,13 +10,20 @@ function getSessionId() {
   return sid;
 }
 
-function getHeaders() {
+/**
+ * The guest session id is sent even when signed in: the API uses it to fold
+ * the cart built before signing in into the account cart, once.
+ */
+export function cartHeaders(): Record<string, string> {
   const token = typeof window !== 'undefined' ? localStorage.getItem('pupbox_token') : null;
-  return { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : { 'x-session-id': getSessionId() }) };
+  return { 'Content-Type': 'application/json', 'x-session-id': getSessionId(), ...(token ? { Authorization: `Bearer ${token}` } : {}) };
 }
+const getHeaders = cartHeaders;
 
 interface CartContextType {
   cart: any;
+  /** False until the first fetch finishes, so empty and not-loaded differ. */
+  ready: boolean;
   loading: boolean;
   addProduct: (productId: string, quantity?: number) => Promise<void>;
   addPlan: (planId: string) => Promise<void>;
@@ -32,12 +39,14 @@ const CartContext = createContext<CartContextType | null>(null);
 export function CartProvider({ children }: { children: ReactNode }) {
   const [cart, setCart] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [ready, setReady] = useState(false);
 
   const refresh = useCallback(async () => {
     try {
       const res = await fetch(`${API_URL}/cart`, { headers: getHeaders() });
       if (res.ok) setCart(await res.json());
     } catch {}
+    finally { setReady(true); }
   }, []);
 
   useEffect(() => { refresh(); }, []);
@@ -53,7 +62,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   return (
     <CartContext.Provider value={{
-      cart, loading, refresh,
+      cart, ready, loading, refresh,
       addProduct: (productId, quantity = 1) => call('/items', 'POST', { productId, quantity }),
       addPlan: (planId) => call('/items', 'POST', { subscriptionPlanId: planId }),
       updateItem: (itemId, quantity) => call(`/items/${itemId}`, 'PUT', { quantity }),

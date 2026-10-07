@@ -19,9 +19,37 @@ export class CartService {
     const where = userId ? { userId } : { sessionId };
     let cart = await this.prisma.cart.findFirst({ where, include: cartInclude, orderBy: { createdAt: 'desc' } });
     if (!cart) {
-      cart = await this.prisma.cart.create({ data: { userId, sessionId }, include: cartInclude });
+      // An account cart carries no session id, so it can never be mistaken
+      // for a guest cart by the merge below.
+      cart = await this.prisma.cart.create({ data: userId ? { userId } : { sessionId }, include: cartInclude });
     }
+    // A shopper who signs in mid-way still sends their guest session id. Fold
+    // that guest cart into the account cart, or everything they added before
+    // signing in silently disappears and checkout finds an empty cart.
+    if (userId && sessionId) cart = await this.mergeGuestCart(cart, sessionId);
     return this.withTotals(cart);
+  }
+
+  private async mergeGuestCart(userCart: any, sessionId: string) {
+    const guest = await this.prisma.cart.findFirst({ where: { sessionId, userId: null }, include: cartInclude });
+    if (!guest || guest.id === userCart.id) return userCart;
+
+    for (const item of guest.items) {
+      const match = userCart.items.find((i: any) =>
+        item.productId ? i.productId === item.productId : i.subscriptionPlanId === item.subscriptionPlanId);
+      if (!match) {
+        await this.prisma.cartItem.update({ where: { id: item.id }, data: { cartId: userCart.id } });
+      } else if (item.productId) {
+        await this.prisma.cartItem.update({ where: { id: match.id }, data: { quantity: match.quantity + item.quantity } });
+      }
+      // The same plan already in the account cart: one subscription per plan.
+    }
+    if (guest.couponId && !userCart.couponId) {
+      await this.prisma.cart.update({ where: { id: userCart.id }, data: { couponId: guest.couponId } });
+    }
+    await this.prisma.cartItem.deleteMany({ where: { cartId: guest.id } });
+    await this.prisma.cart.delete({ where: { id: guest.id } });
+    return this.prisma.cart.findUniqueOrThrow({ where: { id: userCart.id }, include: cartInclude });
   }
 
   async addItem(cartId: string, data: { productId?: string; subscriptionPlanId?: string; quantity?: number }) {
@@ -114,13 +142,23 @@ export class CartService {
     await this.prisma.cart.update({ where: { id: cartId }, data: { couponId: null } });
   }
 
-  async getDeliveryMethods(cartTotal: number) {
+  /**
+   * What a delivery method costs for this cart. A plan sold with delivery
+   * included ("Free delivery" on its pricing card) is never charged again at
+   * checkout; anything else in the same order ships with its first box.
+   */
+  deliveryCostFor(method: { price: any; freeThreshold: any }, cart: { subtotal: number; deliveryIncluded?: boolean }) {
+    if (cart.deliveryIncluded) return 0;
+    if (method.freeThreshold && cart.subtotal >= Number(method.freeThreshold)) return 0;
+    return Number(method.price);
+  }
+
+  async getDeliveryMethods(cart: { subtotal: number; deliveryIncluded?: boolean }) {
     const methods = await this.prisma.deliveryMethod.findMany({ where: { isActive: true }, orderBy: { sortOrder: 'asc' } });
-    return methods.map(m => ({
-      ...m,
-      effectivePrice: m.freeThreshold && cartTotal >= Number(m.freeThreshold) ? 0 : Number(m.price),
-      isFree: !!(m.freeThreshold && cartTotal >= Number(m.freeThreshold)),
-    }));
+    return methods.map(m => {
+      const effectivePrice = this.deliveryCostFor(m, cart);
+      return { ...m, effectivePrice, isFree: effectivePrice === 0, includedWithPlan: !!cart.deliveryIncluded };
+    });
   }
 
   private async getCart(cartId: string) {
@@ -144,7 +182,8 @@ export class CartService {
 
     const total = Math.max(0, subtotal - discountAmount);
     const hasSubscription = cart.items.some((i: any) => i.subscriptionPlanId);
+    const deliveryIncluded = cart.items.some((i: any) => i.subscriptionPlan?.deliveryIncluded);
 
-    return { ...cart, subtotal: +subtotal.toFixed(2), discountAmount: +discountAmount.toFixed(2), total: +total.toFixed(2), hasSubscription, itemCount: cart.items.reduce((s: number, i: any) => s + i.quantity, 0) };
+    return { ...cart, subtotal: +subtotal.toFixed(2), discountAmount: +discountAmount.toFixed(2), total: +total.toFixed(2), hasSubscription, deliveryIncluded, itemCount: cart.items.reduce((s: number, i: any) => s + i.quantity, 0) };
   }
 }
