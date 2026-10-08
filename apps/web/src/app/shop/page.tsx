@@ -5,12 +5,9 @@ import ShopControls from './ShopControls';
 import T, { L } from '@/components/T';
 import ContentText from '@/components/ContentText';
 import { shopPage } from '@pupbox/content';
-import { getStoredContent } from '@/lib/content';
+import { getStoredContent, pageMetadata } from '@/lib/content';
 
-export const metadata = {
-  title: 'Shop — Premium Dog Products',
-  description: 'Browse our range of premium dog treats, toys, and accessories.',
-};
+export const generateMetadata = () => pageMetadata(shopPage);
 
 function PriceDisplay({ price, salePrice }: { price: number; salePrice?: number | null }) {
   if (salePrice) {

@@ -1,4 +1,5 @@
-import { cmsSlug, FAQ_SLUG, type FaqItem, type PageDef, type StoredContent } from '@pupbox/content';
+import type { Metadata } from 'next';
+import { cmsSlug, FAQ_SLUG, localizePage, type FaqItem, type PageDef, type StoredContent } from '@pupbox/content';
 import { fetchAPI } from './api';
 
 /**
@@ -25,4 +26,21 @@ export async function getFaq(): Promise<FaqItem[] | null> {
   } catch {
     return null;
   }
+}
+
+/**
+ * A page's title, description and share picture from its "Google & sharing"
+ * section in admin. Georgian — the site's default language — is what search
+ * engines and link previews get. `fullTitle` skips the " | Pupbox" suffix.
+ */
+export async function pageMetadata(page: PageDef, { fullTitle = false } = {}): Promise<Metadata> {
+  const seo = localizePage(page, await getStoredContent(page), 'ka').seo ?? {};
+  const images = seo.shareImage ? [{ url: seo.shareImage }] : undefined;
+  return {
+    title: fullTitle ? { absolute: seo.title } : seo.title,
+    description: seo.description,
+    alternates: { canonical: page.path },
+    openGraph: { title: seo.title, description: seo.description, url: page.path, ...(images ? { images } : {}) },
+    twitter: { title: seo.title, description: seo.description, ...(images ? { images } : {}) },
+  };
 }

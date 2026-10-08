@@ -1,5 +1,5 @@
 import type { PageDef } from '../types';
-import { d, bare, text, area, icon, link, list, note } from '../fields';
+import { d, bare, tx, text, area, icon, link, list, note, seo } from '../fields';
 
 export const howItWorksPage: PageDef = {
   key: 'how-it-works',
@@ -53,5 +53,9 @@ export const howItWorksPage: PageDef = {
         note('faq', 'The questions themselves are in the FAQ manager — tick "How It Works" on the ones to show here.', '/dashboard/faq'),
       ],
     },
+    seo(
+      tx('How it works', 'როგორ მუშაობს'),
+      tx('How a Pupbox subscription works, from choosing a plan to your monthly box.', 'როგორ მუშაობს Pupbox-ის გამოწერა — გეგმის არჩევიდან ყოველთვიურ კოლოფამდე.'),
+    ),
   ],
 };

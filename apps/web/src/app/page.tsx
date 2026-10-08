@@ -2,12 +2,9 @@ import { api } from '@/lib/api';
 import { Metadata } from 'next';
 import HomePageClient from '@/components/HomePageClient';
 import { homePage } from '@pupbox/content';
-import { getFaq, getStoredContent } from '@/lib/content';
+import { getFaq, getStoredContent, pageMetadata } from '@/lib/content';
 
-export const metadata: Metadata = {
-  title: 'Pupbox — ყოველთვიური ყუთის გამოწერა საქართველოში',
-  description: 'პრემიუმ საჭმლის, სათამაშოებისა და აქსესუარების კურირებული ყოველთვიური კოლოფი შენი ძაღლისთვის. მიწოდება მთელ საქართველოში.',
-};
+export const generateMetadata = () => pageMetadata(homePage, { fullTitle: true });
 
 const organizationJsonLd = {
   '@context': 'https://schema.org',

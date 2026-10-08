@@ -1,5 +1,5 @@
 import type { PageDef } from '../types';
-import { d, bare, tx, text, area, icon, list } from '../fields';
+import { d, bare, tx, text, area, icon, list, seo } from '../fields';
 
 const item = (iconChar: string, en: [string, string], ka: [string, string]) =>
   ({ icon: iconChar, name: tx(en[0], ka[0]), desc: tx(en[1], ka[1]) });
@@ -85,5 +85,9 @@ export const pricingPage: PageDef = {
         ]),
       ],
     },
+    seo(
+      tx('Pricing and plans', 'ფასები და გეგმები'),
+      tx('Choose a Pupbox plan for your dog — 1, 3, 6 or 12 months. Longer plans save more.', 'აირჩიე Pupbox-ის გეგმა შენი ძაღლისთვის — 1, 3, 6 ან 12 თვით. გრძელვადიანი გეგმები უფრო ხელსაყრელია.'),
+    ),
   ],
 };

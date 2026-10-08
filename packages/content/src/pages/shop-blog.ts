@@ -1,5 +1,5 @@
 import type { PageDef } from '../types';
-import { d, tx, text, area } from '../fields';
+import { d, tx, text, area, seo } from '../fields';
 
 export const shopPage: PageDef = {
   key: 'shop',
@@ -14,6 +14,10 @@ export const shopPage: PageDef = {
         area('description', 'Description', tx('', ''), 'Optional line under the heading.'),
       ],
     },
+    seo(
+      tx('Shop', 'მაღაზია'),
+      tx('Premium dog treats, toys, grooming and accessories, delivered across Georgia.', 'პრემიუმ ნუგბარი, სათამაშოები, მოვლის საშუალებები და აქსესუარები ძაღლებისთვის — მიწოდება მთელ საქართველოში.'),
+    ),
   ],
 };
 
@@ -38,5 +42,9 @@ export const blogPage: PageDef = {
         area('description', 'Description', d('blog.empty.desc')),
       ],
     },
+    seo(
+      tx('Dog care blog', 'ძაღლის მოვლის ბლოგი'),
+      tx('Breed guides, training tips, health advice and more from the Pupbox team.', 'ჯიშის გიდები, ვარჯიშის რჩევები, ჯანმრთელობის ინფორმაცია და სხვა — Pupbox-ის გუნდისგან.'),
+    ),
   ],
 };

@@ -3,9 +3,9 @@ import PlanSection from './PlanSection';
 import BoxContents from './BoxContents';
 import { PricesHeader, PricesIncludes } from './PricesHeader';
 import { pricingPage } from '@pupbox/content';
-import { getStoredContent } from '@/lib/content';
+import { getStoredContent, pageMetadata } from '@/lib/content';
 
-export const metadata = { title: 'Pricing — Pupbox Subscription Plans', description: 'Choose the best Pupbox subscription plan for your dog.' };
+export const generateMetadata = () => pageMetadata(pricingPage);
 
 export default async function PricesPage() {
   let plans: any[] = [];

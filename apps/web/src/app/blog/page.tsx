@@ -1,12 +1,9 @@
 import { Metadata } from 'next';
 import BlogClient from '@/components/BlogClient';
 import { blogPage } from '@pupbox/content';
-import { getStoredContent } from '@/lib/content';
+import { getStoredContent, pageMetadata } from '@/lib/content';
 
-export const metadata: Metadata = {
-  title: 'ძაღლის მოვლის ბლოგი | Pupbox',
-  description: 'ჯიშის გიდები, ვარჯიშის რჩევები, ჯანმრთელობის ინფორმაცია და სხვა — Pupbox-ის გუნდისგან.',
-};
+export const generateMetadata = () => pageMetadata(blogPage);
 
 async function getPosts(page = 1) {
   try {

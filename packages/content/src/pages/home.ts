@@ -1,5 +1,5 @@
 import type { PageDef } from '../types';
-import { d, tx, text, area, image, icon, link, value, list, note } from '../fields';
+import { d, tx, text, area, image, icon, link, value, list, note, seo } from '../fields';
 
 export const homePage: PageDef = {
   key: 'homepage',
@@ -103,5 +103,10 @@ export const homePage: PageDef = {
         note('faq', 'The questions themselves are in the FAQ manager — tick "Home" on the ones to show here.', '/dashboard/faq'),
       ],
     },
+    seo(
+      tx('Pupbox — Monthly dog subscription boxes in Georgia', 'Pupbox — ყოველთვიური ყუთის გამოწერა საქართველოში'),
+      tx('Curated monthly boxes of premium treats, toys and accessories for your dog. Delivered across Georgia.', 'პრემიუმ საჭმლის, სათამაშოებისა და აქსესუარების კურირებული ყოველთვიური კოლოფი შენი ძაღლისთვის. მიწოდება მთელ საქართველოში.'),
+      { fullTitle: true },
+    ),
   ],
 };
