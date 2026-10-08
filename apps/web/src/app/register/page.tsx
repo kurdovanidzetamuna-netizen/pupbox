@@ -14,7 +14,7 @@ function RegisterForm() {
   const redirect = safeRedirect(params.get('redirect'));
   const { refresh: refreshCart } = useCart();
   const refCode = params.get('ref') || '';
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
 
   const [form, setForm] = useState({ firstName: '', lastName: '', email: '', password: '', phone: '', referralCode: refCode });
   const [error, setError] = useState('');
@@ -38,7 +38,7 @@ function RegisterForm() {
       const res = await fetch(`${API_URL}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, referralCode: form.referralCode || undefined }),
+        body: JSON.stringify({ ...form, referralCode: form.referralCode || undefined, language: lang }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Registration failed');

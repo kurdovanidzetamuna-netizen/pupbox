@@ -2,6 +2,7 @@ import { Controller, Post, Get, Param, Body, UseGuards, Request, RawBodyRequest,
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PaymentsService } from './payments.service';
+import { SkipThrottle } from '@nestjs/throttler';
 
 @ApiTags('payments')
 @Controller('payments')
@@ -15,6 +16,8 @@ export class PaymentsController {
     return this.paymentsService.initiatePayment(orderId, req.user.id);
   }
 
+  // Flitt's servers call this; never rate-limit the bank.
+  @SkipThrottle()
   @Post('webhook/flitt')
   handleWebhook(@Body() body: Record<string, any>) {
     return this.paymentsService.handleWebhook(body);

@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useLanguage } from '@/context/LanguageContext';
+import { saveForEmails, useLanguage } from '@/context/LanguageContext';
 import { useCart } from '@/context/CartContext';
 import { safeRedirect } from '@/lib/safeRedirect';
 import { API_URL } from '@/lib/api';
@@ -13,7 +13,7 @@ function LoginForm() {
   const redirect = safeRedirect(params.get('redirect'));
   const sessionExpired = params.get('expired') === '1';
   const { refresh: refreshCart } = useCart();
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
 
   const [form, setForm] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
@@ -23,9 +23,8 @@ function LoginForm() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const errs: Record<string, string> = {};
-    if (!form.email.trim()) errs.email = 'Email is required';
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) errs.email = 'Enter a valid email address';
-    if (!form.password) errs.password = 'Password is required';
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) errs.email = t('login.e.email');
+    if (!form.password) errs.password = t('login.e.password');
     if (Object.keys(errs).length > 0) { setFieldErrors(errs); return; }
     setFieldErrors({});
     setLoading(true);
@@ -39,6 +38,7 @@ function LoginForm() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Login failed');
       localStorage.setItem('pupbox_token', data.token);
+      saveForEmails(lang);
       await refreshCart(); // merges anything added as a guest into the account cart
       router.push(redirect);
     } catch (e: any) {
@@ -65,6 +65,9 @@ function LoginForm() {
             <label className="block text-sm font-medium text-gray-700 mb-1">{t('login.password')} <span className="text-red-500">*</span></label>
             <input type="password" value={form.password} onChange={e => { setForm({ ...form, password: e.target.value }); setFieldErrors(f => ({ ...f, password: '' })); }} className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 ${fieldErrors.password ? 'border-red-400 bg-red-50' : 'border-gray-200'}`} placeholder="••••••••" />
             {fieldErrors.password && <p className="text-red-500 text-xs mt-1">⚠ {fieldErrors.password}</p>}
+            <div className="text-right mt-2">
+              <Link href="/forgot-password" className="text-sm text-teal-600 hover:underline">{t('login.forgot')}</Link>
+            </div>
           </div>
           <button type="submit" disabled={loading} className="w-full bg-teal-600 text-white py-3 rounded-xl font-semibold hover:bg-teal-700 transition disabled:opacity-50">
             {loading ? t('login.loading') : t('login.btn')}

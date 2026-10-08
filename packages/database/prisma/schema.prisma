@@ -157,11 +157,16 @@ model User {
   referralCode   String      @unique @default(cuid())
   emailVerified  Boolean     @default(false)
   avatarUrl      String?
+  /// The language emails are written in: "ka" or "en", following the site's language switch.
+  language       String      @default("ka")
+  /// Sign-in tokens issued before this are refused, so a password reset signs out every old session.
+  passwordChangedAt DateTime?
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
   deletedAt      DateTime?
 
   addresses      Address[]
+  passwordResets PasswordResetToken[]
   dogs           Dog[]
   orders         Order[]
   subscriptions  CustomerSubscription[]
@@ -889,4 +894,18 @@ model BoxShipment {
 
   @@unique([subscriptionId, year, month])
   @@index([year, month, status])
+}
+
+/// A "forgot password" link. Only a hash of the token is stored, so a copy of
+/// the database can't be used to reset anyone's password. Single use, short-lived.
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
 }

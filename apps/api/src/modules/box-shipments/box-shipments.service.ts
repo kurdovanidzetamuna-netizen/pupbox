@@ -18,9 +18,9 @@ const NEXT: Record<BoxShipmentStatus, BoxShipmentStatus[]> = {
 const shipmentInclude = {
   subscription: {
     select: {
-      id: true, boxesTotal: true, boxesDelivered: true, isGift: true,
+      id: true, boxesTotal: true, boxesDelivered: true, isGift: true, status: true,
       plan: { select: { name: true } },
-      user: { select: { id: true, email: true, firstName: true, lastName: true } },
+      user: { select: { id: true, email: true, firstName: true, lastName: true, language: true } },
       dog: { select: { name: true, breed: true, size: true, allergies: true, specialNotes: true } },
     },
   },
@@ -117,6 +117,8 @@ export class BoxShipmentsService {
       campaigns,
       withoutCampaign: items.filter((i) => !i.campaignId && i.status !== 'CANCELLED').length,
       withoutAddress: items.filter((i) => !i.addressId && i.status !== 'CANCELLED').length,
+      // Listed while active, cancelled since: someone must decide whether it still goes.
+      cancelledSubscriptions: items.filter((i) => (i.status === 'TO_PACK' || i.status === 'PACKED') && i.subscription.status === 'CANCELLED').length,
       pickList: [...pick.values()].sort((a, b) => a.name.localeCompare(b.name)),
     };
   }
@@ -217,6 +219,7 @@ export class BoxShipmentsService {
     await this.email.sendBoxShipped({
       email: user.email,
       firstName: user.firstName,
+      language: user.language,
       dogName: dog?.name ?? null,
       boxNumber: s.boxNumber,
       boxesTotal,

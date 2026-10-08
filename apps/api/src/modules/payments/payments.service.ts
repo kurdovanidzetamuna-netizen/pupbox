@@ -201,9 +201,14 @@ export class PaymentsService implements OnModuleInit, OnModuleDestroy {
           // it is not shippable. It activates when the recipient claims it.
           const full = await this.prisma.order.findUnique({
             where: { id: order_id },
-            include: { user: { select: { firstName: true, lastName: true } }, items: { select: { name: true, subscriptionPlanId: true } } },
+            include: {
+              user: { select: { firstName: true, lastName: true, language: true } },
+              items: { select: { name: true, subscriptionPlanId: true, subscriptionPlan: { select: { translations: true } } } },
+            },
           });
-          const planName = full?.items.find((i) => i.subscriptionPlanId)?.name ?? 'a Pupbox subscription';
+          const planItem = full?.items.find((i) => i.subscriptionPlanId);
+          const kaPlanName = (planItem?.subscriptionPlan?.translations as any)?.ka?.name?.trim();
+          const planName = (full?.user?.language !== 'en' && kaPlanName) || planItem?.name || 'Pupbox';
           const buyerName = [full?.user?.firstName, full?.user?.lastName].filter(Boolean).join(' ') || 'A friend';
 
           // Honour a scheduled send date; a dated gift is delivered by the
@@ -217,6 +222,7 @@ export class PaymentsService implements OnModuleInit, OnModuleDestroy {
               planName,
               message: full.giftMessage ?? undefined,
               claimToken: sub.giftClaimToken,
+              language: full.user?.language,
             }).catch((e) => this.logger.error(`Gift card email failed for order ${order_id}: ${e.message}`));
           }
         }
@@ -242,7 +248,7 @@ export class PaymentsService implements OnModuleInit, OnModuleDestroy {
       // Send confirmation email & check referral completion
       const fullOrder = await this.prisma.order.findUnique({
         where: { id: order_id },
-        include: { user: { select: { email: true, firstName: true } } },
+        include: { user: { select: { email: true, firstName: true, language: true } } },
       });
       if (fullOrder?.user) {
         this.email.sendPaymentConfirmation({ id: order_id, total: Number(order.total), user: fullOrder.user }).catch(() => {});
@@ -253,9 +259,9 @@ export class PaymentsService implements OnModuleInit, OnModuleDestroy {
           if (result?.couponCode) {
             const inviterReferral = await this.prisma.referral.findFirst({ where: { invitedId: order.userId } });
             if (inviterReferral) {
-              const inviter = await this.prisma.user.findUnique({ where: { id: inviterReferral.inviterId }, select: { email: true, firstName: true } });
+              const inviter = await this.prisma.user.findUnique({ where: { id: inviterReferral.inviterId }, select: { email: true, firstName: true, language: true } });
               if (inviter) {
-                this.email.sendReferralReward({ email: inviter.email, firstName: inviter.firstName, couponCode: result.couponCode }).catch(() => {});
+                this.email.sendReferralReward({ email: inviter.email, firstName: inviter.firstName, language: inviter.language, couponCode: result.couponCode }).catch(() => {});
               }
             }
           }

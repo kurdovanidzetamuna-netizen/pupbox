@@ -1,9 +1,12 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { EmailService } from '../email/email.service';
 
 @Injectable()
 export class OrdersService {
-  constructor(private prisma: PrismaService) {}
+  private readonly logger = new Logger(OrdersService.name);
+
+  constructor(private prisma: PrismaService, private email: EmailService) {}
 
   async findByUser(userId: string, page = 1, limit = 10) {
     const skip = (page - 1) * limit;
@@ -138,7 +141,24 @@ export class OrdersService {
   }
 
   async adminUpdateStatus(id: string, status: string) {
-    return this.prisma.order.update({ where: { id }, data: { status: status as any } });
+    const before = await this.prisma.order.findUnique({ where: { id }, select: { status: true } });
+    const now = new Date();
+    const order = await this.prisma.order.update({
+      where: { id },
+      data: {
+        status: status as any,
+        ...(status === 'SHIPPED' ? { shippedAt: now } : {}),
+        ...(status === 'DELIVERED' ? { deliveredAt: now } : {}),
+      },
+      include: { user: { select: { email: true, firstName: true, language: true } } },
+    });
+    // Tell the customer once, when the order first leaves.
+    if (status === 'SHIPPED' && before?.status !== 'SHIPPED' && before?.status !== 'DELIVERED') {
+      this.email.sendOrderShipped({ ...order.user, orderId: order.id, trackingNumber: order.trackingNumber })
+        .catch((e) => this.logger.error(`Order shipped email failed for ${id}: ${e.message}`));
+    }
+    const { user: _, ...rest } = order;
+    return rest;
   }
 
   async adminUpdateTracking(id: string, trackingNumber: string, internalNotes?: string) {

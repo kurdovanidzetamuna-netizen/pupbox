@@ -142,6 +142,9 @@ export default function MonthlyBoxesPage() {
           <ActionButton variant="secondary" disabled={busy} onClick={() => call('/refresh-campaigns', 'POST', ym, (r) => `Updated contents for ${r.changed} box${r.changed === 1 ? '' : 'es'}.`)}>Update contents</ActionButton>
         </Banner>
       )}
+      {data && data.cancelledSubscriptions > 0 && (
+        <Banner tone="red"><span>{data.cancelledSubscriptions} box{data.cancelledSubscriptions === 1 ? ' belongs' : 'es belong'} to a subscription cancelled after it was listed (marked below). Check your refund policy, then send it or cancel the box.</span></Banner>
+      )}
       {data && data.withoutAddress > 0 && (
         <Banner tone="red"><span>{data.withoutAddress} box{data.withoutAddress === 1 ? ' has' : 'es have'} no delivery address. Ask the customer to add one in their account.</span></Banner>
       )}
@@ -221,6 +224,7 @@ export default function MonthlyBoxesPage() {
                     </td>
                     <td style={td}>
                       <div style={{ fontWeight: 600, color: 'var(--slate-900)' }}>{s.user.firstName} {s.user.lastName}{s.isGift && <span title="Gift" style={{ marginLeft: 4 }}>🎁</span>}</div>
+                      {s.status === 'CANCELLED' && i.status !== 'CANCELLED' && <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--red-600)' }}>Subscription cancelled</div>}
                       <div style={{ fontSize: 12, color: 'var(--slate-400)' }}>{s.user.email}</div>
                     </td>
                     <td style={td}>

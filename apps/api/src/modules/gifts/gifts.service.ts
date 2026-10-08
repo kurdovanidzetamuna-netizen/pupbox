@@ -212,8 +212,8 @@ export class GiftsService {
       where: { id: subscriptionId },
       select: {
         id: true, isGift: true, giftClaimedAt: true, giftClaimToken: true,
-        plan: { select: { name: true, slug: true } },
-        purchasedBy: { select: { firstName: true, lastName: true } },
+        plan: { select: { name: true, slug: true, translations: true } },
+        purchasedBy: { select: { firstName: true, lastName: true, language: true } },
         orders: { select: { giftRecipientName: true, giftRecipientEmail: true, giftMessage: true }, take: 1 },
       },
     });
@@ -228,8 +228,9 @@ export class GiftsService {
       recipientEmail: order.giftRecipientEmail,
       recipientName: order.giftRecipientName ?? 'there',
       buyerName: [sub.purchasedBy?.firstName, sub.purchasedBy?.lastName].filter(Boolean).join(' ') || 'A friend',
-      planName: sub.plan.name?.trim() || sub.plan.slug,
+      planName: (sub.purchasedBy?.language !== 'en' && (sub.plan.translations as any)?.ka?.name?.trim()) || sub.plan.name?.trim() || sub.plan.slug,
       message: order.giftMessage ?? undefined,
+      language: sub.purchasedBy?.language,
       claimToken: sub.giftClaimToken,
     });
     this.logger.log(`Gift card resent for subscription ${subscriptionId}`);

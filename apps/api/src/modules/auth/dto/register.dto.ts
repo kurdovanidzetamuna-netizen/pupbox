@@ -1,4 +1,4 @@
-import { IsEmail, IsString, MinLength, IsOptional } from 'class-validator';
+import { IsEmail, IsString, MinLength, IsOptional, IsIn } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class RegisterDto {
@@ -28,4 +28,9 @@ export class RegisterDto {
   @IsOptional()
   @IsString()
   referralCode?: string;
+
+  /** The site language at sign-up; emails are written in it. */
+  @IsOptional()
+  @IsIn(['ka', 'en'])
+  language?: 'ka' | 'en';
 }

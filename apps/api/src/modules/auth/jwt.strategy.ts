@@ -13,9 +13,11 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     });
   }
 
-  async validate(payload: { sub: string; email: string; role: string }) {
+  async validate(payload: { sub: string; email: string; role: string; iat?: number }) {
     const user = await this.prisma.user.findUnique({ where: { id: payload.sub } });
-    if (!user || user.status === 'BLOCKED') throw new UnauthorizedException();
+    if (!user || user.deletedAt || user.status === 'BLOCKED') throw new UnauthorizedException();
+    // Issued before the last password change: that session was signed out.
+    if (user.passwordChangedAt && (payload.iat ?? 0) * 1000 < user.passwordChangedAt.getTime()) throw new UnauthorizedException();
     return { id: user.id, email: user.email, role: payload.role };
   }
 }

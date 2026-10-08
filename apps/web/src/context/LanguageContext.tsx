@@ -52,6 +52,26 @@ const FB: Record<string, { en: string; ka: string }> = {
   'login.loading':           { en: 'Signing in...',                       ka: 'შესვლა...' },
   'login.noAccount':         { en: "Don't have an account?",              ka: 'ანგარიში არ გაქვს?' },
   'login.createOne':         { en: 'Create one',                          ka: 'შექმენი' },
+  'login.forgot':            { en: 'Forgot password?',                    ka: 'დაგავიწყდა პაროლი?' },
+  'login.e.email':           { en: 'Enter a valid email address',         ka: 'შეიყვანე სწორი ელ-ფოსტა' },
+  'login.e.password':        { en: 'Enter your password',                 ka: 'შეიყვანე პაროლი' },
+  'fp.heading':              { en: 'Forgot your password?',               ka: 'დაგავიწყდა პაროლი?' },
+  'fp.sub':                  { en: "Enter your email and we'll send you a link to set a new one.", ka: 'შეიყვანე ელ-ფოსტა და გამოგიგზავნით ბმულს ახალი პაროლის დასაყენებლად.' },
+  'fp.btn':                  { en: 'Send link',                           ka: 'ბმულის გაგზავნა' },
+  'fp.sending':              { en: 'Sending…',                            ka: 'იგზავნება…' },
+  'fp.sent':                 { en: "If an account exists for {email}, a link is on its way. It works for one hour — check spam too.", ka: 'თუ {email}-ზე ანგარიში არსებობს, ბმული უკვე გზაშია. ერთი საათი მოქმედებს — შეამოწმე სპამიც.' },
+  'fp.back':                 { en: 'Back to sign in',                     ka: 'შესვლაზე დაბრუნება' },
+  'rp.heading':              { en: 'Set a new password',                  ka: 'ახალი პაროლის დაყენება' },
+  'rp.password':             { en: 'New password',                        ka: 'ახალი პაროლი' },
+  'rp.confirm':              { en: 'Repeat new password',                 ka: 'გაიმეორე ახალი პაროლი' },
+  'rp.hint':                 { en: 'At least 8 characters.',              ka: 'მინიმუმ 8 სიმბოლო.' },
+  'rp.e.short':              { en: 'Use at least 8 characters.',          ka: 'გამოიყენე მინიმუმ 8 სიმბოლო.' },
+  'rp.e.match':              { en: "The passwords don't match.",          ka: 'პაროლები არ ემთხვევა.' },
+  'rp.e.link':               { en: 'This link has expired or was already used. Ask for a new one.', ka: 'ბმულს ვადა გაუვიდა ან უკვე გამოყენებულია. მოითხოვე ახალი.' },
+  'rp.btn':                  { en: 'Save new password',                   ka: 'ახალი პაროლის შენახვა' },
+  'rp.saving':               { en: 'Saving…',                             ka: 'ინახება…' },
+  'rp.done':                 { en: "Password changed. You're signed in, and signed out everywhere else.", ka: 'პაროლი შეიცვალა. შესული ხარ, ხოლო სხვა ყველა მოწყობილობიდან გამოსული.' },
+  'rp.newLink':              { en: 'Ask for a new link',                  ka: 'ახალი ბმულის მოთხოვნა' },
   'register.heading':        { en: 'Create your account',                 ka: 'ანგარიშის შექმნა' },
   'register.subheading':     { en: 'Join thousands of happy dogs across Georgia 🐾', ka: 'შეუერთდი ათასობით ბედნიერ ძაღლს საქართველოში 🐾' },
   'register.firstName':      { en: 'First name',                          ka: 'სახელი' },
@@ -85,6 +105,13 @@ const LanguageContext = createContext<LanguageContextType>({
 });
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
+
+/** Signed-in customers get emails in the language they use the site in. */
+export function saveForEmails(l: Lang) {
+  const token = localStorage.getItem('pupbox_token');
+  if (!token) return;
+  fetch(`${API}/users/me`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ language: l }) }).catch(() => {});
+}
 
 /** The cookie lets server-rendered pages (the shop's A–Z order) follow the visitor's language too. */
 function rememberForServer(l: Lang) {
@@ -125,6 +152,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     setLangState(l);
     localStorage.setItem('pupbox_lang', l);
     rememberForServer(l);
+    saveForEmails(l);
   }
 
   const t = useCallback((key: string, fallback?: string): string => {

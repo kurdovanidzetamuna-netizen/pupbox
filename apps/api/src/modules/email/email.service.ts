@@ -2,6 +2,29 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 
+export type Lang = 'ka' | 'en';
+const lang = (l?: string | null): Lang => (l === 'en' ? 'en' : 'ka');
+
+/** Everything a customer typed (names, gift notes) is escaped before it goes into an email. */
+const esc = (s: unknown) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string));
+
+/** One email, already in the reader's language. Body paragraphs are HTML built from escaped values. */
+interface Message {
+  subject: string;
+  heading: string;
+  body: string[];
+  button?: { text: string; url: string };
+  after?: string[];
+}
+
+const hi = (l: Lang, name: string) => (l === 'ka' ? `გამარჯობა, ${esc(name)}!` : `Hi ${esc(name)},`);
+
+/**
+ * Customer emails, in Georgian or English — the language the customer uses
+ * on the site (User.language). An admin-made template in the EmailTemplate
+ * table named `<key>_<lang>` (or `<key>` for English) replaces the built-in
+ * text below; templates use {{variables}}.
+ */
 @Injectable()
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
@@ -12,13 +35,41 @@ export class EmailService {
   private get from() { return this.config.get('EMAIL_FROM') || 'noreply@pupbox.ge'; }
   private get siteUrl() { return this.config.get('NEXT_PUBLIC_SITE_URL') || 'https://pupbox.ge'; }
 
-  private async getTemplate(key: string): Promise<{ subject: string; body: string } | null> {
-    const tpl = await this.prisma.emailTemplate.findFirst({ where: { key, isActive: true } });
-    return tpl ? { subject: tpl.subject, body: tpl.body } : null;
+  private async getTemplate(key: string, l: Lang): Promise<{ subject: string; body: string } | null> {
+    const keys = l === 'en' ? [`${key}_en`, key] : [`${key}_ka`];
+    for (const k of keys) {
+      const tpl = await this.prisma.emailTemplate.findFirst({ where: { key: k, isActive: true } });
+      if (tpl) return { subject: tpl.subject, body: tpl.body };
+    }
+    return null;
   }
 
   private renderTemplate(template: string, vars: Record<string, string>): string {
-    return template.replace(/\{\{(\w+)\}\}/g, (_, k) => vars[k] ?? '');
+    return template.replace(/\{\{(\w+)\}\}/g, (_, k) => esc(vars[k]));
+  }
+
+  private layout(l: Lang, m: Message): string {
+    const p = (html: string) => `<p style="margin:0 0 14px;line-height:1.55">${html}</p>`;
+    const button = m.button
+      ? `<div style="margin:24px 0"><a href="${m.button.url}" style="display:inline-block;background:#0d9488;color:#ffffff;padding:12px 26px;border-radius:12px;text-decoration:none;font-weight:bold">${m.button.text}</a></div>`
+      : '';
+    return `<!DOCTYPE html><html lang="${l}"><body style="margin:0;background:#f8fafc;font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;color:#1f2937">
+<div style="max-width:520px;margin:0 auto;padding:28px 24px">
+<p style="font-size:20px;font-weight:800;color:#0d9488;margin:0 0 20px">🐾 Pupbox</p>
+<div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;padding:28px 24px">
+<h1 style="font-size:20px;margin:0 0 16px;color:#111827">${m.heading}</h1>
+${m.body.map(p).join('\n')}${button}${(m.after ?? []).map((a) => `<p style="margin:0 0 10px;color:#6b7280;font-size:13px;line-height:1.5">${a}</p>`).join('')}
+</div>
+<p style="color:#9ca3af;font-size:12px;margin:18px 0 0">© ${new Date().getFullYear()} Pupbox · <a href="${this.siteUrl}" style="color:#9ca3af">${this.siteUrl.replace(/^https?:\/\//, '')}</a></p>
+</div></body></html>`;
+  }
+
+  /** Sends `key` to `to` in `l`, using an admin template when one exists. */
+  private async deliver(to: string, key: string, l: Lang, vars: Record<string, string>, built: Message) {
+    const tpl = await this.getTemplate(key, l);
+    const subject = tpl ? this.renderTemplate(tpl.subject, vars) : built.subject;
+    const html = tpl ? this.renderTemplate(tpl.body, vars) : this.layout(l, built);
+    await this.send(to, subject, html);
   }
 
   private async send(to: string, subject: string, html: string) {
@@ -32,142 +83,146 @@ export class EmailService {
         headers: { Authorization: `Bearer ${this.apiKey}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ from: this.from, to, subject, html }),
       });
-      if (!res.ok) {
-        const err = await res.text();
-        this.logger.error(`Resend error: ${res.status} ${err}`);
-      }
+      if (!res.ok) this.logger.error(`Resend error: ${res.status} ${await res.text()}`);
     } catch (e) {
       this.logger.error(`Email send failed: ${e}`);
     }
   }
 
-  async sendWelcome(user: { email: string; firstName: string }) {
-    const tpl = await this.getTemplate('welcome');
-    const subject = tpl ? this.renderTemplate(tpl.subject, { firstName: user.firstName }) : `Welcome to Pupbox, ${user.firstName}! 🐾`;
-    const html = tpl
-      ? this.renderTemplate(tpl.body, { firstName: user.firstName, siteUrl: this.siteUrl })
-      : this.buildWelcomeHtml(user.firstName);
-    await this.send(user.email, subject, html);
+  async sendWelcome(d: { email: string; firstName: string; language?: string | null }) {
+    const l = lang(d.language);
+    const url = `${this.siteUrl}/prices`;
+    await this.deliver(d.email, 'welcome', l, { firstName: d.firstName, siteUrl: this.siteUrl }, l === 'ka' ? {
+      subject: `კეთილი იყოს შენი მობრძანება Pupbox-ში, ${d.firstName}! 🐾`,
+      heading: 'მოგესალმებით Pupbox-ში!',
+      body: [hi(l, d.firstName), 'მადლობა, რომ შემოგვიერთდი — ყოველთვიური კოლოფები ნუგბრით, სათამაშოებითა და მოვლის საშუალებებით შენი ძაღლისთვის, მიწოდებით მთელ საქართველოში.'],
+      button: { text: 'გეგმების ნახვა', url },
+    } : {
+      subject: `Welcome to Pupbox, ${d.firstName}! 🐾`,
+      heading: 'Welcome to Pupbox!',
+      body: [hi(l, d.firstName), 'Thanks for joining Pupbox — monthly boxes of treats, toys and care for your dog, delivered across Georgia.'],
+      button: { text: 'See the plans', url },
+    });
   }
 
-  async sendOrderConfirmation(order: { id: string; total: number; user: { email: string; firstName: string } }) {
-    const tpl = await this.getTemplate('order_confirmation');
-    const vars = {
-      firstName: order.user.firstName,
-      orderId: order.id.slice(-8).toUpperCase(),
-      total: `₾${Number(order.total).toFixed(2)}`,
-      siteUrl: this.siteUrl,
-    };
-    const subject = tpl ? this.renderTemplate(tpl.subject, vars) : `Order confirmed — #${vars.orderId}`;
-    const html = tpl ? this.renderTemplate(tpl.body, vars) : this.buildOrderConfirmHtml(vars);
-    await this.send(order.user.email, subject, html);
+  async sendPaymentConfirmation(order: { id: string; total: number; user: { email: string; firstName: string; language?: string | null } }) {
+    const l = lang(order.user.language);
+    const orderId = order.id.slice(-8).toUpperCase();
+    const total = `₾${Number(order.total).toFixed(2)}`;
+    const url = `${this.siteUrl}/account/orders`;
+    await this.deliver(order.user.email, 'payment_confirmation', l, { firstName: order.user.firstName, orderId, total, ordersUrl: url }, l === 'ka' ? {
+      subject: `გადახდა დადასტურდა — შეკვეთა #${orderId} 🎉`,
+      heading: 'გადახდა დადასტურდა',
+      body: [hi(l, order.user.firstName), `მივიღეთ შენი გადახდა <strong>${total}</strong> შეკვეთისთვის <strong>#${orderId}</strong>. უკვე ვამზადებთ.`],
+      button: { text: 'ჩემი შეკვეთები', url },
+    } : {
+      subject: `Payment confirmed — order #${orderId} 🎉`,
+      heading: 'Payment confirmed',
+      body: [hi(l, order.user.firstName), `We've received your payment of <strong>${total}</strong> for order <strong>#${orderId}</strong>. We're preparing it now.`],
+      button: { text: 'My orders', url },
+    });
   }
 
-  async sendPaymentConfirmation(order: { id: string; total: number; user: { email: string; firstName: string } }) {
-    const tpl = await this.getTemplate('payment_confirmation');
-    const vars = {
-      firstName: order.user.firstName,
-      orderId: order.id.slice(-8).toUpperCase(),
-      total: `₾${Number(order.total).toFixed(2)}`,
-      ordersUrl: `${this.siteUrl}/account/orders`,
-    };
-    const subject = tpl ? this.renderTemplate(tpl.subject, vars) : `Payment confirmed — #${vars.orderId} 🎉`;
-    const html = tpl ? this.renderTemplate(tpl.body, vars) : this.buildPaymentHtml(vars);
-    await this.send(order.user.email, subject, html);
+  async sendOrderShipped(d: { email: string; firstName: string; language?: string | null; orderId: string; trackingNumber?: string | null }) {
+    const l = lang(d.language);
+    const orderId = d.orderId.slice(-8).toUpperCase();
+    const url = `${this.siteUrl}/account/orders`;
+    const tracking = d.trackingNumber ? (l === 'ka' ? `თრექინგის ნომერი: <strong>${esc(d.trackingNumber)}</strong>` : `Tracking number: <strong>${esc(d.trackingNumber)}</strong>`) : '';
+    await this.deliver(d.email, 'order_shipped', l, { firstName: d.firstName, orderId, trackingNumber: d.trackingNumber ?? '', ordersUrl: url }, l === 'ka' ? {
+      subject: `შეკვეთა #${orderId} გზაშია 🚚`,
+      heading: 'შენი შეკვეთა გზაშია',
+      body: [hi(l, d.firstName), `შეკვეთა <strong>#${orderId}</strong> გამოიგზავნა.`, ...(tracking ? [tracking] : [])],
+      button: { text: 'ჩემი შეკვეთები', url },
+    } : {
+      subject: `Your order #${orderId} is on its way 🚚`,
+      heading: 'Your order is on its way',
+      body: [hi(l, d.firstName), `Order <strong>#${orderId}</strong> has shipped.`, ...(tracking ? [tracking] : [])],
+      button: { text: 'My orders', url },
+    });
   }
 
-  async sendBoxShipped(data: { email: string; firstName: string; dogName: string | null; boxNumber: number; boxesTotal: number; trackingNumber: string | null }) {
-    const tpl = await this.getTemplate('box_shipped');
-    const vars = {
-      firstName: data.firstName,
-      dogName: data.dogName ?? 'your dog',
-      boxNumber: String(data.boxNumber),
-      boxesTotal: String(data.boxesTotal),
-      trackingNumber: data.trackingNumber ?? '',
-      accountUrl: `${this.siteUrl}/account/subscriptions`,
-    };
-    const subject = tpl ? this.renderTemplate(tpl.subject, vars) : `Box ${vars.boxNumber} of ${vars.boxesTotal} is on its way to ${vars.dogName} 📦`;
-    const html = tpl ? this.renderTemplate(tpl.body, vars) : this.buildBoxShippedHtml(vars);
-    await this.send(data.email, subject, html);
-  }
-
-  async sendSubscriptionActivated(data: { email: string; firstName: string; planName: string }) {
-    const tpl = await this.getTemplate('subscription_activated');
-    const vars = { firstName: data.firstName, planName: data.planName, siteUrl: this.siteUrl };
-    const subject = tpl ? this.renderTemplate(tpl.subject, vars) : `Your Pupbox subscription is active! 🐾`;
-    const html = tpl ? this.renderTemplate(tpl.body, vars) : this.buildSubscriptionHtml(vars);
-    await this.send(data.email, subject, html);
+  async sendBoxShipped(d: { email: string; firstName: string; language?: string | null; dogName: string | null; boxNumber: number; boxesTotal: number; trackingNumber: string | null }) {
+    const l = lang(d.language);
+    const url = `${this.siteUrl}/account/subscriptions`;
+    const n = `${d.boxNumber}/${d.boxesTotal}`;
+    const tracking = d.trackingNumber ? (l === 'ka' ? `თრექინგის ნომერი: <strong>${esc(d.trackingNumber)}</strong>` : `Tracking number: <strong>${esc(d.trackingNumber)}</strong>`) : '';
+    const vars = { firstName: d.firstName, dogName: d.dogName ?? '', boxNumber: String(d.boxNumber), boxesTotal: String(d.boxesTotal), trackingNumber: d.trackingNumber ?? '', accountUrl: url };
+    await this.deliver(d.email, 'box_shipped', l, vars, l === 'ka' ? {
+      subject: `კოლოფი ${n} გზაშია 📦`,
+      heading: 'შენი კოლოფი გზაშია',
+      body: [hi(l, d.firstName), `კოლოფი <strong>${n}</strong>${d.dogName ? ` (${esc(d.dogName)})` : ''} ახლახან გამოგიგზავნეთ.`, ...(tracking ? [tracking] : [])],
+      button: { text: 'ჩემი კოლოფები', url },
+    } : {
+      subject: `Box ${d.boxNumber} of ${d.boxesTotal} is on its way${d.dogName ? ` to ${d.dogName}` : ''} 📦`,
+      heading: 'Your box is on its way',
+      body: [hi(l, d.firstName), `Box <strong>${d.boxNumber} of ${d.boxesTotal}</strong>${d.dogName ? ` for ${esc(d.dogName)}` : ''} has just left us.`, ...(tracking ? [tracking] : [])],
+      button: { text: 'My boxes', url },
+    });
   }
 
   /**
    * The gift card. This email is the only way the recipient learns the gift
    * exists, and the claim link is its only credential — until they follow it
    * the subscription has no dog and no address, so nothing can ship.
+   * Written in the buyer's language: we know nothing about the recipient yet.
    */
-  async sendGiftCard(data: {
-    recipientEmail: string;
-    recipientName: string;
-    buyerName: string;
-    planName: string;
-    message?: string;
-    claimToken: string;
-  }) {
-    const claimUrl = `${this.siteUrl}/gift/${data.claimToken}`;
-    const tpl = await this.getTemplate('gift_card');
-    const vars = {
-      recipientName: data.recipientName,
-      buyerName: data.buyerName,
-      planName: data.planName,
-      message: data.message ?? '',
-      claimUrl,
-      siteUrl: this.siteUrl,
-    };
-    const subject = tpl ? this.renderTemplate(tpl.subject, vars) : `${data.buyerName} sent your dog a Pupbox gift! 🎁`;
-    const html = tpl ? this.renderTemplate(tpl.body, vars) : this.buildGiftCardHtml(vars);
-    await this.send(data.recipientEmail, subject, html);
-  }
-
-  async sendReferralReward(data: { email: string; firstName: string; couponCode: string }) {
-    const html = `<p>Hi ${data.firstName},</p><p>Your friend just placed their first order — here's your ₾10 reward coupon: <strong>${data.couponCode}</strong></p><p>Use it on your next order at <a href="${this.siteUrl}">${this.siteUrl}</a></p>`;
-    await this.send(data.email, `You earned a ₾10 reward coupon! 🎁`, html);
-  }
-
-  private buildWelcomeHtml(firstName: string): string {
-    return `<!DOCTYPE html><html><body style="font-family:sans-serif;max-width:520px;margin:auto;padding:24px"><div style="text-align:center;margin-bottom:24px"><span style="font-size:2rem">🐾</span><h1 style="color:#f97316">Welcome to Pupbox!</h1></div><p>Hi ${firstName},</p><p>Thank you for joining Pupbox — Georgia's favourite monthly dog subscription box!</p><p>Explore our plans and treat your pup to something special.</p><a href="${this.siteUrl}/prices" style="display:inline-block;background:#f97316;color:white;padding:12px 24px;border-radius:24px;text-decoration:none;font-weight:bold;margin-top:16px">View Subscription Plans</a><p style="margin-top:32px;color:#9ca3af;font-size:0.85rem">© ${new Date().getFullYear()} Pupbox</p></body></html>`;
-  }
-
-  private buildOrderConfirmHtml(vars: Record<string, string>): string {
-    return `<!DOCTYPE html><html><body style="font-family:sans-serif;max-width:520px;margin:auto;padding:24px"><h2 style="color:#f97316">Order Received! 📦</h2><p>Hi ${vars.firstName},</p><p>We've received your order <strong>#${vars.orderId}</strong> for <strong>${vars.total}</strong>.</p><p>Please complete your payment to confirm the order.</p><a href="${vars.siteUrl}/account/orders" style="display:inline-block;background:#f97316;color:white;padding:12px 24px;border-radius:24px;text-decoration:none;font-weight:bold;margin-top:16px">View My Orders</a></body></html>`;
-  }
-
-  private buildPaymentHtml(vars: Record<string, string>): string {
-    return `<!DOCTYPE html><html><body style="font-family:sans-serif;max-width:520px;margin:auto;padding:24px"><h2 style="color:#16a34a">Payment Confirmed! 🎉</h2><p>Hi ${vars.firstName},</p><p>Your payment for order <strong>#${vars.orderId}</strong> totalling <strong>${vars.total}</strong> has been confirmed.</p><p>We're now preparing your order.</p><a href="${vars.ordersUrl}" style="display:inline-block;background:#f97316;color:white;padding:12px 24px;border-radius:24px;text-decoration:none;font-weight:bold;margin-top:16px">Track My Order</a></body></html>`;
-  }
-
-  private buildGiftCardHtml(vars: Record<string, string>): string {
-    // The personal message is user-authored, so escape it rather than
-    // interpolating raw HTML into an email we send on the buyer's behalf.
-    const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string));
-    const note = vars.message
-      ? `<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:16px;margin:20px 0"><p style="margin:0;font-style:italic;color:#92400e">“${esc(vars.message)}”</p><p style="margin:8px 0 0;font-size:0.85rem;color:#b45309">— ${esc(vars.buyerName)}</p></div>`
+  async sendGiftCard(d: { recipientEmail: string; recipientName: string; buyerName: string; planName: string; message?: string; claimToken: string; language?: string | null }) {
+    const l = lang(d.language);
+    const url = `${this.siteUrl}/gift/${d.claimToken}`;
+    const note = d.message
+      ? `<span style="display:block;background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:14px 16px;font-style:italic;color:#92400e">“${esc(d.message)}”<br><span style="font-style:normal;font-size:13px;color:#b45309">— ${esc(d.buyerName)}</span></span>`
       : '';
-    return `<!DOCTYPE html><html><body style="font-family:sans-serif;max-width:520px;margin:auto;padding:24px">
-<div style="text-align:center"><span style="font-size:2.5rem">🎁</span><h1 style="color:#f97316;margin:8px 0">You've been given a Pupbox!</h1></div>
-<p>Hi ${esc(vars.recipientName)},</p>
-<p><strong>${esc(vars.buyerName)}</strong> has given your dog a <strong>${esc(vars.planName)}</strong> subscription.</p>
-${note}
-<p>Tell us about your dog — their size, breed and any allergies — and we'll tailor every box to them. It takes a minute.</p>
-<div style="text-align:center;margin:28px 0"><a href="${vars.claimUrl}" style="display:inline-block;background:#f97316;color:white;padding:14px 32px;border-radius:24px;text-decoration:none;font-weight:bold">Claim your gift →</a></div>
-<p style="color:#9ca3af;font-size:0.8rem">If the button doesn't work, paste this into your browser:<br>${vars.claimUrl}</p>
-<p style="margin-top:32px;color:#9ca3af;font-size:0.85rem">© ${new Date().getFullYear()} Pupbox</p></body></html>`;
+    const vars = { recipientName: d.recipientName, buyerName: d.buyerName, planName: d.planName, message: d.message ?? '', claimUrl: url, siteUrl: this.siteUrl };
+    await this.deliver(d.recipientEmail, 'gift_card', l, vars, l === 'ka' ? {
+      subject: 'შენს ძაღლს Pupbox აჩუქეს! 🎁',
+      heading: '🎁 შენ საჩუქარი მიიღე',
+      body: [hi(l, d.recipientName), `<strong>${esc(d.planName)}</strong> გამოწერა საჩუქრად შენი ძაღლისთვის. გამომგზავნი: <strong>${esc(d.buyerName)}</strong>.`, ...(note ? [note] : []),
+        'მოგვიყევი შენი ძაღლის შესახებ — ზომა, ჯიში და ალერგიები — და ყოველ კოლოფს მას მოვარგებთ. ერთი წუთი დაგჭირდება.'],
+      button: { text: 'საჩუქრის მიღება →', url },
+      after: [`თუ ღილაკი არ მუშაობს, ეს ბმული ბრაუზერში ჩასვი:<br>${url}`],
+    } : {
+      subject: `${d.buyerName} sent your dog a Pupbox gift! 🎁`,
+      heading: "🎁 You've been given a Pupbox!",
+      body: [hi(l, d.recipientName), `<strong>${esc(d.buyerName)}</strong> has given your dog a <strong>${esc(d.planName)}</strong> subscription.`, ...(note ? [note] : []),
+        "Tell us about your dog — size, breed and any allergies — and we'll tailor every box to them. It takes a minute."],
+      button: { text: 'Claim your gift →', url },
+      after: [`If the button doesn't work, paste this into your browser:<br>${url}`],
+    });
   }
 
-  private buildBoxShippedHtml(vars: Record<string, string>): string {
-    const tracking = vars.trackingNumber ? `<p>Tracking number: <strong>${vars.trackingNumber}</strong></p>` : '';
-    return `<!DOCTYPE html><html><body style="font-family:sans-serif;max-width:520px;margin:auto;padding:24px"><h2 style="color:#0d9488">Your box is on its way 📦</h2><p>Hi ${vars.firstName},</p><p>Box ${vars.boxNumber} of ${vars.boxesTotal} for ${vars.dogName} has just left us.</p>${tracking}<a href="${vars.accountUrl}" style="display:inline-block;background:#0d9488;color:white;padding:12px 24px;border-radius:24px;text-decoration:none;font-weight:bold;margin-top:16px">My boxes</a></body></html>`;
+  async sendReferralReward(d: { email: string; firstName: string; couponCode: string; language?: string | null }) {
+    const l = lang(d.language);
+    const url = `${this.siteUrl}/shop`;
+    await this.deliver(d.email, 'referral_reward', l, { firstName: d.firstName, couponCode: d.couponCode, siteUrl: this.siteUrl }, l === 'ka' ? {
+      subject: 'შენ მიიღე ₾10-იანი კუპონი! 🎁',
+      heading: 'მადლობა რეკომენდაციისთვის',
+      body: [hi(l, d.firstName), `შენმა მეგობარმა პირველი შეკვეთა გააკეთა — აი შენი ₾10-იანი კუპონი: <strong>${esc(d.couponCode)}</strong>. გამოიყენე შემდეგ შეკვეთაზე.`],
+      button: { text: 'მაღაზიაში გადასვლა', url },
+    } : {
+      subject: 'You earned a ₾10 reward coupon! 🎁',
+      heading: 'Thanks for the recommendation',
+      body: [hi(l, d.firstName), `Your friend just placed their first order — here's your ₾10 coupon: <strong>${esc(d.couponCode)}</strong>. Use it on your next order.`],
+      button: { text: 'Shop now', url },
+    });
   }
 
-  private buildSubscriptionHtml(vars: Record<string, string>): string {
-    return `<!DOCTYPE html><html><body style="font-family:sans-serif;max-width:520px;margin:auto;padding:24px"><h2 style="color:#f97316">Subscription Active! 🐾</h2><p>Hi ${vars.firstName},</p><p>Your <strong>${vars.planName}</strong> subscription is now active. Your first box is on its way!</p><a href="${vars.siteUrl}/account/orders" style="display:inline-block;background:#f97316;color:white;padding:12px 24px;border-radius:24px;text-decoration:none;font-weight:bold;margin-top:16px">My Account</a></body></html>`;
+  async sendPasswordReset(d: { email: string; firstName: string; language?: string | null; token: string }) {
+    const l = lang(d.language);
+    const url = `${this.siteUrl}/reset-password?token=${encodeURIComponent(d.token)}`;
+    // Without an email service in development, the link is the only way to test the flow.
+    if (!this.apiKey && this.config.get('NODE_ENV') !== 'production') this.logger.warn(`Password reset link (development only): ${url}`);
+    await this.deliver(d.email, 'password_reset', l, { firstName: d.firstName, resetUrl: url }, l === 'ka' ? {
+      subject: 'Pupbox-ის პაროლის აღდგენა',
+      heading: 'ახალი პაროლის დაყენება',
+      body: [hi(l, d.firstName), 'მივიღეთ მოთხოვნა შენი Pupbox-ის პაროლის აღდგენაზე. ბმული ერთი საათის განმავლობაში მოქმედებს და მხოლოდ ერთხელ გამოიყენება.'],
+      button: { text: 'ახალი პაროლის დაყენება', url },
+      after: ['თუ ეს შენ არ იყავი, უბრალოდ უგულებელყავი ეს წერილი — პაროლი არ შეიცვლება.'],
+    } : {
+      subject: 'Reset your Pupbox password',
+      heading: 'Set a new password',
+      body: [hi(l, d.firstName), 'We got a request to reset your Pupbox password. The link works for one hour, once.'],
+      button: { text: 'Set a new password', url },
+      after: ["If it wasn't you, ignore this email — your password stays the same."],
+    });
   }
 }

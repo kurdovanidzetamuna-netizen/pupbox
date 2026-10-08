@@ -3,6 +3,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth, ApiTags, ApiOperation } from '@nestjs/swagger';
 import { Prisma, UserStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { IsIn, IsOptional, IsString, MaxLength } from 'class-validator';
 
 const USER_SELECT = {
   id: true,
@@ -16,6 +17,14 @@ const USER_SELECT = {
   dogs: true,
   addresses: { where: { deletedAt: null } },
 };
+
+class UpdateProfileDto {
+  @IsOptional() @IsString() @MaxLength(80) firstName?: string;
+  @IsOptional() @IsString() @MaxLength(80) lastName?: string;
+  @IsOptional() @IsString() @MaxLength(30) phone?: string;
+  /** Follows the site's language switch; emails are written in it. */
+  @IsOptional() @IsIn(['ka', 'en']) language?: 'ka' | 'en';
+}
 
 @ApiTags('Customer Profile')
 @ApiBearerAuth()
@@ -32,10 +41,10 @@ export class UsersController {
 
   @Patch('me')
   @ApiOperation({ summary: 'Update current user profile' })
-  async updateProfile(@Request() req, @Body() body: { firstName?: string; lastName?: string; phone?: string }) {
+  async updateProfile(@Request() req, @Body() body: UpdateProfileDto) {
     return this.prisma.user.update({
       where: { id: req.user.id },
-      data: { firstName: body.firstName, lastName: body.lastName, phone: body.phone },
+      data: { firstName: body.firstName, lastName: body.lastName, phone: body.phone, language: body.language },
       select: USER_SELECT,
     });
   }
