@@ -58,6 +58,8 @@ ADMIN_PORT=3001
 NEXT_PUBLIC_SITE_URL="https://${DOMAIN}"
 NEXT_PUBLIC_ADMIN_URL="https://admin.${DOMAIN}"
 NEXT_PUBLIC_API_URL="https://api.${DOMAIN}/api/v1"
+# Public address of the API itself, used in links to uploaded images
+API_BASE_URL="https://api.${DOMAIN}"
 
 # Email (Resend) — paste the key from resend.com when you have it
 RESEND_API_KEY=""

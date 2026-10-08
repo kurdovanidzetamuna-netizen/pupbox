@@ -32,6 +32,9 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-pupbox}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-pupbox_db}
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
       NODE_ENV: production
+    volumes:
+      # Images uploaded in admin (logo, photos) must outlive rebuilds.
+      - uploads:/app/apps/api/public/uploads
     depends_on:
       - postgres
       - redis
@@ -76,6 +79,7 @@ services:
 volumes:
   postgres_data:
   redis_data:
+  uploads:
 
 networks:
   pupbox_net:

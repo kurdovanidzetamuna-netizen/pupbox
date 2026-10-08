@@ -2,10 +2,16 @@ import { Controller, Post, UploadedFile, UseInterceptors, UseGuards, BadRequestE
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes } from '@nestjs/swagger';
 import { diskStorage } from 'multer';
-import { extname } from 'path';
+import { extname, join } from 'path';
 import { AdminJwtGuard } from '../admin-auth/admin-jwt.guard';
 
 const ALLOWED = ['.jpg', '.jpeg', '.png', '.svg', '.webp'];
+
+// The same folder main.ts serves at /uploads. A path relative to the working
+// directory only matched in development; in the container files were saved
+// to /app/public/uploads and served from /app/apps/api/public, so every
+// uploaded image was a broken link.
+const UPLOAD_DIR = join(__dirname, '..', '..', '..', 'public', 'uploads');
 
 @ApiTags('Upload')
 @ApiBearerAuth()
@@ -18,7 +24,7 @@ export class UploadController {
   @UseInterceptors(
     FileInterceptor('file', {
       storage: diskStorage({
-        destination: './public/uploads',
+        destination: UPLOAD_DIR,
         filename: (_req, file, cb) => {
           const unique = `${Date.now()}-${Math.round(Math.random() * 1e6)}`;
           cb(null, `${unique}${extname(file.originalname).toLowerCase()}`);
