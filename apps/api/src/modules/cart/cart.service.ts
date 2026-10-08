@@ -144,20 +144,35 @@ export class CartService {
 
   /**
    * What a delivery method costs for this cart. A plan sold with delivery
-   * included ("Free delivery" on its pricing card) is never charged again at
-   * checkout; anything else in the same order ships with its first box.
+   * included ("Free delivery" on its pricing card) covers the standard
+   * (cheapest) option; a faster one costs only the difference. Anything else
+   * in the same order ships with the plan's first box.
    */
-  deliveryCostFor(method: { price: any; freeThreshold: any }, cart: { subtotal: number; deliveryIncluded?: boolean }) {
-    if (cart.deliveryIncluded) return 0;
+  deliveryCostFor(method: { price: any; freeThreshold: any }, cart: { subtotal: number; deliveryIncluded?: boolean }, cheapest: number) {
+    if (cart.deliveryIncluded) return +Math.max(0, Number(method.price) - cheapest).toFixed(2);
     if (method.freeThreshold && cart.subtotal >= Number(method.freeThreshold)) return 0;
     return Number(method.price);
   }
 
+  /** Price of the cheapest active delivery method: what a plan's included delivery covers. */
+  async cheapestDeliveryPrice(): Promise<number> {
+    const agg = await this.prisma.deliveryMethod.aggregate({ where: { isActive: true }, _min: { price: true } });
+    return Number(agg._min.price ?? 0);
+  }
+
   async getDeliveryMethods(cart: { subtotal: number; deliveryIncluded?: boolean }) {
     const methods = await this.prisma.deliveryMethod.findMany({ where: { isActive: true }, orderBy: { sortOrder: 'asc' } });
+    const cheapest = Math.min(...methods.map(m => Number(m.price)));
     return methods.map(m => {
-      const effectivePrice = this.deliveryCostFor(m, cart);
-      return { ...m, effectivePrice, isFree: effectivePrice === 0, includedWithPlan: !!cart.deliveryIncluded };
+      const effectivePrice = this.deliveryCostFor(m, cart, cheapest);
+      return {
+        ...m,
+        effectivePrice,
+        isFree: effectivePrice === 0,
+        // "Included with your plan" only where the plan fully covers it.
+        includedWithPlan: !!cart.deliveryIncluded && effectivePrice === 0,
+        upgradeFromPlan: !!cart.deliveryIncluded && effectivePrice > 0,
+      };
     });
   }
 
