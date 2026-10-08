@@ -30,6 +30,7 @@ const FB: Record<string, { en: string; ka: string }> = {
   'pricing.toggle.myDog':    { en: '🐾 For My Dog',                       ka: '🐾 ჩემი ძაღლისთვის' },
   'pricing.toggle.gift':     { en: '🎁 Give as a Gift',                   ka: '🎁 საჩუქრად' },
   'pricing.none':            { en: 'No plans available yet.',             ka: 'გეგმები ჯერ არ არის ხელმისაწვდომი.' },
+  'pricing.gift.card':       { en: 'Gift a {plan} subscription',          ka: '{plan} გამოწერა საჩუქრად' },
   'pricing.gift.banner':     { en: "You'll be able to enter the recipient's details and a personalised message at checkout.", ka: 'შეძლებ შეიყვანო მიმღების მონაცემები და პერსონალური შეტყობინება გამოწერის დადასტურებისას.' },
   'pricing.planCard.popular':{ en: '⭐ Most Popular',                     ka: '⭐ ყველაზე პოპულარული' },
   'pricing.planCard.bestValue':{ en: '🏆 Best Value',                     ka: '🏆 საუკეთესო ღირებულება' },

@@ -1,7 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 
 /**
- * Georgian names and descriptions for the starter catalogue, stored under
+ * Georgian names and descriptions for the starter catalogue and plans, stored under
  * translations.ka where admin's Georgian tab reads and writes them.
  *
  * Only blank fields are filled, so anything already edited in admin wins.
@@ -52,6 +52,14 @@ const PRODUCTS: Record<string, Record<string, string>> = {
   },
 };
 
+/** Plan names are already Georgian; their one-line descriptions were English only. */
+const PLANS: Record<string, Record<string, string>> = {
+  '1-month': { description: 'გასინჯე Pupbox ერთი თვით. ვალდებულების გარეშე.' },
+  '3-months': { description: 'დაზოგე 10% სამთვიანი გეგმით.' },
+  '6-months': { description: 'საუკეთესო არჩევანი ერთგული ძაღლის პატრონებისთვის.' },
+  '1-year': { description: 'მაქსიმალური დანაზოგი მთელი წლის განმავლობაში.' },
+};
+
 const force = process.argv.includes('--force');
 
 /** translations.ka with blank fields filled from `ka` (or all of them with --force). */
@@ -82,6 +90,13 @@ async function main() {
     const { value, filled } = merged(row.translations, ka);
     if (filled.length) await prisma.product.update({ where: { id: row.id }, data: { translations: value } });
     console.log(`  product  ${slug.padEnd(22)} ${filled.length ? filled.join(', ') : 'already translated'}`);
+  }
+  for (const [slug, ka] of Object.entries(PLANS)) {
+    const row = await prisma.subscriptionPlan.findFirst({ where: { slug, deletedAt: null }, select: { id: true, translations: true } });
+    if (!row) { console.log(`  · plan ${slug} not found`); continue; }
+    const { value, filled } = merged(row.translations, ka);
+    if (filled.length) await prisma.subscriptionPlan.update({ where: { id: row.id }, data: { translations: value } });
+    console.log(`  plan     ${slug.padEnd(22)} ${filled.length ? filled.join(', ') : 'already translated'}`);
   }
 }
 

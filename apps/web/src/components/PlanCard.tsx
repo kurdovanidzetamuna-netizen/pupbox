@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { gel } from '@/lib/format';
+import { fill } from '@/context/strings/purchase';
 import { planText, planBenefits } from '@/lib/localize';
 
 interface Props {
@@ -108,7 +109,7 @@ export default function PlanCard({ plan, showFullBenefits = false, isGift = fals
 
       <h3 className="text-lg font-bold text-teal-800 mb-1">{name}</h3>
       <p className="text-xs text-gray-400 mb-4">
-        {isGift ? `Gift a ${name} subscription` : planText(plan, 'description', lang)}
+        {isGift ? fill(t('pricing.gift.card'), { plan: name }) : planText(plan, 'description', lang)}
       </p>
 
       <div className="mb-1">
