@@ -24,6 +24,12 @@ function assertProductionSecrets() {
 async function bootstrap() {
   assertProductionSecrets();
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  // Behind a front server (Caddy) every request arrives from its address, so
+  // rate limits would count all customers as one visitor. TRUST_PROXY=1 reads
+  // the visitor's real address from the one proxy in front instead. Leave it
+  // unset when the API is reached directly, or anyone could fake an address.
+  const trustProxy = Number(process.env.TRUST_PROXY);
+  if (trustProxy > 0) app.set('trust proxy', trustProxy);
   app.useStaticAssets(join(__dirname, '..', 'public'), { prefix: '/' });
 
   app.use(helmet());

@@ -47,7 +47,10 @@ docker compose -f docker-compose.prod.yml up -d --build
 ## Still needed before real customers
 
 - HTTPS in front of ports 3000 / 3001 / 4000 (e.g. Caddy, which gets
-  certificates automatically).
+  certificates automatically). The settings file has `TRUST_PROXY=1` for
+  this, so sign-in limits count each visitor separately; once Caddy is in
+  place, make port 4000 reachable only through it (not from the internet),
+  otherwise visitors could fake their address and dodge the limits.
 - Daily database backups.
 - The pre-launch items in the QA workbook (fake reviews, legal placeholders).
 
