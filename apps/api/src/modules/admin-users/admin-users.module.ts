@@ -1,7 +1,10 @@
 import { Module } from '@nestjs/common';
 import { Controller, Get, Post, Patch, Delete, Body, Param, UseGuards, Query } from '@nestjs/common';
 import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
-import { IsString, IsEmail, IsOptional, IsEnum, MinLength } from 'class-validator';
+import { IsString, IsEmail, IsOptional, IsEnum, MinLength, IsNotIn } from 'class-validator';
+
+/** The password early seeds gave every install; never allowed again. */
+const RETIRED = { message: 'That is the old default password. Choose another.' };
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
@@ -13,7 +16,7 @@ class CreateAdminUserDto {
   @IsEmail() email: string;
   @IsString() firstName: string;
   @IsString() lastName: string;
-  @IsString() @MinLength(8) password: string;
+  @IsString() @MinLength(8) @IsNotIn(['Admin@123456'], RETIRED) password: string;
   @IsString() roleId: string;
 }
 
@@ -22,7 +25,7 @@ class UpdateAdminUserDto {
   @IsOptional() @IsString() lastName?: string;
   @IsOptional() @IsString() roleId?: string;
   @IsOptional() @IsEnum(['ACTIVE', 'INACTIVE', 'SUSPENDED']) status?: string;
-  @IsOptional() @IsString() @MinLength(8) password?: string;
+  @IsOptional() @IsString() @MinLength(8) @IsNotIn(['Admin@123456'], RETIRED) password?: string;
 }
 
 class CreateRoleDto {

@@ -3,6 +3,8 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
 
+const RETIRED_DEFAULT_PASSWORDS = ['Admin@123456'];
+
 @Injectable()
 export class AdminAuthService {
   constructor(private prisma: PrismaService, private jwt: JwtService) {}
@@ -19,6 +21,12 @@ export class AdminAuthService {
     if (!valid) throw new UnauthorizedException('Invalid credentials');
 
     if (admin.status !== 'ACTIVE') throw new UnauthorizedException('Account is inactive');
+
+    // Early seeds gave every install the same public password. Outside
+    // development it must be changed before anyone can use it to sign in.
+    if (process.env.NODE_ENV === 'production' && RETIRED_DEFAULT_PASSWORDS.includes(password)) {
+      throw new UnauthorizedException('This account still uses the default password. Reset it with prisma/set-admin-password.ts.');
+    }
 
     const permissions = admin.role.permissions.map((rp) => rp.permission.key);
 

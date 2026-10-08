@@ -8,7 +8,21 @@ import * as compression from 'compression';
 import * as cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
 
+/**
+ * Tokens for customers and admins are signed with JWT_SECRET. The example
+ * value is public, so a server running with it lets anyone mint an admin
+ * token. Refuse to start in production rather than run like that.
+ */
+function assertProductionSecrets() {
+  if (process.env.NODE_ENV !== 'production') return;
+  const secret = process.env.JWT_SECRET ?? '';
+  if (secret.length < 32 || secret.startsWith('change-this')) {
+    throw new Error('JWT_SECRET must be a random value of at least 32 characters in production (e.g. `openssl rand -base64 48`).');
+  }
+}
+
 async function bootstrap() {
+  assertProductionSecrets();
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   app.useStaticAssets(join(__dirname, '..', 'public'), { prefix: '/' });
 

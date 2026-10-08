@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
+import { resolveAdminPassword } from './admin-password';
 
 const prisma = new PrismaClient();
 
@@ -92,13 +93,18 @@ async function main() {
     create: { name: 'Customer Support', description: 'Handles customer issues' },
   });
 
-  // Seed Super Admin user
-  const passwordHash = await bcrypt.hash('Admin@123456', 12);
+  // Seed Super Admin user. The password comes from ADMIN_PASSWORD; a fixed
+  // default here would be the same publicly known login on every server.
+  // An existing admin is left untouched (update: {}).
+  const adminEmail = process.env.ADMIN_EMAIL || 'admin@pupbox.ge';
+  const existingAdmin = await prisma.adminUser.findUnique({ where: { email: adminEmail }, select: { id: true } });
+  const adminPassword = existingAdmin ? null : resolveAdminPassword();
+  const passwordHash = adminPassword ? await bcrypt.hash(adminPassword.password, 12) : '';
   await prisma.adminUser.upsert({
-    where: { email: 'admin@pupbox.ge' },
+    where: { email: adminEmail },
     update: {},
     create: {
-      email: 'admin@pupbox.ge',
+      email: adminEmail,
       firstName: 'Super',
       lastName: 'Admin',
       passwordHash,
@@ -108,7 +114,9 @@ async function main() {
   });
 
   console.log('✅ Seed complete');
-  console.log('Admin login: admin@pupbox.ge / Admin@123456');
+  if (!adminPassword) console.log(`Admin ${adminEmail} already exists; password unchanged.`);
+  else if (adminPassword.generated) console.log(`Admin login: ${adminEmail} / ${adminPassword.password}  (generated, shown once)`);
+  else console.log(`Admin login: ${adminEmail} / the ADMIN_PASSWORD you set`);
 }
 
 main()
