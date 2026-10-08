@@ -13,6 +13,9 @@ function PlanSectionInner({ plans }: { plans: any[] }) {
     if (params.get('gift') === 'true') setMode('gift');
   }, [params]);
 
+  // A plan switched off for gifting in admin is refused at checkout, so don't offer it.
+  const shown = mode === 'gift' ? plans.filter((p: any) => p.giftable !== false) : plans;
+
   return (
     <div>
       {/* Toggle */}
@@ -55,15 +58,15 @@ function PlanSectionInner({ plans }: { plans: any[] }) {
       )}
 
       {/* Plans grid */}
-      {plans.length === 0 ? (
-        <p className="text-gray-400">No plans available yet.</p>
+      {shown.length === 0 ? (
+        <p className="text-gray-400">{t('pricing.none')}</p>
       ) : (
         <div
           key={mode}
           className="grid md:grid-cols-4 gap-6 items-start"
           style={{ animation: 'fadeSlideIn 0.3s ease both' }}
         >
-          {plans.map((plan: any) => (
+          {shown.map((plan: any) => (
             <PlanCard key={plan.id} plan={plan} showFullBenefits isGift={mode === 'gift'} />
           ))}
         </div>

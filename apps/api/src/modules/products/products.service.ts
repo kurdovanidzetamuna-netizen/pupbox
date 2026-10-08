@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { ProductStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateProductDto } from './dto/create-product.dto';
 
@@ -8,6 +9,8 @@ const productInclude = {
   tags: { include: { tag: true } },
   inventory: true,
 };
+
+const PUBLIC_STATUSES: ProductStatus[] = ['ACTIVE', 'OUT_OF_STOCK'];
 
 @Injectable()
 export class ProductsService {
@@ -31,7 +34,9 @@ export class ProductsService {
 
     const where: any = { deletedAt: null };
     if (!adminView) {
-      where.status = 'ACTIVE';
+      // Sold-out products stay listed, marked out of stock, so links to them
+      // keep working and they come back by themselves when restocked.
+      where.status = { in: PUBLIC_STATUSES };
       where.standaloneSale = true;
     } else if (status) {
       where.status = status;
@@ -104,7 +109,7 @@ export class ProductsService {
 
   async findOne(slug: string, adminView = false) {
     const where: any = { slug, deletedAt: null };
-    if (!adminView) where.status = 'ACTIVE';
+    if (!adminView) where.status = { in: PUBLIC_STATUSES };
 
     const product = await this.prisma.product.findFirst({ where, include: productInclude });
     if (!product) throw new NotFoundException('Product not found');
