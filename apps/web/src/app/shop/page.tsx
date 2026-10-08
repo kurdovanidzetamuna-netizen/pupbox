@@ -115,7 +115,7 @@ export default async function ShopPage({
                             </svg>
                           )}
                         </span>
-                        {b}
+                        <T k={`collection.${b}`} fallback={b} />
                       </Link>
                     </li>
                   );

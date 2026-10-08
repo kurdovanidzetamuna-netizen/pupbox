@@ -13,7 +13,13 @@ export function planBenefits(plan: any, lang: string): string[] | null {
   return Array.isArray(ka) && ka.some((b: string) => b?.trim()) ? ka.filter((b: string) => b?.trim()) : null;
 }
 
-/** Display name for a cart line: product name, or the plan's localized name. */
+/** A product's or category's field in Georgian when admin has filled it in, else the English original. */
+export function catalogText(row: any, field: 'name' | 'shortDescription' | 'description', lang: string): string {
+  const ka = lang === 'ka' ? row?.translations?.ka?.[field] : '';
+  return (typeof ka === 'string' && ka.trim()) || row?.[field] || '';
+}
+
+/** Display name for a cart line: the product's or the plan's localized name. */
 export function itemName(item: any, lang: string): string {
-  return item?.product?.name || planText(item?.subscriptionPlan, 'name', lang);
+  return item?.product ? catalogText(item.product, 'name', lang) : planText(item?.subscriptionPlan, 'name', lang);
 }

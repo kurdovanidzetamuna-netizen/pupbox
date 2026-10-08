@@ -14,6 +14,11 @@ export const STORE_STRINGS: Record<string, { en: string; ka: string }> = {
   'shop.brands':            { en: 'Collections',                ka: 'კოლექციები' },
   'shop.allBrands':         { en: 'All',                        ka: 'ყველა' },
   'shop.noBrands':          { en: 'No collections yet',         ka: 'კოლექციები ჯერ არ არის' },
+  // Collection labels, keyed by the tag's name (the filter value stays that name).
+  // A brand or a new tag without an entry shows as entered in admin.
+  'collection.Bestseller':  { en: 'Bestseller',                 ka: 'ბესტსელერი' },
+  'collection.Natural':     { en: 'Natural',                    ka: 'ნატურალური' },
+  'collection.Small Dogs':  { en: 'Small Dogs',                 ka: 'პატარა ძაღლებისთვის' },
   'shop.none':              { en: 'No products found.',         ka: 'პროდუქტი ვერ მოიძებნა.' },
   'shop.clearFilters':      { en: 'Clear all filters',          ka: 'ფილტრების გასუფთავება' },
   'shop.search':            { en: 'Search products…',           ka: 'პროდუქტის ძიება…' },

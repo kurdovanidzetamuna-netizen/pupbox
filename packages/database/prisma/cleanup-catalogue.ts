@@ -1,7 +1,7 @@
 /**
  * One-off catalogue tidy-up.
  *
- * Retires leftover test plans and products, fixes a plan left with a blank
+ * Retires leftover test plans, products and categories, fixes a plan left with a blank
  * name, and populates the active box campaign.
  *
  * Everything here is REVERSIBLE — rows are soft-deleted (deletedAt + inactive),
@@ -16,8 +16,12 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 /** Identified by slug/sku so a rename can't silently change what gets retired. */
-const RETIRE_PLAN_SLUGS = ['10-monthtest', '3-month', '1testing', '3month', '3test', '2-month'];
+const RETIRE_PLAN_SLUGS = ['10-monthtest', '3-month', '1testing', '3month', '3test', '2-month', '3---month'];
 const RETIRE_PRODUCT_SKUS = ['test', 'ტესტ', 'treat-001'];
+const RETIRE_CATEGORY_SLUGS = ['t'];
+
+/** The pricing page's "Most Popular" sat on the ₾150 test plan; it belongs on a real one. */
+const POPULAR_PLAN_SLUG = '6-months';
 
 /** A real plan that lost its name — the pricing page renders an empty heading. */
 const RENAME_PLAN = { slug: '3-months', name: '3 Months' };
@@ -55,6 +59,16 @@ async function retire() {
   }
   const missingProducts = RETIRE_PRODUCT_SKUS.filter((s) => !products.some((p) => p.sku === s));
   if (missingProducts.length) console.log(`  · already gone: ${missingProducts.join(', ')}`);
+
+  const categories = await prisma.productCategory.findMany({
+    where: { slug: { in: RETIRE_CATEGORY_SLUGS }, deletedAt: null },
+    select: { id: true, name: true, slug: true },
+  });
+  for (const c of categories) {
+    await prisma.productCategory.update({ where: { id: c.id }, data: { isActive: false, deletedAt: now } });
+    console.log(`  retired category "${c.name}" (${c.slug})`);
+  }
+  if (!categories.length) console.log(`  · categories already gone: ${RETIRE_CATEGORY_SLUGS.join(', ')}`);
 }
 
 async function restore() {
@@ -66,7 +80,11 @@ async function restore() {
     where: { sku: { in: RETIRE_PRODUCT_SKUS } },
     data: { status: 'ACTIVE', standaloneSale: true, includedInBox: true, deletedAt: null },
   });
-  console.log(`  restored ${plans.count} plans, ${products.count} products`);
+  const categories = await prisma.productCategory.updateMany({
+    where: { slug: { in: RETIRE_CATEGORY_SLUGS } },
+    data: { isActive: true, deletedAt: null },
+  });
+  console.log(`  restored ${plans.count} plans, ${products.count} products, ${categories.count} categories`);
 }
 
 async function fixBlankName() {
@@ -75,6 +93,16 @@ async function fixBlankName() {
   if (plan.name?.trim()) return console.log(`  · plan ${RENAME_PLAN.slug} already named "${plan.name}"`);
   await prisma.subscriptionPlan.update({ where: { id: plan.id }, data: { name: RENAME_PLAN.name } });
   console.log(`  renamed ${RENAME_PLAN.slug} → "${RENAME_PLAN.name}"`);
+}
+
+async function movePopularBadge() {
+  const plan = await prisma.subscriptionPlan.findUnique({ where: { slug: POPULAR_PLAN_SLUG }, select: { id: true, badge: true } });
+  if (!plan) return console.log(`  · plan ${POPULAR_PLAN_SLUG} not found`);
+  if (plan.badge) return console.log(`  · ${POPULAR_PLAN_SLUG} already badged "${plan.badge}"`);
+  const elsewhere = await prisma.subscriptionPlan.count({ where: { badge: 'Most Popular', isActive: true, deletedAt: null } });
+  if (elsewhere) return console.log('  · another active plan is already "Most Popular"');
+  await prisma.subscriptionPlan.update({ where: { id: plan.id }, data: { badge: 'Most Popular' } });
+  console.log(`  "Most Popular" → ${POPULAR_PLAN_SLUG}`);
 }
 
 async function fillCampaign() {
@@ -113,6 +141,8 @@ async function main() {
   await retire();
   console.log('\n▸ fixing blank plan name…');
   await fixBlankName();
+  console.log('\n▸ placing the "Most Popular" badge…');
+  await movePopularBadge();
   console.log('\n▸ populating box campaign…');
   await fillCampaign();
 

@@ -123,7 +123,7 @@ export default async function ProductDetailPage({ params }: { params: { slug: st
               <p><T k="pdp.sku" />: <span className="text-gray-600">{product.sku}</span></p>
               {product.tags?.length > 0 && (
                 <p><T k="pdp.tags" />: {product.tags.map((t: any) => (
-                  <span key={t.tag.id} className="inline-block bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-xs mr-1">{t.tag.name}</span>
+                  <span key={t.tag.id} className="inline-block bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-xs mr-1"><T k={`collection.${t.tag.name}`} fallback={t.tag.name} /></span>
                 ))}</p>
               )}
             </div>
