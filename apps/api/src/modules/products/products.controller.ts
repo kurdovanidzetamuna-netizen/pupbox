@@ -15,6 +15,7 @@ export class ProductsController {
   @ApiQuery({ name: 'search', required: false })
   @ApiQuery({ name: 'sort', required: false, enum: ['price_asc', 'price_desc', 'name_asc', 'name_desc'] })
   @ApiQuery({ name: 'brand', required: false })
+  @ApiQuery({ name: 'lang', required: false, enum: ['ka', 'en'] })
   findAll(
     @Query('page') page?: string,
     @Query('limit') limit?: string,
@@ -22,6 +23,7 @@ export class ProductsController {
     @Query('search') search?: string,
     @Query('sort') sort?: string,
     @Query('brand') brand?: string,
+    @Query('lang') lang?: string,
   ) {
     return this.service.findAll({
       page: page ? Math.max(1, +page || 1) : 1,
@@ -31,6 +33,7 @@ export class ProductsController {
       search,
       sort,
       brand,
+      lang,
     });
   }
 

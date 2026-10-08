@@ -26,10 +26,12 @@ export class ProductsService {
     includedInBox?: boolean;
     /** price_asc | price_desc | name_asc | name_desc; default is the catalogue order. */
     sort?: string;
+    /** The visitor's language; 'ka' sorts by Georgian names. */
+    lang?: string;
     /** A brand, or a tag name for products filed under a tag instead. */
     brand?: string;
   }) {
-    const { page = 1, limit = 20, categorySlug, search, status, adminView = false, includedInBox, sort, brand } = params;
+    const { page = 1, limit = 20, categorySlug, search, status, adminView = false, includedInBox, sort, brand, lang } = params;
     const skip = (page - 1) * limit;
 
     const where: any = { deletedAt: null };
@@ -55,6 +57,9 @@ export class ProductsService {
         { name: { contains: search, mode: 'insensitive' } },
         { sku: { contains: search, mode: 'insensitive' } },
         { shortDescription: { contains: search, mode: 'insensitive' } },
+        // Georgian names live in translations.ka; Georgian has no letter case.
+        { translations: { path: ['ka', 'name'], string_contains: search } },
+        { translations: { path: ['ka', 'shortDescription'], string_contains: search } },
       ] });
     }
     if (brand) {
@@ -74,6 +79,19 @@ export class ProductsService {
       const ordered = all
         .map(p => ({ id: p.id, effective: Number(p.salePrice ?? p.price) }))
         .sort((a, b) => dir * (a.effective - b.effective));
+      const pageIds = ordered.slice(skip, skip + limit).map(p => p.id);
+      const rows = await this.prisma.product.findMany({ where: { id: { in: pageIds } }, include: productInclude });
+      const items = pageIds.map(id => rows.find(r => r.id === id)!).filter(Boolean);
+      return { items, total: all.length, page, limit, pages: Math.ceil(all.length / limit) };
+    }
+
+    if ((sort === 'name_asc' || sort === 'name_desc') && lang === 'ka') {
+      // A–Z by the name the visitor reads. The Georgian name is inside JSON,
+      // which Prisma can't order by, so order the ids here as for price.
+      const all = await this.prisma.product.findMany({ where, select: { id: true, name: true, translations: true } });
+      const dir = sort === 'name_asc' ? 1 : -1;
+      const label = (p: { name: string; translations: any }) => String(p.translations?.ka?.name || '').trim() || p.name;
+      const ordered = all.sort((a, b) => dir * label(a).localeCompare(label(b), 'ka'));
       const pageIds = ordered.slice(skip, skip + limit).map(p => p.id);
       const rows = await this.prisma.product.findMany({ where: { id: { in: pageIds } }, include: productInclude });
       const items = pageIds.map(id => rows.find(r => r.id === id)!).filter(Boolean);

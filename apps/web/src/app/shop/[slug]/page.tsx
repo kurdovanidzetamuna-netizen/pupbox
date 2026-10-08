@@ -8,7 +8,12 @@ import { gel } from '@/lib/format';
 export async function generateMetadata({ params }: { params: { slug: string } }) {
   try {
     const product = await api.products.get(params.slug);
-    return { title: product.seoTitle || product.name, description: product.seoDesc || product.shortDescription };
+    // Search engines and the browser tab get the Georgian name — the site's language.
+    const ka = product.translations?.ka ?? {};
+    return {
+      title: product.seoTitle || ka.name?.trim() || product.name,
+      description: product.seoDesc || ka.shortDescription?.trim() || product.shortDescription,
+    };
   } catch {
     return { title: 'Product not found' };
   }

@@ -2,6 +2,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { PURCHASE_STRINGS } from './strings/purchase';
 import { STORE_STRINGS } from './strings/store';
+import { LANG_COOKIE } from '@/lib/lang';
 
 type Lang = 'en' | 'ka';
 
@@ -85,6 +86,11 @@ const LanguageContext = createContext<LanguageContextType>({
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 
+/** The cookie lets server-rendered pages (the shop's A–Z order) follow the visitor's language too. */
+function rememberForServer(l: Lang) {
+  document.cookie = `${LANG_COOKIE}=${l}; path=/; max-age=31536000; samesite=lax`;
+}
+
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [lang, setLangState] = useState<Lang>('ka');
   // CMS overrides: key → { en, ka }
@@ -93,7 +99,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   // Restore saved language preference
   useEffect(() => {
     const saved = localStorage.getItem('pupbox_lang') as Lang | null;
-    if (saved === 'en' || saved === 'ka') setLangState(saved);
+    if (saved === 'en' || saved === 'ka') { setLangState(saved); rememberForServer(saved); }
   }, []);
 
   // Fetch translations from CMS once on mount
@@ -118,6 +124,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   function setLang(l: Lang) {
     setLangState(l);
     localStorage.setItem('pupbox_lang', l);
+    rememberForServer(l);
   }
 
   const t = useCallback((key: string, fallback?: string): string => {
