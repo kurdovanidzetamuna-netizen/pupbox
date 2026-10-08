@@ -1,7 +1,8 @@
 // Generated from the site's text as it was when the page editor was built
 // (built-in strings with the edits saved in admin Translations applied).
 // These are only starting values: once a page is saved in admin, its saved
-// content is what the site shows.
+// content is what the site shows. Edited by hand since: faq.a6 (to match the
+// monthly box cycle).
 import type { Text } from './types';
 
 export const D = {
@@ -39,7 +40,7 @@ export const D = {
   "faq.a3": { en: "Yes. Cancel any time from your account, with no fee — future renewals and boxes stop.", ka: "დიახ. გააუქმე ნებისმიერ დროს ანგარიშიდან, საფასურის გარეშე — მომავალი განახლებები და ყუთები შეწყდება." },
   "faq.a4": { en: "Contact our support team and we'll replace the item or apply a credit to your next box. Your dog's happiness is our priority.", ka: "დაუკავშირდი ჩვენს გუნდს და ჩვენ ჩავანაცვლებთ ან კრედიტს ჩაგითვლით შემდეგ კოლოფში. შენი ძაღლის ბედნიერება ჩვენი პრიორიტეტია." },
   "faq.a5": { en: "Yes! We deliver to all major cities and most regions across Georgia, including Tbilisi, Batumi, Kutaisi, Rustavi, and more.", ka: "დიახ! ვაწვდით საქართველოს ყველა მთავარ ქალაქსა და რეგიონში, მათ შორის თბილისს, ბათუმს, ქუთაისს, რუსთავს და სხვებს." },
-  "faq.a6": { en: "Boxes ship on the 1st of each month. Standard delivery takes 2–3 business days, express next day.", ka: "კოლოფები ყოველი თვის 1-ლ რიცხვს გამოიგზავნება. სტანდარტული მიწოდება 2–3 სამუშაო დღეს, ექსპრესი — მეორე დღეს." },
+  "faq.a6": { en: "Your first box ships within 3–5 business days of subscribing. After that you get one box every month, sent in the first week of the month. Standard delivery takes 2–3 business days, express the next day.", ka: "პირველი კოლოფი გამოწერიდან 3–5 სამუშაო დღეში გამოიგზავნება. შემდეგ ყოველ თვე ერთ კოლოფს მიიღებ, რომელიც თვის პირველ კვირაში იგზავნება. სტანდარტული მიწოდება 2–3 სამუშაო დღეს გრძელდება, ექსპრესი — მეორე დღეს." },
   "faq.a7": { en: "Not at the moment. You can turn off auto-renewal or cancel any time from your account.", ka: "ამ ეტაპზე — არა. ანგარიშიდან შეგიძლია გამორთო ავტომატური განახლება ან ნებისმიერ დროს გააუქმო გამოწერა." },
   "faq.a8": { en: "We offer a satisfaction guarantee. Contact our team and we'll make it right.", ka: "ჩვენ კმაყოფილების გარანტიას გთავაზობთ. დაუკავშირდი ჩვენს გუნდს და გამოვასწორებთ." },
   "faq.a9": { en: "We don't offer free trials, but the monthly plan is commitment-free — cancel anytime.", ka: "უფასო საცდელს არ ვთავაზობთ, მაგრამ ყოველთვიური გეგმა ვალდებულებას არ ითვალისწინებს — გაუქმება ნებისმიერ დროს." },

@@ -76,6 +76,21 @@ export class EmailService {
     await this.send(order.user.email, subject, html);
   }
 
+  async sendBoxShipped(data: { email: string; firstName: string; dogName: string | null; boxNumber: number; boxesTotal: number; trackingNumber: string | null }) {
+    const tpl = await this.getTemplate('box_shipped');
+    const vars = {
+      firstName: data.firstName,
+      dogName: data.dogName ?? 'your dog',
+      boxNumber: String(data.boxNumber),
+      boxesTotal: String(data.boxesTotal),
+      trackingNumber: data.trackingNumber ?? '',
+      accountUrl: `${this.siteUrl}/account/subscriptions`,
+    };
+    const subject = tpl ? this.renderTemplate(tpl.subject, vars) : `Box ${vars.boxNumber} of ${vars.boxesTotal} is on its way to ${vars.dogName} 📦`;
+    const html = tpl ? this.renderTemplate(tpl.body, vars) : this.buildBoxShippedHtml(vars);
+    await this.send(data.email, subject, html);
+  }
+
   async sendSubscriptionActivated(data: { email: string; firstName: string; planName: string }) {
     const tpl = await this.getTemplate('subscription_activated');
     const vars = { firstName: data.firstName, planName: data.planName, siteUrl: this.siteUrl };
@@ -145,6 +160,11 @@ ${note}
 <div style="text-align:center;margin:28px 0"><a href="${vars.claimUrl}" style="display:inline-block;background:#f97316;color:white;padding:14px 32px;border-radius:24px;text-decoration:none;font-weight:bold">Claim your gift →</a></div>
 <p style="color:#9ca3af;font-size:0.8rem">If the button doesn't work, paste this into your browser:<br>${vars.claimUrl}</p>
 <p style="margin-top:32px;color:#9ca3af;font-size:0.85rem">© ${new Date().getFullYear()} Pupbox</p></body></html>`;
+  }
+
+  private buildBoxShippedHtml(vars: Record<string, string>): string {
+    const tracking = vars.trackingNumber ? `<p>Tracking number: <strong>${vars.trackingNumber}</strong></p>` : '';
+    return `<!DOCTYPE html><html><body style="font-family:sans-serif;max-width:520px;margin:auto;padding:24px"><h2 style="color:#0d9488">Your box is on its way 📦</h2><p>Hi ${vars.firstName},</p><p>Box ${vars.boxNumber} of ${vars.boxesTotal} for ${vars.dogName} has just left us.</p>${tracking}<a href="${vars.accountUrl}" style="display:inline-block;background:#0d9488;color:white;padding:12px 24px;border-radius:24px;text-decoration:none;font-weight:bold;margin-top:16px">My boxes</a></body></html>`;
   }
 
   private buildSubscriptionHtml(vars: Record<string, string>): string {

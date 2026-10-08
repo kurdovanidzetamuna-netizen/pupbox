@@ -23,6 +23,7 @@ import { GiftsModule } from './modules/gifts/gifts.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { BoxCampaignsModule } from './modules/box-campaigns/box-campaigns.module';
+import { BoxShipmentsModule } from './modules/box-shipments/box-shipments.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { EmailModule } from './modules/email/email.module';
 import { CouponsModule } from './modules/coupons/coupons.module';
@@ -63,6 +64,7 @@ import { UploadModule } from './modules/upload/upload.module';
     EmailModule,
     AuditModule,
     BoxCampaignsModule,
+    BoxShipmentsModule,
     CouponsModule,
     AdminUsersModule,
     UploadModule,

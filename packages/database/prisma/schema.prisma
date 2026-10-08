@@ -273,6 +273,7 @@ model Address {
   deletedAt    DateTime?
 
   orders       Order[]
+  boxShipments BoxShipment[]
 }
 
 // ─── PRODUCT CATEGORIES ──────────────────────────────────────────────────────
@@ -459,6 +460,7 @@ model CustomerSubscription {
   giftClaimedAt      DateTime?
 
   orders        Order[]
+  shipments     BoxShipment[]
 
   // Active-subscriber counts, churn (status + updatedAt) and per-plan
   // rankings all aggregate on these.
@@ -816,6 +818,7 @@ model BoxCampaign {
   updatedAt   DateTime @updatedAt
 
   products    BoxCampaignProduct[]
+  shipments   BoxShipment[]
 }
 
 model BoxCampaignProduct {
@@ -842,4 +845,42 @@ model AuditLog {
   ip          String?
   userAgent   String?
   createdAt   DateTime    @default(now())
+}
+
+enum BoxShipmentStatus {
+  TO_PACK
+  PACKED
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+/// One subscriber's box for one calendar month. Every active subscription
+/// with boxes left gets one per month; someone who subscribes mid-month is
+/// added to that month's list and ships within days. Marking it SHIPPED is
+/// what counts it towards CustomerSubscription.boxesDelivered.
+model BoxShipment {
+  id             String               @id @default(cuid())
+  subscriptionId String
+  subscription   CustomerSubscription @relation(fields: [subscriptionId], references: [id])
+  year           Int
+  month          Int                  // 1-12
+  /// Which of the plan's boxes this is: 1 … boxesTotal.
+  boxNumber      Int
+  /// What goes in it — the month's campaign for the dog's size, if one exists.
+  campaignId     String?
+  campaign       BoxCampaign?         @relation(fields: [campaignId], references: [id])
+  /// Where it goes, fixed when the box is added to the month's list.
+  addressId      String?
+  address        Address?             @relation(fields: [addressId], references: [id])
+  status         BoxShipmentStatus    @default(TO_PACK)
+  trackingNumber String?
+  packedAt       DateTime?
+  shippedAt      DateTime?
+  deliveredAt    DateTime?
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+
+  @@unique([subscriptionId, year, month])
+  @@index([year, month, status])
 }

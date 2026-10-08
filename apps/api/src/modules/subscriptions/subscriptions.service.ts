@@ -38,7 +38,16 @@ export class SubscriptionsService implements OnModuleInit, OnModuleDestroy {
   async findByUser(userId: string) {
     return this.prisma.customerSubscription.findMany({
       where: { userId },
-      include: { plan: true, dog: true },
+      include: {
+        plan: true,
+        dog: true,
+        // The customer's box history; tracking is theirs to see.
+        shipments: {
+          where: { status: { not: 'CANCELLED' } },
+          select: { id: true, year: true, month: true, boxNumber: true, status: true, trackingNumber: true, shippedAt: true, deliveredAt: true },
+          orderBy: [{ year: 'desc' }, { month: 'desc' }],
+        },
+      },
       orderBy: { createdAt: 'desc' },
     });
   }

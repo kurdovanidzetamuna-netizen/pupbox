@@ -109,6 +109,26 @@ export default function MySubscriptionsPage() {
                     <div className="bg-gray-50 rounded-xl p-3"><dt className="text-gray-500 text-xs mb-0.5">{t('sub.price')}</dt><dd className="font-bold text-gray-900">{gel(sub.plan?.price)}</dd></div>
                   </dl>
 
+                  {sub.shipments?.length > 0 && (
+                    <div className="mb-5">
+                      <p className="text-xs font-semibold text-gray-500 mb-2">{t('sub.history')}</p>
+                      <ul className="divide-y divide-gray-100 border border-gray-100 rounded-xl text-sm">
+                        {sub.shipments.map((b: any) => (
+                          <li key={b.id} className="flex items-center justify-between gap-3 px-3 py-2.5">
+                            <span className="text-gray-900">
+                              <span className="font-semibold">{fill(t('sub.boxN'), { n: b.boxNumber })}</span>
+                              <span className="text-gray-400"> · {new Date(b.year, b.month - 1, 1).toLocaleDateString(lang === 'ka' ? 'ka-GE' : 'en-GB', { month: 'long', year: 'numeric' })}</span>
+                            </span>
+                            <span className="text-right">
+                              <span className={`text-xs font-bold ${b.status === 'SHIPPED' || b.status === 'DELIVERED' ? 'text-teal-700' : 'text-gray-500'}`}>{t(`sub.box.${b.status}`, b.status)}</span>
+                              {b.trackingNumber && <span className="block text-xs text-gray-400">{t('sub.tracking')}: <span className="font-mono">{b.trackingNumber}</span></span>}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
                   {canToggle && (
                     <div className={`flex items-center justify-between gap-4 rounded-xl border p-4 mb-4 transition ${sub.autoRenewal ? 'border-teal-200 bg-teal-50' : 'border-gray-200 bg-gray-50'}`}>
                       <div>
