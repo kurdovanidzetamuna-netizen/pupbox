@@ -6,6 +6,7 @@ import { FlittService } from './flitt.service';
 import { EmailService } from '../email/email.service';
 import { ReferralsService } from '../referrals/referrals.service';
 import { ProductsService } from '../products/products.service';
+import { subscriptionPeriod } from '../subscriptions/subscription-period';
 
 @Injectable()
 export class PaymentsService {
@@ -125,13 +126,13 @@ export class PaymentsService {
       if (order.subscriptionId) {
         const sub = await this.prisma.customerSubscription.findUnique({
           where: { id: order.subscriptionId },
-          select: { id: true, isGift: true, giftClaimToken: true },
+          select: { id: true, isGift: true, giftClaimToken: true, autoRenewal: true, plan: { select: { durationValue: true, durationUnit: true } } },
         });
 
         if (sub && !sub.isGift) {
           await this.prisma.customerSubscription.update({
             where: { id: sub.id },
-            data: { status: 'ACTIVE', startDate: new Date() },
+            data: { status: 'ACTIVE', ...subscriptionPeriod(new Date(), sub.plan, sub.autoRenewal) },
           });
         } else if (sub?.isGift) {
           // A paid gift stays PENDING: there is no dog and no address yet, so

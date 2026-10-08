@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, BadRequestException, Logger } from '@nes
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
 import { DogGender, DogSize } from '@prisma/client';
+import { subscriptionPeriod } from '../subscriptions/subscription-period';
 
 /**
  * Claiming a gifted subscription.
@@ -62,7 +63,7 @@ export class GiftsService {
   }) {
     const sub = await this.prisma.customerSubscription.findUnique({
       where: { giftClaimToken: token },
-      select: { id: true, giftClaimedAt: true, status: true, purchasedByUserId: true, boxesTotal: true, plan: { select: { name: true, slug: true } } },
+      select: { id: true, giftClaimedAt: true, status: true, purchasedByUserId: true, boxesTotal: true, plan: { select: { name: true, slug: true, durationValue: true, durationUnit: true } } },
     });
     if (!sub) throw new NotFoundException('This gift link is not valid');
     if (sub.giftClaimedAt) throw new BadRequestException('This gift has already been claimed');
@@ -119,7 +120,8 @@ export class GiftsService {
           userId,
           dogId,
           status: 'ACTIVE',
-          startDate: now,
+          // A gift is a fixed term: it runs from the claim and does not renew.
+          ...subscriptionPeriod(now, sub.plan, false),
           giftClaimedAt: now,
           giftClaimToken: null,
           autoRenewal: false,

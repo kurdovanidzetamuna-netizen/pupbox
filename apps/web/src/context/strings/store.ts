@@ -91,6 +91,7 @@ export const STORE_STRINGS: Record<string, { en: string; ka: string }> = {
   'sub.boxes':              { en: '{n} boxes',                  ka: '{n} ყუთი' },
   'sub.delivered':          { en: 'Boxes delivered',            ka: 'მიწოდებული ყუთები' },
   'sub.nextRenewal':        { en: 'Next renewal',               ka: 'შემდეგი განახლება' },
+  'sub.endsOn':             { en: 'Ends on',                    ka: 'სრულდება' },
   'sub.dog':                { en: 'Dog',                        ka: 'ძაღლი' },
   'sub.price':              { en: 'Price',                      ka: 'ფასი' },
   'sub.autoRenewal':        { en: 'Auto-renewal',               ka: 'ავტომატური განახლება' },

@@ -1,9 +1,39 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
+const HOUR = 60 * 60 * 1000;
+
 @Injectable()
-export class SubscriptionsService {
+export class SubscriptionsService implements OnModuleInit, OnModuleDestroy {
+  private readonly logger = new Logger(SubscriptionsService.name);
+  private timer?: NodeJS.Timeout;
+
   constructor(private prisma: PrismaService) {}
+
+  onModuleInit() {
+    const run = () => this.expireEnded().catch((e) => this.logger.error(`Expiry check failed: ${e.message}`));
+    setTimeout(run, 10_000).unref(); // catch up after a restart
+    this.timer = setInterval(run, HOUR);
+    this.timer.unref();
+  }
+
+  onModuleDestroy() {
+    clearInterval(this.timer);
+  }
+
+  /**
+   * Ends subscriptions whose term is over and which the customer did not ask
+   * to renew. Renewing ones stay active: charging them needs Flitt, see
+   * processDueRenewals. Safe to run from several instances at once.
+   */
+  async expireEnded() {
+    const { count } = await this.prisma.customerSubscription.updateMany({
+      where: { status: 'ACTIVE', endDate: { lte: new Date() }, OR: [{ autoRenewal: false }, { nextRenewalAt: null }] },
+      data: { status: 'EXPIRED' },
+    });
+    if (count) this.logger.log(`Expired ${count} subscription(s) that reached their end date`);
+    return { expired: count };
+  }
 
   async findByUser(userId: string) {
     return this.prisma.customerSubscription.findMany({
@@ -45,7 +75,8 @@ export class SubscriptionsService {
   async toggleAutoRenewal(id: string, userId: string, enabled: boolean) {
     const sub = await this.findOne(id, userId);
     if (['CANCELLED', 'EXPIRED'].includes(sub.status)) throw new BadRequestException('Cannot modify a cancelled subscription');
-    return this.prisma.customerSubscription.update({ where: { id }, data: { autoRenewal: enabled } });
+    // Renewal falls due when the current term ends; switching it off clears that.
+    return this.prisma.customerSubscription.update({ where: { id }, data: { autoRenewal: enabled, nextRenewalAt: enabled ? sub.endDate : null } });
   }
 
   // Cron stub — finds subscriptions due for renewal. Payment charge is NOT implemented yet.

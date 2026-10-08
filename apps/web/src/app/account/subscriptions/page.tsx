@@ -104,7 +104,7 @@ export default function MySubscriptionsPage() {
 
                   <dl className="grid grid-cols-2 gap-3 text-sm mb-5">
                     <div className="bg-gray-50 rounded-xl p-3"><dt className="text-gray-500 text-xs mb-0.5">{t('sub.delivered')}</dt><dd className="font-bold text-gray-900">{sub.boxesDelivered} / {sub.boxesTotal}</dd></div>
-                    <div className="bg-gray-50 rounded-xl p-3"><dt className="text-gray-500 text-xs mb-0.5">{t('sub.nextRenewal')}</dt><dd className="font-bold text-gray-900">{sub.nextRenewalAt ? date(sub.nextRenewalAt) : '—'}</dd></div>
+                    <div className="bg-gray-50 rounded-xl p-3"><dt className="text-gray-500 text-xs mb-0.5">{t(sub.nextRenewalAt ? 'sub.nextRenewal' : 'sub.endsOn')}</dt><dd className="font-bold text-gray-900">{sub.nextRenewalAt ? date(sub.nextRenewalAt) : sub.endDate ? date(sub.endDate) : '—'}</dd></div>
                     {sub.dog && <div className="bg-gray-50 rounded-xl p-3"><dt className="text-gray-500 text-xs mb-0.5">{t('sub.dog')}</dt><dd className="font-bold text-gray-900">{sub.dog.name}</dd></div>}
                     <div className="bg-gray-50 rounded-xl p-3"><dt className="text-gray-500 text-xs mb-0.5">{t('sub.price')}</dt><dd className="font-bold text-gray-900">{gel(sub.plan?.price)}</dd></div>
                   </dl>

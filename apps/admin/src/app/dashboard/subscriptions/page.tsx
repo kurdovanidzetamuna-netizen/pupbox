@@ -126,7 +126,8 @@ function DetailModal({ sub, onClose, onAction }: {
 
           {/* Dates */}
           <Section title="Dates">
-            <Row label="Started" value={sub.createdAt ? new Date(sub.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'} />
+            <Row label="Started" value={(sub.startDate || sub.createdAt) ? new Date(sub.startDate || sub.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'} />
+            <Row label="Ends" value={sub.endDate ? new Date(sub.endDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'} />
             <Row label="Next renewal" value={sub.nextRenewalAt ? new Date(sub.nextRenewalAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'} />
             {sub.cancelReason && <Row label="Cancel reason" value={sub.cancelReason} />}
           </Section>
