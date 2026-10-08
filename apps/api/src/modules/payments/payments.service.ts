@@ -30,6 +30,8 @@ export class PaymentsService {
     const apiUrl = this.config.get('NEXT_PUBLIC_API_URL') || 'http://localhost:4000/api/v1';
     const siteUrl = this.config.get('NEXT_PUBLIC_SITE_URL') || 'http://localhost:3000';
 
+    if (this.simulatesPayments()) return this.simulatePayment(order, userId, siteUrl);
+
     const { checkoutUrl, paymentId } = await this.flitt.createCheckout({
       orderId: order.id,
       amount: Number(order.total),
@@ -54,13 +56,45 @@ export class PaymentsService {
     return { checkoutUrl, paymentId };
   }
 
-  async handleWebhook(body: Record<string, any>) {
-    const { order_id, payment_id, order_status, actual_amount, currency, ...rest } = body;
+  /**
+   * Development without a Flitt account: there is nowhere to send the
+   * customer, so pretend the bank answered and run the same code a real
+   * payment confirmation runs. Never in production — there a missing
+   * merchant id is a configuration error, not a free order.
+   */
+  private simulatesPayments(): boolean {
+    if (this.config.get('FLITT_MERCHANT_ID')) return false;
+    if (this.config.get('NODE_ENV') === 'production') {
+      throw new BadRequestException('Payments are not configured');
+    }
+    return true;
+  }
 
+  /** DEV_PAYMENT_RESULT=declined rehearses a refused card; anything else approves. */
+  private async simulatePayment(order: { id: string; total: any }, userId: string, siteUrl: string) {
+    const outcome = this.config.get('DEV_PAYMENT_RESULT') === 'declined' ? 'declined' : 'approved';
+    const paymentId = `dev-${Date.now()}`;
+    this.logger.warn(`Simulated ${outcome} payment for order ${order.id} (no FLITT_MERCHANT_ID; development only)`);
+
+    await this.prisma.payment.create({
+      data: { orderId: order.id, userId, provider: 'DEV_SIMULATED', providerPaymentId: paymentId, amount: order.total, currency: 'GEL', status: 'PENDING' },
+    });
+    await this.applyPaymentResult({ order_id: order.id, payment_id: paymentId, order_status: outcome, simulated: true });
+
+    return { checkoutUrl: `${siteUrl}/checkout/thank-you?order=${order.id}&payment_status=${outcome}`, paymentId };
+  }
+
+  async handleWebhook(body: Record<string, any>) {
     if (!this.flitt.verifySignature(body)) {
-      this.logger.warn(`Flitt webhook signature mismatch for order ${order_id}`);
+      this.logger.warn(`Flitt webhook signature mismatch for order ${body.order_id}`);
       throw new BadRequestException('Invalid signature');
     }
+    return this.applyPaymentResult(body);
+  }
+
+  /** What a payment outcome does to the order. Callers must have trusted `body` first. */
+  private async applyPaymentResult(body: Record<string, any>) {
+    const { order_id, payment_id, order_status } = body;
 
     const order = await this.prisma.order.findUnique({ where: { id: order_id } });
     if (!order) {
