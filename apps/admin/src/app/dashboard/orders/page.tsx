@@ -49,6 +49,21 @@ const TYPE_ICONS: Record<string, string> = {
 
 const STATUS_FLOW = ['PENDING', 'PAID', 'PROCESSING', 'PACKED', 'SHIPPED', 'DELIVERED'];
 
+/** What each step does, shown next to the choice so nothing happens by surprise. */
+const STEP_HELP: Record<string, string> = {
+  PAID: 'Back to paid (undo).',
+  PROCESSING: 'Being prepared.',
+  PACKED: 'Packed, waiting for the courier.',
+  SHIPPED: 'Handed to the courier — the customer gets an email.',
+  DELIVERED: 'Arrived.',
+  CANCELLED: 'Cancel: stock goes back on sale. If it was paid, it becomes “refund due”.',
+  REFUNDED: 'Record a refund you made in the payment provider’s portal.',
+};
+
+function RefundDueBadge() {
+  return <span style={{ display: 'inline-flex', marginLeft: 6, padding: '2px 8px', borderRadius: 999, fontSize: 10, fontWeight: 700, background: 'var(--red-50)', color: 'var(--red-700)', border: '1px solid var(--red-200)', whiteSpace: 'nowrap' }}>Refund due</span>;
+}
+
 function StatusBadge({ status }: { status: string }) {
   const s = STATUS_COLORS[status] || STATUS_COLORS.PENDING;
   return <span style={{ ...s, display: 'inline-flex', alignItems: 'center', padding: '2px 10px', borderRadius: 999, fontSize: 11, fontWeight: 600, whiteSpace: 'nowrap' }}>{status}</span>;
@@ -98,13 +113,40 @@ function OrderDrawer({ order, onClose, onStatusChange, onTrackingUpdate }: any) 
     return () => window.removeEventListener('keydown', h);
   }, [onClose]);
 
+  const [statusError, setStatusError] = useState('');
+  const next: string[] = order.allowedNext ?? [];
+  const paid = order.payments?.[0]?.status === 'PAID';
+
   async function saveStatus() {
+    const body: any = { status: newStatus };
+    if (newStatus === 'CANCELLED') {
+      const msg = paid
+        ? 'Cancel this paid order? Its products go back into stock, any subscription it started is cancelled, and it will show “Refund due” until you record the refund.'
+        : 'Cancel this unpaid order? Its products go back on sale.';
+      if (!confirm(msg)) return;
+      const reason = prompt('Reason (optional, kept on the order):') ?? '';
+      if (reason) body.reason = reason;
+    }
+    if (newStatus === 'REFUNDED') {
+      const full = Number(order.payments?.find((p: any) => p.status === 'PAID')?.amount ?? order.total);
+      const answer = prompt(`Amount refunded in the payment provider’s portal (₾). Full payment: ${full.toFixed(2)}`, full.toFixed(2));
+      if (answer === null) return;
+      body.refundAmount = Number(answer.replace(',', '.'));
+      const reason = prompt('Reason (optional):') ?? '';
+      if (reason) body.reason = reason;
+    }
     setSaving(true);
-    await fetch(`${API}/orders/admin/${order.id}/status`, {
+    setStatusError('');
+    const res = await fetch(`${API}/orders/admin/${order.id}/status`, {
       method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token()}` },
-      body: JSON.stringify({ status: newStatus }),
+      body: JSON.stringify(body),
     });
     setSaving(false);
+    if (!res.ok) {
+      const r = await res.json().catch(() => ({}));
+      setStatusError((Array.isArray(r.message) ? r.message[0] : r.message) || 'Not saved.');
+      return;
+    }
     onStatusChange();
   }
 
@@ -149,7 +191,7 @@ function OrderDrawer({ order, onClose, onStatusChange, onTrackingUpdate }: any) 
           <div style={{ background: 'var(--slate-50)', borderRadius: 12, padding: '16px 20px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--slate-900)' }}>Order Progress</span>
-              <StatusBadge status={order.status} />
+              <span><StatusBadge status={order.status} />{order.refundDue && <RefundDueBadge />}</span>
             </div>
             <StatusProgress status={order.status} />
           </div>
@@ -285,14 +327,27 @@ function OrderDrawer({ order, onClose, onStatusChange, onTrackingUpdate }: any) 
           {/* Status update */}
           <div style={{ background: 'var(--slate-50)', borderRadius: 12, padding: '16px 20px' }}>
             <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--slate-400)', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 12px' }}>Update Status</p>
+            {order.refundDue && (
+              <p style={{ margin: '0 0 12px', fontSize: 13, color: 'var(--red-700)', background: 'var(--red-50)', border: '1px solid var(--red-200)', borderRadius: 9, padding: '8px 12px' }}>
+                Refund due: this order was cancelled after payment. Refund it in the payment provider’s portal, then mark it Refunded here.
+              </p>
+            )}
+            {next.length === 0 ? (
+              <p style={{ margin: 0, fontSize: 13, color: 'var(--slate-500)' }}>This order is {order.status.toLowerCase()} — nothing more to change.</p>
+            ) : (
+            <>
             <div style={{ display: 'flex', gap: 8 }}>
-              <select value={newStatus} onChange={e => setNewStatus(e.target.value)} style={{ flex: 1, border: '1px solid var(--slate-200)', borderRadius: 9, padding: '8px 12px', fontSize: 13, outline: 'none', background: 'var(--white)' }}>
-                {ORDER_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+              <select value={newStatus} onChange={e => { setNewStatus(e.target.value); setStatusError(''); }} style={{ flex: 1, border: '1px solid var(--slate-200)', borderRadius: 9, padding: '8px 12px', fontSize: 13, outline: 'none', background: 'var(--white)' }}>
+                {[order.status, ...next].map(s => <option key={s} value={s}>{s === order.status ? `${s} (now)` : s}</option>)}
               </select>
               <button onClick={saveStatus} disabled={saving || newStatus === order.status} style={{ padding: '8px 16px', background: newStatus === order.status ? 'var(--slate-200)' : 'var(--teal-600)', color: newStatus === order.status ? 'var(--slate-400)' : 'var(--white)', border: 'none', borderRadius: 9, fontSize: 13, fontWeight: 600, cursor: saving || newStatus === order.status ? 'default' : 'pointer' }}>
                 {saving ? '…' : 'Save'}
               </button>
             </div>
+            {newStatus !== order.status && STEP_HELP[newStatus] && <p style={{ margin: '8px 0 0', fontSize: 12, color: 'var(--slate-500)' }}>{STEP_HELP[newStatus]}</p>}
+            {statusError && <p style={{ margin: '8px 0 0', fontSize: 12, color: 'var(--red-600)' }}>{statusError}</p>}
+            </>
+            )}
           </div>
 
           {/* Tracking + notes */}
@@ -388,7 +443,7 @@ export default function AdminOrdersPage() {
             {
               label: 'Problem orders', value: (summary.failedCount + summary.refundedCount).toLocaleString(),
               accent: summary.failedCount + summary.refundedCount > 0 ? 'var(--red-600)' : 'var(--emerald-600)',
-              sub: `${summary.failedCount} failed · ${summary.refundedCount} refunded or cancelled`,
+              sub: `${summary.refundDueCount ? `${summary.refundDueCount} refund due · ` : ''}${summary.failedCount} failed · ${summary.refundedCount} refunded or cancelled`,
             },
           ].map((c) => (
             <div key={c.label} style={{ background: 'var(--white)', borderRadius: 14, border: '1px solid var(--slate-200b)', padding: '14px 18px', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
@@ -568,7 +623,7 @@ export default function AdminOrdersPage() {
                     <td style={{ padding: '12px 16px' }}>
                       {payment ? <StatusBadge status={payment.status} /> : <span style={{ color: 'var(--slate-200)', fontSize: 12 }}>—</span>}
                     </td>
-                    <td style={{ padding: '12px 16px' }}><StatusBadge status={order.status} /></td>
+                    <td style={{ padding: '12px 16px' }}><StatusBadge status={order.status} />{order.refundDue && <RefundDueBadge />}</td>
                     <td style={{ padding: '12px 16px' }}>
                       <div style={{ display: 'flex', gap: 6 }}>
                         <Link href={`/dashboard/orders/${order.id}/invoice`} target="_blank" onClick={e => e.stopPropagation()} style={{ fontSize: 11, fontWeight: 600, color: 'var(--teal-600)', background: 'var(--teal-50)', border: '1px solid var(--teal-200)', borderRadius: 7, padding: '4px 8px', textDecoration: 'none' }}>🧾</Link>

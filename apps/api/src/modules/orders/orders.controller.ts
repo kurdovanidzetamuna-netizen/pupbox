@@ -3,8 +3,18 @@ import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { AdminJwtGuard } from '../admin-auth/admin-jwt.guard';
 import { OrdersService } from './orders.service';
+import { IsEnum, IsNumber, IsOptional, IsString, MaxLength, Min } from 'class-validator';
+import { Type } from 'class-transformer';
+import { OrderStatus } from '@prisma/client';
 
 @ApiTags('orders')
+class AdminStatusDto {
+  @IsEnum(OrderStatus) status: OrderStatus;
+  /** For REFUNDED: what was returned; defaults to the full payment. */
+  @IsOptional() @Type(() => Number) @IsNumber() @Min(0.01) refundAmount?: number;
+  @IsOptional() @IsString() @MaxLength(300) reason?: string;
+}
+
 @Controller('orders')
 export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
@@ -51,8 +61,8 @@ export class OrdersController {
   @Patch('admin/:id/status')
   @ApiBearerAuth()
   @UseGuards(AdminJwtGuard)
-  adminUpdateStatus(@Param('id') id: string, @Body('status') status: string) {
-    return this.ordersService.adminUpdateStatus(id, status);
+  adminUpdateStatus(@Param('id') id: string, @Body() body: AdminStatusDto) {
+    return this.ordersService.adminUpdateStatus(id, body.status, { refundAmount: body.refundAmount, reason: body.reason });
   }
 
   @Patch('admin/:id/tracking')

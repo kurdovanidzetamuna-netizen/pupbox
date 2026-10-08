@@ -1,4 +1,6 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { OrderStatus } from '@prisma/client';
+import { allowedNext, cancelUnpaidOrder, wasPaid } from './order-lifecycle';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
 
@@ -95,12 +97,19 @@ export class OrdersService {
       this.prisma.order.aggregate({ where, _sum: { total: true } }),
       this.prisma.payment.aggregate({ where: { status: 'PAID', order: where }, _sum: { amount: true } }),
     ]);
+    // Money kept from partly refunded payments counts as collected too.
+    const [partPaid, partRefunded] = await Promise.all([
+      this.prisma.payment.aggregate({ where: { status: 'PARTIALLY_REFUNDED', order: where }, _sum: { amount: true } }),
+      this.prisma.refund.aggregate({ where: { payment: { status: 'PARTIALLY_REFUNDED', order: where } }, _sum: { amount: true } }),
+    ]);
 
     const num = (v: unknown) => (v == null ? 0 : Number(v));
     const statusCount = (s: string) => byStatus.find((r) => r.status === s)?._count.id ?? 0;
 
+    const refundDueCount = await this.prisma.order.count({ where: { ...where, status: 'CANCELLED', payments: { some: { status: 'PAID' } } } });
+
     return {
-      orders,
+      orders: orders.map((o) => this.withFlow(o)),
       total,
       page,
       limit,
@@ -108,11 +117,13 @@ export class OrdersService {
       summary: {
         totalOrders: total,
         totalValue: num(valueAgg._sum.total),
-        paidRevenue: num(paidAgg._sum.amount),
+        paidRevenue: num(paidAgg._sum.amount) + num(partPaid._sum.amount) - num(partRefunded._sum.amount),
         paidCount: statusCount('PAID') + statusCount('PROCESSING') + statusCount('PACKED') + statusCount('SHIPPED') + statusCount('DELIVERED'),
         pendingCount: statusCount('PENDING'),
         failedCount: statusCount('FAILED'),
         refundedCount: statusCount('REFUNDED') + statusCount('CANCELLED'),
+        // Cancelled after payment, money not returned yet.
+        refundDueCount,
         // Only types that actually occur — lets the UI hide filters that
         // could never match anything.
         byType: byType
@@ -137,28 +148,86 @@ export class OrdersService {
       },
     });
     if (!order) throw new NotFoundException('Order not found');
-    return order;
+    return this.withFlow(order);
   }
 
-  async adminUpdateStatus(id: string, status: string) {
-    const before = await this.prisma.order.findUnique({ where: { id }, select: { status: true } });
+  /** What admin may do next with an order, and whether money is owed back. */
+  private withFlow<T extends { status: OrderStatus; payments: { status: string }[] }>(o: T) {
+    const paid = wasPaid(o.payments);
+    return { ...o, allowedNext: allowedNext(o.status, paid), refundDue: o.status === 'CANCELLED' && paid };
+  }
+
+  /**
+   * Moves an order along fulfilment. Only steps in allowedNext are accepted.
+   * Cancelling puts stock back (held stock if unpaid, sold stock if paid and
+   * not shipped) and, for a paid order, leaves it "refund due" until the
+   * refund is recorded with REFUNDED.
+   */
+  async adminUpdateStatus(id: string, status: string, opts: { refundAmount?: number; reason?: string } = {}) {
+    const order = await this.prisma.order.findUnique({
+      where: { id },
+      include: {
+        payments: { orderBy: { createdAt: 'desc' } },
+        items: { where: { productId: { not: null } }, select: { productId: true, quantity: true } },
+        user: { select: { email: true, firstName: true, language: true } },
+      },
+    });
+    if (!order) throw new NotFoundException('Order not found');
+    const paid = wasPaid(order.payments);
+    const to = status as OrderStatus;
+    if (!allowedNext(order.status, paid).includes(to)) {
+      throw new BadRequestException(`An order that is ${order.status.toLowerCase()} can't be marked ${String(status).toLowerCase()}.`);
+    }
+    const note = opts.reason?.trim();
+
+    if (to === 'CANCELLED' && !paid) {
+      await cancelUnpaidOrder(this.prisma, id, note ? `Cancelled by admin: ${note}` : 'Cancelled by admin.');
+      return this.adminGetOne(id);
+    }
+
+    if (to === 'CANCELLED') {
+      // Paid, not shipped: what was sold goes back on the shelf.
+      for (const i of order.items) {
+        const inv = await this.prisma.inventory.update({ where: { productId: i.productId! }, data: { quantity: { increment: i.quantity } } });
+        if (inv.quantity > 0) await this.prisma.product.updateMany({ where: { id: i.productId!, status: 'OUT_OF_STOCK' }, data: { status: 'ACTIVE' } });
+      }
+      if (order.subscriptionId) {
+        await this.prisma.customerSubscription.update({ where: { id: order.subscriptionId }, data: { status: 'CANCELLED', cancelReason: note || 'Order cancelled by admin', nextRenewalAt: null } });
+        await this.prisma.boxShipment.updateMany({ where: { subscriptionId: order.subscriptionId, status: { in: ['TO_PACK', 'PACKED'] } }, data: { status: 'CANCELLED' } });
+      }
+      await this.prisma.order.update({ where: { id }, data: { status: 'CANCELLED', internalNotes: [order.internalNotes, `Cancelled by admin after payment${note ? `: ${note}` : ''}. Refund due.`].filter(Boolean).join('\n') } });
+      return this.adminGetOne(id);
+    }
+
+    if (to === 'REFUNDED') {
+      const payment = order.payments.find((p) => p.status === 'PAID');
+      if (!payment) throw new BadRequestException('This order has no payment to refund.');
+      const amount = opts.refundAmount ?? Number(payment.amount);
+      if (!(amount > 0) || amount > Number(payment.amount)) throw new BadRequestException(`The refund must be between ₾0 and ₾${Number(payment.amount).toFixed(2)}.`);
+      // Records a refund made in the payment provider's portal; nothing is sent to the bank from here.
+      await this.prisma.$transaction([
+        this.prisma.refund.create({ data: { paymentId: payment.id, amount, reason: note || null } }),
+        this.prisma.payment.update({ where: { id: payment.id }, data: { status: amount < Number(payment.amount) ? 'PARTIALLY_REFUNDED' : 'REFUNDED' } }),
+        this.prisma.order.update({ where: { id }, data: { status: 'REFUNDED' } }),
+      ]);
+      return this.adminGetOne(id);
+    }
+
     const now = new Date();
-    const order = await this.prisma.order.update({
+    await this.prisma.order.update({
       where: { id },
       data: {
-        status: status as any,
-        ...(status === 'SHIPPED' ? { shippedAt: now } : {}),
-        ...(status === 'DELIVERED' ? { deliveredAt: now } : {}),
+        status: to,
+        ...(to === 'SHIPPED' && !order.shippedAt ? { shippedAt: now } : {}),
+        ...(to === 'DELIVERED' ? { deliveredAt: now } : {}),
       },
-      include: { user: { select: { email: true, firstName: true, language: true } } },
     });
     // Tell the customer once, when the order first leaves.
-    if (status === 'SHIPPED' && before?.status !== 'SHIPPED' && before?.status !== 'DELIVERED') {
+    if (to === 'SHIPPED' && !order.shippedAt) {
       this.email.sendOrderShipped({ ...order.user, orderId: order.id, trackingNumber: order.trackingNumber })
         .catch((e) => this.logger.error(`Order shipped email failed for ${id}: ${e.message}`));
     }
-    const { user: _, ...rest } = order;
-    return rest;
+    return this.adminGetOne(id);
   }
 
   async adminUpdateTracking(id: string, trackingNumber: string, internalNotes?: string) {
