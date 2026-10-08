@@ -8,6 +8,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@pupbox/content": "*",
     "next": "^14.2.0",
     "react": "^18.3.0",
     "react-dom": "^18.3.0",

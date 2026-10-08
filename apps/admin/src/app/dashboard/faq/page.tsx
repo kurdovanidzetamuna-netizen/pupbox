@@ -1,27 +1,15 @@
 'use client';
 import { useEffect, useState } from 'react';
+import { DEFAULT_FAQ, FAQ_PAGES, FAQ_SLUG, type FaqItem } from '@pupbox/content';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
-const FAQ_SLUG = 'config-faq-global';
-
-const PAGES = [
-  { key: 'home', label: 'Home Page', icon: '🏠' },
-  { key: 'pricing', label: 'Pricing Page', icon: '💳' },
-  { key: 'how-it-works', label: 'How It Works', icon: '⚙️' },
-  { key: 'subscribe', label: 'Subscribe Page', icon: '📬' },
-];
+// Which pages show questions, the saved-list slug and today's questions are
+// shared with the site, so a tick here always matches what the site shows.
+const PAGES = FAQ_PAGES;
 
 type Lang = 'en' | 'ka';
 
-interface FAQItem {
-  id: string;
-  question: string;
-  answer: string;
-  questionKa: string;
-  answerKa: string;
-  pages: string[];
-  sortOrder: number;
-}
+type FAQItem = FaqItem;
 
 const EMPTY: Omit<FAQItem, 'id'> = {
   question: '', answer: '', questionKa: '', answerKa: '', pages: ['home'], sortOrder: 0,
@@ -45,10 +33,9 @@ export default function FAQPage() {
     setLoading(true);
     try {
       const res = await fetch(`${API}/cms/${FAQ_SLUG}`);
-      if (res.ok) {
-        const data = await res.json();
-        setItems((data.content?.items || []) as FAQItem[]);
-      }
+      // Never saved yet: start from the questions the site shows today.
+      const data = res.ok ? await res.json() : null;
+      setItems((data?.content?.items as FAQItem[] | undefined) ?? DEFAULT_FAQ);
     } catch { } finally { setLoading(false); }
   }
 

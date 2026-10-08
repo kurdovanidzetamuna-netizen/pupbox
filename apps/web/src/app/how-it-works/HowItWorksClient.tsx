@@ -1,7 +1,10 @@
 'use client';
-import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
+import { faqFor, howItWorksPage, type FaqItem, type StoredContent } from '@pupbox/content';
 import { useLanguage } from '@/context/LanguageContext';
+import { usePage } from '@/lib/usePage';
+import SmartLink from '@/components/SmartLink';
+import Accent from '@/components/Accent';
 
 function useInView(threshold = 0.15) {
   const ref = useRef<HTMLDivElement>(null);
@@ -20,7 +23,7 @@ function useInView(threshold = 0.15) {
   return { ref, visible };
 }
 
-type Step = { n: string; emoji: string; paw: string; title: string; desc: string; color: string; accent: string; dot: string; pet: string };
+type Step = { n: string; emoji: string; title: string; desc: string; color: string; accent: string; dot: string };
 
 function StepCard({ step, index }: { step: Step; index: number }) {
   const { ref, visible } = useInView(0.15);
@@ -39,11 +42,10 @@ function StepCard({ step, index }: { step: Step; index: number }) {
           <div className="flex items-start gap-3">
             <div className={`w-9 h-9 rounded-xl ${step.accent} flex items-center justify-center text-base shrink-0 shadow-sm`}>{step.emoji}</div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-bold text-gray-400 tracking-widest uppercase mb-0.5">Step {step.n}</p>
+              <p className="text-xs font-bold text-gray-400 tracking-widest uppercase mb-0.5">{step.n}</p>
               <h2 className="text-sm font-extrabold text-gray-900 mb-1">{step.title}</h2>
               <p className="text-gray-500 leading-relaxed text-xs">{step.desc}</p>
             </div>
-            <span className="text-base opacity-30 select-none shrink-0 mt-0.5">{step.pet}</span>
           </div>
         </div>
       </div>
@@ -57,7 +59,7 @@ function StepCard({ step, index }: { step: Step; index: number }) {
   );
 }
 
-function FaqItem({ q, a, index }: { q: string; a: string; index: number }) {
+function FaqRow({ q, a, index }: { q: string; a: string; index: number }) {
   const [open, setOpen] = useState(false);
   return (
     <div className="border border-gray-100 rounded-2xl overflow-hidden hover:border-teal-200 transition-colors" style={{ transitionDelay: `${index * 50}ms` }}>
@@ -70,38 +72,36 @@ function FaqItem({ q, a, index }: { q: string; a: string; index: number }) {
   );
 }
 
-export default function HowItWorksPage() {
-  const { t } = useLanguage();
+// Alternating colours keep the roadmap readable however many steps admin adds.
+const TONES = [
+  { color: 'from-teal-50 to-teal-100', accent: 'bg-teal-600', dot: 'bg-teal-600' },
+  { color: 'from-amber-50 to-amber-100', accent: 'bg-amber-400', dot: 'bg-amber-400' },
+];
 
-  const steps: Step[] = [
-    { n: '01', emoji: '📋', paw: '🐾', title: t('hiw.page.step1.title'), desc: t('hiw.page.step1.desc'), color: 'from-teal-50 to-teal-100',   accent: 'bg-teal-600',   dot: 'bg-teal-600',   pet: '🐕' },
-    { n: '02', emoji: '🐶', paw: '🐾', title: t('hiw.page.step2.title'), desc: t('hiw.page.step2.desc'), color: 'from-amber-50 to-amber-100', accent: 'bg-amber-400', dot: 'bg-amber-400', pet: '🦴' },
-    { n: '03', emoji: '🎁', paw: '🐾', title: t('hiw.page.step3.title'), desc: t('hiw.page.step3.desc'), color: 'from-teal-50 to-teal-100',   accent: 'bg-teal-600',   dot: 'bg-teal-600',   pet: '🧸' },
-    { n: '04', emoji: '🚚', paw: '🐾', title: t('hiw.page.step4.title'), desc: t('hiw.page.step4.desc'), color: 'from-amber-50 to-amber-100', accent: 'bg-amber-400', dot: 'bg-amber-400', pet: '📦' },
-    { n: '05', emoji: '🎉', paw: '🐾', title: t('hiw.page.step5.title'), desc: t('hiw.page.step5.desc'), color: 'from-teal-50 to-teal-100',   accent: 'bg-teal-600',   dot: 'bg-teal-600',   pet: '❤️' },
-  ];
+/** Everything here is edited in admin → Page Builder → How It Works (questions in the FAQ manager). */
+export default function HowItWorksClient({ content, faq }: { content: StoredContent | null; faq: FaqItem[] | null }) {
+  const { lang } = useLanguage();
+  const c = usePage(howItWorksPage, content);
+  const { hero, cta } = c;
 
-  const faqs = [
-    { q: t('faq.q1'), a: t('faq.a1') },
-    { q: t('faq.q2'), a: t('faq.a2') },
-    { q: t('faq.q3'), a: t('faq.a3') },
-    { q: t('faq.q4'), a: t('faq.a4') },
-    { q: t('faq.q5'), a: t('faq.a5') },
-  ];
+  const steps: Step[] = c.steps.items.map((s: any, i: number) => ({
+    n: String(i + 1).padStart(2, '0'), emoji: s.icon, title: s.title, desc: s.desc, ...TONES[i % 2],
+  }));
+  const faqs = faqFor('how-it-works', faq, lang);
 
   return (
     <main className="min-h-screen bg-white overflow-hidden">
       {/* Hero */}
       <section className="max-w-3xl mx-auto px-6 pt-16 pb-10 text-center">
-        <div className="inline-flex items-center gap-2 bg-teal-50 text-teal-700 text-xs font-bold px-4 py-2 rounded-full mb-6 tracking-wide uppercase">
-          {t('hiw.page.badge')}
-        </div>
+        {hero.badge && (
+          <div className="inline-flex items-center gap-2 bg-teal-50 text-teal-700 text-xs font-bold px-4 py-2 rounded-full mb-6 tracking-wide uppercase">
+            {hero.badge}
+          </div>
+        )}
         <h1 className="text-5xl font-extrabold text-gray-900 mb-4 leading-tight">
-          {t('hiw.page.heading')} <span className="text-teal-600">{t('hiw.page.headingAccent')}</span>
+          <Accent text={hero.heading} accent={hero.headingAccent} />
         </h1>
-        <p className="text-lg text-gray-500">
-          {t('hiw.page.description')}
-        </p>
+        {hero.description && <p className="text-lg text-gray-500">{hero.description}</p>}
       </section>
 
       {/* Roadmap */}
@@ -116,6 +116,7 @@ export default function HowItWorksPage() {
       </section>
 
       {/* CTA */}
+      {c.on('cta') && (
       <section className="relative overflow-hidden bg-gradient-to-br from-teal-50 via-white to-amber-50 py-16">
         <span className="absolute top-8 left-12 text-3xl opacity-10 animate-bounce" style={{ animationDuration: '3s' }}>🐾</span>
         <span className="absolute top-16 right-20 text-2xl opacity-10 animate-bounce" style={{ animationDuration: '4s', animationDelay: '0.5s' }}>🐾</span>
@@ -127,56 +128,49 @@ export default function HowItWorksPage() {
         <div className="relative max-w-2xl mx-auto px-6 text-center">
           <div className="inline-flex items-center gap-2 bg-white border border-teal-100 text-teal-700 text-xs font-bold px-4 py-2 rounded-full mb-8 shadow-sm tracking-wide">
             <span className="w-2 h-2 rounded-full bg-teal-500 animate-pulse" />
-            {t('hiw.page.badge', 'Delivering across Georgia')}
+            {cta.badge}
           </div>
           <h2 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-4 leading-tight">
-            {t('hiw.page.cta.heading')}
+            {cta.heading}
           </h2>
           <p className="text-gray-500 text-lg mb-10 max-w-md mx-auto">
-            {t('hiw.page.cta.desc')}
+            {cta.description}
           </p>
           <div className="flex justify-center gap-3 flex-wrap mb-10">
-            {[
-              { icon: '🐾', label: t('cta.socialProof') },
-              { icon: '📦', label: t('hiw.step4.title') },
-              { icon: '⭐', label: t('cta.trustChip4') },
-            ].map(s => (
-              <div key={s.label} className="flex items-center gap-2 bg-white border border-gray-100 text-gray-600 text-xs font-medium px-4 py-2 rounded-full shadow-sm">
+            {cta.chips.filter((s: any) => s.label).map((s: any, i: number) => (
+              <div key={i} className="flex items-center gap-2 bg-white border border-gray-100 text-gray-600 text-xs font-medium px-4 py-2 rounded-full shadow-sm">
                 <span>{s.icon}</span><span>{s.label}</span>
               </div>
             ))}
           </div>
           <div className="flex justify-center gap-3 flex-wrap">
-            <Link href="/prices" className="inline-flex items-center justify-center bg-teal-600 hover:bg-teal-700 text-white font-semibold px-6 py-3 rounded-xl text-base transition-all hover:scale-105 shadow-md shadow-teal-100">
-              {t('hiw.page.cta.btn1')}
-            </Link>
-            <Link href="/prices" className="inline-flex items-center justify-center bg-white hover:bg-gray-50 border border-gray-200 text-gray-600 font-medium px-6 py-3 rounded-2xl text-base transition-all shadow-sm">
-              {t('hiw.page.cta.btn2')}
-            </Link>
+            {cta.button1Text && (
+              <SmartLink href={cta.button1Href} className="inline-flex items-center justify-center bg-teal-600 hover:bg-teal-700 text-white font-semibold px-6 py-3 rounded-xl text-base transition-all hover:scale-105 shadow-md shadow-teal-100">
+                {cta.button1Text}
+              </SmartLink>
+            )}
+            {cta.button2Text && (
+              <SmartLink href={cta.button2Href} className="inline-flex items-center justify-center bg-white hover:bg-gray-50 border border-gray-200 text-gray-600 font-medium px-6 py-3 rounded-2xl text-base transition-all shadow-sm">
+                {cta.button2Text}
+              </SmartLink>
+            )}
           </div>
         </div>
       </section>
+      )}
 
       {/* FAQ */}
+      {c.on('faq') && faqs.length > 0 && (
       <section className="max-w-3xl mx-auto px-6 py-16">
         <div className="text-center mb-10">
-          <h2 className="text-3xl font-extrabold text-gray-900 mb-2">{t('hiw.page.faq.heading')}</h2>
-          <p className="text-gray-500">{t('hiw.page.faq.sub')}</p>
+          <h2 className="text-3xl font-extrabold text-gray-900 mb-2">{c.faq.heading}</h2>
+          {c.faq.description && <p className="text-gray-500">{c.faq.description}</p>}
         </div>
         <div className="space-y-3">
-          {faqs.map((faq, i) => <FaqItem key={i} q={faq.q} a={faq.a} index={i} />)}
+          {faqs.map((faq, i) => <FaqRow key={i} q={faq.q} a={faq.a} index={i} />)}
         </div>
       </section>
-
-      <footer className="border-t border-gray-100 py-8 text-center text-sm text-gray-400">
-        <div className="flex justify-center gap-8 mb-4">
-          <Link href="/pages/about" className="hover:text-teal-600">About</Link>
-          <Link href="/pages/privacy" className="hover:text-teal-600">{t('footer.privacy')}</Link>
-          <Link href="/pages/terms" className="hover:text-teal-600">{t('footer.terms')}</Link>
-          <Link href="/blog" className="hover:text-teal-600">{t('nav.blog')}</Link>
-        </div>
-        <p>© {new Date().getFullYear()} Pupbox. Made with 🐾 in Georgia.</p>
-      </footer>
+      )}
     </main>
   );
 }

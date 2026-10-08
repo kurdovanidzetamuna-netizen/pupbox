@@ -4,6 +4,9 @@ import { CartProvider } from '@/context/CartContext';
 import { LanguageProvider } from '@/context/LanguageContext';
 import Header from '@/components/Header';
 import PromoPopup from '@/components/PromoPopup';
+import Footer from '@/components/Footer';
+import { sitePage } from '@pupbox/content';
+import { getStoredContent } from '@/lib/content';
 
 const BASE = process.env.NEXT_PUBLIC_SITE_URL || 'https://pupbox.ge';
 
@@ -32,15 +35,17 @@ export const metadata: Metadata = {
   alternates: { canonical: BASE },
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const site = await getStoredContent(sitePage);
   return (
     <html lang="ka">
       <body>
         <LanguageProvider>
           <CartProvider>
-            <Header />
+            <Header site={site} />
             <PromoPopup />
             {children}
+            <Footer site={site} />
           </CartProvider>
         </LanguageProvider>
       </body>

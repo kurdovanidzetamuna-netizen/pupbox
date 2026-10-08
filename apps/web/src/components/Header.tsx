@@ -2,18 +2,18 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
+import { sitePage, type StoredContent } from '@pupbox/content';
 import { useLanguage } from '@/context/LanguageContext';
 import { useCart } from '@/context/CartContext';
+import { usePage } from '@/lib/usePage';
+import Logo from '@/components/Logo';
+import SmartLink from '@/components/SmartLink';
 
-const NAV = [
-  { href: '/how-it-works', key: 'nav.howItWorks' },
-  { href: '/prices', key: 'nav.pricing', also: '/subscribe' },
-  { href: '/shop', key: 'nav.shop' },
-  { href: '/blog', key: 'nav.blog' },
-];
-
-export default function Header() {
+/** Logo, menu and button come from admin → Page Builder → Header & Footer. */
+export default function Header({ site }: { site: StoredContent | null }) {
   const { lang, setLang, t } = useLanguage();
+  const c = usePage(sitePage, site);
+  const nav: { label: string; href: string }[] = c.header.links.filter((n: any) => n.label);
   const { cart } = useCart();
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -22,8 +22,11 @@ export default function Header() {
   const langRef = useRef<HTMLDivElement>(null);
 
   const count = cart?.itemCount ?? 0;
-  const isActive = (href: string, also?: string) =>
-    href === '/' ? pathname === '/' : pathname.startsWith(href) || (!!also && pathname.startsWith(also));
+  // Compare paths only: a menu link may carry a query (/prices?gift=true).
+  const isActive = (href: string) => {
+    const path = href.split(/[?#]/)[0];
+    return path.startsWith('/') && (path === '/' ? pathname === '/' : pathname.startsWith(path));
+  };
 
   // Read after every navigation: signing in and out happen on other pages.
   useEffect(() => {
@@ -49,16 +52,14 @@ export default function Header() {
   return (
     <header className="sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-gray-100">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-3">
-        <Link href="/" className="text-2xl font-extrabold text-teal-600 flex items-center gap-1 shrink-0">
-          🐾 Pupbox
-        </Link>
+        <Logo brand={c.brand} />
 
         <nav className="hidden md:flex gap-8 text-sm font-medium text-gray-600" aria-label="Main">
-          {NAV.map(n => (
-            <Link key={n.href} href={n.href} aria-current={isActive(n.href, n.also) ? 'page' : undefined}
-              className={`transition-colors hover:text-teal-600 ${isActive(n.href, n.also) ? 'text-teal-600 font-semibold' : ''}`}>
-              {t(n.key)}
-            </Link>
+          {nav.map((n, i) => (
+            <SmartLink key={i} href={n.href} aria-current={isActive(n.href) ? 'page' : undefined}
+              className={`transition-colors hover:text-teal-600 ${isActive(n.href) ? 'text-teal-600 font-semibold' : ''}`}>
+              {n.label}
+            </SmartLink>
           ))}
         </nav>
 
@@ -66,9 +67,11 @@ export default function Header() {
           <Link href={account.href} className="hidden md:block text-sm font-bold text-gray-600 hover:text-teal-600 border border-gray-200 hover:border-teal-400 px-5 py-2 rounded-xl transition-colors">
             {account.label}
           </Link>
-          <Link href="/prices" className="hidden sm:inline-flex items-center justify-center bg-teal-600 text-white text-sm font-bold px-5 py-2 rounded-lg hover:bg-teal-700 transition shadow-sm">
-            {t('nav.subscribe')}
-          </Link>
+          {c.header.buttonText && (
+            <SmartLink href={c.header.buttonHref} className="hidden sm:inline-flex items-center justify-center bg-teal-600 text-white text-sm font-bold px-5 py-2 rounded-lg hover:bg-teal-700 transition shadow-sm">
+              {c.header.buttonText}
+            </SmartLink>
+          )}
 
           {/* Cart — the only way back to the basket from any page. */}
           <Link href="/cart" aria-label={`${t('nav.cart')}${count ? ` (${count})` : ''}`}
@@ -119,21 +122,23 @@ export default function Header() {
       {menuOpen && (
         <nav id="mobile-menu" aria-label="Main" className="md:hidden border-t border-gray-100 bg-white px-4 pb-5 pt-2">
           <ul className="flex flex-col">
-            {NAV.map(n => (
-              <li key={n.href}>
-                <Link href={n.href} aria-current={isActive(n.href, n.also) ? 'page' : undefined}
-                  className={`block py-3 text-base font-semibold border-b border-gray-50 ${isActive(n.href, n.also) ? 'text-teal-600' : 'text-gray-800'}`}>
-                  {t(n.key)}
-                </Link>
+            {nav.map((n, i) => (
+              <li key={i}>
+                <SmartLink href={n.href} aria-current={isActive(n.href) ? 'page' : undefined}
+                  className={`block py-3 text-base font-semibold border-b border-gray-50 ${isActive(n.href) ? 'text-teal-600' : 'text-gray-800'}`}>
+                  {n.label}
+                </SmartLink>
               </li>
             ))}
             <li>
               <Link href={account.href} className="block py-3 text-base font-semibold text-gray-800 border-b border-gray-50">{account.label}</Link>
             </li>
           </ul>
-          <Link href="/prices" className="mt-4 flex w-full items-center justify-center bg-teal-600 text-white font-bold py-3 rounded-xl hover:bg-teal-700">
-            {t('nav.subscribe')}
-          </Link>
+          {c.header.buttonText && (
+            <SmartLink href={c.header.buttonHref} className="mt-4 flex w-full items-center justify-center bg-teal-600 text-white font-bold py-3 rounded-xl hover:bg-teal-700">
+              {c.header.buttonText}
+            </SmartLink>
+          )}
           <div className="mt-4 flex gap-2" role="group" aria-label={t('nav.language')}>
             {([['ka', 'ქართული'], ['en', 'English']] as const).map(([code, label]) => (
               <button key={code} type="button" onClick={() => chooseLang(code)} aria-pressed={lang === code}

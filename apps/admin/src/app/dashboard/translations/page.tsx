@@ -1,5 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { PAGE_BUILDER_KEYS } from '@pupbox/content';
 import { ActionButton, RowActions } from '../../../components/Toolbar';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
@@ -34,6 +36,13 @@ interface Translation {
 }
 
 const EMPTY_FORM: Omit<Translation, 'id'> = { key: '', en: '', ka: '', pages: [] };
+
+/**
+ * Page text (headings, sections, header and footer) is edited in the Page
+ * Builder now; listing it here too would offer two places to change the same
+ * words, and only one of them would work. Saving drops them from this list.
+ */
+const withoutPageText = (list: Translation[]) => list.filter(s => !PAGE_BUILDER_KEYS.has(s.key));
 
 function genId() { return Math.random().toString(36).slice(2, 10); }
 
@@ -341,9 +350,9 @@ export default function TranslationsPage() {
       .then(r => r.ok ? r.json() : null)
       .then(data => {
         const existing: Translation[] = data?.content?.strings || [];
-        setStrings(existing.length > 0 ? existing : SEED.map(s => ({ ...s, id: genId() })));
+        setStrings(withoutPageText(existing.length > 0 ? existing : SEED.map(s => ({ ...s, id: genId() }))));
       })
-      .catch(() => setStrings(SEED.map(s => ({ ...s, id: genId() }))))
+      .catch(() => setStrings(withoutPageText(SEED.map(s => ({ ...s, id: genId() })))))
       .finally(() => setLoading(false));
   }, []);
 
@@ -417,7 +426,7 @@ export default function TranslationsPage() {
       <div style={{ marginBottom: 24, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
         <div>
           <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--slate-900)', margin: '0 0 4px' }}>Front-end Translations</h1>
-          <p style={{ fontSize: 13, color: 'var(--slate-400)', margin: 0 }}>Manage English and Georgian strings for the customer-facing website.</p>
+          <p style={{ fontSize: 13, color: 'var(--slate-400)', margin: 0 }}>Small interface labels — buttons, forms, messages. Page text, the header and the footer are edited in <Link href="/dashboard/page-builder/homepage" style={{ color: 'var(--teal-600)', fontWeight: 600 }}>Page Builder</Link>.</p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           {saving && <span style={{ fontSize: 12, color: 'var(--slate-400)' }}>Saving…</span>}

@@ -3,6 +3,9 @@ import { Suspense } from 'react';
 import { api } from '@/lib/api';
 import ShopControls from './ShopControls';
 import T, { L } from '@/components/T';
+import ContentText from '@/components/ContentText';
+import { shopPage } from '@pupbox/content';
+import { getStoredContent } from '@/lib/content';
 
 export const metadata = {
   title: 'Shop — Premium Dog Products',
@@ -49,6 +52,7 @@ export default async function ShopPage({
   ]);
 
   const currentPage = Number(searchParams.page || 1);
+  const content = await getStoredContent(shopPage);
   const baseParams = Object.fromEntries(Object.entries(searchParams).filter(([k]) => !['brand', 'page'].includes(k)));
 
   return (
@@ -57,7 +61,8 @@ export default async function ShopPage({
 
         {/* Page header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-extrabold text-gray-900 mb-1"><T k="shop.title" /></h1>
+          <h1 className="text-3xl font-extrabold text-gray-900 mb-1"><ContentText page={shopPage} content={content} at="header.heading" /></h1>
+          <div className="text-sm text-gray-500 max-w-2xl mb-1"><ContentText page={shopPage} content={content} at="header.description" as="p" /></div>
           <p className="text-sm text-gray-400"><T k="shop.count" vars={{ n: total }} /></p>
         </div>
 

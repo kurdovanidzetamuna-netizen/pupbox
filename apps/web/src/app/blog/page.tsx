@@ -1,5 +1,7 @@
 import { Metadata } from 'next';
 import BlogClient from '@/components/BlogClient';
+import { blogPage } from '@pupbox/content';
+import { getStoredContent } from '@/lib/content';
 
 export const metadata: Metadata = {
   title: 'ძაღლის მოვლის ბლოგი | Pupbox',
@@ -28,7 +30,7 @@ async function getCategories() {
 
 export default async function BlogPage({ searchParams }: { searchParams: { page?: string } }) {
   const page = Number(searchParams.page) || 1;
-  const [{ posts, total, pages }, categories] = await Promise.all([getPosts(page), getCategories()]);
+  const [{ posts, total, pages }, categories, content] = await Promise.all([getPosts(page), getCategories(), getStoredContent(blogPage)]);
 
-  return <BlogClient posts={posts} total={total} pages={pages} page={page} categories={categories} />;
+  return <BlogClient posts={posts} total={total} pages={pages} page={page} categories={categories} content={content} />;
 }

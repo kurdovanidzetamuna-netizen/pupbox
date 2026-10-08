@@ -112,9 +112,6 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
         )}
       </article>
 
-      <footer className="border-t border-gray-100 py-8 text-center text-sm text-gray-400">
-        <p>© {new Date().getFullYear()} Pupbox. Made with 🐾 in Georgia.</p>
-      </footer>
     </main>
   );
 }

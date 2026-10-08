@@ -1,6 +1,8 @@
 'use client';
 import Link from 'next/link';
 import { useLanguage } from '@/context/LanguageContext';
+import { blogPage, type StoredContent } from '@pupbox/content';
+import { usePage } from '@/lib/usePage';
 
 interface Props {
   posts: any[];
@@ -10,21 +12,22 @@ interface Props {
   categories: any[];
 }
 
-export default function BlogClient({ posts, total, pages, page, categories }: Props) {
+export default function BlogClient({ posts, total, pages, page, categories, content }: Props & { content: StoredContent | null }) {
   const { t, lang } = useLanguage();
+  const c = usePage(blogPage, content);
 
   return (
     <main className="min-h-screen bg-white">
       {/* HERO */}
       <div className="bg-gradient-to-br from-teal-50 to-white py-14 px-6 text-center border-b border-gray-100">
         <span className="inline-flex items-center gap-2 bg-teal-100 text-teal-700 text-xs font-bold px-4 py-1.5 rounded-full mb-5 uppercase tracking-wide">
-          {t('blog.badge')}
+          {c.header.badge}
         </span>
         <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-4">
-          {t('blog.heading')}
+          {c.header.heading}
         </h1>
         <p className="text-lg text-gray-500 max-w-xl mx-auto">
-          {t('blog.description')}
+          {c.header.description}
         </p>
       </div>
 
@@ -36,8 +39,8 @@ export default function BlogClient({ posts, total, pages, page, categories }: Pr
             {posts.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-24 text-center">
                 <div className="w-20 h-20 bg-teal-50 rounded-full flex items-center justify-center text-4xl mb-6">✍️</div>
-                <h2 className="text-xl font-bold text-gray-900 mb-2">{t('blog.empty')}</h2>
-                <p className="text-gray-400 mb-8 max-w-xs">{t('blog.empty.desc')}</p>
+                <h2 className="text-xl font-bold text-gray-900 mb-2">{c.empty.heading}</h2>
+                <p className="text-gray-400 mb-8 max-w-xs">{c.empty.description}</p>
                 <Link href="/" className="inline-flex items-center justify-center bg-teal-600 text-white text-sm font-bold px-6 py-3 rounded-full hover:bg-teal-700 transition">
                   {t('global.backToHome')}
                 </Link>
@@ -133,14 +136,6 @@ export default function BlogClient({ posts, total, pages, page, categories }: Pr
       </div>
 
       {/* FOOTER */}
-      <footer className="bg-gray-50 border-t border-gray-100 py-10 px-6 text-center">
-        <p className="text-sm text-gray-400">© {new Date().getFullYear()} Pupbox. Made with 🐾 in Georgia.</p>
-        <div className="flex justify-center gap-6 mt-3 text-xs text-gray-400">
-          <Link href="/pages/privacy" className="hover:text-teal-600 transition-colors">{t('footer.privacy')}</Link>
-          <Link href="/pages/terms" className="hover:text-teal-600 transition-colors">{t('footer.terms')}</Link>
-          <Link href="/subscribe" className="hover:text-teal-600 transition-colors">{t('nav.subscribe')}</Link>
-        </div>
-      </footer>
     </main>
   );
 }

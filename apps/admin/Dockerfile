@@ -4,11 +4,13 @@ WORKDIR /app
 FROM base AS deps
 COPY package.json package-lock.json turbo.json ./
 COPY packages/database/package.json ./packages/database/
+COPY packages/content/package.json ./packages/content/
 COPY apps/admin/package.json ./apps/admin/
 RUN npm ci --ignore-scripts
 
 FROM deps AS build
 COPY packages/database ./packages/database
+COPY packages/content ./packages/content
 COPY apps/admin ./apps/admin
 ARG NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL

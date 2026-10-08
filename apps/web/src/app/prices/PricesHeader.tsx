@@ -1,41 +1,30 @@
 'use client';
-import { useLanguage } from '@/context/LanguageContext';
+import { pricingPage, type StoredContent } from '@pupbox/content';
+import { usePage } from '@/lib/usePage';
 
-export function PricesHeader() {
-  const { t } = useLanguage();
+/** Edited in admin → Page Builder → Pricing Page. */
+export function PricesHeader({ content }: { content: StoredContent | null }) {
+  const { header } = usePage(pricingPage, content);
   return (
     <>
-      <h1 className="text-4xl font-extrabold text-gray-900 mb-3">
-        {t('pricing.hero.heading')}
-      </h1>
-      <p className="text-lg text-gray-500 mb-14">
-        {t('pricing.hero.sub')}
-      </p>
+      <h1 className="text-4xl font-extrabold text-gray-900 mb-3">{header.heading}</h1>
+      <p className="text-lg text-gray-500 mb-14">{header.description}</p>
     </>
   );
 }
 
-export function PricesIncludes() {
-  const { t } = useLanguage();
-  const items = [
-    { icon: '📦', textKey: 'pricing.includes.i1' },
-    { icon: '🚚', textKey: 'pricing.includes.i2' },
-    { icon: '🐾', textKey: 'pricing.includes.i3' },
-    { icon: '💬', textKey: 'pricing.includes.i4' },
-    { icon: '🔄', textKey: 'pricing.includes.i5' },
-    { icon: '🎁', textKey: 'pricing.includes.i6' },
-  ];
+export function PricesIncludes({ content }: { content: StoredContent | null }) {
+  const c = usePage(pricingPage, content);
+  if (!c.on('includes') || !c.includes.items.length) return null;
   return (
     <section className="py-16 bg-teal-50">
       <div className="max-w-6xl mx-auto px-6">
-        <h2 className="text-xl font-bold text-gray-900 mb-6 text-center">
-          {t('pricing.includes.heading')}
-        </h2>
+        <h2 className="text-xl font-bold text-gray-900 mb-6 text-center">{c.includes.heading}</h2>
         <div className="grid md:grid-cols-3 gap-4 text-sm text-gray-600">
-          {items.map((item, i) => (
+          {c.includes.items.map((item: any, i: number) => (
             <div key={i} className="flex items-start gap-3 bg-white rounded-xl p-4 border border-teal-100">
               <span className="text-xl">{item.icon}</span>
-              <span>{t(item.textKey)}</span>
+              <span>{item.text}</span>
             </div>
           ))}
         </div>

@@ -4,11 +4,13 @@ WORKDIR /app
 FROM base AS deps
 COPY package.json package-lock.json turbo.json ./
 COPY packages/database/package.json ./packages/database/
+COPY packages/content/package.json ./packages/content/
 COPY apps/web/package.json ./apps/web/
 RUN npm ci --ignore-scripts
 
 FROM deps AS build
 COPY packages/database ./packages/database
+COPY packages/content ./packages/content
 COPY apps/web ./apps/web
 ARG NEXT_PUBLIC_API_URL
 ARG NEXT_PUBLIC_SITE_URL

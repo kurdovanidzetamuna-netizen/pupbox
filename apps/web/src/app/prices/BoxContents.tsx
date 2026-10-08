@@ -1,70 +1,24 @@
 'use client';
 import { useState } from 'react';
-import { useLanguage } from '@/context/LanguageContext';
+import { pricingPage, type StoredContent } from '@pupbox/content';
+import { usePage } from '@/lib/usePage';
 
-const ITEMS: Record<string, { emoji: string; name: string; desc: string }[]> = {
-  treats: [
-    { emoji: '🥩', name: 'Meat Chews',        desc: 'Natural dried meat snacks, perfect for medium & large breeds.' },
-    { emoji: '🐟', name: 'Fish Bites',         desc: 'Omega-rich salmon treats — great for coat health.' },
-    { emoji: '🥕', name: 'Veggie Crunchers',   desc: 'Light, low-calorie carrot & sweet potato bites.' },
-    { emoji: '🍗', name: 'Chicken Jerky',      desc: 'Slow-baked chicken strips — a crowd favourite.' },
-    { emoji: '🧀', name: 'Cheese Puffs',       desc: 'Soft mini bites, ideal for training rewards.' },
-    { emoji: '🍪', name: 'Baked Biscuits',     desc: 'Artisan baked biscuits, grain-free options available.' },
-  ],
-  toys: [
-    { emoji: '🪀', name: 'Rope Toy',           desc: 'Durable braided rope — great for tug-of-war.' },
-    { emoji: '🦆', name: 'Squeaky Duck',       desc: 'Non-toxic plush toy with satisfying squeak.' },
-    { emoji: '🏀', name: 'Bounce Ball',        desc: 'High-bounce rubber ball, safe for all breeds.' },
-    { emoji: '🧩', name: 'Puzzle Feeder',      desc: 'Slow-feed puzzle that keeps your pup mentally sharp.' },
-    { emoji: '🪃', name: 'Fetch Stick',        desc: 'Lightweight fetch toy, floats on water.' },
-    { emoji: '🐿️', name: 'Crinkle Squirrel',  desc: 'Crinkly hide-and-seek plush, multiple pieces.' },
-  ],
-  grooming: [
-    { emoji: '🧴', name: 'Dog Shampoo',        desc: 'Hypoallergenic formula, gentle on sensitive skin.' },
-    { emoji: '💆', name: 'Massage Glove',      desc: 'Rubber grooming glove for bonding & shedding control.' },
-    { emoji: '🪥', name: 'Dental Chew',        desc: 'Enzymatic dental sticks — fresher breath daily.' },
-    { emoji: '💅', name: 'Paw Balm',           desc: 'Soothing balm for dry, cracked paw pads.' },
-    { emoji: '🌿', name: 'Ear Cleanser',       desc: 'Gentle, vet-approved ear cleaning solution.' },
-    { emoji: '🪮', name: 'Dematting Comb',     desc: 'Ergonomic comb for tangle-free coats.' },
-  ],
-  accessories: [
-    { emoji: '🎀', name: 'Bandana',            desc: 'Seasonal printed cotton bandana — snap-on style.' },
-    { emoji: '🏷️', name: 'ID Tag',             desc: 'Laser-engraved stainless steel ID tag.' },
-    { emoji: '🦺', name: 'Mini Harness',       desc: 'Lightweight mesh harness included in select plans.' },
-    { emoji: '🥣', name: 'Travel Bowl',        desc: 'Collapsible silicone bowl, fits in any bag.' },
-    { emoji: '🧣', name: 'Fleece Scarf',       desc: 'Cosy winter scarf, one size fits most breeds.' },
-    { emoji: '🪪', name: 'Membership Card',    desc: 'Personalised Pupbox member card for your pup.' },
-  ],
-  surprise: [
-    { emoji: '🎉', name: 'Mystery Item',       desc: 'A handpicked bonus product — different every month.' },
-    { emoji: '🏆', name: 'Premium Upgrade',    desc: 'Best Value & Annual plans get an exclusive premium item.' },
-    { emoji: '💌', name: 'Pup Letter',         desc: 'A personal note from the Pupbox team with tips & stories.' },
-    { emoji: '🌟', name: 'Seasonal Special',   desc: 'Holiday & seasonal editions with themed items.' },
-    { emoji: '🎟️', name: 'Referral Voucher',  desc: 'Share with a friend — they get ₾10 off their first box.' },
-    { emoji: '📸', name: 'Photo Frame',        desc: "Mini frame for your pup's unboxing moment." },
-  ],
-};
-
-export default function BoxContents() {
-  const [active, setActive] = useState('treats');
+/** Tabs and items are edited in admin → Page Builder → Pricing Page. */
+export default function BoxContents({ content }: { content: StoredContent | null }) {
+  const [active, setActive] = useState(0);
   const [animKey, setAnimKey] = useState(0);
-  const { t } = useLanguage();
+  const c = usePage(pricingPage, content);
+  const box = c.boxContents;
+  const tabs: { icon: string; label: string; items: { icon: string; name: string; desc: string }[] }[] = box.tabs;
 
-  const CATEGORIES = [
-    { key: 'treats',      labelKey: 'boxContents.tab.treats',      icon: '🦴' },
-    { key: 'toys',        labelKey: 'boxContents.tab.toys',         icon: '🧸' },
-    { key: 'grooming',    labelKey: 'boxContents.tab.grooming',     icon: '✨' },
-    { key: 'accessories', labelKey: 'boxContents.tab.accessories',  icon: '🎀' },
-    { key: 'surprise',    labelKey: 'boxContents.tab.surprise',     icon: '🎁' },
-  ];
-
-  function switchTab(key: string) {
-    if (key === active) return;
-    setActive(key);
+  function switchTab(i: number) {
+    if (i === active) return;
+    setActive(i);
     setAnimKey(k => k + 1);
   }
 
-  const items = ITEMS[active] || [];
+  if (!c.on('boxContents') || !tabs.length) return null;
+  const items = tabs[Math.min(active, tabs.length - 1)]?.items ?? [];
 
   return (
     <section className="py-16 bg-white">
@@ -73,27 +27,27 @@ export default function BoxContents() {
         {/* header */}
         <div className="text-center mb-12">
           <span className="inline-flex items-center gap-2 bg-teal-50 text-teal-700 text-xs font-bold px-4 py-2 rounded-full mb-4 tracking-wide uppercase">
-            {t('boxContents.heading')}
+            {box.badge}
           </span>
           <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-3">
-            {t('boxContents.sub')}
+            {box.heading}
           </h2>
         </div>
 
         {/* category tabs */}
         <div className="flex flex-wrap justify-center gap-2 mb-10">
-          {CATEGORIES.map(cat => (
+          {tabs.map((cat, i) => (
             <button
-              key={cat.key}
-              onClick={() => switchTab(cat.key)}
+              key={i}
+              onClick={() => switchTab(i)}
               className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold transition-all duration-200 ${
-                active === cat.key
+                active === i
                   ? 'bg-teal-600 text-white shadow-md shadow-teal-100 scale-105'
                   : 'bg-gray-100 text-gray-600 hover:bg-teal-50 hover:text-teal-700'
               }`}
             >
               <span>{cat.icon}</span>
-              {t(cat.labelKey)}
+              {cat.label}
             </button>
           ))}
         </div>
@@ -106,12 +60,12 @@ export default function BoxContents() {
         >
           {items.map((item, i) => (
             <div
-              key={item.name}
+              key={i}
               className="group flex items-start gap-4 bg-gray-50 hover:bg-teal-50 border border-transparent hover:border-teal-100 rounded-2xl p-5 transition-all duration-200 cursor-default"
               style={{ animationDelay: `${i * 40}ms` }}
             >
               <div className="w-11 h-11 rounded-xl bg-white shadow-sm flex items-center justify-center text-2xl shrink-0 group-hover:scale-110 transition-transform duration-200">
-                {item.emoji}
+                {item.icon}
               </div>
               <div>
                 <p className="font-bold text-gray-900 text-sm mb-0.5">{item.name}</p>
@@ -123,7 +77,7 @@ export default function BoxContents() {
 
         {/* bottom note */}
         <p className="text-center text-xs text-gray-400 mt-8">
-          {t('boxContents.note')}
+          {box.note}
         </p>
       </div>
 

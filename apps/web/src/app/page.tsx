@@ -1,6 +1,8 @@
 import { api } from '@/lib/api';
 import { Metadata } from 'next';
 import HomePageClient from '@/components/HomePageClient';
+import { homePage } from '@pupbox/content';
+import { getFaq, getStoredContent } from '@/lib/content';
 
 export const metadata: Metadata = {
   title: 'Pupbox — ყოველთვიური ყუთის გამოწერა საქართველოში',
@@ -17,22 +19,13 @@ const organizationJsonLd = {
 
 export default async function HomePage() {
   let plans: any[] = [];
-  let cmsHomepage: any = null;
-  let cmsFaq: any = null;
   try { plans = await api.plans.list(); } catch {}
-  try { cmsHomepage = await api.cms.get('config-homepage'); } catch {}
-  try { cmsFaq = await api.cms.get('config-faq-global'); } catch {}
-
-  const enabled: Record<string, boolean> = cmsHomepage?.content?.enabled || {};
-
-  const faqItems: any[] = (cmsFaq?.content?.items || []).filter((item: any) =>
-    !item.pages?.length || item.pages.includes('home')
-  );
+  const [content, faq] = await Promise.all([getStoredContent(homePage), getFaq()]);
 
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }} />
-      <HomePageClient plans={plans} enabled={enabled} faqItems={faqItems} />
+      <HomePageClient plans={plans} content={content} faq={faq} />
     </>
   );
 }
