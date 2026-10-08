@@ -71,7 +71,10 @@ export default function CheckoutPage() {
   const [myDogs, setMyDogs] = useState<any[]>([]);
   const [deliveryMethods, setDeliveryMethods] = useState<any[]>([]);
   const [selectedDelivery, setSelectedDelivery] = useState('');
-  const [autoRenewal, setAutoRenewal] = useState(true);
+  // No default on purpose: Georgian consumer law voids a term that renews a
+  // contract by default without the customer's consent (Art. 22(3)(i)), so
+  // renewal must be an active choice, not a pre-ticked box.
+  const [autoRenewal, setAutoRenewal] = useState<boolean | null>(null);
 
   const isGift = !!arrival?.gift;
   const hasSubscription = !!cart?.hasSubscription;
@@ -227,6 +230,7 @@ export default function CheckoutPage() {
     if (!form.city.trim()) e.city = t('co.e.city');
     if (!form.addressLine1.trim()) e.addressLine1 = t('co.e.address');
     if (!selectedDelivery) e.delivery = t('co.e.delivery');
+    if (offersRenewal && autoRenewal === null) e.renewal = t('co.e.renewal');
     if (fail(e)) return;
 
     setError(''); setLoading(true);
@@ -246,7 +250,7 @@ export default function CheckoutPage() {
           addressLine2: form.addressLine2 || undefined,
           // A gift never auto-renews — the buyer must not be billed
           // indefinitely for someone else's dog.
-          autoRenewal: isGift ? false : autoRenewal,
+          autoRenewal: offersRenewal && autoRenewal === true,
           ...(isGift ? {
             gift: {
               recipientName: form.giftRecipientName.trim(),
@@ -280,6 +284,8 @@ export default function CheckoutPage() {
   const deliveryCost = selectedMethod ? Number(selectedMethod.effectivePrice ?? 0) : 0;
   const total = (cart?.total ?? 0) + deliveryCost;
   const plan = cart?.items?.find((i: any) => i.subscriptionPlan)?.subscriptionPlan;
+  // A plan set in admin not to renew offers no choice: it simply ends.
+  const offersRenewal = hasSubscription && !isGift && plan?.autoRenewal !== false;
   const months = Number(plan?.durationValue) || 1;
   const period = months === 1 ? t('co.period.month') : fill(t('co.period.months'), { n: months });
 
@@ -459,6 +465,8 @@ export default function CheckoutPage() {
                         <span className="text-right">
                           {m.includedWithPlan
                             ? <span className="text-teal-700 font-semibold text-sm">{t('co.delivery.included')}</span>
+                            : m.upgradeFromPlan
+                              ? <span className="font-semibold text-sm text-gray-900">{fill(t('co.delivery.upgrade'), { amount: gel(m.effectivePrice) })}</span>
                             : m.isFree
                               ? <span className="text-teal-700 font-semibold text-sm">{t('co.delivery.free')}</span>
                               : <span className="font-bold text-sm">{gel(m.price)}</span>}
@@ -473,16 +481,26 @@ export default function CheckoutPage() {
                 {errs.delivery && <p className="text-red-500 text-xs mt-2">{errs.delivery}</p>}
 
                 {/* Renewal is spelled out — price and period — not just a tick. */}
-                {hasSubscription && !isGift && (
-                  <label className={`mt-6 flex items-start gap-3 rounded-xl border-2 p-4 cursor-pointer transition ${autoRenewal ? 'border-teal-500 bg-teal-50' : 'border-gray-200 bg-gray-50'}`}>
-                    <input type="checkbox" checked={autoRenewal} onChange={e => setAutoRenewal(e.target.checked)} className="mt-0.5 w-5 h-5 accent-teal-600 shrink-0" />
-                    <span>
-                      <span className="block font-semibold text-gray-900 text-sm">🔄 {t('co.renew.title')}</span>
-                      <span className="block text-xs text-gray-500 mt-0.5">
-                        {autoRenewal ? fill(t('co.renew.on'), { period, price: gel(plan?.price) }) : t('co.renew.off')}
-                      </span>
-                    </span>
-                  </label>
+                {offersRenewal && (
+                  <fieldset className="mt-6">
+                    <legend className="font-semibold text-gray-900 mb-3">{t('co.renew.choose')}</legend>
+                    <div className="grid sm:grid-cols-2 gap-3">
+                      {[
+                        { v: true, title: `🔄 ${t('co.renew.yes')}`, desc: fill(t('co.renew.on'), { period, price: gel(plan?.price) }) },
+                        { v: false, title: t('co.renew.no'), desc: t('co.renew.off') },
+                      ].map(o => (
+                        <label key={String(o.v)} className={`flex items-start gap-3 rounded-xl border-2 p-4 cursor-pointer transition ${autoRenewal === o.v ? 'border-teal-600 bg-teal-50' : errs.renewal ? 'border-red-300 bg-red-50' : 'border-gray-200 hover:border-gray-300'}`}>
+                          <input type="radio" name="renewal" checked={autoRenewal === o.v}
+                            onChange={() => { setAutoRenewal(o.v); setErrs(e => ({ ...e, renewal: '' })); }} className="mt-1 accent-teal-600 shrink-0" />
+                          <span>
+                            <span className="block font-semibold text-gray-900 text-sm">{o.title}</span>
+                            <span className="block text-xs text-gray-500 mt-0.5">{o.desc}</span>
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                    {errs.renewal && <p className="text-red-500 text-xs mt-2">{errs.renewal}</p>}
+                  </fieldset>
                 )}
 
                 {error && <p className="text-red-500 text-sm mt-5" role="alert">{error}</p>}
@@ -518,7 +536,7 @@ export default function CheckoutPage() {
               {cart?.discountAmount > 0 && <div className="flex justify-between text-teal-700"><dt>{t('co.sum.discount')}</dt><dd>−{gel(cart.discountAmount)}</dd></div>}
               <div className="flex justify-between text-gray-500">
                 <dt>{t('co.sum.delivery')}</dt>
-                <dd>{cart?.deliveryIncluded ? t('co.delivery.included') : selectedMethod ? (deliveryCost === 0 ? t('co.delivery.free') : gel(deliveryCost)) : t('co.sum.deliveryLater')}</dd>
+                <dd>{selectedMethod ? (deliveryCost === 0 ? (cart?.deliveryIncluded ? t('co.delivery.included') : t('co.delivery.free')) : gel(deliveryCost)) : cart?.deliveryIncluded ? t('co.delivery.included') : t('co.sum.deliveryLater')}</dd>
               </div>
               <div className="flex justify-between font-bold text-gray-900 text-base pt-1.5"><dt>{t('co.sum.total')}</dt><dd>{gel(total.toFixed(2))}</dd></div>
             </dl>

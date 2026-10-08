@@ -22,7 +22,7 @@ export class CheckoutService {
     const deliveryMethod = await this.prisma.deliveryMethod.findFirst({ where: { id: data.deliveryMethodId, isActive: true } });
     if (!deliveryMethod) throw new BadRequestException('Invalid delivery method');
 
-    const deliveryCost = this.cartService.deliveryCostFor(deliveryMethod, cart);
+    const deliveryCost = this.cartService.deliveryCostFor(deliveryMethod, cart, await this.cartService.cheapestDeliveryPrice());
     const total = cart.total + deliveryCost;
 
     return {
@@ -68,7 +68,7 @@ export class CheckoutService {
     const deliveryMethod = await this.prisma.deliveryMethod.findFirst({ where: { id: data.deliveryMethodId, isActive: true } });
     if (!deliveryMethod) throw new BadRequestException('Invalid delivery method');
 
-    const deliveryCost = this.cartService.deliveryCostFor(deliveryMethod, cart);
+    const deliveryCost = this.cartService.deliveryCostFor(deliveryMethod, cart, await this.cartService.cheapestDeliveryPrice());
     const total = +(cart.total + deliveryCost).toFixed(2);
 
     // Determine order type
@@ -139,7 +139,9 @@ export class CheckoutService {
             giftClaimToken: gift ? crypto.randomBytes(24).toString('base64url') : null,
             // Never keep billing the buyer for someone else's dog; otherwise
             // honour what the customer chose at checkout.
-            autoRenewal: gift ? false : data.autoRenewal ?? true,
+            // Renewal only on an explicit yes: defaulting to true would renew
+            // "by default", which consumer law voids (Art. 22(3)(i)).
+            autoRenewal: !gift && item.subscriptionPlan.autoRenewal !== false && data.autoRenewal === true,
           },
           select: { id: true },
         });
