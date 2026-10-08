@@ -9,6 +9,7 @@ import { gel } from '@/lib/format';
 import { itemName } from '@/lib/localize';
 import LegalNotice from '@/components/LegalNotice';
 import DogProfileForm, { emptyDogProfile, toDogPayload, fromDog, type DogProfile } from '@/components/DogProfileForm';
+import ChoiceNote from '@/components/ChoiceNote';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 const PHONE_RE = /^\+?[0-9\s()-]{7,20}$/;
@@ -526,6 +527,7 @@ export default function CheckoutPage() {
                   <span className="flex-1">
                     {itemName(item, lang)}
                     {item.quantity > 1 && <span className="text-gray-400"> × {item.quantity}</span>}
+                    <ChoiceNote choice={item.personalisation} />
                   </span>
                   <span className="shrink-0 font-medium">{gel((Number(item.price) * item.quantity).toFixed(2))}</span>
                 </li>

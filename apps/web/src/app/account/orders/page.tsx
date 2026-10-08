@@ -6,6 +6,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { fill } from '@/context/strings/purchase';
 import { authFetch, loginUrl, SessionExpiredError } from '@/lib/authFetch';
 import { gel } from '@/lib/format';
+import ChoiceNote from '@/components/ChoiceNote';
 
 /** Every OrderStatus the API can return, with a colour and a label key. */
 const STATUS_STYLE: Record<string, string> = {
@@ -80,7 +81,7 @@ export default function MyOrdersPage() {
                     <span className="w-8 h-8 bg-gray-50 rounded-lg flex items-center justify-center text-lg overflow-hidden">
                       {item.product?.images?.[0]?.url ? <img src={item.product.images[0].url} alt="" className="w-full h-full object-cover" /> : '🐾'}
                     </span>
-                    <span>{item.name} × {item.quantity}</span>
+                    <span>{item.name} × {item.quantity}<ChoiceNote choice={item.personalisation} /></span>
                   </div>
                 ))}
                 {order.items.length > 3 && <span className="text-xs text-gray-400 self-center">{fill(t('ord.more'), { n: order.items.length - 3 })}</span>}

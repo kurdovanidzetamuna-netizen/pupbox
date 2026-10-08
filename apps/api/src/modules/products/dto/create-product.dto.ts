@@ -21,4 +21,6 @@ export class CreateProductDto {
   @IsOptional() @IsArray() tagIds?: string[];
   @IsOptional() @IsNumber() @Min(0) stockQuantity?: number;
   @IsOptional() @IsNumber() @Min(0) lowStockAlert?: number;
+  /** { engraving?: { maxLength }, sizes?: string[] }, or null for none. Cleaned by parseConfig. */
+  @IsOptional() personalisation?: unknown;
 }

@@ -4,11 +4,17 @@ import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, Request, Qu
 import { AuthGuard } from '@nestjs/passport';
 import { OptionalJwtGuard } from '../auth/optional-jwt.guard';
 import { ApiBearerAuth, ApiTags, ApiOperation } from '@nestjs/swagger';
-import { IsOptional, IsString, IsNumber, IsUUID, Min } from 'class-validator';
+import { IsOptional, IsString, IsNumber, IsUUID, Min, MaxLength, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
+
+class PersonalisationDto {
+  @IsOptional() @IsString() @MaxLength(60) engraving?: string;
+  @IsOptional() @IsString() @MaxLength(20) size?: string;
+}
 
 class AddItemDto {
   @IsOptional() @IsString() productId?: string;
+  @IsOptional() @ValidateNested() @Type(() => PersonalisationDto) personalisation?: PersonalisationDto;
   @IsOptional() @IsString() subscriptionPlanId?: string;
   @IsOptional() @Type(() => Number) @IsNumber() @Min(1) quantity?: number;
 }

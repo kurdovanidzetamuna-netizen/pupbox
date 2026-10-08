@@ -1,5 +1,7 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { Prisma } from '@prisma/client';
+import { checkChoice, sameChoice } from '../products/personalisation';
 
 const cartInclude = {
   items: {
@@ -36,7 +38,7 @@ export class CartService {
 
     for (const item of guest.items) {
       const match = userCart.items.find((i: any) =>
-        item.productId ? i.productId === item.productId : i.subscriptionPlanId === item.subscriptionPlanId);
+        item.productId ? i.productId === item.productId && sameChoice(i.personalisation, item.personalisation) : i.subscriptionPlanId === item.subscriptionPlanId);
       if (!match) {
         await this.prisma.cartItem.update({ where: { id: item.id }, data: { cartId: userCart.id } });
       } else if (item.productId) {
@@ -52,7 +54,7 @@ export class CartService {
     return this.prisma.cart.findUniqueOrThrow({ where: { id: userCart.id }, include: cartInclude });
   }
 
-  async addItem(cartId: string, data: { productId?: string; subscriptionPlanId?: string; quantity?: number }) {
+  async addItem(cartId: string, data: { productId?: string; subscriptionPlanId?: string; quantity?: number; personalisation?: unknown }) {
     const { productId, subscriptionPlanId, quantity = 1 } = data;
 
     if (!productId && !subscriptionPlanId) throw new BadRequestException('Provide productId or subscriptionPlanId');
@@ -64,12 +66,15 @@ export class CartService {
       if (!product) throw new NotFoundException('Product not found or unavailable');
       if (product.inventory && product.inventory.quantity < quantity) throw new BadRequestException('Insufficient stock');
       price = Number(product.salePrice ?? product.price);
+      const personalisation = checkChoice(product.personalisation, data.personalisation);
 
-      const existing = await this.prisma.cartItem.findFirst({ where: { cartId, productId } });
+      // A bowl engraved "Rex" and one engraved "Luna" are two lines, not quantity 2.
+      const lines = await this.prisma.cartItem.findMany({ where: { cartId, productId } });
+      const existing = lines.find((l) => sameChoice(l.personalisation, personalisation));
       if (existing) {
         await this.prisma.cartItem.update({ where: { id: existing.id }, data: { quantity: existing.quantity + quantity } });
       } else {
-        await this.prisma.cartItem.create({ data: { cartId, productId, price, quantity } });
+        await this.prisma.cartItem.create({ data: { cartId, productId, price, quantity, personalisation: personalisation ?? Prisma.DbNull } });
       }
     }
 

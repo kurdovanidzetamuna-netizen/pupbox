@@ -120,7 +120,7 @@ export default async function ProductDetailPage({ params }: { params: { slug: st
             </div>
 
             {/* Add to Cart */}
-            <AddToCartButton productId={product.id} inStock={inStock} maxQty={product.inventory?.quantity} />
+            <AddToCartButton productId={product.id} inStock={inStock} maxQty={product.inventory?.quantity} personalisation={product.personalisation} />
 
             {/* SKU, Brand & Tags */}
             <div className="border-t border-gray-100 pt-4 space-y-2 text-sm text-gray-400">

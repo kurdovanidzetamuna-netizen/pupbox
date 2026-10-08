@@ -2,6 +2,7 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import * as crypto from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { CartService } from '../cart/cart.service';
+import { Prisma } from '@prisma/client';
 
 export interface GiftDetails {
   recipientName: string;
@@ -113,6 +114,7 @@ export class CheckoutService {
             price: item.price,
             quantity: item.quantity,
             total: +(Number(item.price) * item.quantity).toFixed(2),
+            personalisation: item.personalisation ?? Prisma.DbNull,
           })),
         },
       },

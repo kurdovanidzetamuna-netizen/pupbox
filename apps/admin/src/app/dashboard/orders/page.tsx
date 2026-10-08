@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
+import ChoiceNote from '../../../components/ChoiceNote';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 
@@ -212,6 +213,7 @@ function OrderDrawer({ order, onClose, onStatusChange, onTrackingUpdate }: any) 
                     )}
                     <div style={{ flex: 1 }}>
                       <p style={{ fontWeight: 600, color: 'var(--slate-800)', margin: 0, fontSize: 13 }}>{item.name}</p>
+                      <ChoiceNote choice={item.personalisation} />
                       {item.sku && <p style={{ fontSize: 11, color: 'var(--slate-400)', margin: '2px 0 0', fontFamily: 'monospace' }}>{item.sku}</p>}
                     </div>
                     <div style={{ textAlign: 'right' }}>

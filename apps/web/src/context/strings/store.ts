@@ -45,6 +45,13 @@ export const STORE_STRINGS: Record<string, { en: string; ka: string }> = {
   'pdp.added':              { en: '✓ Added to cart',            ka: '✓ დაემატა კალათაში' },
   'pdp.viewCart':           { en: 'View cart',                  ka: 'კალათის ნახვა' },
   'pdp.onlyLeft':           { en: 'Only {n} available',         ka: 'ხელმისაწვდომია მხოლოდ {n}' },
+  'pdp.p.size':             { en: 'Size',                       ka: 'ზომა' },
+  'pdp.p.name':             { en: 'Name to engrave',            ka: 'ამოსატვიფრი სახელი' },
+  'pdp.p.placeholder':      { en: "Your dog's name",            ka: 'შენი ძაღლის სახელი' },
+  'pdp.p.hint':             { en: '{n} characters left · engraved exactly as typed', ka: 'დარჩა {n} სიმბოლო · ამოიტვიფრება ზუსტად ისე, როგორც დაწერ' },
+  'pdp.p.needName':         { en: 'Enter the name to engrave.', ka: 'ჩაწერე ამოსატვიფრი სახელი.' },
+  'pdp.p.needSize':         { en: 'Choose a size.',             ka: 'აირჩიე ზომა.' },
+  'pdp.p.engraving':        { en: 'Engraving',                  ka: 'წარწერა' },
   'pdp.addError':           { en: 'Could not add to cart. Please try again.', ka: 'კალათაში დამატება ვერ მოხერხდა. სცადე თავიდან.' },
 
   // ── Account ──

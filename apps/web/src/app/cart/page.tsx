@@ -6,6 +6,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { fill } from '@/context/strings/purchase';
 import { gel } from '@/lib/format';
 import { itemName } from '@/lib/localize';
+import ChoiceNote from '@/components/ChoiceNote';
 
 export default function CartPage() {
   const { t, lang } = useLanguage();
@@ -63,6 +64,7 @@ export default function CartPage() {
                   <div className="flex items-start justify-between">
                     <div>
                       <p className="font-semibold text-gray-900">{itemName(item, lang)}</p>
+                      <ChoiceNote choice={item.personalisation} className="text-sm text-gray-500 mt-0.5" />
                       {item.subscriptionPlan && <p className="text-xs text-teal-600 font-medium mt-0.5">{t('cart.subscription')}</p>}
                     </div>
                     <button onClick={() => removeItem(item.id)} aria-label={`${t('cart.remove')}: ${itemName(item, lang)}`}

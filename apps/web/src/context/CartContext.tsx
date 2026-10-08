@@ -25,7 +25,7 @@ interface CartContextType {
   /** False until the first fetch finishes, so empty and not-loaded differ. */
   ready: boolean;
   loading: boolean;
-  addProduct: (productId: string, quantity?: number) => Promise<void>;
+  addProduct: (productId: string, quantity?: number, personalisation?: { engraving?: string; size?: string }) => Promise<void>;
   addPlan: (planId: string) => Promise<void>;
   updateItem: (itemId: string, quantity: number) => Promise<void>;
   removeItem: (itemId: string) => Promise<void>;
@@ -63,7 +63,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   return (
     <CartContext.Provider value={{
       cart, ready, loading, refresh,
-      addProduct: (productId, quantity = 1) => call('/items', 'POST', { productId, quantity }),
+      addProduct: (productId, quantity = 1, personalisation) => call('/items', 'POST', { productId, quantity, ...(personalisation ? { personalisation } : {}) }),
       addPlan: (planId) => call('/items', 'POST', { subscriptionPlanId: planId }),
       updateItem: (itemId, quantity) => call(`/items/${itemId}`, 'PUT', { quantity }),
       removeItem: (itemId) => call(`/items/${itemId}`, 'DELETE'),

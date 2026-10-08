@@ -22,10 +22,19 @@ const RETIRE_CATEGORY_SLUGS = ['t'];
 
 /**
  * Products we can't fulfil as described, hidden (status DRAFT) rather than
- * retired. The bowl promises an engraved name and 3 sizes, but checkout
- * can't take either. Bring it back once it can.
+ * retired. Empty now: the bowl was here until checkout could take a name
+ * and a size — see PERSONALISE.
  */
-const HIDE_PRODUCT_SKUS = ['ACC-001'];
+const HIDE_PRODUCT_SKUS: string[] = [];
+
+/**
+ * What customers choose before adding these to the cart. Set once, when the
+ * product has no personalisation yet — which is also when it was still hidden
+ * for lacking it, so it is shown again then. Edits in admin win afterwards.
+ */
+const PERSONALISE: Record<string, { engraving?: { maxLength: number }; sizes?: string[] }> = {
+  'ACC-001': { engraving: { maxLength: 12 }, sizes: ['S', 'M', 'L'] },
+};
 
 /** Copy that overclaims; replaced only while it still reads exactly the old way. */
 const COPY_FIXES = [
@@ -93,6 +102,12 @@ async function hideAndFixCopy() {
     data: { status: 'DRAFT' },
   });
   console.log(hidden.count ? `  hid ${hidden.count} product(s): ${HIDE_PRODUCT_SKUS.join(', ')}` : '  · nothing to hide');
+  for (const [sku, personalisation] of Object.entries(PERSONALISE)) {
+    const p = await prisma.product.findFirst({ where: { sku, deletedAt: null }, select: { id: true, status: true, personalisation: true } });
+    if (!p || p.personalisation !== null) { console.log(`  · ${sku} personalisation already set`); continue; }
+    await prisma.product.update({ where: { id: p.id }, data: { personalisation, ...(p.status === 'DRAFT' ? { status: 'ACTIVE' } : {}) } });
+    console.log(`  ${sku}: customers now choose ${Object.keys(personalisation).join(' and ')}${p.status === 'DRAFT' ? '; shown again' : ''}`);
+  }
   for (const f of COPY_FIXES) {
     const fixed = await prisma.product.updateMany({ where: { sku: f.sku, description: f.from }, data: { description: f.to } });
     console.log(fixed.count ? `  reworded ${f.sku} description` : `  · ${f.sku} description already changed`);

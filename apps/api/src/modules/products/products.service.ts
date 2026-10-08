@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
-import { ProductStatus } from '@prisma/client';
+import { Prisma, ProductStatus } from '@prisma/client';
+import { parseConfig } from './personalisation';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateProductDto } from './dto/create-product.dto';
 
@@ -141,7 +142,7 @@ export class ProductsService {
     const skuExists = await this.prisma.product.findUnique({ where: { sku: dto.sku } });
     if (skuExists) throw new ConflictException('SKU already exists');
 
-    const { tagIds, stockQuantity, lowStockAlert, ...productData } = dto;
+    const { tagIds, stockQuantity, lowStockAlert, personalisation, ...productData } = dto;
 
     const qty = stockQuantity ?? 0;
     const product = await this.prisma.product.create({
@@ -150,6 +151,7 @@ export class ProductsService {
         status: (productData.status ?? (qty === 0 ? 'OUT_OF_STOCK' : 'ACTIVE')) as any,
         price: productData.price,
         salePrice: productData.salePrice ?? null,
+        personalisation: parseConfig(personalisation) ?? Prisma.DbNull,
         tags: tagIds?.length ? { create: tagIds.map((id) => ({ tagId: id })) } : undefined,
         inventory: {
           create: {
@@ -168,7 +170,7 @@ export class ProductsService {
     const product = await this.prisma.product.findFirst({ where: { id, deletedAt: null } });
     if (!product) throw new NotFoundException('Product not found');
 
-    const { tagIds, stockQuantity, lowStockAlert, ...productData } = dto;
+    const { tagIds, stockQuantity, lowStockAlert, personalisation, ...productData } = dto;
 
     if (tagIds !== undefined) {
       await this.prisma.productTagRelation.deleteMany({ where: { productId: id } });
@@ -189,7 +191,10 @@ export class ProductsService {
 
     return this.prisma.product.update({
       where: { id },
-      data: { ...productData, price: productData.price, salePrice: productData.salePrice ?? undefined } as any,
+      data: {
+        ...productData, price: productData.price, salePrice: productData.salePrice ?? undefined,
+        ...(personalisation !== undefined ? { personalisation: parseConfig(personalisation) ?? Prisma.DbNull } : {}),
+      } as any,
       include: productInclude,
     });
   }

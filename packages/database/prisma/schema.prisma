@@ -338,6 +338,8 @@ model Product {
   category         ProductCategory? @relation(fields: [categoryId], references: [id])
   price            Decimal        @db.Decimal(10, 2)
   salePrice        Decimal?       @db.Decimal(10, 2)
+  /// What customers choose before adding to cart, e.g. { engraving: { maxLength: 12 }, sizes: ["S", "M", "L"] }. Null = nothing to choose.
+  personalisation Json?
   status           ProductStatus  @default(DRAFT)
   type             ProductType    @default(PHYSICAL)
   includedInBox    Boolean        @default(false)
@@ -527,6 +529,8 @@ model CartItem {
   subscriptionPlan   SubscriptionPlan? @relation(fields: [subscriptionPlanId], references: [id])
   quantity           Int               @default(1)
   price              Decimal           @db.Decimal(10, 2)
+  /// What the customer chose for a personalised product: { engraving?, size? }.
+  personalisation    Json?
   createdAt          DateTime          @default(now())
   updatedAt          DateTime          @updatedAt
 }
@@ -597,6 +601,8 @@ model OrderItem {
   price            Decimal           @db.Decimal(10, 2)
   quantity         Int               @default(1)
   total            Decimal           @db.Decimal(10, 2)
+  /// Copied from the cart: { engraving?, size? }. Fulfilment reads it.
+  personalisation  Json?
   createdAt        DateTime          @default(now())
 
   // Channel attribution reads items by order, and the top-products /

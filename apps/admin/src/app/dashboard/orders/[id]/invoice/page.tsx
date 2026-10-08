@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
+import ChoiceNote from '../../../../../components/ChoiceNote';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 
@@ -129,6 +130,7 @@ export default function InvoicePage() {
                   <td style={{ padding: '12px 14px', color: 'var(--slate-400)', fontSize: 12 }}>{i + 1}</td>
                   <td style={{ padding: '12px 14px' }}>
                     <p style={{ fontWeight: 600, color: 'var(--slate-900)', margin: 0, fontSize: 13 }}>{item.name}</p>
+                      <ChoiceNote choice={item.personalisation} />
                     {item.subscriptionPlan && <p style={{ fontSize: 11, color: 'var(--teal-600)', margin: '2px 0 0' }}>Subscription plan</p>}
                   </td>
                   <td style={{ padding: '12px 14px', fontFamily: 'monospace', fontSize: 11, color: 'var(--slate-400)' }}>{item.sku || '—'}</td>
