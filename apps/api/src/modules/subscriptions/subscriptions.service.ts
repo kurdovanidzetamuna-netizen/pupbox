@@ -63,15 +63,6 @@ export class SubscriptionsService implements OnModuleInit, OnModuleDestroy {
     return sub;
   }
 
-  async create(userId: string, data: { planId: string; dogId?: string; autoRenewal?: boolean }) {
-    const plan = await this.prisma.subscriptionPlan.findFirst({ where: { id: data.planId, isActive: true, deletedAt: null } });
-    if (!plan) throw new BadRequestException('Plan not found or inactive');
-    return this.prisma.customerSubscription.create({
-      data: { userId, planId: data.planId, dogId: data.dogId, status: 'PENDING', boxesTotal: plan.boxCount, autoRenewal: data.autoRenewal ?? true },
-      include: { plan: true },
-    });
-  }
-
   async cancel(id: string, userId: string, reason?: string) {
     const sub = await this.findOne(id, userId);
     if (['CANCELLED', 'EXPIRED'].includes(sub.status)) throw new BadRequestException('Subscription already cancelled');

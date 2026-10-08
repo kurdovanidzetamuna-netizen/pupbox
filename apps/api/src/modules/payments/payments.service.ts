@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, NotFoundException, Logger } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PaymentStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
@@ -7,9 +7,13 @@ import { EmailService } from '../email/email.service';
 import { ReferralsService } from '../referrals/referrals.service';
 import { ProductsService } from '../products/products.service';
 import { subscriptionPeriod } from '../subscriptions/subscription-period';
+import { releaseStock } from '../products/stock';
+
+/** How long an order may wait for payment before its stock and coupon are freed (checked every 15 minutes). */
+const UNPAID_TTL_MS = 2 * 60 * 60 * 1000;
 
 @Injectable()
-export class PaymentsService {
+export class PaymentsService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(PaymentsService.name);
 
   constructor(
@@ -20,6 +24,51 @@ export class PaymentsService {
     private referrals: ReferralsService,
     private products: ProductsService,
   ) {}
+
+  private timer?: NodeJS.Timeout;
+
+  onModuleInit() {
+    const run = () => this.expireUnpaid().catch((e) => this.logger.error(`Unpaid-order expiry failed: ${e.message}`));
+    setTimeout(run, 15_000).unref();
+    this.timer = setInterval(run, 15 * 60 * 1000);
+    this.timer.unref();
+  }
+
+  onModuleDestroy() {
+    clearInterval(this.timer);
+  }
+
+  /**
+   * Orders left unpaid for two hours (payment page closed, card abandoned)
+   * are cancelled: their stock goes back on sale, the coupon can be used
+   * again, and the subscription they created is dropped. A payment that still
+   * arrives later reinstates the order (see applyPaymentResult).
+   */
+  async expireUnpaid() {
+    const stale = await this.prisma.order.findMany({
+      where: { status: 'PENDING', createdAt: { lt: new Date(Date.now() - UNPAID_TTL_MS) }, payments: { none: { status: 'PAID' } } },
+      select: { id: true, couponId: true, subscriptionId: true, items: { where: { productId: { not: null } }, select: { productId: true, quantity: true } } },
+    });
+    let expired = 0;
+    for (const o of stale) {
+      // Guarded on PENDING so a payment landing at this moment wins.
+      const { count } = await this.prisma.order.updateMany({
+        where: { id: o.id, status: 'PENDING' },
+        data: { status: 'CANCELLED', internalNotes: 'Cancelled automatically: not paid within 2 hours.' },
+      });
+      if (!count) continue;
+      expired++;
+      await releaseStock(this.prisma, o.items.map((i) => ({ productId: i.productId!, quantity: i.quantity })));
+      await this.prisma.payment.updateMany({ where: { orderId: o.id, status: 'PENDING' }, data: { status: 'FAILED' } });
+      if (o.subscriptionId) await this.prisma.customerSubscription.updateMany({ where: { id: o.subscriptionId, status: 'PENDING' }, data: { status: 'CANCELLED', cancelReason: 'Not paid' } });
+      if (o.couponId) {
+        const { count: used } = await this.prisma.couponUsage.deleteMany({ where: { orderId: o.id } });
+        if (used) await this.prisma.coupon.update({ where: { id: o.couponId }, data: { usedCount: { decrement: used } } });
+      }
+    }
+    if (expired) this.logger.log(`Cancelled ${expired} order(s) left unpaid for 2 hours`);
+    return { expired };
+  }
 
   async initiatePayment(orderId: string, userId: string) {
     const order = await this.prisma.order.findFirst({
@@ -105,6 +154,10 @@ export class PaymentsService {
 
     const paymentStatus = this.mapFlittStatus(order_status);
 
+    // Flitt repeats callbacks; a second "approved" must not take the stock
+    // or send the emails twice.
+    if (paymentStatus === 'PAID' && order.status !== 'PENDING' && order.status !== 'CANCELLED') return { status: 'ok' };
+
     await this.prisma.payment.updateMany({
       where: { orderId: order_id, providerPaymentId: payment_id },
       data: {
@@ -115,6 +168,15 @@ export class PaymentsService {
     });
 
     if (paymentStatus === 'PAID') {
+      if (order.status === 'CANCELLED') {
+        // Paid after it expired unpaid: the money is in, so honour the order.
+        // Its stock was released at expiry; hold it again so the deduction
+        // below balances (this may oversell — admin sees the warning).
+        this.logger.warn(`Order ${order_id} was paid after expiring unpaid; reinstating it`);
+        const lines = await this.prisma.orderItem.findMany({ where: { orderId: order_id, productId: { not: null } }, select: { productId: true, quantity: true } });
+        for (const l of lines) await this.prisma.inventory.update({ where: { productId: l.productId! }, data: { reservedQty: { increment: l.quantity } } });
+        if (order.subscriptionId) await this.prisma.customerSubscription.updateMany({ where: { id: order.subscriptionId, status: 'CANCELLED' }, data: { status: 'PENDING' } });
+      }
       await this.prisma.order.update({
         where: { id: order_id },
         data: { status: 'PAID' },
@@ -199,20 +261,11 @@ export class PaymentsService {
           }
         }
       }
-    } else if (paymentStatus === 'FAILED') {
+    } else if (paymentStatus === 'FAILED' && order.status === 'PENDING') {
+      // Only a still-open order: an expired one already gave its stock back.
       await this.prisma.order.update({ where: { id: order_id }, data: { status: 'CANCELLED' } });
-      // Release reserved inventory
-      const productItems = await this.prisma.orderItem.findMany({
-        where: { orderId: order_id, productId: { not: null } },
-      });
-      for (const item of productItems) {
-        if (item.productId) {
-          await this.prisma.inventory.update({
-            where: { productId: item.productId },
-            data: { reservedQty: { decrement: item.quantity } },
-          });
-        }
-      }
+      const lines = await this.prisma.orderItem.findMany({ where: { orderId: order_id, productId: { not: null } }, select: { productId: true, quantity: true } });
+      await releaseStock(this.prisma, lines.map((l) => ({ productId: l.productId!, quantity: l.quantity })));
     }
 
     return { status: 'ok' };

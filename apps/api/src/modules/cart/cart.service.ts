@@ -64,7 +64,8 @@ export class CartService {
     if (productId) {
       const product = await this.prisma.product.findFirst({ where: { id: productId, status: 'ACTIVE', deletedAt: null }, include: { inventory: true } });
       if (!product) throw new NotFoundException('Product not found or unavailable');
-      if (product.inventory && product.inventory.quantity < quantity) throw new BadRequestException('Insufficient stock');
+      // What's free to sell: stock minus what unpaid orders are holding.
+      if (product.inventory && product.inventory.quantity - product.inventory.reservedQty < quantity) throw new BadRequestException('Insufficient stock');
       price = Number(product.salePrice ?? product.price);
       const personalisation = checkChoice(product.personalisation, data.personalisation);
 

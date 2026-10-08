@@ -3,6 +3,7 @@ import * as crypto from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { CartService } from '../cart/cart.service';
 import { Prisma } from '@prisma/client';
+import { releaseStock, reserveStock } from '../products/stock';
 
 export interface GiftDetails {
   recipientName: string;
@@ -77,49 +78,61 @@ export class CheckoutService {
     const hasProducts = cart.items.some((i: any) => i.productId);
     const orderType = hasSubscription && hasProducts ? 'MIXED' : hasSubscription ? 'SUBSCRIPTION' : 'PRODUCT';
 
-    // Create or find address
-    let address = data.addressId ? await this.prisma.address.findUnique({ where: { id: data.addressId } }) : null;
+    // Hold the stock first: if something sold out meanwhile, stop before any
+    // order, address or subscription is created.
+    const productLines = cart.items.filter((i: any) => i.productId)
+      .map((i: any) => ({ productId: i.productId, quantity: i.quantity, name: i.product?.name }));
+    await reserveStock(this.prisma, productLines);
+
+    // Create or find address — only one of this customer's own.
+    let address = data.addressId ? await this.prisma.address.findFirst({ where: { id: data.addressId, userId, deletedAt: null } }) : null;
     if (!address) {
       address = await this.prisma.address.create({
         data: { userId, firstName: data.firstName, lastName: data.lastName, phone: data.phone, city: data.city, addressLine1: data.addressLine1, addressLine2: data.addressLine2 },
       });
     }
 
-    // Create order
-    const order = await this.prisma.order.create({
-      data: {
-        userId,
-        // A gift is for someone else's dog, which is not in our database yet.
-        dogId: gift ? null : data.dogId || null,
-        addressId: address.id,
-        deliveryMethodId: data.deliveryMethodId,
-        couponId: cart.couponId || null,
-        type: orderType as any,
-        status: 'PENDING',
-        isGift: !!gift,
-        giftRecipientName: gift?.recipientName?.trim() || null,
-        giftRecipientEmail: gift?.recipientEmail?.trim().toLowerCase() || null,
-        giftMessage: gift?.message?.trim() || null,
-        giftDeliverOn: gift?.deliverOn ? new Date(gift.deliverOn) : null,
-        subtotal: cart.subtotal,
-        deliveryCost,
-        discountAmount: cart.discountAmount,
-        total,
-        items: {
-          create: cart.items.map((item: any) => ({
-            productId: item.productId || null,
-            subscriptionPlanId: item.subscriptionPlanId || null,
-            name: item.product?.name || item.subscriptionPlan?.name || 'Item',
-            sku: item.product?.sku || null,
-            price: item.price,
-            quantity: item.quantity,
-            total: +(Number(item.price) * item.quantity).toFixed(2),
-            personalisation: item.personalisation ?? Prisma.DbNull,
-          })),
+    // Create order — and hand the held stock back if that fails.
+    let order: Prisma.OrderGetPayload<{ include: { items: true; address: true; deliveryMethod: true } }>;
+    try {
+      order = await this.prisma.order.create({
+        data: {
+          userId,
+          // A gift is for someone else's dog, which is not in our database yet.
+          dogId: gift ? null : data.dogId || null,
+          addressId: address.id,
+          deliveryMethodId: data.deliveryMethodId,
+          couponId: cart.couponId || null,
+          type: orderType as any,
+          status: 'PENDING',
+          isGift: !!gift,
+          giftRecipientName: gift?.recipientName?.trim() || null,
+          giftRecipientEmail: gift?.recipientEmail?.trim().toLowerCase() || null,
+          giftMessage: gift?.message?.trim() || null,
+          giftDeliverOn: gift?.deliverOn ? new Date(gift.deliverOn) : null,
+          subtotal: cart.subtotal,
+          deliveryCost,
+          discountAmount: cart.discountAmount,
+          total,
+          items: {
+            create: cart.items.map((item: any) => ({
+              productId: item.productId || null,
+              subscriptionPlanId: item.subscriptionPlanId || null,
+              name: item.product?.name || item.subscriptionPlan?.name || 'Item',
+              sku: item.product?.sku || null,
+              price: item.price,
+              quantity: item.quantity,
+              total: +(Number(item.price) * item.quantity).toFixed(2),
+              personalisation: item.personalisation ?? Prisma.DbNull,
+            })),
+          },
         },
-      },
-      include: { items: true, address: true, deliveryMethod: true },
-    });
+        include: { items: true, address: true, deliveryMethod: true },
+      });
+    } catch (e) {
+      await releaseStock(this.prisma, productLines);
+      throw e;
+    }
 
     // Create pending subscription if subscription in cart
     if (hasSubscription) {
@@ -155,14 +168,6 @@ export class CheckoutService {
       if (firstSubscriptionId) {
         await this.prisma.order.update({ where: { id: order.id }, data: { subscriptionId: firstSubscriptionId } });
       }
-    }
-
-    // Reserve inventory for products
-    for (const item of cart.items.filter((i: any) => i.productId)) {
-      await this.prisma.inventory.update({
-        where: { productId: item.productId },
-        data: { reservedQty: { increment: item.quantity } },
-      });
     }
 
     // Record coupon usage

@@ -61,6 +61,9 @@ export class FlittService {
       currency: 'GEL',
       server_callback_url: opts.serverCallbackUrl,
       response_url: opts.responseUrl,
+      // The bank page closes after an hour, well before an unpaid order is
+      // cancelled (2 h), so nobody pays for stock that was already released.
+      lifetime: 3600,
     };
 
     params.signature = this.buildSignature(params);

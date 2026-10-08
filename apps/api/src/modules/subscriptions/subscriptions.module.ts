@@ -6,12 +6,6 @@ import { AdminJwtGuard } from '../admin-auth/admin-jwt.guard';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { IsString, IsOptional, IsBoolean } from 'class-validator';
 
-class CreateSubscriptionDto {
-  @IsString() planId: string;
-  @IsOptional() @IsString() dogId?: string;
-  @IsOptional() @IsBoolean() autoRenewal?: boolean;
-}
-
 class CancelDto {
   @IsOptional() @IsString() reason?: string;
 }
@@ -34,7 +28,6 @@ class SubscriptionsController {
   constructor(private service: SubscriptionsService) {}
   @Get() findAll(@Request() req: any) { return this.service.findByUser(req.user.id); }
   @Get(':id') findOne(@Request() req: any, @Param('id') id: string) { return this.service.findOne(id, req.user.id); }
-  @Post() create(@Request() req: any, @Body() dto: CreateSubscriptionDto) { return this.service.create(req.user.id, dto); }
   @Patch(':id/cancel') cancel(@Request() req: any, @Param('id') id: string, @Body() dto: CancelDto) {
     return this.service.cancel(id, req.user.id, dto.reason);
   }
