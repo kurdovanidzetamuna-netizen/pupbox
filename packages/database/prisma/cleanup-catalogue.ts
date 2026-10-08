@@ -20,6 +20,22 @@ const RETIRE_PLAN_SLUGS = ['10-monthtest', '3-month', '1testing', '3month', '3te
 const RETIRE_PRODUCT_SKUS = ['test', 'ტესტ', 'treat-001'];
 const RETIRE_CATEGORY_SLUGS = ['t'];
 
+/**
+ * Products we can't fulfil as described, hidden (status DRAFT) rather than
+ * retired. The bowl promises an engraved name and 3 sizes, but checkout
+ * can't take either. Bring it back once it can.
+ */
+const HIDE_PRODUCT_SKUS = ['ACC-001'];
+
+/** Copy that overclaims; replaced only while it still reads exactly the old way. */
+const COPY_FIXES = [
+  {
+    sku: 'GRM-001',
+    from: 'Natural shea butter and beeswax formula. Heals and protects paw pads from harsh conditions.',
+    to: 'Natural shea butter and beeswax formula. Softens and protects paw pads from harsh weather.',
+  },
+];
+
 /** The pricing page's "Most Popular" sat on the ₾150 test plan; it belongs on a real one. */
 const POPULAR_PLAN_SLUG = '6-months';
 
@@ -71,6 +87,18 @@ async function retire() {
   if (!categories.length) console.log(`  · categories already gone: ${RETIRE_CATEGORY_SLUGS.join(', ')}`);
 }
 
+async function hideAndFixCopy() {
+  const hidden = await prisma.product.updateMany({
+    where: { sku: { in: HIDE_PRODUCT_SKUS }, status: 'ACTIVE', deletedAt: null },
+    data: { status: 'DRAFT' },
+  });
+  console.log(hidden.count ? `  hid ${hidden.count} product(s): ${HIDE_PRODUCT_SKUS.join(', ')}` : '  · nothing to hide');
+  for (const f of COPY_FIXES) {
+    const fixed = await prisma.product.updateMany({ where: { sku: f.sku, description: f.from }, data: { description: f.to } });
+    console.log(fixed.count ? `  reworded ${f.sku} description` : `  · ${f.sku} description already changed`);
+  }
+}
+
 async function restore() {
   const plans = await prisma.subscriptionPlan.updateMany({
     where: { slug: { in: RETIRE_PLAN_SLUGS } },
@@ -84,7 +112,11 @@ async function restore() {
     where: { slug: { in: RETIRE_CATEGORY_SLUGS } },
     data: { isActive: true, deletedAt: null },
   });
-  console.log(`  restored ${plans.count} plans, ${products.count} products, ${categories.count} categories`);
+  const shown = await prisma.product.updateMany({
+    where: { sku: { in: HIDE_PRODUCT_SKUS }, status: 'DRAFT', deletedAt: null },
+    data: { status: 'ACTIVE' },
+  });
+  console.log(`  restored ${plans.count} plans, ${products.count} products, ${categories.count} categories; re-showed ${shown.count} hidden product(s)`);
 }
 
 async function fixBlankName() {
@@ -139,6 +171,8 @@ async function main() {
 
   console.log('▸ retiring test catalogue rows…');
   await retire();
+  console.log('\n▸ hiding products we can\'t fulfil, fixing overclaiming copy…');
+  await hideAndFixCopy();
   console.log('\n▸ fixing blank plan name…');
   await fixBlankName();
   console.log('\n▸ placing the "Most Popular" badge…');

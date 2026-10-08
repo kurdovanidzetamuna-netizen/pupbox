@@ -96,7 +96,7 @@ async function main() {
       slug: 'paw-balm',
       sku: 'GRM-001',
       shortDescription: 'Moisturising paw balm for dry and cracked paws',
-      description: 'Natural shea butter and beeswax formula. Heals and protects paw pads from harsh conditions.',
+      description: 'Natural shea butter and beeswax formula. Softens and protects paw pads from harsh weather.',
       price: 7.49,
       categoryId: grooming.id,
       status: 'ACTIVE' as const,
