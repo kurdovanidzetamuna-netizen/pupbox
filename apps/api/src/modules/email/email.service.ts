@@ -32,6 +32,8 @@ export class EmailService {
   constructor(private config: ConfigService, private prisma: PrismaService) {}
 
   private get apiKey() { return this.config.get('RESEND_API_KEY') || ''; }
+  /** False until an email service key is set; nothing actually leaves before then. */
+  get isConfigured() { return !!this.apiKey; }
   private get from() { return this.config.get('EMAIL_FROM') || 'noreply@pupbox.ge'; }
   private get siteUrl() { return this.config.get('NEXT_PUBLIC_SITE_URL') || 'https://pupbox.ge'; }
 
@@ -72,22 +74,27 @@ ${m.body.map(p).join('\n')}${button}${(m.after ?? []).map((a) => `<p style="marg
     await this.send(to, subject, html);
   }
 
+  /**
+   * Hands the email to Resend. Throws if Resend refuses it, so callers that
+   * record a send (gift cards) can undo and retry; the others ignore errors.
+   */
   private async send(to: string, subject: string, html: string) {
     if (!this.apiKey) {
       this.logger.warn(`Email not sent (no RESEND_API_KEY): to=${to} subject=${subject}`);
       return;
     }
-    try {
-      const res = await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${this.apiKey}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ from: this.from, to, subject, html }),
-      });
-      if (!res.ok) this.logger.error(`Resend error: ${res.status} ${await res.text()}`);
-    } catch (e) {
-      this.logger.error(`Email send failed: ${e}`);
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${this.apiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ from: this.from, to, subject, html }),
+    });
+    if (!res.ok) {
+      const detail = await res.text();
+      this.logger.error(`Resend error: ${res.status} ${detail}`);
+      throw new Error(`Email not accepted (${res.status})`);
     }
   }
+
 
   async sendWelcome(d: { email: string; firstName: string; language?: string | null }) {
     const l = lang(d.language);

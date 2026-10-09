@@ -116,7 +116,7 @@ export class SubscriptionsService implements OnModuleInit, OnModuleDestroy {
           user: { select: { id: true, email: true, firstName: true, lastName: true } },
           dog: true,
           purchasedBy: { select: { email: true, firstName: true, lastName: true } },
-          orders: { select: { giftRecipientName: true, giftRecipientEmail: true }, take: 1 },
+          orders: { select: { giftRecipientName: true, giftRecipientEmail: true, giftDeliverOn: true, giftSentAt: true }, take: 1 },
         },
         // Unclaimed gifts are chased oldest-first; everything else reads newest-first.
         orderBy: { createdAt: gifts === 'unclaimed' ? 'asc' : 'desc' },
@@ -133,6 +133,8 @@ export class SubscriptionsService implements OnModuleInit, OnModuleDestroy {
         ...s,
         giftRecipientName: s.orders[0]?.giftRecipientName ?? null,
         giftRecipientEmail: s.orders[0]?.giftRecipientEmail ?? null,
+        giftCardScheduledFor: s.orders[0]?.giftDeliverOn ?? null,
+        giftCardSentAt: s.orders[0]?.giftSentAt ?? null,
         giftUnclaimed: s.isGift && s.giftClaimedAt === null,
         daysOutstanding: s.isGift && !s.giftClaimedAt ? Math.floor((now - s.createdAt.getTime()) / 86400000) : null,
       })),

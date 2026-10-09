@@ -1,4 +1,5 @@
-import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+import { sendDueGiftCards, sendGiftCard } from './gift-card';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
 import { DogGender, DogSize } from '@prisma/client';
@@ -14,10 +15,26 @@ import { subscriptionPeriod } from '../subscriptions/subscription-period';
  * unshippable. Claiming is what completes it.
  */
 @Injectable()
-export class GiftsService {
+export class GiftsService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(GiftsService.name);
 
+  private timer?: NodeJS.Timeout;
+
   constructor(private prisma: PrismaService, private email: EmailService) {}
+
+  /** Gift cards dated for later go out on their day: checked shortly after start-up, then hourly. */
+  onModuleInit() {
+    const run = () => sendDueGiftCards(this.prisma, this.email)
+      .then((n) => { if (n) this.logger.log(`Sent ${n} scheduled gift card(s)`); })
+      .catch((e) => this.logger.error(`Scheduled gift cards failed: ${e.message}`));
+    setTimeout(run, 20_000).unref();
+    this.timer = setInterval(run, 60 * 60 * 1000);
+    this.timer.unref();
+  }
+
+  onModuleDestroy() {
+    clearInterval(this.timer);
+  }
 
   /** Public preview shown on the claim page. Deliberately reveals nothing about the buyer beyond their name. */
   async preview(token: string) {
@@ -157,7 +174,7 @@ export class GiftsService {
         purchasedBy: { select: { id: true, email: true, firstName: true, lastName: true } },
         user: { select: { id: true, email: true } },
         dog: { select: { name: true, size: true } },
-        orders: { select: { id: true, orderNumber: true, total: true, giftRecipientName: true, giftRecipientEmail: true, giftMessage: true, giftDeliverOn: true }, take: 1 },
+        orders: { select: { id: true, orderNumber: true, total: true, giftRecipientName: true, giftRecipientEmail: true, giftMessage: true, giftDeliverOn: true, giftSentAt: true }, take: 1 },
       },
       orderBy: { createdAt: 'asc' }, // oldest unclaimed first — those need chasing
     });
@@ -181,6 +198,7 @@ export class GiftsService {
         recipientEmail: order?.giftRecipientEmail ?? null,
         message: order?.giftMessage ?? null,
         deliverOn: order?.giftDeliverOn ?? null,
+        cardSentAt: order?.giftSentAt ?? null,
         orderId: order?.id ?? null,
         orderNumber: order?.orderNumber ?? null,
         claimedByEmail: g.giftClaimedAt ? g.user.email : null,
@@ -210,30 +228,20 @@ export class GiftsService {
   async resend(subscriptionId: string) {
     const sub = await this.prisma.customerSubscription.findUnique({
       where: { id: subscriptionId },
-      select: {
-        id: true, isGift: true, giftClaimedAt: true, giftClaimToken: true,
-        plan: { select: { name: true, slug: true, translations: true } },
-        purchasedBy: { select: { firstName: true, lastName: true, language: true } },
-        orders: { select: { giftRecipientName: true, giftRecipientEmail: true, giftMessage: true }, take: 1 },
-      },
+      select: { isGift: true, giftClaimedAt: true, giftClaimToken: true, orders: { select: { id: true, giftRecipientEmail: true }, take: 1 } },
     });
     if (!sub?.isGift) throw new NotFoundException('Not a gift subscription');
     if (sub.giftClaimedAt) throw new BadRequestException('This gift has already been claimed');
     if (!sub.giftClaimToken) throw new BadRequestException('This gift has no active claim link');
-
     const order = sub.orders[0];
     if (!order?.giftRecipientEmail) throw new BadRequestException('No recipient email recorded for this gift');
+    if (!this.email.isConfigured) throw new BadRequestException('Email is not set up yet (no Resend key), so nothing can be sent.');
 
-    await this.email.sendGiftCard({
-      recipientEmail: order.giftRecipientEmail,
-      recipientName: order.giftRecipientName ?? 'there',
-      buyerName: [sub.purchasedBy?.firstName, sub.purchasedBy?.lastName].filter(Boolean).join(' ') || 'A friend',
-      planName: (sub.purchasedBy?.language !== 'en' && (sub.plan.translations as any)?.ka?.name?.trim()) || sub.plan.name?.trim() || sub.plan.slug,
-      message: order.giftMessage ?? undefined,
-      language: sub.purchasedBy?.language,
-      claimToken: sub.giftClaimToken,
-    });
+    // Sends now even if the card was dated for later, and records it as sent.
+    const result = await sendGiftCard(this.prisma, this.email, order.id, { again: true });
+    if (!result.sent) throw new BadRequestException('This gift card can’t be sent: the order isn’t paid.');
     this.logger.log(`Gift card resent for subscription ${subscriptionId}`);
-    return { sent: true, to: order.giftRecipientEmail };
+    return result;
   }
+
 }

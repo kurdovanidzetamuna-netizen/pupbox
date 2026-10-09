@@ -43,6 +43,12 @@ function Field({ id, label, hint, error, children }: { id: string; label: string
  * delivery and payment on one screen. Asking for less — and nothing twice —
  * is the whole point: every extra step is somewhere a customer can leave.
  */
+/** Dates for the gift card picker, in Tbilisi time (UTC+4) to match the server. */
+const tbilisiDay = (offsetDays = 0) => new Date(Date.now() + 4 * 3600_000 + offsetDays * 86400_000).toISOString().slice(0, 10);
+const todayTbilisi = () => tbilisiDay(0);
+const tomorrowTbilisi = () => tbilisiDay(1);
+const inAYear = () => tbilisiDay(365);
+
 export default function CheckoutPage() {
   const { t, lang } = useLanguage();
   const { cart, ready, refresh } = useCart();
@@ -64,7 +70,10 @@ export default function CheckoutPage() {
     email: '', password: '', firstName: '', lastName: '', phone: '',
     city: '', addressLine1: '', addressLine2: '',
     giftRecipientName: '', giftRecipientEmail: '', giftMessage: '',
+    // Empty = email the card as soon as payment clears.
+    giftSendOn: '',
   });
+  const [giftLater, setGiftLater] = useState(false);
   const [dog, setDog] = useState<DogProfile>(emptyDogProfile);
   const [dogId, setDogId] = useState<string | null>(null);
   // A returning customer picks one of their dogs instead of re-entering it;
@@ -199,6 +208,7 @@ export default function CheckoutPage() {
     const e: Record<string, string> = {};
     if (!form.giftRecipientName.trim()) e.giftRecipientName = t('co.e.recipientName');
     if (!EMAIL_RE.test(form.giftRecipientEmail.trim())) e.giftRecipientEmail = t('co.e.recipientEmail');
+    if (giftLater && (!form.giftSendOn || form.giftSendOn < todayTbilisi() || form.giftSendOn > inAYear())) e.giftSendOn = t('co.e.giftDate');
     if (fail(e)) return;
     next();
   }
@@ -257,6 +267,7 @@ export default function CheckoutPage() {
               recipientName: form.giftRecipientName.trim(),
               recipientEmail: form.giftRecipientEmail.trim(),
               ...(form.giftMessage.trim() ? { message: form.giftMessage.trim() } : {}),
+              ...(giftLater && form.giftSendOn ? { deliverOn: form.giftSendOn } : {}),
             },
           } : {}),
         }),
@@ -384,6 +395,23 @@ export default function CheckoutPage() {
                     <textarea id="giftMessage" value={form.giftMessage} onChange={e => update('giftMessage', e.target.value)} rows={3} maxLength={1000}
                       placeholder={t('co.gift.messagePh')} className={`${field('giftMessage')} resize-y`} />
                   </Field>
+                  <fieldset>
+                    <legend className="block text-sm font-medium text-gray-700 mb-2">{t('co.gift.when')}</legend>
+                    <div className="grid sm:grid-cols-2 gap-2">
+                      {([false, true] as const).map(later => (
+                        <label key={String(later)} className={`flex items-center gap-2 border rounded-xl px-4 py-3 text-sm cursor-pointer ${giftLater === later ? 'border-teal-500 bg-teal-50 text-teal-800' : 'border-gray-200 text-gray-700'}`}>
+                          <input type="radio" name="giftWhen" checked={giftLater === later} onChange={() => { setGiftLater(later); if (later && !form.giftSendOn) update('giftSendOn', tomorrowTbilisi()); }} />
+                          {later ? t('co.gift.later') : t('co.gift.now')}
+                        </label>
+                      ))}
+                    </div>
+                    {giftLater && (
+                      <Field id="giftSendOn" label={t('co.gift.date')} hint={t('co.gift.dateHint')} error={errs.giftSendOn}>
+                        <input id="giftSendOn" type="date" value={form.giftSendOn} min={todayTbilisi()} max={inAYear()}
+                          onChange={e => update('giftSendOn', e.target.value)} className={`${field('giftSendOn')} mt-2`} />
+                      </Field>
+                    )}
+                  </fieldset>
                 </div>
                 <p className="mt-5 bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800">{t('co.gift.note')}</p>
                 {error && <p className="text-red-500 text-sm mt-4" role="alert">{error}</p>}
@@ -433,6 +461,7 @@ export default function CheckoutPage() {
                     <p className="text-sm font-bold text-amber-900">{fill(t('co.gift.for'), { name: form.giftRecipientName })}</p>
                     <p className="text-xs text-amber-800">{form.giftRecipientEmail}</p>
                     {form.giftMessage && <p className="text-xs italic text-amber-800 mt-2">“{form.giftMessage}”</p>}
+                    {giftLater && form.giftSendOn && <p className="text-xs text-amber-800 mt-2">📅 {fill(t('co.gift.sendsOn'), { date: new Date(`${form.giftSendOn}T09:00:00+04:00`).toLocaleDateString(lang === 'ka' ? 'ka-GE' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) })}</p>}
                     <p className="text-xs text-amber-700 mt-2 pt-2 border-t border-amber-200">{fill(t('co.gift.billingNote'), { name: form.giftRecipientName })}</p>
                   </div>
                 )}

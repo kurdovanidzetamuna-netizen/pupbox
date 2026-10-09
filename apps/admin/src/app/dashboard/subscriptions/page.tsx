@@ -384,6 +384,15 @@ export default function AdminSubscriptionsPage() {
                       {s.giftUnclaimed && (
                         <p style={{ fontSize: 11, color: 'var(--amber-700)', margin: '3px 0 0' }}>
                           → {s.giftRecipientName || 'recipient'} &lt;{s.giftRecipientEmail || '—'}&gt;
+                          {s.giftUnclaimed && (
+                            <span style={{ color: s.giftCardSentAt ? 'var(--slate-400)' : 'var(--amber-700)' }}>
+                              {' '}· {s.giftCardSentAt
+                                ? `card sent ${new Date(s.giftCardSentAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}`
+                                : s.giftCardScheduledFor && new Date(s.giftCardScheduledFor) > new Date()
+                                  ? `card scheduled for ${new Date(s.giftCardScheduledFor).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}`
+                                  : 'card not sent yet'}
+                            </span>
+                          )}
                           {s.daysOutstanding !== null && (
                             <span style={{ color: s.daysOutstanding >= 14 ? 'var(--red-600)' : 'var(--slate-400)', fontWeight: s.daysOutstanding >= 14 ? 700 : 400 }}>
                               {' '}· unclaimed {s.daysOutstanding}d

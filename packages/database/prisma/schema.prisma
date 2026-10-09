@@ -577,6 +577,9 @@ model Order {
   giftMessage        String?
   /// When the gift card email should reach the recipient; null = immediately.
   giftDeliverOn      DateTime?
+  /// When the gift card email actually went out; null = not yet. The hourly
+  /// sender and the payment both claim it first, so a card is never sent twice.
+  giftSentAt         DateTime?
   createdAt        DateTime              @default(now())
   updatedAt        DateTime              @updatedAt
 
@@ -591,6 +594,8 @@ model Order {
   @@index([type])
   @@index([userId])
   @@index([subscriptionId])
+  // The hourly gift-card sender looks for due, unsent cards.
+  @@index([isGift, giftSentAt, giftDeliverOn])
 }
 
 model OrderItem {

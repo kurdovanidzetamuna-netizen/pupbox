@@ -9,6 +9,7 @@ import { ProductsService } from '../products/products.service';
 import { subscriptionPeriod } from '../subscriptions/subscription-period';
 import { releaseStock } from '../products/stock';
 import { cancelUnpaidOrder } from '../orders/order-lifecycle';
+import { sendGiftCard } from '../gifts/gift-card';
 
 /** How long an order may wait for payment before its stock and coupon are freed (checked every 15 minutes). */
 const UNPAID_TTL_MS = 2 * 60 * 60 * 1000;
@@ -187,32 +188,9 @@ export class PaymentsService implements OnModuleInit, OnModuleDestroy {
         } else if (sub?.isGift) {
           // A paid gift stays PENDING: there is no dog and no address yet, so
           // it is not shippable. It activates when the recipient claims it.
-          const full = await this.prisma.order.findUnique({
-            where: { id: order_id },
-            include: {
-              user: { select: { firstName: true, lastName: true, language: true } },
-              items: { select: { name: true, subscriptionPlanId: true, subscriptionPlan: { select: { translations: true } } } },
-            },
-          });
-          const planItem = full?.items.find((i) => i.subscriptionPlanId);
-          const kaPlanName = (planItem?.subscriptionPlan?.translations as any)?.ka?.name?.trim();
-          const planName = (full?.user?.language !== 'en' && kaPlanName) || planItem?.name || 'Pupbox';
-          const buyerName = [full?.user?.firstName, full?.user?.lastName].filter(Boolean).join(' ') || 'A friend';
-
-          // Honour a scheduled send date; a dated gift is delivered by the
-          // scheduled job rather than immediately.
-          const sendNow = !full?.giftDeliverOn || full.giftDeliverOn <= new Date();
-          if (sendNow && full?.giftRecipientEmail && sub.giftClaimToken) {
-            this.email.sendGiftCard({
-              recipientEmail: full.giftRecipientEmail,
-              recipientName: full.giftRecipientName ?? 'there',
-              buyerName,
-              planName,
-              message: full.giftMessage ?? undefined,
-              claimToken: sub.giftClaimToken,
-              language: full.user?.language,
-            }).catch((e) => this.logger.error(`Gift card email failed for order ${order_id}: ${e.message}`));
-          }
+          // The card goes now, or on the buyer's chosen date (hourly sender).
+          sendGiftCard(this.prisma, this.email, order_id)
+            .catch((e) => this.logger.error(`Gift card email failed for order ${order_id}: ${e.message}`));
         }
       }
 

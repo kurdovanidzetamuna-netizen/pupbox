@@ -13,6 +13,25 @@ export interface GiftDetails {
   deliverOn?: string;
 }
 
+/** Today's date in Tbilisi (UTC+4, no daylight saving), as YYYY-MM-DD. */
+const tbilisiToday = () => new Date(Date.now() + 4 * 3600_000).toISOString().slice(0, 10);
+
+/**
+ * When to email a gift card: null = as soon as it's paid. A chosen day means
+ * 09:00 Tbilisi time that day, so it doesn't land in the middle of the night.
+ * Today or within a year; anything else is refused.
+ */
+function giftSendDate(raw?: string): Date | null {
+  if (!raw) return null;
+  const day = String(raw).slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) throw new BadRequestException('Choose a valid date to send the gift card');
+  const today = tbilisiToday();
+  const max = new Date(Date.now() + 4 * 3600_000 + 365 * 86400_000).toISOString().slice(0, 10);
+  if (day < today) throw new BadRequestException('The gift card date can’t be in the past');
+  if (day > max) throw new BadRequestException('The gift card can be scheduled up to a year ahead');
+  return day === today ? null : new Date(`${day}T09:00:00+04:00`);
+}
+
 @Injectable()
 export class CheckoutService {
   constructor(private prisma: PrismaService, private cartService: CartService) {}
@@ -66,6 +85,7 @@ export class CheckoutService {
       const blocked = plans.find((p) => !p.giftable);
       if (blocked) throw new BadRequestException(`"${blocked.name || blocked.slug}" cannot be given as a gift`);
     }
+    const giftDeliverOn = gift ? giftSendDate(gift.deliverOn) : null;
 
     const deliveryMethod = await this.prisma.deliveryMethod.findFirst({ where: { id: data.deliveryMethodId, isActive: true } });
     if (!deliveryMethod) throw new BadRequestException('Invalid delivery method');
@@ -109,7 +129,7 @@ export class CheckoutService {
           giftRecipientName: gift?.recipientName?.trim() || null,
           giftRecipientEmail: gift?.recipientEmail?.trim().toLowerCase() || null,
           giftMessage: gift?.message?.trim() || null,
-          giftDeliverOn: gift?.deliverOn ? new Date(gift.deliverOn) : null,
+          giftDeliverOn,
           subtotal: cart.subtotal,
           deliveryCost,
           discountAmount: cart.discountAmount,
