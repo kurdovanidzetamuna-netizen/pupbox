@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common';
 import { SubscriptionsService } from './subscriptions.service';
-import { Controller, Get, Patch, Body, Param, UseGuards, Request, Query } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Body, Param, UseGuards, Request, Query } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { AdminJwtGuard } from '../admin-auth/admin-jwt.guard';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { IsString, IsOptional, IsBoolean, IsNotEmpty, MaxLength, Matches } from 'class-validator';
+import { IsString, IsOptional, IsBoolean, IsNotEmpty, MaxLength, Matches, IsIn, IsArray } from 'class-validator';
 import { Transform } from 'class-transformer';
 
 /** Trims strings so a field of only spaces counts as empty. */
@@ -21,6 +21,13 @@ class AddressDto {
   @Trim() @IsString() @IsNotEmpty() @MaxLength(80) city: string;
   @Trim() @IsString() @IsNotEmpty() @MaxLength(200) addressLine1: string;
   @IsOptional() @Trim() @IsString() @MaxLength(200) addressLine2?: string;
+}
+
+class AdminDogDto {
+  @IsOptional() @Trim() @IsString() @IsNotEmpty() @MaxLength(60) name?: string;
+  @IsOptional() @IsIn(['EXTRA_SMALL', 'SMALL', 'MEDIUM', 'LARGE', 'EXTRA_LARGE', '']) size?: string;
+  @IsOptional() @IsArray() @IsString({ each: true }) allergies?: string[];
+  @IsOptional() @IsString() @MaxLength(500) specialNotes?: string;
 }
 
 class ToggleAutoRenewalDto {
@@ -71,6 +78,11 @@ class AdminSubscriptionsController {
   }
   @Get(':id') findOne(@Param('id') id: string) { return this.service.findOne(id); }
   @Patch(':id') update(@Param('id') id: string, @Body() dto: AdminUpdateDto) { return this.service.adminUpdate(id, dto as any); }
+  // On the customer's behalf, under the same rules as in their account.
+  @Get(':id/cancel-preview') cancelPreview(@Param('id') id: string) { return this.service.cancelPreview(id); }
+  @Post(':id/cancel') cancel(@Param('id') id: string, @Body() dto: CancelDto) { return this.service.cancel(id, undefined, dto.reason || 'Cancelled by admin'); }
+  @Patch(':id/address') changeAddress(@Param('id') id: string, @Body() dto: AddressDto) { return this.service.changeAddress(id, undefined, dto); }
+  @Patch(':id/dog') updateDog(@Param('id') id: string, @Body() dto: AdminDogDto) { return this.service.adminUpdateDog(id, dto); }
 }
 
 @Module({

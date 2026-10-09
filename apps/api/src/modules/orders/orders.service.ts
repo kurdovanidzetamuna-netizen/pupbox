@@ -16,10 +16,11 @@ export class OrdersService {
       this.prisma.order.findMany({
         where: { userId },
         include: {
-          items: { include: { product: { include: { images: { where: { isPrimary: true }, take: 1 } } } } },
+          // Product and plan for their Georgian names.
+          items: { include: { product: { include: { images: { where: { isPrimary: true }, take: 1 } } }, subscriptionPlan: { select: { name: true, translations: true } } } },
           address: true,
           deliveryMethod: true,
-          payments: { orderBy: { createdAt: 'desc' }, take: 1 },
+          payments: { orderBy: { createdAt: 'desc' }, take: 1, include: { refunds: { orderBy: { createdAt: 'desc' } } } },
         },
         orderBy: { createdAt: 'desc' },
         skip,
@@ -27,7 +28,16 @@ export class OrdersService {
       }),
       this.prisma.order.count({ where: { userId } }),
     ]);
-    return { orders, total, page, limit, pages: Math.ceil(total / limit) };
+    // What the customer is owed and what has been paid back, so they aren't left wondering.
+    const withRefunds = orders.map((o) => {
+      const p = o.payments[0];
+      const refunds = p?.refunds ?? [];
+      const refunded = refunds.reduce((s, r) => s + Number(r.amount), 0);
+      const paid = p && ['PAID', 'PARTIALLY_REFUNDED', 'REFUNDED'].includes(p.status);
+      const owed = Number(o.refundDueAmount ?? 0) || (o.status === 'CANCELLED' && p?.status === 'PAID' ? Number(p.amount) : 0);
+      return { ...o, refund: paid && (owed > 0 || refunded > 0) ? { owed, refunded, refundedAt: refunds[0]?.createdAt ?? null } : null };
+    });
+    return { orders: withRefunds, total, page, limit, pages: Math.ceil(total / limit) };
   }
 
   async findOne(id: string, userId: string) {

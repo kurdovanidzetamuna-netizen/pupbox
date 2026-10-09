@@ -142,6 +142,15 @@ export default function MonthlyBoxesPage() {
           <ActionButton variant="secondary" disabled={busy} onClick={() => call('/refresh-campaigns', 'POST', ym, (r) => `Updated contents for ${r.changed} box${r.changed === 1 ? '' : 'es'}.`)}>Update contents</ActionButton>
         </Banner>
       )}
+      {data && data.allergyClashes > 0 && (
+        <Banner tone="red"><span><strong>{data.allergyClashes}</strong> box{data.allergyClashes === 1 ? ' contains' : 'es contain'} something the dog is allergic to (marked ⚠ below). Swap those items before packing.</span></Banner>
+      )}
+      {data && data.shortOfStock > 0 && (
+        <Banner tone="amber">
+          <span>Not enough stock for {data.shortOfStock} product{data.shortOfStock === 1 ? '' : 's'} in this month’s boxes.</span>
+          <ActionButton variant="secondary" onClick={() => setShowPick(true)}>See pick list</ActionButton>
+        </Banner>
+      )}
       {data && data.cancelledSubscriptions > 0 && (
         <Banner tone="red"><span>{data.cancelledSubscriptions} box{data.cancelledSubscriptions === 1 ? ' belongs' : 'es belong'} to a subscription cancelled after it was listed (marked below). Check your refund policy, then send it or cancel the box.</span></Banner>
       )}
@@ -167,11 +176,15 @@ export default function MonthlyBoxesPage() {
 
       {showPick && (
         <div style={{ ...card, padding: 16 }}>
-          <p style={{ margin: '0 0 10px', fontWeight: 700, color: 'var(--slate-800)', fontSize: 14 }}>Pick list — everything needed for the boxes still to pack</p>
+          <p style={{ margin: '0 0 10px', fontWeight: 700, color: 'var(--slate-800)', fontSize: 14 }}>Pick list — everything needed for the boxes still to pack (packing a box takes its items out of stock)</p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 8 }}>
             {data.pickList.map((p: any) => (
-              <div key={p.sku} style={{ display: 'flex', justifyContent: 'space-between', background: 'var(--slate-50)', borderRadius: 8, padding: '8px 10px', fontSize: 13 }}>
-                <span>{p.name} <span style={{ color: 'var(--slate-400)', fontSize: 11 }}>{p.sku}</span></span><strong>× {p.quantity}</strong>
+              <div key={p.sku} style={{ display: 'flex', justifyContent: 'space-between', gap: 8, background: p.short ? 'var(--red-50)' : 'var(--slate-50)', border: p.short ? '1px solid var(--red-200)' : '1px solid transparent', borderRadius: 8, padding: '8px 10px', fontSize: 13 }}>
+                <span>{p.name} <span style={{ color: 'var(--slate-400)', fontSize: 11 }}>{p.sku}</span></span>
+                <span style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                  <strong>× {p.quantity}</strong>
+                  <span style={{ display: 'block', fontSize: 11, color: p.short ? 'var(--red-700)' : 'var(--slate-400)', fontWeight: p.short ? 700 : 400 }}>{p.short ? `only ${p.inStock} in stock` : `${p.inStock} in stock`}</span>
+                </span>
               </div>
             ))}
           </div>
@@ -236,7 +249,12 @@ export default function MonthlyBoxesPage() {
                       </> : <span style={{ color: 'var(--slate-400)' }}>No dog profile</span>}
                     </td>
                     <td style={td}><strong>{i.boxNumber}</strong> of {s.boxesTotal}<div style={{ fontSize: 12, color: 'var(--slate-400)' }}>{s.plan?.name}</div></td>
-                    <td style={td}>{i.campaign?.name ?? <span style={{ color: 'var(--amber-700)' }}>Not set</span>}</td>
+                    <td style={td}>
+                      {i.campaign?.name ?? <span style={{ color: 'var(--amber-700)' }}>Not set</span>}
+                      {i.clashes?.map((c: any) => (
+                        <div key={c.product} style={{ fontSize: 12, color: 'var(--red-700)', fontWeight: 700, marginTop: 4 }}>⚠ {c.product} contains {c.allergens.join(', ').toLowerCase()} — swap it</div>
+                      ))}
+                    </td>
                     <td style={td}>
                       {a ? <>
                         <div>{a.firstName} {a.lastName} · {a.phone}</div>

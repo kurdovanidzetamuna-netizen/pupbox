@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
+import { ALLERGENS } from '@pupbox/content';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 
@@ -46,121 +47,188 @@ function ConfirmModal({ title, message, confirmLabel, confirmColor, onConfirm, o
 }
 
 // ── Detail modal ───────────────────────────────────────────────────────────
-function DetailModal({ sub, onClose, onAction }: {
+const SIZES = ['EXTRA_SMALL', 'SMALL', 'MEDIUM', 'LARGE', 'EXTRA_LARGE'];
+const field: React.CSSProperties = { width: '100%', boxSizing: 'border-box', border: '1px solid var(--slate-200)', borderRadius: 8, padding: '7px 10px', fontSize: 13, background: 'var(--white)', color: 'var(--slate-900)' };
+const linkBtn: React.CSSProperties = { background: 'none', border: 'none', color: 'var(--teal-600)', fontSize: 12, fontWeight: 700, cursor: 'pointer', padding: 0 };
+
+/** Edits the dog on the customer's behalf — e.g. they called about a new allergy. */
+function DogEditor({ sub, onSaved, onDone }: { sub: any; onSaved: () => void; onDone: () => void }) {
+  const d = sub.dog ?? {};
+  const [v, setV] = useState({ name: d.name ?? '', size: d.size ?? '', allergies: (d.allergies ?? []) as string[], specialNotes: d.specialNotes ?? '' });
+  const [other, setOther] = useState('');
+  const [err, setErr] = useState('');
+  const has = (k: string) => v.allergies.some(a => a.toLowerCase() === k.toLowerCase());
+  const toggle = (k: string) => setV(x => ({ ...x, allergies: has(k) ? x.allergies.filter(a => a.toLowerCase() !== k.toLowerCase()) : [...x.allergies, k] }));
+  async function save() {
+    if (!v.name.trim()) return setErr('The dog needs a name.');
+    const res = await fetch(`${API}/admin/subscriptions/${sub.id}/dog`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('admin_token')}` },
+      body: JSON.stringify({ name: v.name, size: v.size, allergies: v.allergies, specialNotes: v.specialNotes }),
+    });
+    if (!res.ok) { const r = await res.json().catch(() => ({})); return setErr((Array.isArray(r.message) ? r.message[0] : r.message) || 'Not saved.'); }
+    onSaved(); onDone();
+  }
+  const custom = v.allergies.filter(a => !ALLERGENS.some(x => x.key.toLowerCase() === a.toLowerCase()));
+  return (
+    <div style={{ padding: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+        <input value={v.name} onChange={e => setV({ ...v, name: e.target.value })} placeholder="Name" style={field} />
+        <select value={v.size} onChange={e => setV({ ...v, size: e.target.value })} style={field}>
+          <option value="">Size not given</option>
+          {SIZES.map(z => <option key={z} value={z}>{z.replace('_', ' ').toLowerCase()}</option>)}
+        </select>
+      </div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+        {[...ALLERGENS.map(a => a.key as string), ...custom].map(k => (
+          <button key={k} type="button" onClick={() => toggle(k)} style={{ padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 600, cursor: 'pointer', border: has(k) ? '1px solid var(--red-300)' : '1px solid var(--slate-200)', background: has(k) ? 'var(--red-50)' : 'var(--white)', color: has(k) ? 'var(--red-700)' : 'var(--slate-600)' }}>{k}</button>
+        ))}
+        <input value={other} onChange={e => setOther(e.target.value)} placeholder="+ other allergy"
+          onKeyDown={e => { if (e.key === 'Enter' && other.trim()) { e.preventDefault(); if (!has(other.trim())) setV(x => ({ ...x, allergies: [...x.allergies, other.trim()] })); setOther(''); } }}
+          style={{ ...field, width: 130, padding: '4px 10px' }} />
+      </div>
+      <textarea value={v.specialNotes} onChange={e => setV({ ...v, specialNotes: e.target.value })} rows={2} placeholder="Notes for packing" style={{ ...field, resize: 'vertical' }} />
+      {err && <p style={{ margin: 0, fontSize: 12, color: 'var(--red-600)' }}>{err}</p>}
+      <div style={{ display: 'flex', gap: 8 }}>
+        <button onClick={save} style={actionBtn('var(--teal-600)')}>Save dog</button>
+        <button onClick={onDone} style={{ ...actionBtn('var(--white)'), color: 'var(--slate-600)', border: '1px solid var(--slate-200)' }}>Cancel</button>
+      </div>
+    </div>
+  );
+}
+
+/** Changes where the boxes go, on the customer's behalf. Boxes not yet packed follow. */
+function AddressEditor({ sub, onSaved, onDone }: { sub: any; onSaved: () => void; onDone: () => void }) {
+  const a = sub.address ?? {};
+  const [v, setV] = useState({ firstName: a.firstName ?? '', lastName: a.lastName ?? '', phone: a.phone ?? '', city: a.city ?? '', addressLine1: a.addressLine1 ?? '', addressLine2: a.addressLine2 ?? '' });
+  const [err, setErr] = useState('');
+  async function save() {
+    const res = await fetch(`${API}/admin/subscriptions/${sub.id}/address`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('admin_token')}` },
+      body: JSON.stringify({ ...v, addressLine2: v.addressLine2 || undefined }),
+    });
+    const r = await res.json().catch(() => ({}));
+    if (!res.ok) return setErr((Array.isArray(r.message) ? 'Check: name, a valid phone, city and street are all needed.' : r.message) || 'Not saved.');
+    if (r.alreadyPacked) alert('Saved. This month’s box was already packed with the old address — relabel it by hand.');
+    onSaved(); onDone();
+  }
+  const f = (k: keyof typeof v, ph: string, span = 1) => <input value={v[k]} onChange={e => setV({ ...v, [k]: e.target.value })} placeholder={ph} style={{ ...field, gridColumn: `span ${span}` }} />;
+  return (
+    <div style={{ padding: 14, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+      {f('firstName', 'First name')}{f('lastName', 'Last name')}{f('phone', 'Phone')}{f('city', 'City')}{f('addressLine1', 'Street, building', 2)}{f('addressLine2', 'Apartment, floor (optional)', 2)}
+      {err && <p style={{ margin: 0, fontSize: 12, color: 'var(--red-600)', gridColumn: 'span 2' }}>{err}</p>}
+      <div style={{ display: 'flex', gap: 8, gridColumn: 'span 2' }}>
+        <button onClick={save} style={actionBtn('var(--teal-600)')}>Save address</button>
+        <button onClick={onDone} style={{ ...actionBtn('var(--white)'), color: 'var(--slate-600)', border: '1px solid var(--slate-200)' }}>Cancel</button>
+      </div>
+    </div>
+  );
+}
+
+function DetailModal({ sub, onClose, onCancel, onResume, onSaved }: {
   sub: any;
   onClose: () => void;
-  onAction: (id: string, status: string) => void;
+  onCancel: (sub: any) => void;
+  onResume: (sub: any) => void;
+  onSaved: () => void;
 }) {
+  const [editing, setEditing] = useState<'dog' | 'address' | null>(null);
   useEffect(() => {
     const h = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', h);
     return () => window.removeEventListener('keydown', h);
   }, [onClose]);
+
   const sc = STATUS_COLORS[sub.status] || STATUS_COLORS.EXPIRED;
-  const [confirm, setConfirm] = useState<null | { status: string; label: string; color: string; title: string; message: string }>(null);
-
-  function requestAction(status: string) {
-    const configs: Record<string, typeof confirm> = {
-      PAUSED:    { status: 'PAUSED',    label: 'Yes, pause',   color: 'var(--blue-600)', title: 'Pause subscription?',   message: `Pause the subscription for ${sub.user?.firstName} ${sub.user?.lastName}? They won't be billed until resumed.` },
-      CANCELLED: { status: 'CANCELLED', label: 'Yes, cancel',  color: 'var(--red-600)', title: 'Cancel subscription?',  message: `This will permanently cancel the subscription for ${sub.user?.firstName} ${sub.user?.lastName}. This cannot be undone.` },
-      ACTIVE:    { status: 'ACTIVE',    label: 'Yes, resume',  color: 'var(--teal-600)', title: 'Resume subscription?',  message: `Resume the subscription for ${sub.user?.firstName} ${sub.user?.lastName}? Billing will restart on the next cycle.` },
-    };
-    setConfirm(configs[status] || null);
-  }
-
-  function handleConfirm() {
-    if (!confirm) return;
-    onAction(sub.id, confirm.status);
-    setConfirm(null);
-    onClose();
-  }
+  const day = (d?: string) => d ? new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
+  const ended = ['CANCELLED', 'EXPIRED'].includes(sub.status);
+  const sectionHead = (title: string, key: 'dog' | 'address', canEdit: boolean) => (
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '0 0 8px' }}>
+      <p style={{ margin: 0, fontSize: 10, fontWeight: 700, color: 'var(--slate-400)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{title}</p>
+      {canEdit && editing !== key && <button onClick={() => setEditing(key)} style={linkBtn}>Edit</button>}
+    </div>
+  );
 
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div onClick={onClose} style={{ position: 'absolute', inset: 0, background: 'rgba(15,23,42,0.4)', backdropFilter: 'blur(2px)' }} />
-      <div style={{ position: 'relative', background: 'var(--white)', borderRadius: 20, width: 560, maxHeight: '85vh', overflowY: 'auto', boxShadow: '0 24px 80px rgba(0,0,0,0.18)', border: '1px solid var(--slate-200b)' }}>
-        {/* Header */}
+      <div style={{ position: 'relative', background: 'var(--white)', borderRadius: 20, width: 560, maxWidth: 'calc(100vw - 32px)', maxHeight: '85vh', overflowY: 'auto', boxShadow: '0 24px 80px rgba(0,0,0,0.18)', border: '1px solid var(--slate-200b)' }}>
         <div style={{ padding: '22px 24px 18px', borderBottom: '1px solid var(--slate-100)', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
           <div>
-            <h2 style={{ margin: 0, fontSize: 17, fontWeight: 800, color: 'var(--slate-900)' }}>
-              {sub.user?.firstName} {sub.user?.lastName}
-            </h2>
+            <h2 style={{ margin: 0, fontSize: 17, fontWeight: 800, color: 'var(--slate-900)' }}>{sub.user?.firstName} {sub.user?.lastName}</h2>
             <p style={{ margin: '3px 0 0', fontSize: 12, color: 'var(--slate-400)' }}>{sub.user?.email}</p>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <span style={{ ...sc, display: 'inline-flex', alignItems: 'center', padding: '3px 12px', borderRadius: 999, fontSize: 11, fontWeight: 700 }}>{sub.status}</span>
-            <button onClick={onClose} style={{ background: 'var(--slate-50)', border: '1px solid var(--slate-200b)', borderRadius: 8, width: 32, height: 32, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--slate-400)', fontSize: 18 }}>×</button>
+            <button onClick={onClose} aria-label="Close" style={{ background: 'var(--slate-50)', border: '1px solid var(--slate-200b)', borderRadius: 8, width: 32, height: 32, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--slate-400)', fontSize: 18 }}>×</button>
           </div>
         </div>
 
         <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
-          {/* Plan */}
+          {sub.cancelledAt && !ended && (
+            <p style={{ margin: 0, fontSize: 13, color: 'var(--amber-800)', background: 'var(--amber-50)', border: '1px solid var(--amber-200)', borderRadius: 10, padding: '10px 14px' }}>
+              Cancelled on {day(sub.cancelledAt)} — this month’s box is the last; the plan ends {day(sub.endDate)}.
+            </p>
+          )}
           <Section title="Plan">
             <Row label="Name" value={sub.plan?.name || '—'} />
-            <Row label="Price" value={`₾${Number(sub.plan?.price ?? 0).toFixed(0)}`} />
-            <Row label="Duration" value={sub.plan?.durationMonths ? `${sub.plan.durationMonths} month${sub.plan.durationMonths > 1 ? 's' : ''}` : '—'} />
-            <Row label="Boxes" value={`${sub.boxesDelivered ?? 0} / ${sub.boxesTotal ?? 0} delivered`} />
+            <Row label="Price" value={`₾${Number(sub.plan?.price ?? 0).toFixed(2)}`} />
+            <Row label="Length" value={sub.plan?.durationValue ? `${sub.plan.durationValue} ${String(sub.plan.durationUnit).toLowerCase()}${sub.plan.durationValue > 1 ? 's' : ''}` : '—'} />
+            <Row label="Boxes" value={`${sub.boxesDelivered ?? 0} of ${sub.boxesTotal ?? 0} sent`} />
+            <Row label="Renews" value={sub.autoRenewal ? 'Yes — payment link before it ends' : 'No'} />
           </Section>
 
-          {/* Progress bar */}
           {sub.boxesTotal > 0 && (
             <div style={{ background: 'var(--slate-50)', borderRadius: 10, padding: '12px 16px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6, fontSize: 11, color: 'var(--slate-400)' }}>
-                <span>Box progress</span>
-                <span>{Math.round((sub.boxesDelivered / sub.boxesTotal) * 100)}%</span>
+                <span>Box progress</span><span>{Math.round((sub.boxesDelivered / sub.boxesTotal) * 100)}%</span>
               </div>
               <div style={{ height: 8, background: 'var(--slate-200b)', borderRadius: 999, overflow: 'hidden' }}>
-                <div style={{ height: '100%', background: 'var(--teal-600)', borderRadius: 999, width: `${Math.min(100, (sub.boxesDelivered / sub.boxesTotal) * 100)}%`, transition: 'width 0.4s' }} />
+                <div style={{ height: '100%', background: 'var(--teal-600)', borderRadius: 999, width: `${Math.min(100, (sub.boxesDelivered / sub.boxesTotal) * 100)}%` }} />
               </div>
             </div>
           )}
 
-          {/* Dog */}
-          {sub.dog && (
-            <Section title="Dog">
-              <Row label="Name" value={sub.dog.name} />
-              {sub.dog.breed && <Row label="Breed" value={sub.dog.breed} />}
-              {sub.dog.size && <Row label="Size" value={sub.dog.size} />}
-            </Section>
-          )}
+          <div>
+            {sectionHead('Dog', 'dog', !ended)}
+            <div style={{ background: 'var(--slate-50)', borderRadius: 10, overflow: 'hidden', border: '1px solid var(--slate-100)' }}>
+              {editing === 'dog' ? <DogEditor sub={sub} onSaved={onSaved} onDone={() => setEditing(null)} /> : sub.dog ? (
+                <>
+                  <Row label="Name" value={sub.dog.name} />
+                  {sub.dog.breed && <Row label="Breed" value={sub.dog.breed} />}
+                  <Row label="Size" value={sub.dog.size ? sub.dog.size.replace('_', ' ').toLowerCase() : '—'} />
+                  <Row label="Allergies" value={sub.dog.allergies?.length ? sub.dog.allergies.join(', ') : 'None'} />
+                  {sub.dog.specialNotes && <Row label="Notes" value={sub.dog.specialNotes} />}
+                </>
+              ) : <p style={{ margin: 0, padding: '10px 14px', fontSize: 13, color: 'var(--slate-500)' }}>No dog profile yet.</p>}
+            </div>
+          </div>
 
-          {/* Dates */}
+          <div>
+            {sectionHead('Boxes go to', 'address', !ended)}
+            <div style={{ background: 'var(--slate-50)', borderRadius: 10, overflow: 'hidden', border: '1px solid var(--slate-100)' }}>
+              {editing === 'address' ? <AddressEditor sub={sub} onSaved={onSaved} onDone={() => setEditing(null)} /> : sub.address ? (
+                <p style={{ margin: 0, padding: '10px 14px', fontSize: 13, color: 'var(--slate-800)', lineHeight: 1.5 }}>
+                  {sub.address.firstName} {sub.address.lastName} · {sub.address.phone}<br />
+                  <span style={{ color: 'var(--slate-500)' }}>{sub.address.city}, {[sub.address.addressLine1, sub.address.addressLine2].filter(Boolean).join(', ')}</span>
+                </p>
+              ) : <p style={{ margin: 0, padding: '10px 14px', fontSize: 13, color: 'var(--amber-700)' }}>No address yet.</p>}
+            </div>
+          </div>
+
           <Section title="Dates">
-            <Row label="Started" value={(sub.startDate || sub.createdAt) ? new Date(sub.startDate || sub.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'} />
-            <Row label="Ends" value={sub.endDate ? new Date(sub.endDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'} />
-            <Row label="Next renewal" value={sub.nextRenewalAt ? new Date(sub.nextRenewalAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'} />
+            <Row label="Started" value={day(sub.startDate || sub.createdAt)} />
+            <Row label="Ends" value={day(sub.endDate)} />
+            <Row label="Next renewal" value={day(sub.nextRenewalAt)} />
             {sub.cancelReason && <Row label="Cancel reason" value={sub.cancelReason} />}
           </Section>
         </div>
 
-        {/* Actions footer */}
         <div style={{ padding: '16px 24px', borderTop: '1px solid var(--slate-100)', display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-          {sub.status === 'PENDING' && (
-            <button onClick={() => requestAction('ACTIVE')} style={actionBtn('var(--teal-600)')}>Activate</button>
-          )}
-          {sub.status === 'ACTIVE' && (
-            <>
-              <button onClick={() => requestAction('PAUSED')} style={actionBtn('var(--blue-600)')}>Pause</button>
-              <button onClick={() => requestAction('CANCELLED')} style={actionBtn('var(--red-600)')}>Cancel</button>
-            </>
-          )}
-          {sub.status === 'PAUSED' && (
-            <button onClick={() => requestAction('ACTIVE')} style={actionBtn('var(--teal-600)')}>Resume</button>
-          )}
+          {sub.status === 'PAUSED' && <button onClick={() => onResume(sub)} style={actionBtn('var(--teal-600)')}>Resume</button>}
+          {['ACTIVE', 'PAUSED'].includes(sub.status) && !sub.cancelledAt && <button onClick={() => onCancel(sub)} style={actionBtn('var(--red-600)')}>Cancel subscription…</button>}
           <button onClick={onClose} style={{ padding: '8px 18px', borderRadius: 10, border: '1px solid var(--slate-200)', background: 'var(--white)', color: 'var(--slate-500)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Close</button>
         </div>
       </div>
-
-      {confirm && (
-        <ConfirmModal
-          title={confirm.title}
-          message={confirm.message}
-          confirmLabel={confirm.label}
-          confirmColor={confirm.color}
-          onConfirm={handleConfirm}
-          onCancel={() => setConfirm(null)}
-        />
-      )}
     </div>
   );
 }
@@ -206,7 +274,8 @@ export default function AdminSubscriptionsPage() {
   const [unclaimedGifts, setUnclaimedGifts] = useState(0);
   const [resending, setResending] = useState<string | null>(null);
   const [selected, setSelected] = useState<any>(null);
-  const [confirm, setConfirm] = useState<null | { id: string; status: string; label: string; color: string; title: string; message: string }>(null);
+  const [confirm, setConfirm] = useState<null | { label: string; color: string; title: string; message: string; run: () => Promise<void> }>(null);
+  const [statusCounts, setStatusCounts] = useState<Record<string, number>>({});
 
   // Rising counter so a slow earlier request cannot overwrite a newer one when
   // filters are changed quickly.
@@ -227,6 +296,7 @@ export default function AdminSubscriptionsPage() {
         if (seq !== requestSeq.current) return; // a newer request has since been issued
         setSubs(data.items || []);
         setTotal(data.total || 0);
+        setStatusCounts(data.statusCounts ?? {});
         setUnclaimedGifts(data.unclaimedGifts ?? 0);
       }
     } catch { } finally {
@@ -255,31 +325,42 @@ export default function AdminSubscriptionsPage() {
     }
   }
 
-  async function doUpdate(id: string, newStatus: string) {
-    const token = localStorage.getItem('admin_token');
-    await fetch(`${API}/admin/subscriptions/${id}`, {
-      method: 'PATCH',
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: newStatus }),
+  const auth = () => ({ Authorization: `Bearer ${localStorage.getItem('admin_token')}`, 'Content-Type': 'application/json' });
+
+  /** Cancel under the shop's rule — admin sees what the customer gets before confirming. */
+  async function askCancel(sub: any, e?: React.MouseEvent) {
+    e?.stopPropagation();
+    const res = await fetch(`${API}/admin/subscriptions/${sub.id}/cancel-preview`, { headers: auth() });
+    const p = await res.json().catch(() => null);
+    if (!res.ok || !p) { alert(p?.message || 'Could not work out the cancellation.'); return; }
+    const name = `${sub.user?.firstName} ${sub.user?.lastName}`;
+    const what = p.kind === 'free'
+      ? `Within the free ${p.freeHours}-hour window: no box is sent and ₾${p.refund.toFixed(2)} is refunded in full.`
+      : `${p.thisMonthBoxComing ? 'This month’s box still ships; later' : 'No more boxes;'} ${p.boxesTotal - p.keptBoxes} month(s) stop${p.refund > 0 ? ` and ₾${p.refund.toFixed(2)} becomes refund due on the order` : ''}.`;
+    setConfirm({
+      title: `Cancel ${name}’s subscription?`, message: what, label: 'Yes, cancel', color: 'var(--red-600)',
+      run: async () => {
+        const r = await fetch(`${API}/admin/subscriptions/${sub.id}/cancel`, { method: 'POST', headers: auth(), body: JSON.stringify({ reason: 'Cancelled by admin' }) });
+        if (!r.ok) alert((await r.json().catch(() => ({}))).message || 'Not cancelled.');
+      },
     });
-    load();
   }
 
-  function requestAction(sub: any, newStatus: string, e: React.MouseEvent) {
-    e.stopPropagation();
-    const name = `${sub.user?.firstName} ${sub.user?.lastName}`;
-    const configs: Record<string, typeof confirm> = {
-      ACTIVE:    { id: sub.id, status: 'ACTIVE',    label: 'Yes, resume',  color: 'var(--teal-600)', title: 'Resume subscription?',  message: `Resume the subscription for ${name}? Billing will restart on the next cycle.` },
-      PAUSED:    { id: sub.id, status: 'PAUSED',    label: 'Yes, pause',   color: 'var(--blue-600)', title: 'Pause subscription?',   message: `Pause the subscription for ${name}? They won't be billed until resumed.` },
-      CANCELLED: { id: sub.id, status: 'CANCELLED', label: 'Yes, cancel',  color: 'var(--red-600)', title: 'Cancel subscription?',  message: `This will permanently cancel the subscription for ${name}. This cannot be undone.` },
-    };
-    setConfirm(configs[newStatus] || null);
+  function askResume(sub: any, e?: React.MouseEvent) {
+    e?.stopPropagation();
+    setConfirm({
+      title: 'Resume this subscription?', message: `${sub.user?.firstName}’s boxes start again from the next monthly list.`, label: 'Yes, resume', color: 'var(--teal-600)',
+      run: async () => {
+        const r = await fetch(`${API}/admin/subscriptions/${sub.id}`, { method: 'PATCH', headers: auth(), body: JSON.stringify({ status: 'ACTIVE' }) });
+        if (!r.ok) alert((await r.json().catch(() => ({}))).message || 'Not resumed.');
+      },
+    });
   }
 
   const counts = {
-    active:    subs.filter(s => s.status === 'ACTIVE').length,
-    paused:    subs.filter(s => s.status === 'PAUSED').length,
-    cancelled: subs.filter(s => s.status === 'CANCELLED').length,
+    active:    statusCounts.ACTIVE ?? 0,
+    paused:    statusCounts.PAUSED ?? 0,
+    cancelled: statusCounts.CANCELLED ?? 0,
   };
 
   const tabs = [
@@ -431,9 +512,6 @@ export default function AdminSubscriptionsPage() {
                         {/* Deliberately not offered for an unclaimed gift: forcing it
                             ACTIVE would put a subscription with no dog and no address
                             into the packing list. Resend the card instead. */}
-                        {s.status === 'PENDING' && !s.giftUnclaimed && (
-                          <button onClick={e => requestAction(s, 'ACTIVE', e)} style={{ fontSize: 12, padding: '5px 10px', borderRadius: 8, background: 'var(--green-50)', color: 'var(--green-800)', border: 'none', cursor: 'pointer', fontWeight: 600 }}>Activate</button>
-                        )}
                         {s.giftUnclaimed && (
                           <button
                             onClick={() => resendGiftCard(s.id)}
@@ -444,15 +522,13 @@ export default function AdminSubscriptionsPage() {
                             {resending === s.id ? 'Sending…' : '🎁 Resend card'}
                           </button>
                         )}
-                        {s.status === 'ACTIVE' && (
-                          <>
-                            <button onClick={e => requestAction(s, 'PAUSED', e)} style={{ fontSize: 12, padding: '5px 10px', borderRadius: 8, background: 'var(--blue-50)', color: 'var(--blue-700)', border: 'none', cursor: 'pointer', fontWeight: 600 }}>Pause</button>
-                            <button onClick={e => requestAction(s, 'CANCELLED', e)} style={{ fontSize: 12, padding: '5px 10px', borderRadius: 8, background: 'var(--red-50)', color: 'var(--red-600)', border: 'none', cursor: 'pointer', fontWeight: 600 }}>Cancel</button>
-                          </>
-                        )}
                         {s.status === 'PAUSED' && (
-                          <button onClick={e => requestAction(s, 'ACTIVE', e)} style={{ fontSize: 12, padding: '5px 10px', borderRadius: 8, background: 'var(--green-50)', color: 'var(--green-800)', border: 'none', cursor: 'pointer', fontWeight: 600 }}>Resume</button>
+                          <button onClick={e => askResume(s, e)} style={{ fontSize: 12, padding: '5px 10px', borderRadius: 8, background: 'var(--green-50)', color: 'var(--green-800)', border: 'none', cursor: 'pointer', fontWeight: 600 }}>Resume</button>
                         )}
+                        {['ACTIVE', 'PAUSED'].includes(s.status) && !s.cancelledAt && (
+                          <button onClick={e => askCancel(s, e)} style={{ fontSize: 12, padding: '5px 10px', borderRadius: 8, background: 'var(--red-50)', color: 'var(--red-600)', border: 'none', cursor: 'pointer', fontWeight: 600 }}>Cancel</button>
+                        )}
+                        {s.cancelledAt && s.status === 'ACTIVE' && <span style={{ fontSize: 11, color: 'var(--amber-700)', fontWeight: 700 }}>Last box this month</span>}
                       </div>
                     </td>
                   </tr>
@@ -468,7 +544,14 @@ export default function AdminSubscriptionsPage() {
         <DetailModal
           sub={selected}
           onClose={() => setSelected(null)}
-          onAction={(id, status) => { doUpdate(id, status); setSelected(null); }}
+          onCancel={sub => askCancel(sub)}
+          onResume={sub => askResume(sub)}
+          onSaved={async () => {
+            // Show the edit straight away in the open panel and in the list.
+            const r = await fetch(`${API}/admin/subscriptions/${selected.id}`, { headers: auth() });
+            if (r.ok) { const fresh = await r.json(); setSelected((cur: any) => (cur ? { ...cur, ...fresh } : cur)); }
+            load();
+          }}
         />
       )}
 
@@ -479,7 +562,7 @@ export default function AdminSubscriptionsPage() {
           message={confirm.message}
           confirmLabel={confirm.label}
           confirmColor={confirm.color}
-          onConfirm={() => { doUpdate(confirm.id, confirm.status); setConfirm(null); }}
+          onConfirm={async () => { const c = confirm; setConfirm(null); await c.run(); setSelected(null); load(); }}
           onCancel={() => setConfirm(null)}
         />
       )}

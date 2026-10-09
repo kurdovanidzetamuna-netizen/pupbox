@@ -11,6 +11,10 @@ const productInclude = {
   inventory: true,
 };
 
+/** Trimmed, first letter capitalised (to match dogs' allergies), no duplicates. */
+const cleanAllergens = (list?: string[]) =>
+  [...new Set((list ?? []).map((a) => String(a).trim()).filter(Boolean).map((a) => a[0].toUpperCase() + a.slice(1)).map((a) => a.slice(0, 40)))].slice(0, 20);
+
 const PUBLIC_STATUSES: ProductStatus[] = ['ACTIVE', 'OUT_OF_STOCK'];
 
 @Injectable()
@@ -152,6 +156,7 @@ export class ProductsService {
         price: productData.price,
         salePrice: productData.salePrice ?? null,
         personalisation: parseConfig(personalisation) ?? Prisma.DbNull,
+        allergens: cleanAllergens(productData.allergens),
         tags: tagIds?.length ? { create: tagIds.map((id) => ({ tagId: id })) } : undefined,
         inventory: {
           create: {
@@ -194,6 +199,7 @@ export class ProductsService {
       data: {
         ...productData, price: productData.price, salePrice: productData.salePrice ?? undefined,
         ...(personalisation !== undefined ? { personalisation: parseConfig(personalisation) ?? Prisma.DbNull } : {}),
+        ...(productData.allergens !== undefined ? { allergens: cleanAllergens(productData.allergens) } : {}),
       } as any,
       include: productInclude,
     });

@@ -7,6 +7,7 @@ import { fill } from '@/context/strings/purchase';
 import { authFetch, loginUrl, SessionExpiredError } from '@/lib/authFetch';
 import { gel } from '@/lib/format';
 import ChoiceNote from '@/components/ChoiceNote';
+import { itemName } from '@/lib/localize';
 
 /** Every OrderStatus the API can return, with a colour and a label key. */
 const STATUS_STYLE: Record<string, string> = {
@@ -81,11 +82,19 @@ export default function MyOrdersPage() {
                     <span className="w-8 h-8 bg-gray-50 rounded-lg flex items-center justify-center text-lg overflow-hidden">
                       {item.product?.images?.[0]?.url ? <img src={item.product.images[0].url} alt="" className="w-full h-full object-cover" /> : '🐾'}
                     </span>
-                    <span>{item.name} × {item.quantity}<ChoiceNote choice={item.personalisation} /></span>
+                    <span>{itemName(item, lang) || item.name} × {item.quantity}<ChoiceNote choice={item.personalisation} /></span>
                   </div>
                 ))}
                 {order.items.length > 3 && <span className="text-xs text-gray-400 self-center">{fill(t('ord.more'), { n: order.items.length - 3 })}</span>}
               </div>
+
+              {order.refund && (
+                <p className="text-sm mt-2 rounded-lg px-3 py-2 bg-teal-50 text-teal-900">
+                  {order.refund.owed > 0
+                    ? fill(t('ord.refundOwed'), { money: gel(order.refund.owed) })
+                    : fill(t('ord.refunded'), { money: gel(order.refund.refunded), date: order.refund.refundedAt ? new Date(order.refund.refundedAt).toLocaleDateString(lang === 'ka' ? 'ka-GE' : 'en-GB', { day: 'numeric', month: 'long' }) : '' })}
+                </p>
+              )}
 
               {/* Only a PENDING order can be paid: a declined payment cancels the
                   order and releases its stock (payments.service handleWebhook). */}

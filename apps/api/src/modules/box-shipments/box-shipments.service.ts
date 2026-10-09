@@ -3,6 +3,16 @@ import { BoxShipmentStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
 
+/**
+ * Which of a product's allergens the dog reacts to, ignoring letter case.
+ * Same rule as allergenClash in @pupbox/content (the API can't load that
+ * package's TypeScript at runtime) — keep the two in step.
+ */
+const allergenClash = (dog: string[] | null | undefined, product: string[] | null | undefined) => {
+  const d = new Set((dog ?? []).map((a) => a.trim().toLowerCase()).filter(Boolean));
+  return (product ?? []).filter((a) => d.has(a.trim().toLowerCase()));
+};
+
 /** Boxes in these states have left us; they count as sent to the customer. */
 const SENT: BoxShipmentStatus[] = ['SHIPPED', 'DELIVERED'];
 
@@ -25,7 +35,7 @@ const shipmentInclude = {
     },
   },
   address: true,
-  campaign: { select: { id: true, name: true, dogSize: true, products: { select: { quantity: true, product: { select: { id: true, name: true, sku: true } } } } } },
+  campaign: { select: { id: true, name: true, dogSize: true, products: { select: { quantity: true, product: { select: { id: true, name: true, sku: true, allergens: true, inventory: { select: { quantity: true, reservedQty: true } } } } } } } },
 } satisfies Prisma.BoxShipmentInclude;
 
 function monthWindow(year: number, month: number) {
@@ -101,20 +111,33 @@ export class BoxShipmentsService {
       this.prisma.boxCampaign.count({ where: { year, month, isActive: true } }),
     ]);
 
-    // What to take off the shelf for the boxes still to pack.
-    const pick = new Map<string, { name: string; sku: string; quantity: number }>();
+    // What to take off the shelf for the boxes still to pack, against what's
+    // on the shelf (stock not already held by unpaid shop orders).
+    const pick = new Map<string, { name: string; sku: string; quantity: number; inStock: number; short: boolean }>();
     for (const s of items) {
       if (s.status !== 'TO_PACK') continue;
       for (const p of s.campaign?.products ?? []) {
-        const row = pick.get(p.product.id) ?? { name: p.product.name, sku: p.product.sku, quantity: 0 };
+        const inv = p.product.inventory;
+        const row = pick.get(p.product.id) ?? { name: p.product.name, sku: p.product.sku, quantity: 0, inStock: Math.max(0, (inv?.quantity ?? 0) - (inv?.reservedQty ?? 0)), short: false };
         row.quantity += p.quantity;
+        row.short = row.quantity > row.inStock;
         pick.set(p.product.id, row);
       }
     }
 
+    // Boxes whose contents the dog is allergic to: swap the item before packing.
+    const withClashes = items.map((i) => ({
+      ...i,
+      clashes: (i.campaign?.products ?? [])
+        .map((p) => ({ product: p.product.name, allergens: allergenClash(i.subscription.dog?.allergies, p.product.allergens) }))
+        .filter((c) => c.allergens.length),
+    }));
+
     const counts = Object.fromEntries((['TO_PACK', 'PACKED', 'SHIPPED', 'DELIVERED', 'CANCELLED'] as const).map((st) => [st, items.filter((i) => i.status === st).length]));
     return {
-      year, month, items, counts,
+      year, month, items: withClashes, counts,
+      allergyClashes: withClashes.filter((i) => i.clashes.length && (i.status === 'TO_PACK' || i.status === 'PACKED')).length,
+      shortOfStock: [...pick.values()].filter((p) => p.short).length,
       waiting: waiting.length,
       campaigns,
       withoutCampaign: items.filter((i) => !i.campaignId && i.status !== 'CANCELLED').length,
@@ -201,11 +224,37 @@ export class BoxShipmentsService {
         })]),
       ]);
       if (status === 'SHIPPED' && !wasSent) newlySent.push(r.id);
+      await this.moveStock(r.id, status);
     }
 
     for (const id of newlySent) this.notifyShipped(id).catch((e) => this.logger.error(`Box shipped email failed for ${id}: ${e.message}`));
 
     return { updated: movable.length, skipped: rows.length - movable.length };
+  }
+
+  /**
+   * Packing (or shipping straight from "to pack") takes the box's products out
+   * of stock; going back to "to pack" or cancelling puts them back. Guarded by
+   * stockTakenAt so each happens once per box.
+   */
+  private async moveStock(shipmentId: string, status: BoxShipmentStatus) {
+    const take = status === 'PACKED' || status === 'SHIPPED' || status === 'DELIVERED';
+    const give = status === 'TO_PACK' || status === 'CANCELLED';
+    if (!take && !give) return;
+    const { count } = await this.prisma.boxShipment.updateMany({
+      where: { id: shipmentId, stockTakenAt: take ? null : { not: null } },
+      data: { stockTakenAt: take ? new Date() : null },
+    });
+    if (!count) return;
+    const box = await this.prisma.boxShipment.findUnique({ where: { id: shipmentId }, select: { campaign: { select: { products: { select: { productId: true, quantity: true } } } } } });
+    for (const p of box?.campaign?.products ?? []) {
+      const n = take ? -p.quantity : p.quantity;
+      await this.prisma.$executeRaw`UPDATE "Inventory" SET "quantity" = GREATEST(0, "quantity" + ${n}), "updatedAt" = now() WHERE "productId" = ${p.productId}`;
+      const inv = await this.prisma.inventory.findUnique({ where: { productId: p.productId }, select: { quantity: true } });
+      // Keep the shop's "out of stock" in line with the shelf.
+      if (inv?.quantity === 0) await this.prisma.product.updateMany({ where: { id: p.productId, status: 'ACTIVE' }, data: { status: 'OUT_OF_STOCK' } });
+      else if (inv && inv.quantity > 0) await this.prisma.product.updateMany({ where: { id: p.productId, status: 'OUT_OF_STOCK' }, data: { status: 'ACTIVE' } });
+    }
   }
 
   async setTracking(id: string, trackingNumber: string) {

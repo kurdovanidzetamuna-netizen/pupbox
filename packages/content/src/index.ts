@@ -8,6 +8,7 @@ import { D } from './defaults';
 export * from './types';
 export * from './resolve';
 export * from './faq';
+export * from './allergens';
 export { sitePage, homePage, pricingPage, howItWorksPage, shopPage, blogPage };
 
 /** Every page editable in admin, in menu order. */

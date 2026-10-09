@@ -77,14 +77,18 @@ export class SubscriptionsService implements OnModuleInit, OnModuleDestroy {
     if (userId) where.userId = userId;
     const sub = await this.prisma.customerSubscription.findFirst({
       where,
-      include: { plan: true, dog: true, orders: { include: { items: true, payments: true }, orderBy: { createdAt: 'desc' }, take: 10 } },
+      include: {
+        plan: true, dog: true,
+        address: { select: { firstName: true, lastName: true, phone: true, city: true, addressLine1: true, addressLine2: true } },
+        orders: { include: { items: true, payments: true }, orderBy: { createdAt: 'desc' }, take: 10 },
+      },
     });
     if (!sub) throw new NotFoundException('Subscription not found');
     return sub;
   }
 
   /** What cancelling now would mean — shown to the customer before they confirm. */
-  async cancelPreview(id: string, userId: string) {
+  async cancelPreview(id: string, userId?: string) {
     const sub = await this.findOne(id, userId);
     if (['CANCELLED', 'EXPIRED'].includes(sub.status) || sub.cancelledAt) throw new BadRequestException('Subscription already cancelled');
     return (await planCancellation(this.prisma, id)).plan;
@@ -96,7 +100,7 @@ export class SubscriptionsService implements OnModuleInit, OnModuleDestroy {
    * owed back. The refund is recorded as due on the order; admin pays it
    * through the payment provider and records it.
    */
-  async cancel(id: string, userId: string, reason?: string) {
+  async cancel(id: string, userId: string | undefined, reason?: string) {
     const sub = await this.findOne(id, userId);
     if (['CANCELLED', 'EXPIRED'].includes(sub.status) || sub.cancelledAt) throw new BadRequestException('Subscription already cancelled');
 
@@ -143,11 +147,12 @@ export class SubscriptionsService implements OnModuleInit, OnModuleDestroy {
    * packed follow at once; one already packed keeps its label, and the
    * customer is told so.
    */
-  async changeAddress(id: string, userId: string, a: { firstName: string; lastName: string; phone: string; city: string; addressLine1: string; addressLine2?: string }) {
+  async changeAddress(id: string, userId: string | undefined, a: { firstName: string; lastName: string; phone: string; city: string; addressLine1: string; addressLine2?: string }) {
     const sub = await this.findOne(id, userId);
     if (['CANCELLED', 'EXPIRED'].includes(sub.status)) throw new BadRequestException('This subscription has ended');
+    // Admin changes it on the customer's behalf: the address is still theirs.
     const address = await this.prisma.address.create({
-      data: { userId, firstName: a.firstName.trim(), lastName: a.lastName.trim(), phone: a.phone.trim(), city: a.city.trim(), addressLine1: a.addressLine1.trim(), addressLine2: a.addressLine2?.trim() || null },
+      data: { userId: sub.userId, firstName: a.firstName.trim(), lastName: a.lastName.trim(), phone: a.phone.trim(), city: a.city.trim(), addressLine1: a.addressLine1.trim(), addressLine2: a.addressLine2?.trim() || null },
     });
     await this.prisma.customerSubscription.update({ where: { id }, data: { addressId: address.id } });
     const { count: moved } = await this.prisma.boxShipment.updateMany({ where: { subscriptionId: id, status: 'TO_PACK' }, data: { addressId: address.id } });
@@ -191,6 +196,7 @@ export class SubscriptionsService implements OnModuleInit, OnModuleDestroy {
           plan: true,
           user: { select: { id: true, email: true, firstName: true, lastName: true } },
           dog: true,
+          address: { select: { firstName: true, lastName: true, phone: true, city: true, addressLine1: true, addressLine2: true } },
           purchasedBy: { select: { email: true, firstName: true, lastName: true } },
           orders: { select: { giftRecipientName: true, giftRecipientEmail: true, giftDeliverOn: true, giftSentAt: true }, take: 1 },
         },
@@ -202,6 +208,9 @@ export class SubscriptionsService implements OnModuleInit, OnModuleDestroy {
       this.prisma.customerSubscription.count({ where }),
       this.prisma.customerSubscription.count({ where: { isGift: true, giftClaimedAt: null } }),
     ]);
+    // Tab counts for the whole table, not just this page.
+    const byStatus = await this.prisma.customerSubscription.groupBy({ by: ['status'], _count: { _all: true } });
+    const statusCounts = Object.fromEntries(byStatus.map((r) => [r.status, r._count._all]));
 
     const now = Date.now();
     return {
@@ -215,6 +224,7 @@ export class SubscriptionsService implements OnModuleInit, OnModuleDestroy {
         daysOutstanding: s.isGift && !s.giftClaimedAt ? Math.floor((now - s.createdAt.getTime()) / 86400000) : null,
       })),
       total,
+      statusCounts,
       unclaimedGifts,
       page,
       limit,
@@ -222,7 +232,38 @@ export class SubscriptionsService implements OnModuleInit, OnModuleDestroy {
     };
   }
 
-  async adminUpdate(id: string, data: { status?: string; cancelReason?: string; endDate?: Date; nextRenewalAt?: Date }) {
-    return this.prisma.customerSubscription.update({ where: { id }, data: data as any });
+  /**
+   * Admin's direct changes. Status moves only for resuming a paused plan:
+   * activating happens by payment or gift claim, cancelling through cancel()
+   * so the refund rule applies, and pausing isn't offered (nothing would
+   * stop the plan's time running out).
+   */
+  async adminUpdate(id: string, data: { status?: string; autoRenewal?: boolean; cancelReason?: string }) {
+    const sub = await this.prisma.customerSubscription.findUnique({ where: { id }, select: { status: true } });
+    if (!sub) throw new NotFoundException('Subscription not found');
+    if (data.status && !(data.status === 'ACTIVE' && sub.status === 'PAUSED')) {
+      throw new BadRequestException('Only a paused plan can be resumed here. Cancel uses the cancel action.');
+    }
+    return this.prisma.customerSubscription.update({
+      where: { id },
+      data: { ...(data.status ? { status: 'ACTIVE' } : {}), ...(data.autoRenewal !== undefined ? { autoRenewal: data.autoRenewal } : {}), ...(data.cancelReason !== undefined ? { cancelReason: data.cancelReason } : {}) },
+    });
+  }
+
+  /** Admin updates the dog a customer told them about (by phone or email). */
+  async adminUpdateDog(id: string, d: { name?: string; size?: string | null; allergies?: string[]; specialNotes?: string | null }) {
+    const sub = await this.prisma.customerSubscription.findUnique({ where: { id }, select: { userId: true, dogId: true } });
+    if (!sub) throw new NotFoundException('Subscription not found');
+    const data: any = {
+      ...(d.name !== undefined ? { name: d.name.trim() } : {}),
+      ...(d.size !== undefined ? { size: d.size || null } : {}),
+      ...(d.allergies !== undefined ? { allergies: [...new Set(d.allergies.map((a) => a.trim()).filter(Boolean))] } : {}),
+      ...(d.specialNotes !== undefined ? { specialNotes: d.specialNotes?.trim() || null } : {}),
+    };
+    if (sub.dogId) return this.prisma.dog.update({ where: { id: sub.dogId }, data });
+    if (!data.name) throw new BadRequestException('Give the dog a name');
+    const dog = await this.prisma.dog.create({ data: { userId: sub.userId, ...data } });
+    await this.prisma.customerSubscription.update({ where: { id }, data: { dogId: dog.id } });
+    return dog;
   }
 }

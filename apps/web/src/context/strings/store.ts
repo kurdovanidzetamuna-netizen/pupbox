@@ -149,6 +149,8 @@ export const STORE_STRINGS: Record<string, { en: string; ka: string }> = {
   'sub.renewFailed':        { en: "Couldn't update auto-renewal", ka: 'ავტომატური განახლების შეცვლა ვერ მოხერხდა' },
   'sub.cancel':             { en: 'Cancel subscription',        ka: 'გამოწერის გაუქმება' },
   'sub.cancelQ':            { en: 'Cancel this subscription?',  ka: 'გავაუქმოთ ეს გამოწერა?' },
+  'ord.refundOwed':         { en: '{money} is being refunded to your card — it arrives within a few working days.', ka: '{money} ბრუნდება შენს ბარათზე — რამდენიმე სამუშაო დღეში ჩაირიცხება.' },
+  'ord.refunded':           { en: '{money} refunded to your card on {date}.', ka: '{money} დაგიბრუნდა ბარათზე {date}-ს.' },
   'err.404.title':          { en: 'We can’t find that page',    ka: 'ეს გვერდი ვერ მოიძებნა' },
   'err.404.sub':            { en: 'The link may be old or mistyped. Everything else is where you left it.', ka: 'შესაძლოა ბმული მოძველებულია ან არასწორადაა აკრეფილი. დანარჩენი ყველაფერი თავის ადგილასაა.' },
   'err.500.title':          { en: 'Something went wrong',       ka: 'რაღაც შეფერხდა' },

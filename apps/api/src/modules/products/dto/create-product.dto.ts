@@ -21,6 +21,8 @@ export class CreateProductDto {
   @IsOptional() @IsArray() tagIds?: string[];
   @IsOptional() @IsNumber() @Min(0) stockQuantity?: number;
   @IsOptional() @IsNumber() @Min(0) lowStockAlert?: number;
+  /** Ingredients a dog could react to (Chicken, Beef, …). Cleaned in the service. */
+  @IsOptional() @IsArray() @IsString({ each: true }) allergens?: string[];
   /** { engraving?: { maxLength }, sizes?: string[] }, or null for none. Cleaned by parseConfig. */
   @IsOptional() personalisation?: unknown;
 }

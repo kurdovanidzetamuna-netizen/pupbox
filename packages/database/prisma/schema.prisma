@@ -344,6 +344,9 @@ model Product {
   category         ProductCategory? @relation(fields: [categoryId], references: [id])
   price            Decimal        @db.Decimal(10, 2)
   salePrice        Decimal?       @db.Decimal(10, 2)
+  /// What a dog could react to, from the same list dogs' allergies use
+  /// (Chicken, Beef, …). Monthly Boxes warns when a box clashes with its dog.
+  allergens       String[]   @default([])
   /// What customers choose before adding to cart, e.g. { engraving: { maxLength: 12 }, sizes: ["S", "M", "L"] }. Null = nothing to choose.
   personalisation Json?
   status           ProductStatus  @default(DRAFT)
@@ -905,6 +908,9 @@ model BoxShipment {
   address        Address?             @relation(fields: [addressId], references: [id])
   status         BoxShipmentStatus    @default(TO_PACK)
   trackingNumber String?
+  /// When its products were taken out of inventory (on packing); cleared
+  /// when they go back (unpacked or cancelled). Keeps stock moves exactly-once.
+  stockTakenAt   DateTime?
   packedAt       DateTime?
   shippedAt      DateTime?
   deliveredAt    DateTime?

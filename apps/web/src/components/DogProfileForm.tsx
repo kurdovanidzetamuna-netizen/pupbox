@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useLanguage } from '@/context/LanguageContext';
 import { fill } from '@/context/strings/purchase';
+import { ALLERGENS } from '@pupbox/content';
 
 /**
  * Tell-us-about-your-dog, as tappable choices rather than a form.
@@ -75,7 +76,8 @@ const CHEW_LEVELS = [
   { value: 'POWER', emoji: '💪' },
 ];
 
-const COMMON_ALLERGIES = ['Chicken', 'Beef', 'Lamb', 'Fish', 'Wheat', 'Dairy', 'Soy', 'Eggs'];
+// The same list products' allergens use, so boxes can be checked against the dog.
+const COMMON_ALLERGIES: string[] = ALLERGENS.map((a) => a.key);
 const FOOD_LIKES = ['Chicken', 'Beef', 'Lamb', 'Fish', 'Peanut butter', 'Cheese', 'Grain-free', 'Dental chews'];
 const TOY_LIKES = ['Squeaky', 'Plush', 'Rope', 'Ball', 'Puzzle', 'Tug', 'Fetch', 'Chew'];
 

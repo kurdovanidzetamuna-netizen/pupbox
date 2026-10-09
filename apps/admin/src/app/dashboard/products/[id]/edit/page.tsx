@@ -6,6 +6,7 @@ import LangTabs, { type Lang } from '@/components/LangTabs';
 import PricingSection from '@/components/PricingSection';
 import ErrorPopup from '@/components/ErrorPopup';
 import PersonalisationCard, { EMPTY_PERSONALISATION, personalisationFromProduct, personalisationPayload, type PersonalisationForm } from '@/components/PersonalisationCard';
+import AllergensCard from '@/components/AllergensCard';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 
@@ -36,6 +37,7 @@ export default function EditProductPage() {
 
   const [ka, setKa] = useState({ name: '', shortDescription: '', description: '', seoTitle: '', seoDesc: '' });
   const [personalisation, setPersonalisation] = useState<PersonalisationForm>(EMPTY_PERSONALISATION);
+  const [allergens, setAllergens] = useState<string[]>([]);
 
   useEffect(() => {
     const token = localStorage.getItem('admin_token');
@@ -68,6 +70,7 @@ export default function EditProductPage() {
       });
       const kaData = product.translations?.ka;
       setPersonalisation(personalisationFromProduct(product));
+      setAllergens(product.allergens ?? []);
       if (kaData) setKa({ name: kaData.name || '', shortDescription: kaData.shortDescription || '', description: kaData.description || '', seoTitle: kaData.seoTitle || '', seoDesc: kaData.seoDesc || '' });
     }).catch(() => {}).finally(() => setLoading(false));
   }, [id]);
@@ -182,6 +185,7 @@ export default function EditProductPage() {
     if (form.lowStockAlert) body.lowStockAlert = Number(form.lowStockAlert);
     if (hasKa) body.translations = { ka: { ...ka } };
     body.personalisation = personalisationPayload(personalisation);
+    body.allergens = allergens;
 
     try {
       const res = await fetch(`${API}/admin/products/${productId}`, {
@@ -392,6 +396,9 @@ export default function EditProductPage() {
 
         {/* Personalisation */}
         <PersonalisationCard value={personalisation} onChange={setPersonalisation} disabled={isKa} style={sectionStyle} />
+
+        {/* Allergens */}
+        <AllergensCard value={allergens} onChange={setAllergens} disabled={isKa} style={sectionStyle} />
 
         {/* Inventory */}
         <div style={sectionStyle}>
