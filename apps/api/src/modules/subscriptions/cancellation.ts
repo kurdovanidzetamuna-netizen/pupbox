@@ -1,14 +1,9 @@
 import { BadRequestException } from '@nestjs/common';
 import type { PrismaService } from '../prisma/prisma.service';
-
-/** Shop-wide settings admin edits on the Settings page (CMS row `config-settings`). */
-export const SETTINGS_SLUG = 'config-settings';
-const DEFAULT_FREE_HOURS = 12;
+import { shopSettings } from '../settings/settings';
 
 export async function freeCancelHours(prisma: PrismaService): Promise<number> {
-  const row = await prisma.cMSPage.findUnique({ where: { slug: SETTINGS_SLUG }, select: { content: true } });
-  const h = Number((row?.content as any)?.cancellation?.freeHours);
-  return Number.isFinite(h) && h >= 0 ? h : DEFAULT_FREE_HOURS;
+  return (await shopSettings(prisma)).freeCancelHours;
 }
 
 export interface CancelPlan {
@@ -39,10 +34,12 @@ export async function planCancellation(prisma: PrismaService, subscriptionId: st
     where: { id: subscriptionId },
     select: {
       id: true, status: true, boxesTotal: true, boxesDelivered: true, startDate: true,
+      plan: { select: { boxCount: true } },
       shipments: { where: { status: { not: 'CANCELLED' } }, select: { year: true, month: true, status: true } },
+      // The latest paid order — the first purchase, or the renewal that started this term.
       orders: {
-        where: { status: { notIn: ['CANCELLED', 'FAILED', 'REFUNDED'] } },
-        orderBy: { createdAt: 'asc' },
+        where: { status: { in: ['PAID', 'PROCESSING', 'PACKED', 'SHIPPED', 'DELIVERED'] } },
+        orderBy: { createdAt: 'desc' },
         take: 1,
         select: { id: true, items: { where: { subscriptionPlanId: { not: null } }, select: { total: true } }, payments: { where: { status: 'PAID' }, select: { paidAt: true }, take: 1 } },
       },
@@ -65,9 +62,10 @@ export async function planCancellation(prisma: PrismaService, subscriptionId: st
     return { plan: { kind: 'free', refund: round(paid), keptBoxes: 0, boxesTotal: sub.boxesTotal, thisMonthBoxComing: false, freeHours, freeUntil }, orderId: order?.id ?? null, paid };
   }
   const keptBoxes = Math.min(sub.boxesTotal, sent + (thisMonthBoxComing ? 1 : 0));
-  const perBox = sub.boxesTotal > 0 ? paid / sub.boxesTotal : 0;
+  // Price of one box in the term that was paid for (a renewal adds a term's boxes on top).
+  const perBox = paid / Math.max(1, sub.plan.boxCount);
   return {
-    plan: { kind: 'keep', refund: round(perBox * (sub.boxesTotal - keptBoxes)), keptBoxes, boxesTotal: sub.boxesTotal, thisMonthBoxComing, freeHours, freeUntil: null },
+    plan: { kind: 'keep', refund: round(Math.min(paid, perBox * (sub.boxesTotal - keptBoxes))), keptBoxes, boxesTotal: sub.boxesTotal, thisMonthBoxComing, freeHours, freeUntil: null },
     orderId: order?.id ?? null,
     paid,
   };

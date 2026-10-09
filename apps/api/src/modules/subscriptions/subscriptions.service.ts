@@ -1,6 +1,8 @@
 import { Injectable, NotFoundException, BadRequestException, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { endOfMonth, planCancellation } from './cancellation';
+import { createDueRenewals, endUnpaidRenewals } from './renewal';
+import { EmailService } from '../email/email.service';
 import { cancelUnpaidOrder } from '../orders/order-lifecycle';
 
 const HOUR = 60 * 60 * 1000;
@@ -10,10 +12,19 @@ export class SubscriptionsService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(SubscriptionsService.name);
   private timer?: NodeJS.Timeout;
 
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private email: EmailService) {}
 
   onModuleInit() {
-    const run = () => this.expireEnded().catch((e) => this.logger.error(`Expiry check failed: ${e.message}`));
+    // Hourly: end finished terms, send renewal payment links, end unpaid renewals.
+    const run = async () => {
+      for (const [name, job] of [
+        ['Expiry check', () => this.expireEnded()],
+        ['Renewal reminders', () => createDueRenewals(this.prisma, this.email)],
+        ['Unpaid renewals', () => endUnpaidRenewals(this.prisma)],
+      ] as const) {
+        await job().catch((e: any) => this.logger.error(`${name} failed: ${e.message}`));
+      }
+    };
     setTimeout(run, 10_000).unref(); // catch up after a restart
     this.timer = setInterval(run, HOUR);
     this.timer.unref();
@@ -25,8 +36,8 @@ export class SubscriptionsService implements OnModuleInit, OnModuleDestroy {
 
   /**
    * Ends subscriptions whose term is over and which the customer did not ask
-   * to renew. Renewing ones stay active: charging them needs Flitt, see
-   * processDueRenewals. Safe to run from several instances at once.
+   * to renew. Renewing ones stay active while their renewal is open (see
+   * renewal.ts). Safe to run from several instances at once.
    */
   async expireEnded() {
     const ended = { status: 'ACTIVE' as const, endDate: { lte: new Date() } };
@@ -48,6 +59,8 @@ export class SubscriptionsService implements OnModuleInit, OnModuleDestroy {
         plan: true,
         dog: true,
         address: { select: { firstName: true, lastName: true, phone: true, city: true, addressLine1: true, addressLine2: true } },
+        // An open renewal to pay, shown as "renewal due" with a Pay button.
+        orders: { where: { type: 'RENEWAL', status: 'PENDING' }, select: { id: true, total: true, renewalFor: true }, take: 1 },
         // The customer's box history; tracking is theirs to see.
         shipments: {
           where: { status: { not: 'CANCELLED' } },
@@ -95,6 +108,7 @@ export class SubscriptionsService implements OnModuleInit, OnModuleDestroy {
       return { kind: 'free', refund: 0, keptBoxes: 0 };
     }
 
+    await this.withdrawOpenRenewals(id, 'Subscription cancelled by the customer.');
     const now = new Date();
     const { plan, orderId } = await planCancellation(this.prisma, id, now);
     const keepsBox = plan.kind === 'keep' && plan.thisMonthBoxComing;
@@ -144,22 +158,15 @@ export class SubscriptionsService implements OnModuleInit, OnModuleDestroy {
   async toggleAutoRenewal(id: string, userId: string, enabled: boolean) {
     const sub = await this.findOne(id, userId);
     if (['CANCELLED', 'EXPIRED'].includes(sub.status)) throw new BadRequestException('Cannot modify a cancelled subscription');
-    // Renewal falls due when the current term ends; switching it off clears that.
+    // Renewal falls due when the current term ends; switching it off clears
+    // that and withdraws a renewal payment that was waiting.
+    if (!enabled) await this.withdrawOpenRenewals(id, 'Renewal turned off by the customer.');
     return this.prisma.customerSubscription.update({ where: { id }, data: { autoRenewal: enabled, nextRenewalAt: enabled ? sub.endDate : null } });
   }
 
-  // Cron stub — finds subscriptions due for renewal. Payment charge is NOT implemented yet.
-  async processDueRenewals() {
-    const now = new Date();
-    const due = await this.prisma.customerSubscription.findMany({
-      where: { autoRenewal: true, status: 'ACTIVE', nextRenewalAt: { lte: now } },
-      include: { plan: true, user: true },
-    });
-    for (const sub of due) {
-      // TODO: charge via Flitt payment gateway
-      console.log(`[AutoRenewal] Due: ${sub.id} user=${sub.user.email} plan=${sub.plan.name}`);
-    }
-    return { processed: due.length };
+  private async withdrawOpenRenewals(subscriptionId: string, note: string) {
+    const open = await this.prisma.order.findMany({ where: { subscriptionId, type: 'RENEWAL', status: 'PENDING' }, select: { id: true } });
+    for (const o of open) await cancelUnpaidOrder(this.prisma, o.id, note);
   }
 
   // Admin methods

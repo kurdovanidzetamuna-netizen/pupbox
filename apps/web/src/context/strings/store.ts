@@ -149,6 +149,8 @@ export const STORE_STRINGS: Record<string, { en: string; ka: string }> = {
   'sub.renewFailed':        { en: "Couldn't update auto-renewal", ka: 'ავტომატური განახლების შეცვლა ვერ მოხერხდა' },
   'sub.cancel':             { en: 'Cancel subscription',        ka: 'გამოწერის გაუქმება' },
   'sub.cancelQ':            { en: 'Cancel this subscription?',  ka: 'გავაუქმოთ ეს გამოწერა?' },
+  'sub.renewalDue':         { en: 'Your plan renews on {date}. Pay {money} to keep your boxes coming.', ka: 'შენი გეგმა {date}-ს განახლდება. გადაიხადე {money}, რომ კოლოფები გაგრძელდეს.' },
+  'sub.renewalPay':         { en: 'Pay {money}',                ka: 'გადახდა — {money}' },
   'sub.cancelLoading':      { en: 'Checking what cancelling means now…', ka: 'ვამოწმებთ, რას ნიშნავს გაუქმება ახლა…' },
   'sub.cancelFree':         { en: 'You’re within {hours} hours of paying, so cancelling is free: {money} back to your card and no box is sent.', ka: 'გადახდიდან {hours} საათი ჯერ არ გასულა, ამიტომ გაუქმება უფასოა: {money} დაგიბრუნდება ბარათზე და ყუთი არ გამოიგზავნება.' },
   'sub.cancelKeep':         { en: 'You’ll still get this month’s box. The remaining {n} months stop and {money} comes back to your card.', ka: 'ამ თვის ყუთს მაინც მიიღებ. დარჩენილი {n} თვე შეწყდება და {money} დაგიბრუნდება ბარათზე.' },

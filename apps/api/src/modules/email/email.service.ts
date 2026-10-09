@@ -148,6 +148,29 @@ ${m.body.map(p).join('\n')}${button}${(m.after ?? []).map((a) => `<p style="marg
     });
   }
 
+  async sendRenewalDue(d: { email: string; firstName: string; language?: string | null; planName: string; amount: number; renewsOn: Date; orderId: string }) {
+    const l = lang(d.language);
+    const url = `${this.siteUrl}/account/orders`;
+    const amount = `₾${d.amount.toFixed(2)}`;
+    const when = d.renewsOn.toLocaleDateString(l === 'ka' ? 'ka-GE' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+    const vars = { firstName: d.firstName, planName: d.planName, amount, renewsOn: when, payUrl: url };
+    await this.deliver(d.email, 'renewal_due', l, vars, l === 'ka' ? {
+      subject: `შენი გეგმა ${when}-ს განახლდება`,
+      heading: 'დროა გეგმის განახლების',
+      body: [hi(l, d.firstName), `შენ აირჩიე <strong>${esc(d.planName)}</strong> გეგმის განახლება. მიმდინარე პერიოდი სრულდება <strong>${when}</strong>-ს.`,
+        `შემდეგი პერიოდისთვის გადაიხადე <strong>${amount}</strong> და კოლოფები გაგრძელდება ჩვეულებრივ.`],
+      button: { text: `გადახდა — ${amount}`, url },
+      after: ['თუ განახლება აღარ გინდა, უბრალოდ ნუ გადაიხდი — გეგმა თავისით დასრულდება. ავტომატური განახლება შეგიძლია გამორთო „ჩემ გამოწერებში“.'],
+    } : {
+      subject: `Your plan renews on ${when}`,
+      heading: 'Time to renew your plan',
+      body: [hi(l, d.firstName), `You chose to renew <strong>${esc(d.planName)}</strong>. This term ends on <strong>${when}</strong>.`,
+        `Pay <strong>${amount}</strong> for the next term and your boxes carry on as usual.`],
+      button: { text: `Pay ${amount}`, url },
+      after: ["If you don't want to renew, just don't pay — the plan ends by itself. You can turn renewal off in My subscriptions."],
+    });
+  }
+
   async sendBoxShipped(d: { email: string; firstName: string; language?: string | null; dogName: string | null; boxNumber: number; boxesTotal: number; trackingNumber: string | null }) {
     const l = lang(d.language);
     const url = `${this.siteUrl}/account/subscriptions`;

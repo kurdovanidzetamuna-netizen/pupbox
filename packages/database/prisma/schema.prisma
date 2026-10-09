@@ -572,6 +572,9 @@ model Order {
   discountAmount   Decimal               @db.Decimal(10, 2) @default(0)
   total            Decimal               @db.Decimal(10, 2)
   trackingNumber   String?
+  /// For a RENEWAL order: the end date of the term it renews (the
+  /// subscription's nextRenewalAt when created). One renewal order per term.
+  renewalFor       DateTime?
   /// Money owed back to the customer (e.g. unused months after a cancelled
   /// plan), until admin records the refund made in the payment provider.
   refundDueAmount  Decimal?              @db.Decimal(10, 2)

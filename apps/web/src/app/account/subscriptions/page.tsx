@@ -87,6 +87,21 @@ export default function MySubscriptionsPage() {
     } finally { setAddrSaving(false); }
   }
 
+  const [paying, setPaying] = useState<string | null>(null);
+  async function payRenewal(orderId: string) {
+    setPaying(orderId);
+    try {
+      const res = await authFetch(`/payments/initiate/${orderId}`, { method: 'POST' });
+      const data = res.ok ? await res.json() : null;
+      if (!data?.checkoutUrl) throw new Error();
+      window.location.href = data.checkoutUrl;
+    } catch (e) {
+      if (e instanceof SessionExpiredError) return expired();
+      showToast(t('ty.e.initiate'), false);
+      setPaying(null);
+    }
+  }
+
   async function askCancel(id: string) {
     setCancelPlan(null);
     setCancelConfirm(id);
@@ -162,6 +177,15 @@ export default function MySubscriptionsPage() {
                     {sub.dog && <div className="bg-gray-50 rounded-xl p-3"><dt className="text-gray-500 text-xs mb-0.5">{t('sub.dog')}</dt><dd className="font-bold text-gray-900">{sub.dog.name}</dd></div>}
                     <div className="bg-gray-50 rounded-xl p-3"><dt className="text-gray-500 text-xs mb-0.5">{t('sub.price')}</dt><dd className="font-bold text-gray-900">{gel(sub.plan?.price)}</dd></div>
                   </dl>
+
+                  {sub.orders?.[0] && (
+                    <div className="mb-5 flex items-center justify-between gap-4 rounded-xl border border-teal-200 bg-teal-50 p-4">
+                      <p className="text-sm text-teal-900">{fill(t('sub.renewalDue'), { date: sub.orders[0].renewalFor ? date(sub.orders[0].renewalFor) : '', money: gel(sub.orders[0].total) })}</p>
+                      <button onClick={() => payRenewal(sub.orders[0].id)} disabled={paying === sub.orders[0].id} className="shrink-0 bg-teal-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-teal-700 disabled:opacity-50">
+                        {paying === sub.orders[0].id ? t('ty.redirecting') : fill(t('sub.renewalPay'), { money: gel(sub.orders[0].total) })}
+                      </button>
+                    </div>
+                  )}
 
                   {!['CANCELLED', 'EXPIRED'].includes(sub.status) && !(sub.isGift && !sub.giftClaimedAt) && (
                     <div className="mb-5 rounded-xl border border-gray-100 p-4 text-sm">

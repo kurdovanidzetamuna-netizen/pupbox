@@ -10,6 +10,7 @@ import { subscriptionPeriod } from '../subscriptions/subscription-period';
 import { releaseStock } from '../products/stock';
 import { cancelUnpaidOrder } from '../orders/order-lifecycle';
 import { sendGiftCard } from '../gifts/gift-card';
+import { extendAfterRenewal } from '../subscriptions/renewal';
 
 /** How long an order may wait for payment before its stock and coupon are freed (checked every 15 minutes). */
 const UNPAID_TTL_MS = 2 * 60 * 60 * 1000;
@@ -48,7 +49,8 @@ export class PaymentsService implements OnModuleInit, OnModuleDestroy {
    */
   async expireUnpaid() {
     const stale = await this.prisma.order.findMany({
-      where: { status: 'PENDING', createdAt: { lt: new Date(Date.now() - UNPAID_TTL_MS) }, payments: { none: { status: 'PAID' } } },
+      // Renewal orders wait for their own deadline (renewal.ts), not 2 hours.
+      where: { status: 'PENDING', type: { not: 'RENEWAL' }, createdAt: { lt: new Date(Date.now() - UNPAID_TTL_MS) }, payments: { none: { status: 'PAID' } } },
       select: { id: true },
     });
     let expired = 0;
@@ -174,7 +176,10 @@ export class PaymentsService implements OnModuleInit, OnModuleDestroy {
       // Activate this order's subscription — and only this one. Matching on
       // "any PENDING subscription for this user" activated unrelated ones the
       // customer had not paid for yet.
-      if (order.subscriptionId) {
+      if (order.type === 'RENEWAL') {
+        // Paying a renewal extends the plan for another term.
+        await extendAfterRenewal(this.prisma, order_id);
+      } else if (order.subscriptionId) {
         const sub = await this.prisma.customerSubscription.findUnique({
           where: { id: order.subscriptionId },
           select: { id: true, isGift: true, giftClaimToken: true, autoRenewal: true, plan: { select: { durationValue: true, durationUnit: true } } },
