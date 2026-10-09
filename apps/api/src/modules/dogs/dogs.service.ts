@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -34,6 +34,9 @@ export class DogsService {
 
   async remove(id: string, userId: string) {
     await this.findOne(id, userId);
+    // Boxes are packed for this dog's size and allergies: keep it while a subscription needs it.
+    const inUse = await this.prisma.customerSubscription.count({ where: { dogId: id, status: { in: ['ACTIVE', 'PENDING', 'PAUSED'] } } });
+    if (inUse) throw new BadRequestException('This dog has an active subscription. Edit the details instead, or remove it after the subscription ends.');
     return this.prisma.dog.update({ where: { id }, data: { deletedAt: new Date() } });
   }
 

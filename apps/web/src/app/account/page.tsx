@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/context/LanguageContext';
 import { authFetch, loginUrl, SessionExpiredError } from '@/lib/authFetch';
+import AccountSecurity from '@/components/AccountSecurity';
 
 export default function AccountPage() {
   const router = useRouter();
@@ -78,6 +79,7 @@ export default function AccountPage() {
               {[
                 { href: '/account/orders', icon: '📦', k: 'acc.orders' },
                 { href: '/account/subscriptions', icon: '📋', k: 'acc.subscriptions' },
+                { href: '/account/dogs', icon: '🐶', k: 'acc.dogs' },
                 { href: '/account/referrals', icon: '🎁', k: 'acc.referrals' },
                 { href: '/shop', icon: '🛍️', k: 'acc.shop' },
               ].map(l => (
@@ -88,7 +90,8 @@ export default function AccountPage() {
               ))}
             </nav>
 
-            <section className="md:col-span-2 bg-white rounded-2xl border border-gray-100 p-6">
+            <div className="md:col-span-2 space-y-6">
+            <section className="bg-white rounded-2xl border border-gray-100 p-6">
               <h2 className="font-semibold text-gray-800 mb-5">{t('acc.profile')}</h2>
               {success && <p className="text-teal-700 text-sm mb-4 bg-teal-50 px-3 py-2 rounded-lg" role="status">{success}</p>}
               {error && <p className="text-red-600 text-sm mb-4 bg-red-50 px-3 py-2 rounded-lg" role="alert">{error}</p>}
@@ -107,6 +110,8 @@ export default function AccountPage() {
                 </button>
               </form>
             </section>
+            <AccountSecurity />
+            </div>
           </div>
         )}
       </div>

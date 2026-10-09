@@ -18,7 +18,7 @@ const NEXT: Record<BoxShipmentStatus, BoxShipmentStatus[]> = {
 const shipmentInclude = {
   subscription: {
     select: {
-      id: true, boxesTotal: true, boxesDelivered: true, isGift: true, status: true,
+      id: true, boxesTotal: true, boxesDelivered: true, isGift: true, status: true, cancelledAt: true,
       plan: { select: { name: true } },
       user: { select: { id: true, email: true, firstName: true, lastName: true, language: true } },
       dog: { select: { name: true, breed: true, size: true, allergies: true, specialNotes: true } },
@@ -59,7 +59,7 @@ export class BoxShipmentsService {
         shipments: { none: { year, month } },
       },
       select: {
-        id: true, userId: true, isGift: true, boxesTotal: true, boxesDelivered: true,
+        id: true, userId: true, isGift: true, addressId: true, boxesTotal: true, boxesDelivered: true,
         dog: { select: { size: true } },
         _count: { select: { shipments: { where: { status: { in: ['TO_PACK', 'PACKED'] } } } } },
       },
@@ -70,7 +70,9 @@ export class BoxShipmentsService {
   }
 
   /** The address a subscription's boxes go to: its order's, or the owner's default (gifts: the recipient's). */
-  private async addressFor(sub: { id: string; userId: string; isGift: boolean }) {
+  private async addressFor(sub: { id: string; userId: string; isGift: boolean; addressId: string | null }) {
+    // The subscription's own address — the one the customer keeps up to date.
+    if (sub.addressId) return sub.addressId;
     if (!sub.isGift) {
       const order = await this.prisma.order.findFirst({
         where: { subscriptionId: sub.id, addressId: { not: null } },

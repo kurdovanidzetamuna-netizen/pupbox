@@ -1,5 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { endOfMonth, planCancellation } from './cancellation';
+import { cancelUnpaidOrder } from '../orders/order-lifecycle';
 
 const HOUR = 60 * 60 * 1000;
 
@@ -27,10 +29,14 @@ export class SubscriptionsService implements OnModuleInit, OnModuleDestroy {
    * processDueRenewals. Safe to run from several instances at once.
    */
   async expireEnded() {
-    const { count } = await this.prisma.customerSubscription.updateMany({
-      where: { status: 'ACTIVE', endDate: { lte: new Date() }, OR: [{ autoRenewal: false }, { nextRenewalAt: null }] },
+    const ended = { status: 'ACTIVE' as const, endDate: { lte: new Date() } };
+    // Cancelled by the customer and the last month is over: now really cancelled.
+    const { count: cancelled } = await this.prisma.customerSubscription.updateMany({ where: { ...ended, cancelledAt: { not: null } }, data: { status: 'CANCELLED' } });
+    const { count: expired } = await this.prisma.customerSubscription.updateMany({
+      where: { ...ended, cancelledAt: null, OR: [{ autoRenewal: false }, { nextRenewalAt: null }] },
       data: { status: 'EXPIRED' },
     });
+    const count = cancelled + expired;
     if (count) this.logger.log(`Expired ${count} subscription(s) that reached their end date`);
     return { expired: count };
   }
@@ -41,6 +47,7 @@ export class SubscriptionsService implements OnModuleInit, OnModuleDestroy {
       include: {
         plan: true,
         dog: true,
+        address: { select: { firstName: true, lastName: true, phone: true, city: true, addressLine1: true, addressLine2: true } },
         // The customer's box history; tracking is theirs to see.
         shipments: {
           where: { status: { not: 'CANCELLED' } },
@@ -63,13 +70,75 @@ export class SubscriptionsService implements OnModuleInit, OnModuleDestroy {
     return sub;
   }
 
+  /** What cancelling now would mean — shown to the customer before they confirm. */
+  async cancelPreview(id: string, userId: string) {
+    const sub = await this.findOne(id, userId);
+    if (['CANCELLED', 'EXPIRED'].includes(sub.status) || sub.cancelledAt) throw new BadRequestException('Subscription already cancelled');
+    return (await planCancellation(this.prisma, id)).plan;
+  }
+
+  /**
+   * Cancels under the shop's rule (see planCancellation): free within the
+   * window, otherwise this month's box still ships and the unused months are
+   * owed back. The refund is recorded as due on the order; admin pays it
+   * through the payment provider and records it.
+   */
   async cancel(id: string, userId: string, reason?: string) {
     const sub = await this.findOne(id, userId);
-    if (['CANCELLED', 'EXPIRED'].includes(sub.status)) throw new BadRequestException('Subscription already cancelled');
-    return this.prisma.customerSubscription.update({
+    if (['CANCELLED', 'EXPIRED'].includes(sub.status) || sub.cancelledAt) throw new BadRequestException('Subscription already cancelled');
+
+    // Never paid: nothing to refund, drop the unpaid order with it.
+    if (sub.status === 'PENDING' && !sub.isGift) {
+      const order = await this.prisma.order.findFirst({ where: { subscriptionId: id, status: 'PENDING' }, select: { id: true } });
+      if (order) await cancelUnpaidOrder(this.prisma, order.id, 'Cancelled by the customer before paying.');
+      await this.prisma.customerSubscription.update({ where: { id }, data: { status: 'CANCELLED', cancelledAt: new Date(), cancelReason: reason, autoRenewal: false, nextRenewalAt: null } });
+      return { kind: 'free', refund: 0, keptBoxes: 0 };
+    }
+
+    const now = new Date();
+    const { plan, orderId } = await planCancellation(this.prisma, id, now);
+    const keepsBox = plan.kind === 'keep' && plan.thisMonthBoxComing;
+    await this.prisma.customerSubscription.update({
       where: { id },
-      data: { status: 'CANCELLED', cancelReason: reason },
+      data: {
+        cancelledAt: now, cancelReason: reason, autoRenewal: false, nextRenewalAt: null,
+        boxesTotal: plan.kind === 'free' ? sub.boxesTotal : plan.keptBoxes,
+        // This month's box still ships: stay active until the month ends.
+        status: keepsBox ? 'ACTIVE' : 'CANCELLED',
+        endDate: keepsBox ? endOfMonth(now) : now,
+      },
     });
+    if (plan.kind === 'free') {
+      await this.prisma.boxShipment.updateMany({ where: { subscriptionId: id, status: { in: ['TO_PACK', 'PACKED'] } }, data: { status: 'CANCELLED' } });
+    }
+    if (plan.refund > 0 && orderId) {
+      const order = await this.prisma.order.findUnique({ where: { id: orderId }, select: { refundDueAmount: true, internalNotes: true } });
+      await this.prisma.order.update({
+        where: { id: orderId },
+        data: {
+          refundDueAmount: Number(order?.refundDueAmount ?? 0) + plan.refund,
+          internalNotes: [order?.internalNotes, `Subscription cancelled by the customer (${plan.kind === 'free' ? `within ${plan.freeHours} h — full refund` : `kept ${plan.keptBoxes} of ${plan.boxesTotal} boxes`}). Refund due ₾${plan.refund.toFixed(2)}.`].filter(Boolean).join('\n'),
+        },
+      });
+    }
+    return plan;
+  }
+
+  /**
+   * Sends this subscription's boxes somewhere new from now on. Boxes not yet
+   * packed follow at once; one already packed keeps its label, and the
+   * customer is told so.
+   */
+  async changeAddress(id: string, userId: string, a: { firstName: string; lastName: string; phone: string; city: string; addressLine1: string; addressLine2?: string }) {
+    const sub = await this.findOne(id, userId);
+    if (['CANCELLED', 'EXPIRED'].includes(sub.status)) throw new BadRequestException('This subscription has ended');
+    const address = await this.prisma.address.create({
+      data: { userId, firstName: a.firstName.trim(), lastName: a.lastName.trim(), phone: a.phone.trim(), city: a.city.trim(), addressLine1: a.addressLine1.trim(), addressLine2: a.addressLine2?.trim() || null },
+    });
+    await this.prisma.customerSubscription.update({ where: { id }, data: { addressId: address.id } });
+    const { count: moved } = await this.prisma.boxShipment.updateMany({ where: { subscriptionId: id, status: 'TO_PACK' }, data: { addressId: address.id } });
+    const alreadyPacked = await this.prisma.boxShipment.count({ where: { subscriptionId: id, status: 'PACKED' } });
+    return { ok: true, movedBoxes: moved, alreadyPacked };
   }
 
   async toggleAutoRenewal(id: string, userId: string, enabled: boolean) {

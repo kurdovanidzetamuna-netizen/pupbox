@@ -165,6 +165,8 @@ export class CheckoutService {
             userId,
             planId: item.subscriptionPlanId,
             dogId: gift ? null : data.dogId || null,
+            // A gift's address comes from the recipient when they claim it.
+            addressId: gift ? null : address.id,
             status: 'PENDING',
             boxesTotal: item.subscriptionPlan.boxCount,
             isGift: !!gift,

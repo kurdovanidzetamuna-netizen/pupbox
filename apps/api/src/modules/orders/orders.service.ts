@@ -106,7 +106,9 @@ export class OrdersService {
     const num = (v: unknown) => (v == null ? 0 : Number(v));
     const statusCount = (s: string) => byStatus.find((r) => r.status === s)?._count.id ?? 0;
 
-    const refundDueCount = await this.prisma.order.count({ where: { ...where, status: 'CANCELLED', payments: { some: { status: 'PAID' } } } });
+    const refundDueCount = await this.prisma.order.count({
+      where: { ...where, OR: [{ status: 'CANCELLED', payments: { some: { status: 'PAID' } } }, { refundDueAmount: { gt: 0 } }] },
+    });
 
     return {
       orders: orders.map((o) => this.withFlow(o)),
@@ -152,9 +154,43 @@ export class OrdersService {
   }
 
   /** What admin may do next with an order, and whether money is owed back. */
-  private withFlow<T extends { status: OrderStatus; payments: { status: string }[] }>(o: T) {
+  private withFlow<T extends { status: OrderStatus; payments: { status: string; amount?: any }[]; refundDueAmount?: any }>(o: T) {
     const paid = wasPaid(o.payments);
-    return { ...o, allowedNext: allowedNext(o.status, paid), refundDue: o.status === 'CANCELLED' && paid };
+    // Owed back: what a cancellation set aside, or the whole payment of a paid order cancelled outright.
+    const set = Number(o.refundDueAmount ?? 0);
+    const full = o.status === 'CANCELLED' && paid ? Number(o.payments.find((p) => p.status === 'PAID')?.amount ?? 0) : 0;
+    const refundDueValue = set > 0 ? set : full;
+    return { ...o, allowedNext: allowedNext(o.status, paid), refundDue: refundDueValue > 0 && paid, refundDueValue };
+  }
+
+  /**
+   * Records a refund made in the payment provider's portal: a Refund row,
+   * the payment marked (partially) refunded, and the amount owed cleared.
+   * Nothing is sent to the bank from here.
+   */
+  async recordRefund(id: string, amount: number, reason?: string) {
+    const order = await this.prisma.order.findUnique({ where: { id }, include: { payments: { where: { status: { in: ['PAID', 'PARTIALLY_REFUNDED'] } }, include: { refunds: true }, orderBy: { createdAt: 'desc' }, take: 1 } } });
+    if (!order) throw new NotFoundException('Order not found');
+    const payment = order.payments[0];
+    if (!payment) throw new BadRequestException('This order has no payment to refund.');
+    const already = payment.refunds.reduce((s, r) => s + Number(r.amount), 0);
+    const left = Number(payment.amount) - already;
+    if (!(amount > 0) || amount > left + 0.001) throw new BadRequestException(`The refund must be between ₾0 and ₾${left.toFixed(2)}.`);
+    const fully = amount >= left - 0.001;
+    const owed = Math.max(0, Number(order.refundDueAmount ?? 0) - amount);
+    await this.prisma.$transaction([
+      this.prisma.refund.create({ data: { paymentId: payment.id, amount, reason: reason?.trim() || null } }),
+      this.prisma.payment.update({ where: { id: payment.id }, data: { status: fully ? 'REFUNDED' : 'PARTIALLY_REFUNDED' } }),
+      this.prisma.order.update({
+        where: { id },
+        data: {
+          refundDueAmount: owed > 0 ? owed : null,
+          // A cancelled order refunded in full is finished; a live one keeps its status.
+          ...(order.status === 'CANCELLED' || order.status === 'DELIVERED' ? { status: 'REFUNDED' } : {}),
+        },
+      }),
+    ]);
+    return this.adminGetOne(id);
   }
 
   /**
@@ -202,14 +238,9 @@ export class OrdersService {
     if (to === 'REFUNDED') {
       const payment = order.payments.find((p) => p.status === 'PAID');
       if (!payment) throw new BadRequestException('This order has no payment to refund.');
-      const amount = opts.refundAmount ?? Number(payment.amount);
-      if (!(amount > 0) || amount > Number(payment.amount)) throw new BadRequestException(`The refund must be between ₾0 and ₾${Number(payment.amount).toFixed(2)}.`);
-      // Records a refund made in the payment provider's portal; nothing is sent to the bank from here.
-      await this.prisma.$transaction([
-        this.prisma.refund.create({ data: { paymentId: payment.id, amount, reason: note || null } }),
-        this.prisma.payment.update({ where: { id: payment.id }, data: { status: amount < Number(payment.amount) ? 'PARTIALLY_REFUNDED' : 'REFUNDED' } }),
-        this.prisma.order.update({ where: { id }, data: { status: 'REFUNDED' } }),
-      ]);
+      await this.recordRefund(id, opts.refundAmount ?? Number(payment.amount), note);
+      // Even a partial refund ends a cancelled or delivered order.
+      await this.prisma.order.update({ where: { id }, data: { status: 'REFUNDED' } });
       return this.adminGetOne(id);
     }
 

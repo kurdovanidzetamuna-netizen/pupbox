@@ -1,13 +1,26 @@
 import { Module } from '@nestjs/common';
 import { SubscriptionsService } from './subscriptions.service';
-import { Controller, Get, Post, Patch, Body, Param, UseGuards, Request, Query } from '@nestjs/common';
+import { Controller, Get, Patch, Body, Param, UseGuards, Request, Query } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { AdminJwtGuard } from '../admin-auth/admin-jwt.guard';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { IsString, IsOptional, IsBoolean } from 'class-validator';
+import { IsString, IsOptional, IsBoolean, IsNotEmpty, MaxLength, Matches } from 'class-validator';
+import { Transform } from 'class-transformer';
+
+/** Trims strings so a field of only spaces counts as empty. */
+const Trim = () => Transform(({ value }) => (typeof value === 'string' ? value.trim() : value));
 
 class CancelDto {
   @IsOptional() @IsString() reason?: string;
+}
+
+class AddressDto {
+  @Trim() @IsString() @IsNotEmpty() @MaxLength(80) firstName: string;
+  @Trim() @IsString() @IsNotEmpty() @MaxLength(80) lastName: string;
+  @Trim() @IsString() @Matches(/^\+?[0-9\s()-]{7,20}$/) phone: string;
+  @Trim() @IsString() @IsNotEmpty() @MaxLength(80) city: string;
+  @Trim() @IsString() @IsNotEmpty() @MaxLength(200) addressLine1: string;
+  @IsOptional() @Trim() @IsString() @MaxLength(200) addressLine2?: string;
 }
 
 class ToggleAutoRenewalDto {
@@ -28,8 +41,14 @@ class SubscriptionsController {
   constructor(private service: SubscriptionsService) {}
   @Get() findAll(@Request() req: any) { return this.service.findByUser(req.user.id); }
   @Get(':id') findOne(@Request() req: any, @Param('id') id: string) { return this.service.findOne(id, req.user.id); }
+  @Get(':id/cancel-preview') cancelPreview(@Request() req: any, @Param('id') id: string) {
+    return this.service.cancelPreview(id, req.user.id);
+  }
   @Patch(':id/cancel') cancel(@Request() req: any, @Param('id') id: string, @Body() dto: CancelDto) {
     return this.service.cancel(id, req.user.id, dto.reason);
+  }
+  @Patch(':id/address') changeAddress(@Request() req: any, @Param('id') id: string, @Body() dto: AddressDto) {
+    return this.service.changeAddress(id, req.user.id, dto);
   }
   @Patch(':id/auto-renewal') toggleAutoRenewal(@Request() req: any, @Param('id') id: string, @Body() dto: ToggleAutoRenewalDto) {
     return this.service.toggleAutoRenewal(id, req.user.id, dto.enabled);

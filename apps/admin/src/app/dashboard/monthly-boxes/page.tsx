@@ -225,6 +225,7 @@ export default function MonthlyBoxesPage() {
                     <td style={td}>
                       <div style={{ fontWeight: 600, color: 'var(--slate-900)' }}>{s.user.firstName} {s.user.lastName}{s.isGift && <span title="Gift" style={{ marginLeft: 4 }}>🎁</span>}</div>
                       {s.status === 'CANCELLED' && i.status !== 'CANCELLED' && <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--red-600)' }}>Subscription cancelled</div>}
+                      {s.status !== 'CANCELLED' && s.cancelledAt && <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--amber-700)' }}>Last box — customer cancelled</div>}
                       <div style={{ fontSize: 12, color: 'var(--slate-400)' }}>{s.user.email}</div>
                     </td>
                     <td style={td}>

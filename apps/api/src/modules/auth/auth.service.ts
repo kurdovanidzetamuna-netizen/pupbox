@@ -134,6 +134,48 @@ export class AuthService {
     };
   }
 
+  /** A new password from inside the account: checks the old one, signs out every other session, keeps this one. */
+  async changePassword(userId: string, currentPassword: string, newPassword: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user || !(await bcrypt.compare(currentPassword, user.passwordHash))) throw new BadRequestException('Your current password is not right.');
+    const changedAt = new Date(Math.floor(Date.now() / 1000) * 1000);
+    await this.prisma.user.update({ where: { id: userId }, data: { passwordHash: await bcrypt.hash(newPassword, 12), passwordChangedAt: changedAt } });
+    await this.prisma.passwordResetToken.deleteMany({ where: { userId } });
+    return { token: this.signToken(user.id, user.email, 'customer') };
+  }
+
+  /**
+   * The customer's right to erasure. Personal details are wiped; orders and
+   * payments stay (with no name, contact or street attached) because the law
+   * requires keeping financial records. A running subscription must be
+   * cancelled first, so the cancellation and refund rules apply to it.
+   */
+  async deleteAccount(userId: string, password: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user || user.deletedAt) throw new BadRequestException('Account not found');
+    if (!(await bcrypt.compare(password, user.passwordHash))) throw new BadRequestException('Your password is not right.');
+    const running = await this.prisma.customerSubscription.count({ where: { userId, status: { in: ['ACTIVE', 'PAUSED'] } } });
+    if (running) throw new BadRequestException('Cancel your subscription first, then delete the account.');
+
+    const now = new Date();
+    await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { id: userId },
+        data: {
+          email: `deleted-${userId}@deleted.invalid`, firstName: 'Deleted', lastName: 'customer', phone: null, avatarUrl: null,
+          passwordHash: await bcrypt.hash(crypto.randomBytes(32).toString('hex'), 4),
+          status: 'BLOCKED', deletedAt: now, passwordChangedAt: now,
+        },
+      }),
+      this.prisma.address.updateMany({ where: { userId }, data: { firstName: 'Deleted', lastName: 'customer', phone: '', addressLine1: '—', addressLine2: null, postalCode: null, deletedAt: now } }),
+      this.prisma.dog.updateMany({ where: { userId }, data: { name: 'Deleted', breed: null, birthday: null, specialNotes: null, deletedAt: now } }),
+      this.prisma.passwordResetToken.deleteMany({ where: { userId } }),
+      this.prisma.cart.deleteMany({ where: { userId } }),
+    ]);
+    this.logger.log(`Account ${userId} deleted at the customer's request`);
+    return { ok: true };
+  }
+
   private signToken(userId: string, email: string, role: string) {
     return this.jwt.sign({ sub: userId, email, role });
   }

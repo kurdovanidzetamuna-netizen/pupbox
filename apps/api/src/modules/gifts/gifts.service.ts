@@ -111,8 +111,10 @@ export class GiftsService implements OnModuleInit, OnModuleDestroy {
         dogId = dog.id;
       }
 
+      // Where the boxes go: the address given now, or the recipient's saved one.
+      let addressId: string | null = null;
       if (data.address) {
-        await tx.address.create({
+        addressId = (await tx.address.create({
           data: {
             userId,
             firstName: data.address.firstName,
@@ -124,7 +126,10 @@ export class GiftsService implements OnModuleInit, OnModuleDestroy {
             postalCode: data.address.postalCode || null,
             isDefault: true,
           },
-        });
+          select: { id: true },
+        })).id;
+      } else {
+        addressId = (await tx.address.findFirst({ where: { userId, deletedAt: null }, orderBy: [{ isDefault: 'desc' }, { createdAt: 'desc' }], select: { id: true } }))?.id ?? null;
       }
 
       const now = new Date();
@@ -136,6 +141,7 @@ export class GiftsService implements OnModuleInit, OnModuleDestroy {
           // cannot be replayed.
           userId,
           dogId,
+          addressId,
           status: 'ACTIVE',
           // A gift is a fixed term: it runs from the claim and does not renew.
           ...subscriptionPeriod(now, sub.plan, false),

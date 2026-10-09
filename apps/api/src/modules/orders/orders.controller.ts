@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Query, UseGuards, Request, Patch, Body } from '@nestjs/common';
+import { Controller, Get, Param, Query, UseGuards, Request, Patch, Post, Body } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { AdminJwtGuard } from '../admin-auth/admin-jwt.guard';
@@ -12,6 +12,11 @@ class AdminStatusDto {
   @IsEnum(OrderStatus) status: OrderStatus;
   /** For REFUNDED: what was returned; defaults to the full payment. */
   @IsOptional() @Type(() => Number) @IsNumber() @Min(0.01) refundAmount?: number;
+  @IsOptional() @IsString() @MaxLength(300) reason?: string;
+}
+
+class RefundDto {
+  @Type(() => Number) @IsNumber() @Min(0.01) amount: number;
   @IsOptional() @IsString() @MaxLength(300) reason?: string;
 }
 
@@ -63,6 +68,13 @@ export class OrdersController {
   @UseGuards(AdminJwtGuard)
   adminUpdateStatus(@Param('id') id: string, @Body() body: AdminStatusDto) {
     return this.ordersService.adminUpdateStatus(id, body.status, { refundAmount: body.refundAmount, reason: body.reason });
+  }
+
+  @Post('admin/:id/refund')
+  @ApiBearerAuth()
+  @UseGuards(AdminJwtGuard)
+  adminRecordRefund(@Param('id') id: string, @Body() body: RefundDto) {
+    return this.ordersService.recordRefund(id, body.amount, body.reason);
   }
 
   @Patch('admin/:id/tracking')

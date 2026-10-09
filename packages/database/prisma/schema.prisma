@@ -279,6 +279,7 @@ model Address {
 
   orders       Order[]
   boxShipments BoxShipment[]
+  subscriptions CustomerSubscription[]
 }
 
 // ─── PRODUCT CATEGORIES ──────────────────────────────────────────────────────
@@ -445,6 +446,10 @@ model CustomerSubscription {
   plan          SubscriptionPlan   @relation(fields: [planId], references: [id])
   dogId         String?
   dog           Dog?               @relation(fields: [dogId], references: [id])
+  /// Where its boxes go. Set from the order (or the gift claim); the
+  /// customer changes it in My subscriptions when they move.
+  addressId     String?
+  address       Address?           @relation(fields: [addressId], references: [id])
   status        SubscriptionStatus @default(PENDING)
   startDate     DateTime?
   endDate       DateTime?
@@ -453,6 +458,9 @@ model CustomerSubscription {
   boxesTotal    Int
   boxesDelivered Int               @default(0)
   cancelReason  String?
+  /// When the customer cancelled. The box for that month may still ship, so
+  /// the subscription stays ACTIVE until it ends, then becomes CANCELLED.
+  cancelledAt   DateTime?
   createdAt     DateTime           @default(now())
   updatedAt     DateTime           @updatedAt
 
@@ -564,6 +572,9 @@ model Order {
   discountAmount   Decimal               @db.Decimal(10, 2) @default(0)
   total            Decimal               @db.Decimal(10, 2)
   trackingNumber   String?
+  /// Money owed back to the customer (e.g. unused months after a cancelled
+  /// plan), until admin records the refund made in the payment provider.
+  refundDueAmount  Decimal?              @db.Decimal(10, 2)
   internalNotes    String?
   shippedAt        DateTime?
   deliveredAt      DateTime?

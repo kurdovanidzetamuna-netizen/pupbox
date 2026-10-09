@@ -117,6 +117,25 @@ function OrderDrawer({ order, onClose, onStatusChange, onTrackingUpdate }: any) 
   const next: string[] = order.allowedNext ?? [];
   const paid = order.payments?.[0]?.status === 'PAID';
 
+  async function recordRefund() {
+    const due = Number(order.refundDueValue ?? 0);
+    const answer = prompt(`Amount refunded in the payment provider’s portal (₾). Owed: ${due.toFixed(2)}`, due.toFixed(2));
+    if (answer === null) return;
+    const reason = prompt('Note (optional):') ?? '';
+    setSaving(true); setStatusError('');
+    const res = await fetch(`${API}/orders/admin/${order.id}/refund`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token()}` },
+      body: JSON.stringify({ amount: Number(answer.replace(',', '.')), ...(reason ? { reason } : {}) }),
+    });
+    setSaving(false);
+    if (!res.ok) {
+      const r = await res.json().catch(() => ({}));
+      setStatusError((Array.isArray(r.message) ? r.message[0] : r.message) || 'Not saved.');
+      return;
+    }
+    onStatusChange();
+  }
+
   async function saveStatus() {
     const body: any = { status: newStatus };
     if (newStatus === 'CANCELLED') {
@@ -328,9 +347,10 @@ function OrderDrawer({ order, onClose, onStatusChange, onTrackingUpdate }: any) 
           <div style={{ background: 'var(--slate-50)', borderRadius: 12, padding: '16px 20px' }}>
             <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--slate-400)', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 12px' }}>Update Status</p>
             {order.refundDue && (
-              <p style={{ margin: '0 0 12px', fontSize: 13, color: 'var(--red-700)', background: 'var(--red-50)', border: '1px solid var(--red-200)', borderRadius: 9, padding: '8px 12px' }}>
-                Refund due: this order was cancelled after payment. Refund it in the payment provider’s portal, then mark it Refunded here.
-              </p>
+              <div style={{ margin: '0 0 12px', fontSize: 13, color: 'var(--red-700)', background: 'var(--red-50)', border: '1px solid var(--red-200)', borderRadius: 9, padding: '10px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                <span><strong>Refund due ₾{Number(order.refundDueValue).toFixed(2)}.</strong> Pay it back in the payment provider’s portal, then record it here.</span>
+                <button onClick={recordRefund} disabled={saving} style={{ background: 'var(--red-600)', color: 'var(--white)', border: 'none', borderRadius: 8, padding: '6px 12px', fontSize: 12, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>Record refund</button>
+              </div>
             )}
             {next.length === 0 ? (
               <p style={{ margin: 0, fontSize: 13, color: 'var(--slate-500)' }}>This order is {order.status.toLowerCase()} — nothing more to change.</p>
