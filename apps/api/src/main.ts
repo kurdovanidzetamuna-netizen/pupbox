@@ -30,7 +30,15 @@ async function bootstrap() {
   // unset when the API is reached directly, or anyone could fake an address.
   const trustProxy = Number(process.env.TRUST_PROXY);
   if (trustProxy > 0) app.set('trust proxy', trustProxy);
-  app.useStaticAssets(join(__dirname, '..', 'public'), { prefix: '/' });
+  app.useStaticAssets(join(__dirname, '..', 'public'), {
+    prefix: '/',
+    // Uploaded files are shown as images, never run: an SVG with a script in
+    // it, opened directly, gets no scripts, no forms and no other requests.
+    setHeaders: (res) => {
+      res.setHeader('Content-Security-Policy', "default-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'; sandbox");
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+    },
+  });
 
   app.use(helmet());
   app.use(compression());

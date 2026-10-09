@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException, BadRequestException, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
-import { sendDueGiftCards, sendGiftCard } from './gift-card';
+import { forgetStaleGifts, sendDueGiftCards, sendGiftCard } from './gift-card';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
 import { DogGender, DogSize } from '@prisma/client';
@@ -24,9 +24,14 @@ export class GiftsService implements OnModuleInit, OnModuleDestroy {
 
   /** Gift cards dated for later go out on their day: checked shortly after start-up, then hourly. */
   onModuleInit() {
-    const run = () => sendDueGiftCards(this.prisma, this.email)
-      .then((n) => { if (n) this.logger.log(`Sent ${n} scheduled gift card(s)`); })
-      .catch((e) => this.logger.error(`Scheduled gift cards failed: ${e.message}`));
+    const run = async () => {
+      await sendDueGiftCards(this.prisma, this.email)
+        .then((n) => { if (n) this.logger.log(`Sent ${n} scheduled gift card(s)`); })
+        .catch((e) => this.logger.error(`Scheduled gift cards failed: ${e.message}`));
+      await forgetStaleGifts(this.prisma)
+        .then((n) => { if (n) this.logger.log(`Forgot the recipients of ${n} gift(s) unclaimed for a year`); })
+        .catch((e) => this.logger.error(`Gift clean-up failed: ${e.message}`));
+    };
     setTimeout(run, 20_000).unref();
     this.timer = setInterval(run, 60 * 60 * 1000);
     this.timer.unref();

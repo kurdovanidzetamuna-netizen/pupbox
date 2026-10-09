@@ -56,6 +56,26 @@ export async function sendGiftCard(prisma: PrismaService, email: EmailService, o
   return { sent: true, to: order.giftRecipientEmail };
 }
 
+/** How long an unclaimed gift's recipient details are kept (privacy policy: 12 months). */
+const KEEP_UNCLAIMED_MS = 365 * 86400_000;
+
+/**
+ * A gift never claimed within a year: forget who it was for (name, email,
+ * message), retire the claim link and end the subscription. The order itself
+ * stays for the accounts.
+ */
+export async function forgetStaleGifts(prisma: PrismaService) {
+  const stale = await prisma.order.findMany({
+    where: { isGift: true, createdAt: { lt: new Date(Date.now() - KEEP_UNCLAIMED_MS) }, giftRecipientEmail: { not: null }, subscription: { giftClaimedAt: null } },
+    select: { id: true, subscriptionId: true },
+  });
+  for (const o of stale) {
+    await prisma.order.update({ where: { id: o.id }, data: { giftRecipientName: null, giftRecipientEmail: null, giftMessage: null } });
+    if (o.subscriptionId) await prisma.customerSubscription.updateMany({ where: { id: o.subscriptionId, giftClaimedAt: null }, data: { giftClaimToken: null, status: 'EXPIRED' } });
+  }
+  return stale.length;
+}
+
 /** Every paid gift whose send date has come and whose card hasn't gone out. */
 export async function sendDueGiftCards(prisma: PrismaService, email: EmailService) {
   const due = await prisma.order.findMany({

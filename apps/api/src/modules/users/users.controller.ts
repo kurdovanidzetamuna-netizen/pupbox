@@ -39,6 +39,39 @@ export class UsersController {
     return this.prisma.user.findUnique({ where: { id: req.user.id }, select: USER_SELECT });
   }
 
+  /**
+   * Everything we hold about the customer, as one JSON file — the "give you
+   * a copy" promised in the privacy policy. No password hash, no internal notes.
+   */
+  @Get('me/export')
+  @ApiOperation({ summary: 'Download a copy of my data' })
+  async exportMyData(@Request() req) {
+    const id = req.user.id;
+    const [profile, addresses, dogs, orders, subscriptions] = await Promise.all([
+      this.prisma.user.findUnique({ where: { id }, select: { email: true, firstName: true, lastName: true, phone: true, language: true, referralCode: true, createdAt: true } }),
+      this.prisma.address.findMany({ where: { userId: id, deletedAt: null }, select: { firstName: true, lastName: true, phone: true, city: true, addressLine1: true, addressLine2: true, postalCode: true, createdAt: true } }),
+      this.prisma.dog.findMany({ where: { userId: id, deletedAt: null }, select: { name: true, breed: true, birthday: true, gender: true, size: true, weightKg: true, allergies: true, toyPreferences: true, foodPreferences: true, chewingStrength: true, specialNotes: true } }),
+      this.prisma.order.findMany({
+        where: { userId: id }, orderBy: { createdAt: 'desc' },
+        select: {
+          id: true, type: true, status: true, total: true, deliveryCost: true, discountAmount: true, createdAt: true, shippedAt: true, deliveredAt: true,
+          isGift: true, giftRecipientName: true, giftRecipientEmail: true, giftMessage: true,
+          items: { select: { name: true, quantity: true, price: true, personalisation: true } },
+          payments: { select: { status: true, amount: true, paidAt: true, refunds: { select: { amount: true, createdAt: true } } } },
+        },
+      }),
+      this.prisma.customerSubscription.findMany({
+        where: { userId: id },
+        select: {
+          status: true, startDate: true, endDate: true, autoRenewal: true, boxesTotal: true, boxesDelivered: true, cancelledAt: true,
+          plan: { select: { name: true } },
+          shipments: { select: { year: true, month: true, boxNumber: true, status: true, trackingNumber: true } },
+        },
+      }),
+    ]);
+    return { exportedAt: new Date().toISOString(), profile, addresses, dogs, orders, subscriptions };
+  }
+
   @Patch('me')
   @ApiOperation({ summary: 'Update current user profile' })
   async updateProfile(@Request() req, @Body() body: UpdateProfileDto) {

@@ -42,6 +42,23 @@ export default function AccountSecurity() {
     } finally { setPwSaving(false); }
   }
 
+  const [exporting, setExporting] = useState(false);
+  /** A copy of everything we hold about the customer, saved as a file. */
+  async function downloadData() {
+    setExporting(true);
+    try {
+      const res = await authFetch('/users/me/export');
+      if (!res.ok) throw new Error();
+      const blob = new Blob([JSON.stringify(await res.json(), null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      Object.assign(document.createElement('a'), { href: url, download: `pupbox-my-data-${new Date().toISOString().slice(0, 10)}.json` }).click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      if (err instanceof SessionExpiredError) return expired();
+      alert(t('co.e.generic'));
+    } finally { setExporting(false); }
+  }
+
   async function deleteAccount() {
     if (!delPassword) return setDelError(t('login.e.password'));
     setDeleting(true); setDelError('');
@@ -85,6 +102,12 @@ export default function AccountSecurity() {
             {pwSaving ? t('co.saving') : t('sec.changeBtn')}
           </button>
         </form>
+      </section>
+
+      <section className="bg-white rounded-2xl border border-gray-100 p-6">
+        <h2 className="font-semibold text-gray-800 mb-1">{t('sec.dataTitle')}</h2>
+        <p className="text-sm text-gray-500 mb-4">{t('sec.dataSub')}</p>
+        <button onClick={downloadData} disabled={exporting} className="text-sm font-medium text-teal-700 border border-teal-200 px-4 py-2 rounded-xl hover:bg-teal-50 disabled:opacity-50">{exporting ? t('co.saving') : t('sec.dataBtn')}</button>
       </section>
 
       <section className="bg-white rounded-2xl border border-gray-100 p-6">
