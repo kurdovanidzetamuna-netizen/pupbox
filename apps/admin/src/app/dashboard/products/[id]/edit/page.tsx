@@ -5,6 +5,7 @@ import FormField, { inputClass, parseFieldErrors } from '@/components/FormField'
 import LangTabs, { type Lang } from '@/components/LangTabs';
 import PricingSection from '@/components/PricingSection';
 import ErrorPopup from '@/components/ErrorPopup';
+import PersonalisationCard, { EMPTY_PERSONALISATION, personalisationFromProduct, personalisationPayload, type PersonalisationForm } from '@/components/PersonalisationCard';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 
@@ -26,8 +27,6 @@ export default function EditProductPage() {
     name: '', slug: '', sku: '', brand: '', shortDescription: '', description: '',
     price: '', salePrice: '', categoryId: '', includedInBox: false, standaloneSale: true,
     seoTitle: '', seoDesc: '', stockQuantity: '', lowStockAlert: '',
-    // Personalisation: what the customer chooses before adding to cart.
-    engrave: false, engraveMax: '12', sizes: '',
   });
   const [images, setImages] = useState<any[]>([]);
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -36,6 +35,7 @@ export default function EditProductPage() {
   const [dropZoneDrag, setDropZoneDrag] = useState(false);
 
   const [ka, setKa] = useState({ name: '', shortDescription: '', description: '', seoTitle: '', seoDesc: '' });
+  const [personalisation, setPersonalisation] = useState<PersonalisationForm>(EMPTY_PERSONALISATION);
 
   useEffect(() => {
     const token = localStorage.getItem('admin_token');
@@ -44,6 +44,9 @@ export default function EditProductPage() {
       fetch(`${API}/categories`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
     ]).then(([product, cats]) => {
       setCategories(Array.isArray(cats) ? cats : cats.items || []);
+      // A wrong or deleted product: say so rather than show an empty form
+      // whose Save would fail.
+      if (!product?.id) { setError('This product was not found. Open it again from the product list.'); return; }
       setProductId(product.id);
       setImages(product.images || []);
       setForm({
@@ -58,15 +61,13 @@ export default function EditProductPage() {
         categoryId: product.category?.id || product.categoryId || '',
         includedInBox: product.includedInBox ?? false,
         standaloneSale: product.standaloneSale ?? true,
-        engrave: !!product.personalisation?.engraving,
-        engraveMax: String(product.personalisation?.engraving?.maxLength ?? 12),
-        sizes: (product.personalisation?.sizes ?? []).join(', '),
         seoTitle: product.seoTitle || '',
         seoDesc: product.seoDesc || '',
         stockQuantity: product.inventory?.quantity != null ? String(product.inventory.quantity) : '',
         lowStockAlert: product.inventory?.lowStockAlert != null ? String(product.inventory.lowStockAlert) : '',
       });
       const kaData = product.translations?.ka;
+      setPersonalisation(personalisationFromProduct(product));
       if (kaData) setKa({ name: kaData.name || '', shortDescription: kaData.shortDescription || '', description: kaData.description || '', seoTitle: kaData.seoTitle || '', seoDesc: kaData.seoDesc || '' });
     }).catch(() => {}).finally(() => setLoading(false));
   }, [id]);
@@ -180,10 +181,7 @@ export default function EditProductPage() {
     if (form.stockQuantity) body.stockQuantity = Number(form.stockQuantity);
     if (form.lowStockAlert) body.lowStockAlert = Number(form.lowStockAlert);
     if (hasKa) body.translations = { ka: { ...ka } };
-    const sizes = form.sizes.split(',').map(x => x.trim()).filter(Boolean);
-    body.personalisation = form.engrave || sizes.length
-      ? { ...(form.engrave ? { engraving: { maxLength: Number(form.engraveMax) || 12 } } : {}), ...(sizes.length ? { sizes } : {}) }
-      : null;
+    body.personalisation = personalisationPayload(personalisation);
 
     try {
       const res = await fetch(`${API}/admin/products/${productId}`, {
@@ -393,21 +391,7 @@ export default function EditProductPage() {
         </div>
 
         {/* Personalisation */}
-        <div style={{ ...sectionStyle, ...(isKa ? disabledSection : {}) }}>
-          <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--slate-900)', margin: '0 0 4px' }}>Personalisation</p>
-          <p style={{ fontSize: 11, color: 'var(--slate-400)', margin: '0 0 14px' }}>What the customer must choose before adding this to the cart. It appears on the order for packing.</p>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--slate-600)', cursor: 'pointer' }}>
-            <input type="checkbox" checked={form.engrave} onChange={e => set('engrave', e.target.checked)} disabled={isKa} />
-            Customer writes a name to engrave, up to
-            <input style={{ ...inputClass(), width: 64, padding: '4px 8px' }} type="number" min="1" max="40" value={form.engraveMax} onChange={e => set('engraveMax', e.target.value)} disabled={isKa || !form.engrave} />
-            characters
-          </label>
-          <div style={{ marginTop: 12 }}>
-            <FormField label="Sizes to choose from (comma separated, empty = no size choice)">
-              <input style={isKa ? disabledInput : inputClass()} value={form.sizes} onChange={e => set('sizes', e.target.value)} placeholder="S, M, L" disabled={isKa} />
-            </FormField>
-          </div>
-        </div>
+        <PersonalisationCard value={personalisation} onChange={setPersonalisation} disabled={isKa} style={sectionStyle} />
 
         {/* Inventory */}
         <div style={sectionStyle}>
