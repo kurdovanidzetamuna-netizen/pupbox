@@ -35,6 +35,7 @@ export class EmailService {
   /** False until an email service key is set; nothing actually leaves before then. */
   get isConfigured() { return !!this.apiKey; }
   private get from() { return this.config.get('EMAIL_FROM') || 'noreply@pupbox.ge'; }
+  private get adminUrl() { return this.config.get('NEXT_PUBLIC_ADMIN_URL') || 'https://admin.pupbox.ge'; }
   private get siteUrl() { return this.config.get('NEXT_PUBLIC_SITE_URL') || 'https://pupbox.ge'; }
 
   private async getTemplate(key: string, l: Lang): Promise<{ subject: string; body: string } | null> {
@@ -146,6 +147,29 @@ ${m.body.map(p).join('\n')}${button}${(m.after ?? []).map((a) => `<p style="marg
       body: [hi(l, d.firstName), `Order <strong>#${orderId}</strong> has shipped.`, ...(tracking ? [tracking] : [])],
       button: { text: 'My orders', url },
     });
+  }
+
+  /** To the shop, not the customer: a paid order to act on. Always English, like admin. */
+  async sendNewOrderAlert(to: string, o: {
+    id: string; type: string; total: number; isGift: boolean; customer: string; customerEmail: string;
+    items: { name: string; quantity: number; personalisation?: any }[]; city?: string | null;
+  }) {
+    const ref = o.id.slice(-8).toUpperCase();
+    const kind = o.type === 'RENEWAL' ? 'Renewal' : o.isGift ? 'Gift' : o.type === 'SUBSCRIPTION' ? 'Subscription' : o.type === 'MIXED' ? 'Subscription + products' : 'Shop order';
+    const lines = o.items.map((i) => {
+      const p = i.personalisation;
+      const choice = p && (p.size || p.engraving) ? ` <span style="color:#92400e">(${[p.size && `size ${esc(p.size)}`, p.engraving && `engrave “${esc(p.engraving)}”`].filter(Boolean).join(', ')})</span>` : '';
+      return `${esc(i.name)} × ${i.quantity}${choice}`;
+    });
+    await this.send(to, `New order #${ref} — ₾${o.total.toFixed(2)} (${kind})`, this.layout('en', {
+      subject: '',
+      heading: `New ${kind.toLowerCase()} · ₾${o.total.toFixed(2)}`,
+      body: [
+        `<strong>#${ref}</strong> from ${esc(o.customer)} &lt;${esc(o.customerEmail)}&gt;${o.city ? ` · ${esc(o.city)}` : ''}`,
+        lines.join('<br>'),
+      ],
+      button: { text: 'Open in admin', url: `${this.adminUrl}/dashboard/orders` },
+    }));
   }
 
   async sendRenewalDue(d: { email: string; firstName: string; language?: string | null; planName: string; amount: number; renewsOn: Date; orderId: string }) {

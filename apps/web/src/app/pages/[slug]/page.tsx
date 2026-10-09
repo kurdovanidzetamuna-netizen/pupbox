@@ -15,7 +15,7 @@ async function getCmsPage(slug: string) {
 
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   const page = await getCmsPage(params.slug);
-  if (!page) return { title: 'Page not found' };
+  if (!page) return { title: 'გვერდი ვერ მოიძებნა' };
   return {
     // The root layout's title template already appends "| Pupbox".
     title: (page.seoTitle || page.title).replace(/\s*\|\s*Pupbox\s*$/i, ''),

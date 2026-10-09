@@ -15,7 +15,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
       description: product.seoDesc || ka.shortDescription?.trim() || product.shortDescription,
     };
   } catch {
-    return { title: 'Product not found' };
+    return { title: 'გვერდი ვერ მოიძებნა' };
   }
 }
 

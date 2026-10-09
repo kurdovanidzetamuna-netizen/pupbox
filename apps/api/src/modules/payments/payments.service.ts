@@ -11,6 +11,7 @@ import { releaseStock } from '../products/stock';
 import { cancelUnpaidOrder } from '../orders/order-lifecycle';
 import { sendGiftCard } from '../gifts/gift-card';
 import { extendAfterRenewal } from '../subscriptions/renewal';
+import { shopSettings } from '../settings/settings';
 
 /** How long an order may wait for payment before its stock and coupon are freed (checked every 15 minutes). */
 const UNPAID_TTL_MS = 2 * 60 * 60 * 1000;
@@ -125,6 +126,27 @@ export class PaymentsService implements OnModuleInit, OnModuleDestroy {
     return { checkoutUrl: `${siteUrl}/checkout/thank-you?order=${order.id}&payment_status=${outcome}`, paymentId };
   }
 
+  /** Tells the shop a paid order came in, if admin → Settings has an address for it. */
+  private async notifyShop(orderId: string) {
+    const { orderNotifyEmail } = await shopSettings(this.prisma);
+    if (!orderNotifyEmail) return;
+    const o = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      select: {
+        id: true, type: true, total: true, isGift: true,
+        user: { select: { firstName: true, lastName: true, email: true } },
+        address: { select: { city: true } },
+        items: { select: { name: true, quantity: true, personalisation: true } },
+      },
+    });
+    if (!o) return;
+    await this.email.sendNewOrderAlert(orderNotifyEmail, {
+      id: o.id, type: o.type, total: Number(o.total), isGift: o.isGift,
+      customer: [o.user.firstName, o.user.lastName].filter(Boolean).join(' '), customerEmail: o.user.email,
+      city: o.address?.city, items: o.items,
+    });
+  }
+
   async handleWebhook(body: Record<string, any>) {
     if (!this.flitt.verifySignature(body)) {
       this.logger.warn(`Flitt webhook signature mismatch for order ${body.order_id}`);
@@ -223,6 +245,7 @@ export class PaymentsService implements OnModuleInit, OnModuleDestroy {
       });
       if (fullOrder?.user) {
         this.email.sendPaymentConfirmation({ id: order_id, total: Number(order.total), user: fullOrder.user }).catch(() => {});
+        this.notifyShop(order_id).catch((e) => this.logger.error(`New order email failed for ${order_id}: ${e.message}`));
         // Complete referral if this is the referred user's first confirmed order
         const confirmedOrders = await this.prisma.order.count({ where: { userId: order.userId, status: 'PAID' } });
         if (confirmedOrders === 1) {

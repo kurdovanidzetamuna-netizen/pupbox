@@ -18,7 +18,7 @@ async function getPosts(categorySlug: string, page = 1) {
 
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   const cat = await getCategory(params.slug);
-  if (!cat) return { title: 'Category not found' };
+  if (!cat) return { title: 'გვერდი ვერ მოიძებნა' };
   return {
     title: `${cat.name} — Dog Care Tips | Pupbox Blog`,
     description: cat.description || `Browse all ${cat.name} articles on the Pupbox blog.`,

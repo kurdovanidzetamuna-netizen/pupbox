@@ -11,7 +11,7 @@ async function getPost(slug: string) {
 
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   const post = await getPost(params.slug);
-  if (!post) return { title: 'Post not found' };
+  if (!post) return { title: 'გვერდი ვერ მოიძებნა' };
   return {
     title: post.seoTitle || `${post.title} | Pupbox Blog`,
     description: post.seoDesc || post.excerpt,
