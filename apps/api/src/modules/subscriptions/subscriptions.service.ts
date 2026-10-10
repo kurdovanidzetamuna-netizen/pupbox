@@ -130,10 +130,14 @@ export class SubscriptionsService implements OnModuleInit, OnModuleDestroy {
       await this.prisma.boxShipment.updateMany({ where: { subscriptionId: id, status: { in: ['TO_PACK', 'PACKED'] } }, data: { status: 'CANCELLED' } });
     }
     if (plan.refund > 0 && orderId) {
-      const order = await this.prisma.order.findUnique({ where: { id: orderId }, select: { refundDueAmount: true, internalNotes: true } });
+      const order = await this.prisma.order.findUnique({ where: { id: orderId }, select: { status: true, refundDueAmount: true, internalNotes: true, items: { where: { productId: { not: null } }, select: { id: true } } } });
+      // Cancelled for free and the order was only this plan: nothing of it will
+      // ship, so the order is cancelled too (recording the refund then closes it).
+      const wholeOrderOff = plan.kind === 'free' && !order?.items.length && ['PAID', 'PROCESSING'].includes(order?.status ?? '');
       await this.prisma.order.update({
         where: { id: orderId },
         data: {
+          ...(wholeOrderOff ? { status: 'CANCELLED' as const } : {}),
           refundDueAmount: Number(order?.refundDueAmount ?? 0) + plan.refund,
           internalNotes: [order?.internalNotes, `Subscription cancelled by the customer (${plan.kind === 'free' ? `within ${plan.freeHours} h — full refund` : `kept ${plan.keptBoxes} of ${plan.boxesTotal} boxes`}). Refund due ₾${plan.refund.toFixed(2)}.`].filter(Boolean).join('\n'),
         },

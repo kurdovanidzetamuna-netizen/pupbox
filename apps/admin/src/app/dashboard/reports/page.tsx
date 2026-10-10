@@ -7,7 +7,7 @@ const REPORTS = [
   { key: 'orders', label: 'Orders', desc: 'All orders with status, customer, and totals.', hasDateRange: true, emoji: '📦', bg: 'var(--violet-50)', color: 'var(--violet-600)' },
   { key: 'customers', label: 'Customers', desc: 'All registered customers with order count.', hasDateRange: false, emoji: '👥', bg: 'var(--blue-50)', color: 'var(--blue-600)' },
   { key: 'subscriptions', label: 'Subscriptions', desc: 'All subscriptions with plan and renewal dates.', hasDateRange: false, emoji: '🔄', bg: 'var(--green-50)', color: 'var(--green-600)' },
-  { key: 'revenue', label: 'Revenue', desc: 'All completed payments with provider details.', hasDateRange: true, emoji: '💰', bg: 'var(--teal-50)', color: 'var(--teal-700)' },
+  { key: 'revenue', label: 'Revenue', desc: 'Every payment that took money, with what was refunded and kept.', hasDateRange: true, emoji: '💰', bg: 'var(--teal-50)', color: 'var(--teal-700)' },
 ];
 
 export default function ReportsPage() {
@@ -25,7 +25,11 @@ export default function ReportsPage() {
       if (hasDateRange && from) params.set('from', from);
       if (hasDateRange && to) params.set('to', to);
       const res = await fetch(`${API}/reports/${key}?${params}`, { headers: { Authorization: `Bearer ${token()}` } });
-      if (!res.ok) throw new Error('Download failed');
+      if (!res.ok) {
+        const e = await res.json().catch(() => ({}));
+        alert(e.message || `Download failed (error ${res.status}).`);
+        return;
+      }
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');

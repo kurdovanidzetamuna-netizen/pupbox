@@ -61,8 +61,27 @@ type OrderRow = {
   status: string;
   total: unknown;
   items: { productId: string | null; subscriptionPlanId: string | null; quantity: number; total: unknown }[];
-  payments: { status: string; amount: unknown }[];
+  payments: { status: string; amount: unknown; refunds: { amount: unknown }[] }[];
 };
+
+const COLLECTED = ['PAID', 'PARTIALLY_REFUNDED', 'REFUNDED'];
+
+/**
+ * The payment that decides an order's money outcome: the one that collected
+ * money if any did (a failed retry later doesn't undo it), else the latest.
+ * Payments arrive oldest first.
+ */
+function decidingPayment(o: OrderRow) {
+  const collected = o.payments.filter((p) => COLLECTED.includes(p.status));
+  return collected[collected.length - 1] ?? o.payments[o.payments.length - 1];
+}
+
+/** Money the shop kept from a payment: what was collected minus what went back. */
+function kept(p: { status: string; amount: unknown; refunds: { amount: unknown }[] }) {
+  if (!COLLECTED.includes(p.status)) return { kept: 0, refunded: 0 };
+  const refunded = p.refunds.reduce((s, r) => s + n(r.amount), 0);
+  return { kept: Math.max(0, n(p.amount) - refunded), refunded };
+}
 
 @Injectable()
 export class AnalyticsService {
@@ -84,7 +103,7 @@ export class AnalyticsService {
         status: true,
         total: true,
         items: { select: { productId: true, subscriptionPlanId: true, quantity: true, total: true } },
-        payments: { select: { status: true, amount: true } },
+        payments: { select: { status: true, amount: true, refunds: { select: { amount: true } } }, orderBy: { createdAt: 'asc' } },
       },
     })) as unknown as OrderRow[];
 
@@ -113,15 +132,18 @@ export class AnalyticsService {
     const subsByStatus = await this.prisma.customerSubscription.groupBy({ by: ['status'], _count: { id: true } });
     const statusCount = (s: string) => subsByStatus.find((r) => r.status === s)?._count.id ?? 0;
 
-    const [newSubs, prevNewSubs, cancelledInRange] = await Promise.all([
+    // A cancelled plan stays ACTIVE until its last box goes out, so churn goes by
+    // when the customer cancelled, whatever the status says now.
+    const [newSubs, prevNewSubs, cancelledInRange, activeNotLeaving] = await Promise.all([
       this.prisma.customerSubscription.count({ where: { createdAt: { gte: w.from, lte: w.to } } }),
       this.prisma.customerSubscription.count({ where: { createdAt: { gte: w.prevFrom, lt: w.from } } }),
-      this.prisma.customerSubscription.count({ where: { status: 'CANCELLED', updatedAt: { gte: w.from, lte: w.to } } }),
+      this.prisma.customerSubscription.count({ where: { cancelledAt: { gte: w.from, lte: w.to } } }),
+      this.prisma.customerSubscription.count({ where: { status: 'ACTIVE', cancelledAt: null } }),
     ]);
 
     const activeSubs = statusCount('ACTIVE');
     // Churn against the base that could have churned (active + those that did).
-    const churnBase = activeSubs + cancelledInRange;
+    const churnBase = activeNotLeaving + cancelledInRange;
     const churnRate = churnBase > 0 ? +((cancelledInRange / churnBase) * 100).toFixed(1) : 0;
 
     // ── Registration + revenue time series ─────────────────────────────────
@@ -250,36 +272,36 @@ export class AnalyticsService {
         ecommerce.units += prodUnits;
       }
 
-      // Latest payment decides the order's money outcome.
-      const payment = o.payments[o.payments.length - 1];
+      const payment = decidingPayment(o);
       if (!payment) continue;
 
-      const isPaid = payment.status === 'PAID';
-      if (isPaid) paidOrders++;
+      const money = kept(payment);
+      if (COLLECTED.includes(payment.status)) paidOrders++;
 
-      const amount = n(payment.amount);
       const subShare = subItems / lineTotal;
       const prodShare = prodItems / lineTotal;
 
       const apply = (ch: ChannelAccumulator, share: number, present: boolean) => {
         if (!present) return;
-        const portion = amount * share;
         switch (payment.status) {
           case 'PAID':
-            ch.payments.paidCount++;
-            ch.payments.paidAmount += portion;
-            // Revenue is money actually collected, not merchandise ordered.
-            ch.revenue += portion;
+          case 'PARTIALLY_REFUNDED':
+          case 'REFUNDED':
+            // Revenue is money the shop kept: collected, less anything given back
+            // (a plan cancelled after the free window keeps its first month).
+            ch.revenue += money.kept * share;
             ch.paidOrders.add(o.id);
+            if (money.refunded > 0) {
+              ch.payments.refundedCount++;
+              ch.payments.refundedAmount += money.refunded * share;
+            } else {
+              ch.payments.paidCount++;
+              ch.payments.paidAmount += money.kept * share;
+            }
             break;
           case 'FAILED':
             ch.payments.failedCount++;
-            ch.payments.failedAmount += portion;
-            break;
-          case 'REFUNDED':
-          case 'PARTIALLY_REFUNDED':
-            ch.payments.refundedCount++;
-            ch.payments.refundedAmount += portion;
+            ch.payments.failedAmount += n(payment.amount) * share;
             break;
           default:
             ch.payments.pendingCount++;
@@ -309,7 +331,8 @@ export class AnalyticsService {
       paidAmount: round2(p.paidAmount),
       failedAmount: round2(p.failedAmount),
       refundedAmount: round2(p.refundedAmount),
-      successRate: attempts > 0 ? +((p.paidCount / attempts) * 100).toFixed(1) : 0,
+      // A refunded payment still went through, so it counts as a success.
+      successRate: attempts > 0 ? +(((p.paidCount + p.refundedCount) / attempts) * 100).toFixed(1) : 0,
     };
   }
 
@@ -342,9 +365,9 @@ export class AnalyticsService {
       if (subItems > 0) rows[idx].subscriptionOrders++;
       if (prodItems > 0) rows[idx].ecommerceOrders++;
 
-      const payment = o.payments[o.payments.length - 1];
-      if (payment?.status === 'PAID') {
-        const amount = n(payment.amount);
+      const payment = decidingPayment(o);
+      if (payment) {
+        const amount = kept(payment).kept;
         rows[idx].subscriptionRevenue += amount * (subItems / lineTotal);
         rows[idx].ecommerceRevenue += amount * (prodItems / lineTotal);
       }
@@ -374,7 +397,8 @@ export class AnalyticsService {
     const items = await this.prisma.orderItem.findMany({
       where: {
         productId: { not: null },
-        order: { createdAt: { gte: w.from, lte: w.to }, payments: { some: { status: 'PAID' } } },
+        // Sold and kept: paid (or only partly refunded), not cancelled or refunded in full.
+        order: { createdAt: { gte: w.from, lte: w.to }, status: { notIn: ['CANCELLED', 'REFUNDED'] }, payments: { some: { status: { in: ['PAID', 'PARTIALLY_REFUNDED'] } } } },
       },
       select: { productId: true, quantity: true, total: true, orderId: true },
     });
@@ -447,7 +471,8 @@ export class AnalyticsService {
     const items = await this.prisma.orderItem.findMany({
       where: {
         subscriptionPlanId: { not: null },
-        order: { createdAt: { gte: w.from, lte: w.to }, payments: { some: { status: 'PAID' } } },
+        // Sold and kept: paid (or only partly refunded), not cancelled or refunded in full.
+        order: { createdAt: { gte: w.from, lte: w.to }, status: { notIn: ['CANCELLED', 'REFUNDED'] }, payments: { some: { status: { in: ['PAID', 'PARTIALLY_REFUNDED'] } } } },
       },
       select: { subscriptionPlanId: true, total: true, orderId: true },
     });

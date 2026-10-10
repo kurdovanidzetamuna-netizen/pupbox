@@ -1,40 +1,54 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
+/**
+ * CSV that opens correctly in Excel: a UTF-8 marker so Georgian isn't garbled,
+ * and text that starts like a formula (=, +, -, @) prefixed with ' so a
+ * customer named "=HYPERLINK(...)" can't run anything when the file is opened.
+ */
 function toCsv(rows: Record<string, any>[]): string {
-  if (!rows.length) return '';
+  if (!rows.length) return '\uFEFF';
   const headers = Object.keys(rows[0]);
-  const lines = [
-    headers.join(','),
-    ...rows.map(row =>
-      headers.map(h => {
-        const v = row[h] ?? '';
-        const s = String(v).replace(/"/g, '""');
-        return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s}"` : s;
-      }).join(',')
-    ),
-  ];
-  return lines.join('\n');
+  const cell = (v: unknown) => {
+    let s = String(v ?? '');
+    if (typeof v === 'string' && /^[=+\-@\t\r]/.test(s)) s = `'${s}`;
+    s = s.replace(/"/g, '""');
+    return /[",\n\r]/.test(s) ? `"${s}"` : s;
+  };
+  return '\uFEFF' + [headers.join(','), ...rows.map((row) => headers.map((h) => cell(row[h])).join(','))].join('\r\n');
 }
+
+/** "2026-10-01".."2026-10-31" → that whole span, the last day included. */
+function dateRange(from?: string, to?: string) {
+  if (!from && !to) return undefined;
+  const parse = (v: string, label: string) => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(v) || isNaN(Date.parse(v))) throw new BadRequestException(`"${label}" must be a date like 2026-10-01`);
+    return new Date(`${v}T00:00:00+04:00`); // Tbilisi
+  };
+  const range: { gte?: Date; lt?: Date } = {};
+  if (from) range.gte = parse(from, 'from');
+  if (to) range.lt = new Date(parse(to, 'to').getTime() + 86400_000);
+  if (range.gte && range.lt && range.gte >= range.lt) throw new BadRequestException('"from" must be before "to"');
+  return range;
+}
+
+const refundedOf = (payments: { refunds: { amount: unknown }[] }[]) =>
+  payments.reduce((s, p) => s + p.refunds.reduce((t, r) => t + Number(r.amount), 0), 0);
 
 @Injectable()
 export class ReportsService {
   constructor(private prisma: PrismaService) {}
 
   async ordersReport(from?: string, to?: string): Promise<string> {
-    const where: any = {};
-    if (from || to) {
-      where.createdAt = {};
-      if (from) where.createdAt.gte = new Date(from);
-      if (to) where.createdAt.lte = new Date(to);
-    }
+    const createdAt = dateRange(from, to);
+    const where: any = createdAt ? { createdAt } : {};
 
     const orders = await this.prisma.order.findMany({
       where,
       include: {
         user: { select: { email: true, firstName: true, lastName: true } },
         address: { select: { city: true, addressLine1: true } },
-        payments: { select: { status: true }, take: 1 },
+        payments: { select: { status: true, refunds: { select: { amount: true } } }, orderBy: { createdAt: 'desc' } },
       },
       orderBy: { createdAt: 'desc' },
       take: 10000,
@@ -53,6 +67,8 @@ export class ReportsService {
       discount: Number(o.discountAmount).toFixed(2),
       delivery: Number(o.deliveryCost).toFixed(2),
       total: Number(o.total).toFixed(2),
+      refunded: refundedOf(o.payments).toFixed(2),
+      refund_due: o.refundDueAmount != null ? Number(o.refundDueAmount).toFixed(2) : '',
     }));
 
     return toCsv(rows);
@@ -60,6 +76,8 @@ export class ReportsService {
 
   async customersReport(): Promise<string> {
     const users = await this.prisma.user.findMany({
+      // Deleted accounts are anonymised and not customers any more.
+      where: { deletedAt: null },
       include: {
         _count: { select: { orders: true } },
         subscriptions: { where: { status: 'ACTIVE' }, take: 1 },
@@ -114,16 +132,13 @@ export class ReportsService {
   }
 
   async revenueReport(from?: string, to?: string): Promise<string> {
-    const where: any = { status: 'PAID' };
-    if (from || to) {
-      where.createdAt = {};
-      if (from) where.createdAt.gte = new Date(from);
-      if (to) where.createdAt.lte = new Date(to);
-    }
+    // Every payment that took money, including ones later refunded in part or full.
+    const createdAt = dateRange(from, to);
+    const where: any = { status: { in: ['PAID', 'PARTIALLY_REFUNDED', 'REFUNDED'] }, ...(createdAt ? { createdAt } : {}) };
 
     const payments = await this.prisma.payment.findMany({
       where,
-      include: { order: { select: { type: true, status: true } } },
+      include: { order: { select: { type: true, status: true } }, refunds: { select: { amount: true } } },
       orderBy: { createdAt: 'desc' },
       take: 10000,
     });
@@ -135,6 +150,8 @@ export class ReportsService {
       order_type: p.order?.type ?? '',
       provider: p.provider,
       amount: Number(p.amount).toFixed(2),
+      refunded: refundedOf([p]).toFixed(2),
+      kept: (Number(p.amount) - refundedOf([p])).toFixed(2),
       currency: p.currency,
       status: p.status,
       paid_at: p.paidAt?.toISOString().slice(0, 16) ?? '',
