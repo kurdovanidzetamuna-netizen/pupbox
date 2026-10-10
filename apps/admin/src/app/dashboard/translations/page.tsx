@@ -346,7 +346,7 @@ export default function TranslationsPage() {
   const token = () => localStorage.getItem('admin_token');
 
   useEffect(() => {
-    fetch(`${API}/cms/config-translations`)
+    fetch(`${API}/cms/admin/config-translations`, { headers: { Authorization: `Bearer ${localStorage.getItem('admin_token')}` } })
       .then(r => r.ok ? r.json() : null)
       .then(data => {
         const existing: Translation[] = data?.content?.strings || [];

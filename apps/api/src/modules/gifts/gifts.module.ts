@@ -6,6 +6,38 @@ import { EmailModule } from '../email/email.module';
 import { AdminJwtGuard } from '../admin-auth/admin-jwt.guard';
 import { GiftsService } from './gifts.service';
 import { AdminPerms } from '../admin-auth/admin-permissions';
+import { ArrayMaxSize, IsArray, IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString, Matches, Max, MaxLength, Min, ValidateNested } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
+import { DogGender, DogSize } from '@prisma/client';
+
+class ClaimDogDto {
+  @Trim() @IsString() @IsNotEmpty() @MaxLength(60) name: string;
+  @IsOptional() @Trim() @IsString() @MaxLength(80) breed?: string;
+  @IsOptional() @IsEnum(DogSize) size?: DogSize;
+  @IsOptional() @IsEnum(DogGender) gender?: DogGender;
+  @IsOptional() @Type(() => Number) @IsNumber() @Min(0) @Max(150) weightKg?: number;
+  @IsOptional() @IsArray() @IsString({ each: true }) @ArrayMaxSize(20) allergies?: string[];
+}
+
+class ClaimAddressDto {
+  @Trim() @IsString() @IsNotEmpty() @MaxLength(80) firstName: string;
+  @Trim() @IsString() @IsNotEmpty() @MaxLength(80) lastName: string;
+  @Trim() @IsString() @Matches(/^\+?[0-9\s()-]{7,20}$/) phone: string;
+  @Trim() @IsString() @IsNotEmpty() @MaxLength(80) city: string;
+  @Trim() @IsString() @IsNotEmpty() @MaxLength(200) addressLine1: string;
+  @IsOptional() @Trim() @IsString() @MaxLength(200) addressLine2?: string;
+  @IsOptional() @Trim() @IsString() @MaxLength(20) postalCode?: string;
+}
+
+/** What the recipient sends to claim a gift: their dog (new or existing) and where to deliver. */
+class ClaimGiftDto {
+  @IsOptional() @IsString() dogId?: string;
+  @IsOptional() @ValidateNested() @Type(() => ClaimDogDto) dog?: ClaimDogDto;
+  @IsOptional() @ValidateNested() @Type(() => ClaimAddressDto) address?: ClaimAddressDto;
+}
+
+/** Trims strings so a field of only spaces counts as empty. */
+function Trim() { return Transform(({ value }) => (typeof value === 'string' ? value.trim() : value)); }
 
 @ApiTags('gifts')
 @Controller('gifts')
@@ -27,7 +59,7 @@ export class GiftsController {
   @ApiBearerAuth()
   @UseGuards(AuthGuard('jwt'))
   @ApiOperation({ summary: 'Claim a gifted subscription, attaching a dog and address' })
-  claim(@Request() req: any, @Param('token') token: string, @Body() body: any) {
+  claim(@Request() req: any, @Param('token') token: string, @Body() body: ClaimGiftDto) {
     return this.gifts.claim(token, req.user.id, body);
   }
 }

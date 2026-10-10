@@ -685,6 +685,8 @@ model Refund {
 model Coupon {
   id               String             @id @default(cuid())
   code             String             @unique
+  /// Admin's internal note about the coupon (who it's for, why).
+  description      String?
   discountType     CouponDiscountType
   discountValue    Decimal            @db.Decimal(10, 2)
   appliesTo        CouponAppliesTo    @default(BOTH)

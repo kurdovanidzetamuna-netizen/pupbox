@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { cleanHtml } from '../../common/clean-html';
 
 const postInclude = {
   category: true,
@@ -33,8 +34,18 @@ export class BlogService {
     return post;
   }
 
+  /** Post HTML (and its translations) is cleaned before it can reach visitors. */
+  private clean(rest: any) {
+    if (typeof rest.content === 'string') rest.content = cleanHtml(rest.content);
+    if (rest.translations && typeof rest.translations === 'object') {
+      rest.translations = Object.fromEntries(Object.entries(rest.translations).map(([l, t]: [string, any]) => [l, t && typeof t.content === 'string' ? { ...t, content: cleanHtml(t.content) } : t]));
+    }
+    return rest;
+  }
+
   async createPost(data: any) {
     const { tagIds, ...rest } = data;
+    this.clean(rest);
     return this.prisma.blogPost.create({
       data: {
         ...rest,
@@ -48,6 +59,7 @@ export class BlogService {
 
   async updatePost(id: string, data: any) {
     const { tagIds, ...rest } = data;
+    this.clean(rest);
     if (rest.status === 'PUBLISHED') {
       const existing = await this.prisma.blogPost.findUnique({ where: { id } });
       if (existing && !existing.publishedAt) rest.publishedAt = new Date();

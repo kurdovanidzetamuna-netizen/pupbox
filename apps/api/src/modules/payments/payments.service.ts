@@ -72,6 +72,9 @@ export class PaymentsService implements OnModuleInit, OnModuleDestroy {
     const apiUrl = this.config.get('NEXT_PUBLIC_API_URL') || 'http://localhost:4000/api/v1';
     const siteUrl = this.config.get('NEXT_PUBLIC_SITE_URL') || 'http://localhost:3000';
 
+    // Nothing to pay (a 100% coupon): banks can't take ₾0, so it's simply paid.
+    if (Number(order.total) <= 0) return this.completeFreeOrder(order, userId, siteUrl);
+
     if (this.simulatesPayments()) return this.simulatePayment(order, userId, siteUrl);
 
     const { checkoutUrl, paymentId } = await this.flitt.createCheckout({
@@ -110,6 +113,13 @@ export class PaymentsService implements OnModuleInit, OnModuleDestroy {
       throw new BadRequestException('Payments are not configured');
     }
     return true;
+  }
+
+  private async completeFreeOrder(order: { id: string; total: any }, userId: string, siteUrl: string) {
+    const paymentId = `free-${Date.now()}`;
+    await this.prisma.payment.create({ data: { orderId: order.id, userId, provider: 'NONE', providerPaymentId: paymentId, amount: 0, currency: 'GEL', status: 'PENDING' } });
+    await this.applyPaymentResult({ order_id: order.id, payment_id: paymentId, order_status: 'approved', simulated: true });
+    return { checkoutUrl: `${siteUrl}/checkout/thank-you?order=${order.id}&payment_status=approved`, paymentId };
   }
 
   /** DEV_PAYMENT_RESULT=declined rehearses a refused card; anything else approves. */
@@ -165,7 +175,24 @@ export class PaymentsService implements OnModuleInit, OnModuleDestroy {
       return { status: 'ignored' };
     }
 
-    const paymentStatus = this.mapFlittStatus(order_status);
+    let paymentStatus = this.mapFlittStatus(order_status);
+
+    // The bank must have taken exactly this order's total, in lari. Anything
+    // else is not a payment for this order: keep it unpaid and flag it.
+    // (The development stand-in carries no amount and is trusted.)
+    if (paymentStatus === 'PAID' && !body.simulated) {
+      const expected = Math.round(Number(order.total) * 100);
+      const got = Number(body.amount ?? body.actual_amount);
+      const currency = String(body.currency ?? body.actual_currency ?? 'GEL').toUpperCase();
+      if (got !== expected || currency !== 'GEL') {
+        this.logger.error(`Order ${order_id}: bank reported ${got} ${currency}, expected ${expected} GEL — not marked paid`);
+        await this.prisma.order.update({
+          where: { id: order_id },
+          data: { internalNotes: [order.internalNotes, `Payment amount mismatch: bank reported ${got / 100} ${currency}, order total ${Number(order.total).toFixed(2)} GEL. Check in Flitt before shipping.`].filter(Boolean).join('\n') },
+        });
+        return { status: 'amount-mismatch' };
+      }
+    }
 
     // Flitt repeats callbacks; a second "approved" must not take the stock
     // or send the emails twice.

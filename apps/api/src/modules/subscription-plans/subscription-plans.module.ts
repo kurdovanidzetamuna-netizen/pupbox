@@ -6,6 +6,7 @@ import { ApiBearerAuth, ApiTags, ApiOperation } from '@nestjs/swagger';
 import { IsString, IsNumber, IsOptional, IsBoolean, IsArray, IsEnum, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 import { AdminPerms } from '../admin-auth/admin-permissions';
+import { PartialType } from '@nestjs/swagger';
 
 enum DurationUnit { DAY = 'DAY', WEEK = 'WEEK', MONTH = 'MONTH', YEAR = 'YEAR' }
 
@@ -32,6 +33,9 @@ class CreatePlanDto {
   @IsOptional() translations?: Record<string, any>;
 }
 
+/** Validated like create, every field optional (a bare Partial<> isn't checked at all). */
+class UpdatePlanDto extends PartialType(CreatePlanDto) {}
+
 @ApiTags('Subscription Plans')
 @Controller('subscription-plans')
 class SubscriptionPlansController {
@@ -50,7 +54,7 @@ class AdminSubscriptionPlansController {
   @Get() findAll() { return this.service.findAll(true); }
   @Get(':id') findOne(@Param('id') id: string) { return this.service.findById(id); }
   @Post() create(@Body() dto: CreatePlanDto) { return this.service.create(dto as any); }
-  @Put(':id') update(@Param('id') id: string, @Body() dto: Partial<CreatePlanDto>) { return this.service.update(id, dto); }
+  @Put(':id') update(@Param('id') id: string, @Body() dto: UpdatePlanDto) { return this.service.update(id, dto); }
   @Delete(':id') remove(@Param('id') id: string) { return this.service.remove(id); }
 }
 

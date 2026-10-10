@@ -87,7 +87,7 @@ export default function PromoPopupsPage() {
   async function load() {
     setLoading(true);
     try {
-      const res = await fetch(`${API}/cms/${SLUG}`);
+      const res = await fetch(`${API}/cms/admin/${SLUG}`, { headers: { Authorization: `Bearer ${localStorage.getItem('admin_token')}` } });
       if (res.ok) {
         const data = await res.json();
         setPopups((data.content?.popups || []) as Popup[]);

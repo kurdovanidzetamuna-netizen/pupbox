@@ -28,7 +28,7 @@ export default function SettingsPage() {
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
   useEffect(() => {
-    fetch(`${API}/cms/${SLUG}`).then(r => (r.ok ? r.json() : null)).then(row => {
+    fetch(`${API}/cms/admin/${SLUG}`, { headers: { Authorization: `Bearer ${localStorage.getItem('admin_token')}` } }).then(r => (r.ok ? r.json() : null)).then(row => {
       const c = row?.content ?? {};
       setContent(c);
       setV({

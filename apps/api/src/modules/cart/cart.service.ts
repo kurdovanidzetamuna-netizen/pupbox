@@ -29,7 +29,7 @@ export class CartService {
     // that guest cart into the account cart, or everything they added before
     // signing in silently disappears and checkout finds an empty cart.
     if (userId && sessionId) cart = await this.mergeGuestCart(cart, sessionId);
-    return this.withTotals(cart);
+    return this.withTotals(await this.refresh(cart));
   }
 
   private async mergeGuestCart(userCart: any, sessionId: string) {
@@ -185,7 +185,35 @@ export class CartService {
   private async getCart(cartId: string) {
     const cart = await this.prisma.cart.findUnique({ where: { id: cartId }, include: cartInclude });
     if (!cart) throw new NotFoundException('Cart not found');
-    return this.withTotals(cart);
+    return this.withTotals(await this.refresh(cart));
+  }
+
+  /**
+   * Prices are today's, not the day an item was added: a price changed in
+   * admin applies to carts already holding the item, and products or plans
+   * no longer sold drop out. `pricesUpdated` lets the cart say so.
+   */
+  private async refresh(cart: any) {
+    let changed = false;
+    for (const item of cart.items) {
+      const p = item.product, plan = item.subscriptionPlan;
+      const gone = p
+        ? !!p.deletedAt || !['ACTIVE', 'OUT_OF_STOCK'].includes(p.status) || !p.standaloneSale
+        : plan ? !!plan.deletedAt || !plan.isActive : true;
+      if (gone) {
+        await this.prisma.cartItem.delete({ where: { id: item.id } });
+        changed = true;
+        continue;
+      }
+      const now = Number(p ? (p.salePrice ?? p.price) : plan.price);
+      if (Number(item.price) !== now) {
+        await this.prisma.cartItem.update({ where: { id: item.id }, data: { price: now } });
+        changed = true;
+      }
+    }
+    if (!changed) return cart;
+    const fresh = await this.prisma.cart.findUniqueOrThrow({ where: { id: cart.id }, include: cartInclude });
+    return { ...fresh, pricesUpdated: true };
   }
 
   private withTotals(cart: any) {

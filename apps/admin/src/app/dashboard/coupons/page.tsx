@@ -4,7 +4,7 @@ import FormField, { inputClass, parseFieldErrors } from '@/components/FormField'
 import ErrorPopup from '@/components/ErrorPopup';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
-const EMPTY_FORM = { code: '', discountType: 'PERCENT', discountValue: '', usageLimit: '', expiresAt: '', description: '' };
+const EMPTY_FORM = { code: '', discountType: 'PERCENTAGE', discountValue: '', usageLimit: '', expiresAt: '', description: '' };
 
 const inp = { width: '100%', border: '1px solid var(--slate-200)', borderRadius: 10, padding: '9px 14px', fontSize: 13, outline: 'none', boxSizing: 'border-box' as const };
 const lbl = { display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--slate-400)', textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: 6 };
@@ -40,7 +40,7 @@ export default function CouponsPage() {
     const msgs: string[] = [];
     if (!form.code.trim()) msgs.push('Coupon code is required');
     if (!form.discountValue || Number(form.discountValue) <= 0) msgs.push('Discount value must be greater than 0');
-    if (form.discountType === 'PERCENT' && Number(form.discountValue) > 100) msgs.push('Percentage discount cannot exceed 100%');
+    if (form.discountType === 'PERCENTAGE' && Number(form.discountValue) > 100) msgs.push('Percentage discount cannot exceed 100%');
     if (msgs.length > 0) { setPopupErrors(msgs); return; }
     setSaving(true);
     setError('');
@@ -101,12 +101,12 @@ export default function CouponsPage() {
             </FormField>
             <FormField label="Type" required>
               <select value={form.discountType} onChange={e => setForm({ ...form, discountType: e.target.value })} style={inputClass()}>
-                <option value="PERCENT">Percentage (%)</option>
+                <option value="PERCENTAGE">Percentage (%)</option>
                 <option value="FIXED">Fixed (₾)</option>
               </select>
             </FormField>
             <FormField label="Value" required>
-              <input required type="number" min="0" value={form.discountValue} onChange={e => setForm({ ...form, discountValue: e.target.value })} style={inputClass()} placeholder={form.discountType === 'PERCENT' ? '20' : '10'} />
+              <input required type="number" min="0" value={form.discountValue} onChange={e => setForm({ ...form, discountValue: e.target.value })} style={inputClass()} placeholder={form.discountType === 'PERCENTAGE' ? '20' : '10'} />
             </FormField>
             <FormField label="Usage limit">
               <input type="number" min="1" value={form.usageLimit} onChange={e => setForm({ ...form, usageLimit: e.target.value })} style={inputClass()} placeholder="Unlimited" />
@@ -154,7 +154,7 @@ export default function CouponsPage() {
                     {c.description && <p style={{ fontSize: 11, color: 'var(--slate-400)', margin: '4px 0 0' }}>{c.description}</p>}
                   </td>
                   <td style={{ padding: '14px 18px' }}>
-                    <span style={{ fontWeight: 800, color: 'var(--teal-600)', fontSize: 15 }}>{c.discountType === 'PERCENT' ? `${c.discountValue}%` : `₾${c.discountValue}`}</span>
+                    <span style={{ fontWeight: 800, color: 'var(--teal-600)', fontSize: 15 }}>{c.discountType === 'PERCENTAGE' ? `${c.discountValue}%` : `₾${c.discountValue}`}</span>
                     <p style={{ fontSize: 11, color: 'var(--slate-400)', margin: '2px 0 0' }}>{c.discountType}</p>
                   </td>
                   <td style={{ padding: '14px 18px', fontWeight: 700, color: 'var(--slate-800)' }}>{c.usedCount}</td>

@@ -20,6 +20,10 @@ const USER_SELECT = {
   addresses: { where: { deletedAt: null } },
 };
 
+class CustomerStatusDto {
+  @IsIn(['ACTIVE', 'BLOCKED', 'UNVERIFIED']) status: 'ACTIVE' | 'BLOCKED' | 'UNVERIFIED';
+}
+
 class UpdateProfileDto {
   @IsOptional() @IsString() @MaxLength(80) firstName?: string;
   @IsOptional() @IsString() @MaxLength(80) lastName?: string;
@@ -121,7 +125,7 @@ export class AdminCustomersController {
 
   @Patch(':id/status')
   @ApiOperation({ summary: 'Block or unblock a customer' })
-  async setStatus(@Param('id') id: string, @Body() body: { status: string }) {
+  async setStatus(@Param('id') id: string, @Body() body: CustomerStatusDto) {
     return this.prisma.user.update({ where: { id }, data: { status: body.status as any }, select: { id: true, status: true } });
   }
 }

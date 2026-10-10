@@ -34,7 +34,7 @@ export default function PageEditor() {
     setLoading(true);
     let stored: StoredContent | null = null;
     try {
-      const res = await fetch(`${API}/cms/${cmsSlug(page)}`);
+      const res = await fetch(`${API}/cms/admin/${cmsSlug(page)}`, { headers: { Authorization: `Bearer ${localStorage.getItem('admin_token')}` } });
       if (res.ok) stored = (await res.json())?.content ?? null;
     } catch {}
     const v = mergedSections(page, stored);

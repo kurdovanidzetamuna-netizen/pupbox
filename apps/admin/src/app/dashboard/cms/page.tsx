@@ -22,7 +22,7 @@ export default function AdminCmsPage() {
   async function load() {
     setLoading(true);
     try {
-      const res = await fetch(`${API}/cms`, { headers: { Authorization: `Bearer ${token()}` } });
+      const res = await fetch(`${API}/cms/admin/all`, { headers: { Authorization: `Bearer ${token()}` } });
       const data = await res.json();
       setPages(Array.isArray(data) ? data : []);
     } catch { } finally {

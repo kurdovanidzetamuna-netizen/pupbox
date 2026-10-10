@@ -32,7 +32,7 @@ export default function FAQPage() {
   async function load() {
     setLoading(true);
     try {
-      const res = await fetch(`${API}/cms/${FAQ_SLUG}`);
+      const res = await fetch(`${API}/cms/admin/${FAQ_SLUG}`, { headers: { Authorization: `Bearer ${localStorage.getItem('admin_token')}` } });
       // Never saved yet: start from the questions the site shows today.
       const data = res.ok ? await res.json() : null;
       setItems((data?.content?.items as FAQItem[] | undefined) ?? DEFAULT_FAQ);

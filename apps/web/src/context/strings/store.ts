@@ -152,6 +152,7 @@ export const STORE_STRINGS: Record<string, { en: string; ka: string }> = {
   'sub.renewFailed':        { en: "Couldn't update auto-renewal", ka: 'ავტომატური განახლების შეცვლა ვერ მოხერხდა' },
   'sub.cancel':             { en: 'Cancel subscription',        ka: 'გამოწერის გაუქმება' },
   'sub.cancelQ':            { en: 'Cancel this subscription?',  ka: 'გავაუქმოთ ეს გამოწერა?' },
+  'cart.updated':           { en: 'Some prices or items in your cart have changed since you added them. The cart shows today’s prices.', ka: 'კალათაში ზოგიერთი ფასი ან ნივთი შეიცვალა დამატების შემდეგ. კალათა დღევანდელ ფასებს აჩვენებს.' },
   'ord.refundOwed':         { en: '{money} is being refunded to your card — it arrives within a few working days.', ka: '{money} ბრუნდება შენს ბარათზე — რამდენიმე სამუშაო დღეში ჩაირიცხება.' },
   'ord.refunded':           { en: '{money} refunded to your card on {date}.', ka: '{money} დაგიბრუნდა ბარათზე {date}-ს.' },
   'err.404.title':          { en: 'We can’t find that page',    ka: 'ეს გვერდი ვერ მოიძებნა' },

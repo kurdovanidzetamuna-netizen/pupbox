@@ -67,6 +67,8 @@ export class BoxCampaignsService {
 
   async delete(id: string) {
     await this.findById(id);
+    // Boxes already listed with this campaign keep their record, without contents.
+    await this.prisma.boxShipment.updateMany({ where: { campaignId: id }, data: { campaignId: null } });
     await this.prisma.boxCampaignProduct.deleteMany({ where: { campaignId: id } });
     return this.prisma.boxCampaign.delete({ where: { id } });
   }

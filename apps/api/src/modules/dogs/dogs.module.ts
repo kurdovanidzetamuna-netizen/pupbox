@@ -5,6 +5,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth, ApiTags, ApiOperation } from '@nestjs/swagger';
 import { IsString, IsOptional, IsArray, IsNumber, IsEnum, IsDateString } from 'class-validator';
 import { Type } from 'class-transformer';
+import { PartialType } from '@nestjs/swagger';
 
 enum DogGender { MALE = 'MALE', FEMALE = 'FEMALE' }
 enum DogSize { EXTRA_SMALL = 'EXTRA_SMALL', SMALL = 'SMALL', MEDIUM = 'MEDIUM', LARGE = 'LARGE', EXTRA_LARGE = 'EXTRA_LARGE' }
@@ -23,6 +24,12 @@ class CreateDogDto {
   @IsOptional() @IsString() specialNotes?: string;
 }
 
+/**
+ * Only dog fields, validated. A bare Partial<> type isn't checked at all, so
+ * a request could set anything on the row — including whose dog it is.
+ */
+class UpdateDogDto extends PartialType(CreateDogDto) {}
+
 @ApiTags('My Dogs')
 @ApiBearerAuth()
 @UseGuards(AuthGuard('jwt'))
@@ -39,8 +46,9 @@ class DogsController {
   }
 
   @Put(':id') @ApiOperation({ summary: 'Update dog' })
-  update(@Request() req: any, @Param('id') id: string, @Body() dto: Partial<CreateDogDto>) {
-    return this.service.update(id, req.user.id, dto);
+  update(@Request() req: any, @Param('id') id: string, @Body() dto: UpdateDogDto) {
+    // A date-only birthday ("2021-05-02") must become a Date, as on create.
+    return this.service.update(id, req.user.id, { ...dto, ...(dto.birthday !== undefined ? { birthday: dto.birthday ? new Date(dto.birthday) : null } : {}) });
   }
 
   @Delete(':id') @ApiOperation({ summary: 'Remove dog' })

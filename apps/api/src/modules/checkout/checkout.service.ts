@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CartService } from '../cart/cart.service';
 import { Prisma } from '@prisma/client';
 import { releaseStock, reserveStock } from '../products/stock';
+import { cancelUnpaidOrder } from '../orders/order-lifecycle';
 
 export interface GiftDetails {
   recipientName: string;
@@ -34,6 +35,21 @@ function giftSendDate(raw?: string): Date | null {
 
 @Injectable()
 export class CheckoutService {
+  private async assertCouponStillValid(couponId: string, cartId: string, userId: string) {
+    const now = new Date();
+    const c = await this.prisma.coupon.findUnique({ where: { id: couponId } });
+    const problem = !c || !c.isActive ? 'is no longer active'
+      : c.expiresAt && c.expiresAt < now ? 'has expired'
+      : c.startsAt && c.startsAt > now ? 'is not valid yet'
+      : c.usageLimit && c.usedCount >= c.usageLimit ? 'has been used up'
+      : c.perUserLimit && (await this.prisma.couponUsage.count({ where: { couponId, userId } })) >= c.perUserLimit ? 'was already used on your account'
+      : null;
+    if (problem) {
+      await this.prisma.cart.update({ where: { id: cartId }, data: { couponId: null } });
+      throw new BadRequestException(`Your coupon ${problem}, so we removed it. Check the new total and try again.`);
+    }
+  }
+
   constructor(private prisma: PrismaService, private cartService: CartService) {}
 
   async prepare(userId: string, data: { deliveryMethodId: string; addressId?: string; dogId?: string; couponCode?: string }) {
@@ -97,6 +113,10 @@ export class CheckoutService {
     const hasSubscription = cart.items.some((i: any) => i.subscriptionPlanId);
     const hasProducts = cart.items.some((i: any) => i.productId);
     const orderType = hasSubscription && hasProducts ? 'MIXED' : hasSubscription ? 'SUBSCRIPTION' : 'PRODUCT';
+
+    // A coupon is checked again now: it may have expired, run out, or been
+    // added before signing in (when the once-per-customer limit couldn't apply).
+    if (cart.couponId) await this.assertCouponStillValid(cart.couponId, cart.id, userId);
 
     // Hold the stock first: if something sold out meanwhile, stop before any
     // order, address or subscription is created.
@@ -192,10 +212,19 @@ export class CheckoutService {
       }
     }
 
-    // Record coupon usage
+    // Record coupon usage. The count only goes up while under the limit, so
+    // two shoppers at once can't take a coupon past its last use.
     if (cart.couponId) {
+      const c = await this.prisma.coupon.findUnique({ where: { id: cart.couponId }, select: { usageLimit: true } });
+      const { count } = await this.prisma.coupon.updateMany({
+        where: { id: cart.couponId, ...(c?.usageLimit ? { usedCount: { lt: c.usageLimit } } : {}) },
+        data: { usedCount: { increment: 1 } },
+      });
+      if (!count) {
+        await cancelUnpaidOrder(this.prisma, order.id, 'Coupon ran out while ordering.');
+        throw new BadRequestException('That coupon has just been used up. Remove it from your cart and try again.');
+      }
       await this.prisma.couponUsage.create({ data: { couponId: cart.couponId, userId, orderId: order.id } });
-      await this.prisma.coupon.update({ where: { id: cart.couponId }, data: { usedCount: { increment: 1 } } });
     }
 
     // Clear cart
