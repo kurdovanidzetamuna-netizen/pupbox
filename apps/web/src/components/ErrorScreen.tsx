@@ -8,7 +8,7 @@ export default function ErrorScreen({ kind, onRetry }: { kind: 'notFound' | 'cra
   const k = kind === 'notFound' ? 'err.404' : 'err.500';
   return (
     <main className="min-h-[70vh] flex flex-col items-center justify-center px-6 py-20 text-center">
-      <div className="text-6xl mb-6" aria-hidden="true">{kind === 'notFound' ? '🐾' : '🦴'}</div>
+      <div className="text-6xl mb-6" aria-hidden="true"><span className="wag">{kind === 'notFound' ? '🐶' : '🦴'}</span></div>
       <h1 className="text-3xl font-extrabold text-gray-900 mb-3">{t(`${k}.title`)}</h1>
       <p className="text-gray-500 max-w-md mb-8">{t(`${k}.sub`)}</p>
       <div className="flex flex-col sm:flex-row gap-3">

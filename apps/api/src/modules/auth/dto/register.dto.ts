@@ -1,4 +1,4 @@
-import { IsEmail, IsString, MinLength, IsOptional, IsIn } from 'class-validator';
+import { IsEmail, IsString, MinLength, IsOptional, IsIn, IsBoolean, MaxLength } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class RegisterDto {
@@ -19,10 +19,16 @@ export class RegisterDto {
   @MinLength(8)
   password: string;
 
-  @ApiProperty({ example: '+995599123456', required: false })
-  @IsOptional()
+  /** A Georgian mobile; confirmed with an SMS code straight after sign-up. */
+  @ApiProperty({ example: '+995599123456' })
   @IsString()
-  phone?: string;
+  @MaxLength(30)
+  phone: string;
+
+  /** Ticked "send me offers and reminders" — never pre-ticked. */
+  @IsOptional()
+  @IsBoolean()
+  marketingConsent?: boolean;
 
   @ApiProperty({ example: 'REF123ABC', required: false })
   @IsOptional()

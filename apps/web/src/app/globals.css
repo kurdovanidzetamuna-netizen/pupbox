@@ -43,3 +43,20 @@
 .cms-prose th { background: #f9fafb; color: #111827; font-weight: 700; }
 .cms-prose mark { background: #fef3c7; color: #92400e; border-radius: 3px; padding: 0 0.2rem; }
 .cms-prose .legal-note { background: #fffbeb; border: 1px solid #fde68a; color: #92400e; border-radius: 0.75rem; padding: 0.7rem 1rem; font-size: 0.85rem; font-weight: 600; }
+
+/* Small playful motion. Everything below switches off for people who ask for less motion. */
+@keyframes pop { 0% { transform: scale(0.6); opacity: 0; } 70% { transform: scale(1.15); } 100% { transform: scale(1); opacity: 1; } }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes wag { 0%, 100% { transform: rotate(0deg); } 25% { transform: rotate(-12deg); } 75% { transform: rotate(12deg); } }
+@keyframes confetti-fall {
+  0% { transform: translate3d(0, -10vh, 0) rotate(0deg); opacity: 1; }
+  100% { transform: translate3d(var(--drift), 105vh, 0) rotate(var(--spin)); opacity: 0.9; }
+}
+.wag { display: inline-block; transform-origin: 70% 90%; animation: wag 1.2s ease-in-out infinite; }
+.wag-hover:hover .wag-on-hover { display: inline-block; animation: wag 0.6s ease-in-out 2; }
+.confetti-piece { position: fixed; top: 0; z-index: 60; pointer-events: none; font-size: 22px; animation: confetti-fall var(--dur) cubic-bezier(.2,.6,.4,1) var(--delay) forwards; }
+@media (prefers-reduced-motion: reduce) {
+  .wag, .wag-hover:hover .wag-on-hover, .confetti-piece { animation: none !important; }
+  .confetti-piece { display: none; }
+  [class*="animate-[pop"], [class*="animate-[fadeUp"] { animation: none !important; }
+}

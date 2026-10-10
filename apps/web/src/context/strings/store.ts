@@ -57,6 +57,7 @@ export const STORE_STRINGS: Record<string, { en: string; ka: string }> = {
   // ── Account ──
   'acc.title':              { en: 'My account',                 ka: 'ჩემი ანგარიში' },
   'acc.signOut':            { en: 'Sign out',                   ka: 'გასვლა' },
+  'acc.subscribe':          { en: 'Subscribe to a box plan',    ka: 'კოლოფის გამოწერა' },
   'acc.orders':             { en: 'My orders',                  ka: 'ჩემი შეკვეთები' },
   'acc.subscriptions':      { en: 'My subscriptions',           ka: 'ჩემი გამოწერები' },
   'sec.title':              { en: 'Password',                   ka: 'პაროლი' },

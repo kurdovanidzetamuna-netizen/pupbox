@@ -1,6 +1,10 @@
 import { Module } from '@nestjs/common';
 import { DogsService } from './dogs.service';
-import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, Request, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
+import { Throttle } from '@nestjs/throttler';
+import { DOG_PHOTO_MAX_BYTES } from './dog-photo';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth, ApiTags, ApiOperation } from '@nestjs/swagger';
 import { IsString, IsOptional, IsArray, IsNumber, IsEnum, IsDateString } from 'class-validator';
@@ -49,6 +53,20 @@ class DogsController {
   update(@Request() req: any, @Param('id') id: string, @Body() dto: UpdateDogDto) {
     // A date-only birthday ("2021-05-02") must become a Date, as on create.
     return this.service.update(id, req.user.id, { ...dto, ...(dto.birthday !== undefined ? { birthday: dto.birthday ? new Date(dto.birthday) : null } : {}) });
+  }
+
+  /** A photo of the dog (JPG, PNG or WebP, up to 8 MB); replaces any earlier one. */
+  @Post(':id/photo') @ApiOperation({ summary: 'Upload a photo of my dog' })
+  @Throttle({ default: { limit: 10, ttl: 10 * 60_000 } })
+  // A little over the limit, so an oversize file gets the friendly message from saveDogPhoto.
+  @UseInterceptors(FileInterceptor('file', { storage: memoryStorage(), limits: { fileSize: DOG_PHOTO_MAX_BYTES + 1 } }))
+  uploadPhoto(@Request() req: any, @Param('id') id: string, @UploadedFile() file: Express.Multer.File) {
+    return this.service.setPhoto(id, req.user.id, file?.buffer);
+  }
+
+  @Delete(':id/photo') @ApiOperation({ summary: 'Remove my dog’s photo' })
+  removePhoto(@Request() req: any, @Param('id') id: string) {
+    return this.service.removePhoto(id, req.user.id);
   }
 
   @Delete(':id') @ApiOperation({ summary: 'Remove dog' })

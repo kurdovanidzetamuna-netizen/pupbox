@@ -2,6 +2,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { PURCHASE_STRINGS } from './strings/purchase';
 import { STORE_STRINGS } from './strings/store';
+import { ACCOUNT_STRINGS } from './strings/account';
 import { LANG_COOKIE } from '@/lib/lang';
 
 type Lang = 'en' | 'ka';
@@ -156,7 +157,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   }
 
   const t = useCallback((key: string, fallback?: string): string => {
-    const entry = cms[key] ?? FB[key] ?? PURCHASE_STRINGS[key] ?? STORE_STRINGS[key];
+    const entry = cms[key] ?? FB[key] ?? PURCHASE_STRINGS[key] ?? STORE_STRINGS[key] ?? ACCOUNT_STRINGS[key];
     if (entry) return entry[lang] || entry['en'] || fallback || key;
     return fallback || key;
   }, [lang, cms]);

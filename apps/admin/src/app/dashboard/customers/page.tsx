@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
+import CustomerDrawer from '@/components/CustomerDrawer';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 
@@ -8,6 +9,7 @@ export default function CustomersPage() {
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
   const [loading, setLoading] = useState(true);
+  const [openId, setOpenId] = useState<string | null>(null);
 
   async function load() {
     setLoading(true);
@@ -97,14 +99,15 @@ export default function CustomersPage() {
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
               <tr>
-                {['Customer', 'Phone', 'Orders', 'Referral Code', 'Status', 'Joined', 'Actions'].map(h => (
+                {['Customer', 'Phone', 'Dogs', 'Orders', 'Marketing', 'Status', 'Joined', 'Actions'].map(h => (
                   <th key={h} style={{ padding: '10px 18px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: 'var(--slate-400)', textTransform: 'uppercase', letterSpacing: '0.06em', borderBottom: '1px solid var(--slate-200b)', background: 'var(--slate-50)', whiteSpace: 'nowrap' }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {customers.map(c => (
-                <tr key={c.id} style={{ borderBottom: '1px solid var(--slate-50)' }}>
+                <tr key={c.id} onClick={() => setOpenId(c.id)} style={{ borderBottom: '1px solid var(--slate-50)', cursor: 'pointer' }}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--slate-50)')} onMouseLeave={e => (e.currentTarget.style.background = '')}>
                   <td style={{ padding: '14px 18px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--teal-50)', color: 'var(--teal-600)', fontWeight: 800, fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -116,18 +119,20 @@ export default function CustomersPage() {
                       </div>
                     </div>
                   </td>
-                  <td style={{ padding: '14px 18px', color: 'var(--slate-500)' }}>{c.phone || '—'}</td>
-                  <td style={{ padding: '14px 18px', fontWeight: 700, color: 'var(--slate-900)' }}>{c._count?.orders ?? 0}</td>
-                  <td style={{ padding: '14px 18px' }}>
-                    <span style={{ fontFamily: 'monospace', fontSize: 11, background: 'var(--slate-100)', color: 'var(--slate-500)', padding: '3px 8px', borderRadius: 6 }}>{c.referralCode || '—'}</span>
+                  <td style={{ padding: '14px 18px', color: 'var(--slate-500)' }}>
+                    {c.phone || '—'}
+                    {c.phone && <span title={c.phoneVerified ? 'Confirmed by SMS' : 'Not confirmed'} style={{ marginLeft: 4, color: c.phoneVerified ? 'var(--green-700)' : 'var(--amber-600)' }}>{c.phoneVerified ? '✓' : '•'}</span>}
                   </td>
+                  <td style={{ padding: '14px 18px', fontWeight: 700, color: 'var(--slate-900)' }}>{c._count?.dogs ?? 0}</td>
+                  <td style={{ padding: '14px 18px', fontWeight: 700, color: 'var(--slate-900)' }}>{c._count?.orders ?? 0}</td>
+                  <td style={{ padding: '14px 18px', fontSize: 12, color: c.marketingConsent ? 'var(--green-800)' : 'var(--slate-400)' }}>{c.marketingConsent ? '✓ Yes' : 'No'}</td>
                   <td style={{ padding: '14px 18px' }}>
                     <span style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 10px', borderRadius: 999, fontSize: 11, fontWeight: 600, ...(c.status === 'ACTIVE' ? { background: 'var(--green-50)', color: 'var(--green-800)', border: '1px solid var(--green-200)' } : { background: 'var(--red-50)', color: 'var(--red-600)', border: '1px solid var(--red-200)' }) }}>
                       {c.status}
                     </span>
                   </td>
                   <td style={{ padding: '14px 18px', fontSize: 12, color: 'var(--slate-400)' }}>{new Date(c.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</td>
-                  <td style={{ padding: '14px 18px' }}>
+                  <td style={{ padding: '14px 18px' }} onClick={e => e.stopPropagation()}>
                     <button onClick={() => toggleStatus(c.id, c.status)} style={{ fontSize: 12, padding: '5px 12px', borderRadius: 8, fontWeight: 600, border: 'none', cursor: 'pointer', ...(c.status === 'ACTIVE' ? { background: 'var(--red-50)', color: 'var(--red-600)' } : { background: 'var(--green-50)', color: 'var(--green-800)' }) }}>
                       {c.status === 'ACTIVE' ? 'Block' : 'Unblock'}
                     </button>
@@ -138,6 +143,7 @@ export default function CustomersPage() {
           </table>
         )}
       </div>
+      {openId && <CustomerDrawer id={openId} onClose={() => setOpenId(null)} />}
     </div>
   );
 }

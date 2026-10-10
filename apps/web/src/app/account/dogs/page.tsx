@@ -64,6 +64,38 @@ export default function MyDogsPage() {
     }
   }
 
+  const [uploading, setUploading] = useState<string | null>(null);
+  const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
+
+  /** Uploads straight from the file picker; the API checks it really is a photo. */
+  async function uploadPhoto(dog: any, file: File | undefined) {
+    if (!file) return;
+    setError(''); setNotice('');
+    if (file.size > 8 * 1024 * 1024) { setError(t('dog.photoHint')); return; }
+    setUploading(dog.id);
+    try {
+      const body = new FormData();
+      body.append('file', file);
+      // Not authFetch: that sets a JSON content type, and this is a file.
+      const res = await fetch(`${API}/me/dogs/${dog.id}/photo`, { method: 'POST', body, headers: { Authorization: `Bearer ${localStorage.getItem('pupbox_token')}` } });
+      if (res.status === 401) return expired();
+      const r = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(r.message || t('co.e.generic'));
+      setDogs(prev => prev.map(x => (x.id === dog.id ? { ...x, photoUrl: r.photoUrl } : x)));
+    } catch (e: any) {
+      setError(e.message);
+    } finally { setUploading(null); }
+  }
+
+  async function removePhoto(dog: any) {
+    try {
+      const res = await authFetch(`/me/dogs/${dog.id}/photo`, { method: 'DELETE' });
+      if (res.ok) setDogs(prev => prev.map(x => (x.id === dog.id ? { ...x, photoUrl: null } : x)));
+    } catch (e) {
+      if (e instanceof SessionExpiredError) expired();
+    }
+  }
+
   async function remove(dog: any) {
     if (!confirm(t('dogs.removeConfirm').replace('{name}', dog.name))) return;
     setError(''); setNotice('');
@@ -111,7 +143,7 @@ export default function MyDogsPage() {
           <div className="flex justify-center py-20"><div className="w-8 h-8 border-4 border-teal-200 border-t-teal-600 rounded-full animate-spin" /></div>
         ) : dogs.length === 0 && editing === null ? (
           <div className="bg-white border border-gray-100 rounded-2xl p-10 text-center">
-            <div className="text-4xl mb-3" aria-hidden="true">🐶</div>
+            <div className="text-4xl mb-3" aria-hidden="true"><span className="wag">🐶</span></div>
             <p className="text-gray-600 mb-5">{t('dogs.empty')}</p>
             <button onClick={() => open('new')} className={primary}>+ {t('dogs.add')}</button>
           </div>
@@ -119,7 +151,17 @@ export default function MyDogsPage() {
           <ul className="space-y-3">
             {dogs.filter(d => d.id !== editing).map(d => (
               <li key={d.id} className="bg-white border border-gray-100 rounded-2xl p-5 flex items-start justify-between gap-4">
-                <div>
+                <div className="flex items-start gap-4 min-w-0">
+                <label className="group relative shrink-0 w-20 h-20 rounded-2xl overflow-hidden bg-teal-50 border border-teal-100 cursor-pointer" title={t(d.photoUrl ? 'dog.photoChange' : 'dog.photoAdd')}>
+                  {d.photoUrl
+                    // eslint-disable-next-line @next/next/no-img-element
+                    ? <img src={d.photoUrl} alt={d.name} className="w-full h-full object-cover" />
+                    : <span className="w-full h-full flex flex-col items-center justify-center text-teal-700 text-[11px] font-semibold"><span className="text-2xl group-hover:animate-bounce" aria-hidden="true">📷</span>{t('dog.photoAdd')}</span>}
+                  {uploading === d.id && <span className="absolute inset-0 bg-white/80 flex items-center justify-center text-[11px] font-semibold text-teal-700">{t('dog.photoUploading')}</span>}
+                  <input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" aria-label={t(d.photoUrl ? 'dog.photoChange' : 'dog.photoAdd')}
+                    onChange={e => { uploadPhoto(d, e.target.files?.[0]); e.target.value = ''; }} />
+                </label>
+                <div className="min-w-0">
                   <p className="font-semibold text-gray-900">
                     {d.name}
                     {d.size && <span className="ml-2 text-xs font-bold text-gray-500 bg-gray-100 rounded px-1.5 py-0.5">{SIZE_KEY[d.size] ?? d.size}</span>}
@@ -128,6 +170,10 @@ export default function MyDogsPage() {
                   <p className={`text-sm mt-1 ${d.allergies?.length ? 'text-red-600' : 'text-gray-400'}`}>
                     {d.allergies?.length ? `${t('dogs.allergies')}: ${d.allergies.join(', ')}` : t('dogs.noAllergies')}
                   </p>
+                  {d.photoUrl
+                    ? <button onClick={() => removePhoto(d)} className="text-xs text-gray-400 hover:text-red-600 mt-1">{t('dog.photoRemove')}</button>
+                    : <p className="text-xs text-gray-400 mt-1">{t('dog.photoHint')}</p>}
+                </div>
                 </div>
                 <div className="flex gap-2 shrink-0">
                   <button onClick={() => open(d.id)} className="text-sm font-medium text-teal-700 hover:underline">{t('dogs.edit')}</button>

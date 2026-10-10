@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { removeDogPhoto, saveDogPhoto } from './dog-photo';
 
 @Injectable()
 export class DogsService {
@@ -26,6 +27,19 @@ export class DogsService {
     foodPreferences?: string[]; chewingStrength?: string; specialNotes?: string;
   }) {
     return this.prisma.dog.create({ data: { ...data, userId } });
+  }
+
+  async setPhoto(id: string, userId: string, buf: Buffer | undefined) {
+    const dog = await this.findOne(id, userId);
+    const photoUrl = await saveDogPhoto(buf);
+    await removeDogPhoto(dog.photoUrl);
+    return this.prisma.dog.update({ where: { id }, data: { photoUrl } });
+  }
+
+  async removePhoto(id: string, userId: string) {
+    const dog = await this.findOne(id, userId);
+    await removeDogPhoto(dog.photoUrl);
+    return this.prisma.dog.update({ where: { id }, data: { photoUrl: null } });
   }
 
   async update(id: string, userId: string, data: any) {

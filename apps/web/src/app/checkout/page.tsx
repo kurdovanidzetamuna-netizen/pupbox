@@ -10,6 +10,8 @@ import { itemName } from '@/lib/localize';
 import LegalNotice from '@/components/LegalNotice';
 import DogProfileForm, { emptyDogProfile, toDogPayload, fromDog, type DogProfile } from '@/components/DogProfileForm';
 import ChoiceNote from '@/components/ChoiceNote';
+import VerifyCodes from '@/components/VerifyCodes';
+import { forgetReferral, storedReferral } from '@/lib/referral';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 const PHONE_RE = /^\+?[0-9\s()-]{7,20}$/;
@@ -65,6 +67,10 @@ export default function CheckoutPage() {
   const [errs, setErrs] = useState<Record<string, string>>({});
 
   const [isNewAccount, setIsNewAccount] = useState(true);
+  // Signed up or in, but phone and email not confirmed yet: the codes come first.
+  const [needVerify, setNeedVerify] = useState(false);
+  const [consent, setConsent] = useState(false);
+  const [signupPhone, setSignupPhone] = useState('');
   const [signedInEmail, setSignedInEmail] = useState('');
   const [form, setForm] = useState({
     email: '', password: '', firstName: '', lastName: '', phone: '',
@@ -187,12 +193,16 @@ export default function CheckoutPage() {
     if (!EMAIL_RE.test(form.email.trim())) e.email = t('co.e.email');
     if (!form.password) e.password = t('co.e.passwordReq');
     else if (isNewAccount && form.password.length < 8) e.password = t('co.e.passwordLen');
+    if (isNewAccount && !/^(\+?995)?\s*5[\d\s-]{8,11}$/.test(signupPhone.trim())) e.signupPhone = t('reg.e.phone');
     if (fail(e)) return;
 
     setError(''); setLoading(true);
     try {
       const body = isNewAccount
-        ? { email: form.email.trim(), password: form.password, firstName: form.firstName.trim(), lastName: form.lastName.trim() }
+        ? {
+            email: form.email.trim(), password: form.password, firstName: form.firstName.trim(), lastName: form.lastName.trim(),
+            phone: signupPhone.trim(), referralCode: storedReferral() || undefined, marketingConsent: consent, language: lang,
+          }
         : { email: form.email.trim(), password: form.password };
       const res = await fetch(`${API_URL}${isNewAccount ? '/auth/register' : '/auth/login'}`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
@@ -200,11 +210,13 @@ export default function CheckoutPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(apiMessage(data, t('co.e.generic')));
       localStorage.setItem('pupbox_token', data.token);
+      if (isNewAccount) forgetReferral();
       // Moves what they added as a guest into the account cart; without this
       // the order would be placed against an empty account cart.
       await refresh();
       prefillFromProfile();
-      next();
+      if (data.verification && !data.verification.verified) setNeedVerify(true);
+      else next();
     } catch (err: any) { setError(err.message); }
     finally { setLoading(false); }
   }
@@ -285,6 +297,11 @@ export default function CheckoutPage() {
         }),
       });
       const order = await res.json();
+      // Signed in from before verification existed for them: confirm, then come back.
+      if (res.status === 403 && order?.code === 'VERIFY_REQUIRED') {
+        router.push(`/verify?redirect=${encodeURIComponent(`/checkout${isGift ? '?gift=true' : ''}`)}`);
+        return;
+      }
       if (!res.ok) throw new Error(apiMessage(order, t('co.e.generic')));
       setOrderPlaced(true);
       await refresh();
@@ -366,7 +383,14 @@ export default function CheckoutPage() {
         <div className="grid md:grid-cols-3 gap-6 md:gap-8">
           <div className="md:col-span-2">
             {/* ── Account ── */}
-            {step === 'account' && (
+            {step === 'account' && needVerify && (
+              <section className="bg-white rounded-2xl border border-gray-100 p-6 sm:p-8">
+                <h1 className="text-xl font-bold text-gray-900 mb-1">{t('ver.title')}</h1>
+                <p className="text-sm text-gray-500 mb-6">{t('ver.sub')}</p>
+                <VerifyCodes onDone={() => { setNeedVerify(false); next(); }} />
+              </section>
+            )}
+            {step === 'account' && !needVerify && (
               <section className="bg-white rounded-2xl border border-gray-100 p-6 sm:p-8">
                 <h1 className="text-xl font-bold text-gray-900 mb-1">{t('co.account.title')}</h1>
                 <p className="text-sm text-gray-500 mb-6">{t('co.account.sub')}</p>
@@ -387,7 +411,19 @@ export default function CheckoutPage() {
                     </div>
                   )}
                   {input('email', t('co.f.email'), { type: 'email', placeholder: 'you@example.com', autoComplete: 'email' })}
+                  {isNewAccount && (
+                    <Field id="signupPhone" label={t('reg.phone')} hint={t('reg.phoneHint')} error={errs.signupPhone}>
+                      <input id="signupPhone" type="tel" value={signupPhone} autoComplete="tel" placeholder="599 12 34 56"
+                        onChange={e => { setSignupPhone(e.target.value); setErrs(er => ({ ...er, signupPhone: '' })); }} className={field('signupPhone')} />
+                    </Field>
+                  )}
                   {input('password', t('co.f.password'), { type: 'password', hint: isNewAccount ? t('co.f.passwordHint') : undefined, autoComplete: isNewAccount ? 'new-password' : 'current-password' })}
+                  {isNewAccount && (
+                    <label className="flex items-start gap-3 text-sm text-gray-600 cursor-pointer">
+                      <input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} className="mt-0.5 accent-teal-600 w-4 h-4" />
+                      <span>{t('reg.consent')}</span>
+                    </label>
+                  )}
                   {error && <p className="text-red-500 text-sm" role="alert">{error}</p>}
                   {isNewAccount && <LegalNotice />}
                   <button type="submit" disabled={loading} className={primary}>{loading ? t('co.wait') : t('co.continue')}</button>

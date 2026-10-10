@@ -1,5 +1,6 @@
 'use client';
 import Link from 'next/link';
+import Confetti from '@/components/Confetti';
 import { useSearchParams } from 'next/navigation';
 import { Suspense, useState } from 'react';
 import { useLanguage } from '@/context/LanguageContext';
@@ -9,7 +10,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1
 function Screen({ icon, title, sub, children }: { icon: string; title: string; sub: string; children: React.ReactNode }) {
   return (
     <main className="min-h-screen bg-white flex flex-col items-center justify-center px-6 text-center">
-      <div className="text-6xl mb-6" aria-hidden="true">{icon}</div>
+      <div className="text-6xl mb-6 animate-[pop_0.5s_ease-out]" aria-hidden="true">{icon}</div>
       <h1 className="text-3xl font-extrabold text-gray-900 mb-3">{title}</h1>
       <p className="text-lg text-gray-500 mb-8 max-w-md">{sub}</p>
       {children}
@@ -96,6 +97,7 @@ function ThankyouContent() {
 
   return (
     <Screen icon="🎉" title={t('ty.ok.title')} sub={t('ty.ok.sub')}>
+      <Confetti />
       {orderRef}
       <p className="text-sm text-teal-700 font-medium -mt-4 mb-10">{t('ty.ok.email')}</p>
       <div className="flex gap-4">

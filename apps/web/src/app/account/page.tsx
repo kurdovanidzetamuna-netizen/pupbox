@@ -1,4 +1,5 @@
 'use client';
+import { signOut } from '@/lib/signOut';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -38,18 +39,26 @@ export default function AccountPage() {
     setSaving(true); setError(''); setSuccess('');
     try {
       const res = await authFetch('/users/me', { method: 'PATCH', body: JSON.stringify(form) });
-      if (!res.ok) throw new Error();
+      const u = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error((Array.isArray(u.message) ? u.message[0] : u.message) || t('acc.saveFailed'));
+      setUser(u);
+      setForm(f => ({ ...f, phone: u.phone || '' }));
+      // A new number has to be confirmed with an SMS code.
+      if (!u.phoneVerified) {
+        await authFetch('/auth/verify/send', { method: 'POST', body: JSON.stringify({ channel: 'PHONE' }) }).catch(() => {});
+        return router.push('/verify?redirect=/account');
+      }
       setSuccess(t('acc.saved'));
-    } catch (err) {
+    } catch (err: any) {
       if (err instanceof SessionExpiredError) return router.replace(loginUrl('/account'));
-      setError(t('acc.saveFailed'));
+      setError(err?.message || t('acc.saveFailed'));
     } finally {
       setSaving(false);
     }
   }
 
   function logout() {
-    localStorage.removeItem('pupbox_token');
+    signOut();
     router.push('/');
   }
 
@@ -62,6 +71,21 @@ export default function AccountPage() {
       {fieldErrors[key] && <p className="text-red-500 text-xs mt-1">{fieldErrors[key]}</p>}
     </div>
   );
+
+  async function toggleConsent() {
+    const next = !user?.marketingConsent;
+    try {
+      const res = await authFetch('/users/me', { method: 'PATCH', body: JSON.stringify({ marketingConsent: next }) });
+      if (!res.ok) throw new Error();
+      setUser(await res.json());
+      setSuccess(t(next ? 'acc.consentOn' : 'acc.consentOff'));
+    } catch (err) {
+      if (err instanceof SessionExpiredError) return router.replace(loginUrl('/account'));
+      setError(t('acc.saveFailed'));
+    }
+  }
+
+  const unverified = user && (!user.emailVerified || !user.phoneVerified);
 
   return (
     <main className="min-h-screen bg-gray-50">
@@ -77,6 +101,7 @@ export default function AccountPage() {
           <div className="grid md:grid-cols-3 gap-6">
             <nav className="space-y-3" aria-label={t('acc.title')}>
               {[
+                { href: '/prices', icon: '🐾', k: 'acc.subscribe' },
                 { href: '/account/orders', icon: '📦', k: 'acc.orders' },
                 { href: '/account/subscriptions', icon: '📋', k: 'acc.subscriptions' },
                 { href: '/account/dogs', icon: '🐶', k: 'acc.dogs' },
@@ -91,6 +116,12 @@ export default function AccountPage() {
             </nav>
 
             <div className="md:col-span-2 space-y-6">
+            {unverified && (
+              <div className="flex items-center justify-between gap-4 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                <p className="text-sm font-medium text-amber-900">⚠️ {t('ver.banner')}</p>
+                <Link href="/verify?redirect=/account" className="shrink-0 bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-amber-700">{t('ver.bannerBtn')}</Link>
+              </div>
+            )}
             <section className="bg-white rounded-2xl border border-gray-100 p-6">
               <h2 className="font-semibold text-gray-800 mb-5">{t('acc.profile')}</h2>
               {success && <p className="text-teal-700 text-sm mb-4 bg-teal-50 px-3 py-2 rounded-lg" role="status">{success}</p>}
@@ -103,12 +134,26 @@ export default function AccountPage() {
                 <div>
                   <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">{t('acc.email')}</label>
                   <input id="email" value={user?.email || ''} disabled className="w-full border border-gray-100 rounded-xl px-4 py-2.5 text-sm bg-gray-50 text-gray-500" />
+                  <p className={`text-xs mt-1 ${user?.emailVerified ? 'text-teal-700' : 'text-amber-700'}`}>{user?.emailVerified ? `✓ ${t('acc.verified')}` : t('acc.notVerified')}</p>
                 </div>
-                {input('phone', t('co.f.phone'))}
+                <div>
+                  {input('phone', t('co.f.phone'))}
+                  <p className={`text-xs mt-1 ${user?.phoneVerified ? 'text-teal-700' : 'text-amber-700'}`}>{user?.phoneVerified ? `✓ ${t('acc.verified')}` : t('acc.notVerified')}</p>
+                </div>
                 <button type="submit" disabled={saving} className="bg-teal-600 text-white px-6 py-2.5 rounded-xl font-medium hover:bg-teal-700 transition disabled:opacity-50">
                   {saving ? t('co.saving') : t('acc.save')}
                 </button>
               </form>
+            </section>
+            <section className="bg-white rounded-2xl border border-gray-100 p-6 flex items-start justify-between gap-4">
+              <div>
+                <h2 className="font-semibold text-gray-800">💌 {t('acc.consent')}</h2>
+                <p className="text-sm text-gray-500 mt-1">{t('acc.consentSub')}</p>
+              </div>
+              <button type="button" onClick={toggleConsent} role="switch" aria-checked={!!user?.marketingConsent} aria-label={t('acc.consent')}
+                className={`relative w-12 h-6 shrink-0 rounded-full transition-colors duration-200 ${user?.marketingConsent ? 'bg-teal-600' : 'bg-gray-300'}`}>
+                <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${user?.marketingConsent ? 'translate-x-6' : 'translate-x-0'}`} />
+              </button>
             </section>
             <AccountSecurity />
             </div>

@@ -11,7 +11,7 @@ function toCsv(rows: Record<string, any>[]): string {
   const headers = Object.keys(rows[0]);
   const cell = (v: unknown) => {
     let s = String(v ?? '');
-    if (typeof v === 'string' && /^[=+\-@\t\r]/.test(s)) s = `'${s}`;
+    if (typeof v === 'string' && /^[=+\-@\t\r]/.test(s) && !/^\+\d{6,15}$/.test(s)) s = `'${s}`;
     s = s.replace(/"/g, '""');
     return /[",\n\r]/.test(s) ? `"${s}"` : s;
   };

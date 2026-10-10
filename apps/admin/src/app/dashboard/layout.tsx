@@ -50,6 +50,7 @@ const NAV_GROUPS = [
     label: 'People',
     items: [
       { href: '/dashboard/customers', label: 'Customers', icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z' },
+      { href: '/dashboard/crm', label: 'Dogs & CRM', icon: 'M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z' },
       { href: '/dashboard/referrals', label: 'Referrals', icon: 'M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1' },
     ],
   },
@@ -125,7 +126,7 @@ function NavGroup({ group, isActive }: { group: typeof NAV_GROUPS[0]; isActive: 
 const NEEDS: [prefix: string, perm: string][] = [
   ['/dashboard/admin-users', 'admin.manage'], ['/dashboard/roles', 'admin.manage'], ['/dashboard/audit', 'admin.manage'],
   ['/dashboard/reports', 'reports.view'], ['/dashboard/orders', 'orders.view'], ['/dashboard/customers', 'users.view'],
-  ['/dashboard/referrals', 'users.view'], ['/dashboard/coupons', 'coupons.manage'],
+  ['/dashboard/referrals', 'users.view'], ['/dashboard/crm', 'crm.view'], ['/dashboard/coupons', 'coupons.manage'],
   ['/dashboard/products', 'products.view'], ['/dashboard/categories', 'products.view'], ['/dashboard/box-items', 'products.view'],
   ['/dashboard/subscription-plans', 'subscriptions.view'], ['/dashboard/subscriptions', 'subscriptions.view'],
   ['/dashboard/monthly-boxes', 'subscriptions.view'], ['/dashboard/box-campaigns', 'subscriptions.view'],
@@ -164,6 +165,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     } catch {
       return signOut(); // malformed token is no better than none
     }
+
+    // The token's permission list is from sign-in time; a role edited since
+    // (e.g. CRM access added) shows at once with the current list.
+    fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1'}/admin/auth/me`, { headers: { Authorization: `Bearer ${token}` } })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((me) => { if (Array.isArray(me?.permissions)) setPerms(me.permissions); })
+      .catch(() => {});
 
     // The local check cannot catch a token the server rejects for other
     // reasons (secret rotated, admin removed), so treat any 401 from our API

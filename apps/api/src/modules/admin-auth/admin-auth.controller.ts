@@ -1,4 +1,5 @@
-import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Body, HttpCode, HttpStatus, Get, UseGuards, Request } from '@nestjs/common';
+import { AdminJwtGuard } from './admin-jwt.guard';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { IsEmail, IsString } from 'class-validator';
 import { AdminAuthService } from './admin-auth.service';
@@ -21,5 +22,12 @@ export class AdminAuthController {
   @ApiOperation({ summary: 'Admin login' })
   login(@Body() dto: AdminLoginDto) {
     return this.service.login(dto.email, dto.password);
+  }
+
+  /** The signed-in admin's role and permissions as they are now (not as when they signed in). */
+  @Get('me')
+  @UseGuards(AdminJwtGuard)
+  me(@Request() req: any) {
+    return req.user;
   }
 }

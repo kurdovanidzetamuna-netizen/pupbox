@@ -7,6 +7,16 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { ForgotPasswordDto, ResetPasswordDto } from './dto/password-reset.dto';
 import { Throttle } from '@nestjs/throttler';
+import { IsIn, IsString, Matches } from 'class-validator';
+
+class SendCodeDto {
+  @IsIn(['EMAIL', 'PHONE']) channel: 'EMAIL' | 'PHONE';
+}
+
+class ConfirmCodeDto {
+  @IsIn(['EMAIL', 'PHONE']) channel: 'EMAIL' | 'PHONE';
+  @IsString() @Matches(/^[\d\s-]{6,11}$/, { message: 'The code is 6 digits' }) code: string;
+}
 
 @ApiTags('Customer Auth')
 @Controller('auth')
@@ -28,6 +38,24 @@ export class AuthController {
   @ApiOperation({ summary: 'Customer login' })
   login(@Body() dto: LoginDto) {
     return this.authService.login(dto);
+  }
+
+  @Post('verify/send')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(AuthGuard('jwt'))
+  @Throttle({ default: { limit: 6, ttl: 10 * 60_000 } })
+  @ApiOperation({ summary: 'Send a verification code to my email or phone' })
+  sendCode(@Request() req: any, @Body() dto: SendCodeDto) {
+    return this.authService.sendVerification(req.user.id, dto.channel);
+  }
+
+  @Post('verify')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(AuthGuard('jwt'))
+  @Throttle({ default: { limit: 20, ttl: 10 * 60_000 } })
+  @ApiOperation({ summary: 'Confirm my email or phone with the code' })
+  confirmCode(@Request() req: any, @Body() dto: ConfirmCodeDto) {
+    return this.authService.confirmVerification(req.user.id, dto.channel, dto.code);
   }
 
   @Post('change-password')

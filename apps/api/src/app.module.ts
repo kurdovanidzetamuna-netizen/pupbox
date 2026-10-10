@@ -27,6 +27,8 @@ import { BoxCampaignsModule } from './modules/box-campaigns/box-campaigns.module
 import { BoxShipmentsModule } from './modules/box-shipments/box-shipments.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { EmailModule } from './modules/email/email.module';
+import { SmsModule } from './modules/sms/sms.module';
+import { CrmModule } from './modules/crm/crm.module';
 import { CouponsModule } from './modules/coupons/coupons.module';
 import { AdminUsersModule } from './modules/admin-users/admin-users.module';
 import { UploadModule } from './modules/upload/upload.module';
@@ -63,6 +65,8 @@ import { UploadModule } from './modules/upload/upload.module';
     AnalyticsModule,
     ReportsModule,
     EmailModule,
+    SmsModule,
+    CrmModule,
     AuditModule,
     BoxCampaignsModule,
     BoxShipmentsModule,

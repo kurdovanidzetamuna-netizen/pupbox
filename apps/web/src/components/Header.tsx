@@ -1,6 +1,7 @@
 'use client';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { signOut } from '@/lib/signOut';
 import { useEffect, useRef, useState } from 'react';
 import { sitePage, type StoredContent } from '@pupbox/content';
 import { useLanguage } from '@/context/LanguageContext';
@@ -18,8 +19,11 @@ export default function Header({ site }: { site: StoredContent | null }) {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
   const [signedIn, setSignedIn] = useState(false);
   const langRef = useRef<HTMLDivElement>(null);
+  const accountRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
 
   const count = cart?.itemCount ?? 0;
   // Compare paths only: a menu link may carry a query (/prices?gift=true).
@@ -33,7 +37,32 @@ export default function Header({ site }: { site: StoredContent | null }) {
     setSignedIn(!!localStorage.getItem('pupbox_token'));
     setMenuOpen(false);
     setLangOpen(false);
+    setAccountOpen(false);
   }, [pathname]);
+
+  useEffect(() => {
+    if (!accountOpen) return;
+    const onDown = (e: MouseEvent) => { if (!accountRef.current?.contains(e.target as Node)) setAccountOpen(false); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setAccountOpen(false); };
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => { document.removeEventListener('mousedown', onDown); document.removeEventListener('keydown', onKey); };
+  }, [accountOpen]);
+
+  function leave() {
+    signOut();
+    setSignedIn(false);
+    setAccountOpen(false);
+    setMenuOpen(false);
+    router.push('/');
+  }
+
+  const accountLinks = [
+    { href: '/account', label: t('nav.account') },
+    { href: '/account/orders', label: t('acc.orders') },
+    { href: '/account/subscriptions', label: t('acc.subscriptions') },
+    { href: '/account/dogs', label: t('acc.dogs') },
+  ];
 
   // The language menu opens on click (not hover) so it works by touch and
   // keyboard; it closes on an outside click or Escape.
@@ -64,9 +93,31 @@ export default function Header({ site }: { site: StoredContent | null }) {
         </nav>
 
         <div className="flex items-center gap-2 sm:gap-3">
-          <Link href={account.href} className="hidden md:block text-sm font-bold text-gray-600 hover:text-teal-600 border border-gray-200 hover:border-teal-400 px-5 py-2 rounded-xl transition-colors">
-            {account.label}
-          </Link>
+          {signedIn ? (
+            <div className="relative hidden md:block" ref={accountRef}>
+              <button type="button" onClick={() => setAccountOpen(o => !o)} aria-haspopup="menu" aria-expanded={accountOpen}
+                className="flex items-center gap-1 text-sm font-bold text-gray-600 hover:text-teal-600 border border-gray-200 hover:border-teal-400 px-5 py-2 rounded-xl transition-colors">
+                {account.label}
+                <svg className={`w-3 h-3 ml-0.5 transition-transform ${accountOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              {accountOpen && (
+                <div role="menu" className="absolute right-0 top-full mt-1.5 w-52 bg-white border border-gray-100 rounded-xl shadow-lg overflow-hidden z-50">
+                  {accountLinks.map(l => (
+                    <Link key={l.href} href={l.href} role="menuitem" className="block px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50">{l.label}</Link>
+                  ))}
+                  <button type="button" role="menuitem" onClick={leave} className="w-full text-left px-4 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-50 border-t border-gray-100">
+                    {t('acc.signOut')}
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <Link href={account.href} className="hidden md:block text-sm font-bold text-gray-600 hover:text-teal-600 border border-gray-200 hover:border-teal-400 px-5 py-2 rounded-xl transition-colors">
+              {account.label}
+            </Link>
+          )}
           {c.header.buttonText && (
             <SmartLink href={c.header.buttonHref} className="hidden sm:inline-flex items-center justify-center bg-teal-600 text-white text-sm font-bold px-5 py-2 rounded-lg hover:bg-teal-700 transition shadow-sm">
               {c.header.buttonText}
@@ -133,6 +184,11 @@ export default function Header({ site }: { site: StoredContent | null }) {
             <li>
               <Link href={account.href} className="block py-3 text-base font-semibold text-gray-800 border-b border-gray-50">{account.label}</Link>
             </li>
+            {signedIn && (
+              <li>
+                <button type="button" onClick={leave} className="block w-full text-left py-3 text-base font-semibold text-red-600 border-b border-gray-50">{t('acc.signOut')}</button>
+              </li>
+            )}
           </ul>
           {c.header.buttonText && (
             <SmartLink href={c.header.buttonHref} className="mt-4 flex w-full items-center justify-center bg-teal-600 text-white font-bold py-3 rounded-xl hover:bg-teal-700">

@@ -50,6 +50,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => { refresh(); }, []);
+  // After sign-out, show the guest cart rather than the account's.
+  useEffect(() => {
+    const onOut = () => { refresh(); };
+    window.addEventListener('pupbox:signed-out', onOut);
+    return () => window.removeEventListener('pupbox:signed-out', onOut);
+  }, [refresh]);
 
   async function call(path: string, method = 'POST', body?: any) {
     setLoading(true);

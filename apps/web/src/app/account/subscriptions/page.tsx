@@ -102,6 +102,30 @@ export default function MySubscriptionsPage() {
     }
   }
 
+  /** One more term, paid now; it starts when the current one ends. */
+  async function extend(sub: any) {
+    setPaying(sub.id);
+    try {
+      const res = await authFetch(`/me/subscriptions/${sub.id}/extend`, { method: 'POST' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) { showToast(data.message || t('sub.extendFailed'), false); setPaying(null); return; }
+      await payRenewal(data.orderId);
+    } catch (e) {
+      if (e instanceof SessionExpiredError) return expired();
+      showToast(t('sub.extendFailed'), false);
+      setPaying(null);
+    }
+  }
+
+  // From "Manage or cancel plan" on an order: open that plan's cancel question.
+  useEffect(() => {
+    if (loading) return;
+    const id = new URLSearchParams(window.location.search).get('cancel');
+    if (!id || !subs.some(s => s.id === id)) return;
+    document.getElementById(`sub-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    askCancel(id);
+  }, [loading]); // eslint-disable-line react-hooks/exhaustive-deps
+
   async function askCancel(id: string) {
     setCancelPlan(null);
     setCancelConfirm(id);
@@ -144,7 +168,10 @@ export default function MySubscriptionsPage() {
     <main className="min-h-screen bg-gray-50">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-10">
         <Link href="/account" className="text-sm text-gray-500 hover:text-teal-600">{t('acc.back')}</Link>
-        <h1 className="text-3xl font-extrabold text-gray-900 mt-2 mb-8">{t('acc.subscriptions')}</h1>
+        <div className="flex items-end justify-between gap-4 mt-2 mb-8">
+          <h1 className="text-3xl font-extrabold text-gray-900">{t('acc.subscriptions')}</h1>
+          {subs.length > 0 && <Link href="/prices" className="shrink-0 bg-teal-600 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-teal-700">{t('sub.addPlan')}</Link>}
+        </div>
 
         {loading ? (
           <div className="flex justify-center py-20"><div className="w-8 h-8 border-4 border-teal-200 border-t-teal-600 rounded-full animate-spin" /></div>
@@ -162,7 +189,7 @@ export default function MySubscriptionsPage() {
               const isActive = sub.status === 'ACTIVE';
               const canToggle = ['ACTIVE', 'PENDING'].includes(sub.status) && !sub.cancelledAt;
               return (
-                <li key={sub.id} className="bg-white rounded-2xl border border-gray-100 p-6">
+                <li key={sub.id} id={`sub-${sub.id}`} className="bg-white rounded-2xl border border-gray-100 p-6">
                   <div className="flex items-start justify-between gap-3 mb-4">
                     <div>
                       <h2 className="font-bold text-gray-900 text-lg">{planText(sub.plan, 'name', lang)}</h2>
@@ -258,6 +285,18 @@ export default function MySubscriptionsPage() {
                       <button onClick={() => toggleAutoRenewal(sub)} disabled={toggling === sub.id} role="switch" aria-checked={!!sub.autoRenewal} aria-label={t('sub.autoRenewal')}
                         className={`relative w-12 h-6 shrink-0 rounded-full transition-colors duration-200 ${sub.autoRenewal ? 'bg-teal-600' : 'bg-gray-300'} ${toggling === sub.id ? 'opacity-50' : ''}`}>
                         <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${sub.autoRenewal ? 'translate-x-6' : 'translate-x-0'}`} />
+                      </button>
+                    </div>
+                  )}
+
+                  {isActive && !sub.cancelledAt && !sub.orders?.[0] && (
+                    <div className="flex items-center justify-between gap-4 rounded-xl border border-teal-100 bg-white p-4 mb-4">
+                      <div>
+                        <p className="font-semibold text-gray-900 text-sm">➕ {t('sub.extend')}</p>
+                        <p className="text-xs text-gray-500 mt-0.5">{fill(t('sub.extendSub'), { period: months(Number(sub.plan?.durationValue) || 1), money: gel(sub.plan?.price) })}</p>
+                      </div>
+                      <button onClick={() => extend(sub)} disabled={paying === sub.id} className="shrink-0 bg-teal-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-teal-700 disabled:opacity-50">
+                        {paying === sub.id ? t('ty.redirecting') : fill(t('sub.extendGo'), { money: gel(sub.plan?.price) })}
                       </button>
                     </div>
                   )}

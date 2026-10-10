@@ -275,4 +275,23 @@ ${m.body.map(p).join('\n')}${button}${(m.after ?? []).map((a) => `<p style="marg
       after: ["If it wasn't you, ignore this email — your password stays the same."],
     });
   }
+
+  /** The 6-digit code that confirms this email address. */
+  async sendVerificationCode(d: { email: string; firstName: string; language?: string | null; code: string }) {
+    const l = lang(d.language);
+    // Without an email service in development, the log is where the code can be read.
+    if (!this.apiKey && this.config.get('NODE_ENV') !== 'production') this.logger.warn(`Email verification code for ${d.email} (development only): ${d.code}`);
+    const big = `<span style="display:block;font-size:30px;font-weight:800;letter-spacing:8px;color:#0f766e;text-align:center;padding:8px 0">${esc(d.code)}</span>`;
+    await this.deliver(d.email, 'email_verification', l, { firstName: d.firstName, code: d.code }, l === 'ka' ? {
+      subject: `${d.code} — Pupbox-ის დადასტურების კოდი`,
+      heading: 'დაადასტურე ელფოსტა',
+      body: [hi(l, d.firstName), 'შეიყვანე ეს კოდი Pupbox-ზე:', big, 'კოდი 10 წუთის განმავლობაში მოქმედებს.'],
+      after: ['თუ ეს შენ არ იყავი, უბრალოდ უგულებელყავი ეს წერილი.'],
+    } : {
+      subject: `${d.code} is your Pupbox code`,
+      heading: 'Confirm your email',
+      body: [hi(l, d.firstName), 'Enter this code on Pupbox:', big, 'It works for 10 minutes.'],
+      after: ["If it wasn't you, ignore this email."],
+    });
+  }
 }

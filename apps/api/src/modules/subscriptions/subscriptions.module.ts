@@ -55,6 +55,9 @@ class SubscriptionsController {
   @Patch(':id/cancel') cancel(@Request() req: any, @Param('id') id: string, @Body() dto: CancelDto) {
     return this.service.cancel(id, req.user.id, dto.reason);
   }
+  @Post(':id/extend') extend(@Request() req: any, @Param('id') id: string) {
+    return this.service.extend(id, req.user.id);
+  }
   @Patch(':id/address') changeAddress(@Request() req: any, @Param('id') id: string, @Body() dto: AddressDto) {
     return this.service.changeAddress(id, req.user.id, dto);
   }

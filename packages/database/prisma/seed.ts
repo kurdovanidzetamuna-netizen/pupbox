@@ -10,6 +10,9 @@ const PRESET_ROLES = [
   { name: 'Operations Manager', description: 'Orders, stock and monthly boxes', keys: ['dashboard.view', 'orders.view', 'orders.manage', 'subscriptions.view', 'subscriptions.manage', 'products.view', 'products.edit', 'users.view'] },
   { name: 'Finance Manager', description: 'Reports, refunds and coupons', keys: ['dashboard.view', 'reports.view', 'orders.view', 'payments.refund', 'coupons.manage', 'subscriptions.view'] },
   { name: 'Customer Support', description: 'Helps customers with orders and plans', keys: ['dashboard.view', 'orders.view', 'subscriptions.view', 'subscriptions.manage', 'users.view', 'users.block'] },
+  { name: 'Head of CRM', description: 'Owns retention and campaigns: CRM, exports, coupons, reports', keys: ['dashboard.view', 'reports.view', 'users.view', 'crm.view', 'crm.export', 'coupons.manage', 'orders.view', 'subscriptions.view'] },
+  { name: 'CRM Manager', description: 'Runs campaigns: CRM, exports and coupons', keys: ['dashboard.view', 'users.view', 'crm.view', 'crm.export', 'coupons.manage', 'subscriptions.view'] },
+  { name: 'CRM Specialist', description: 'Works the CRM lists; no exports', keys: ['dashboard.view', 'users.view', 'crm.view', 'subscriptions.view'] },
 ];
 
 async function main() {

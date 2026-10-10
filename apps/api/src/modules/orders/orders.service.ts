@@ -21,6 +21,8 @@ export class OrdersService {
           address: true,
           deliveryMethod: true,
           payments: { orderBy: { createdAt: 'desc' }, take: 1, include: { refunds: { orderBy: { createdAt: 'desc' } } } },
+          // For "Manage or cancel plan" on the order.
+          subscription: { select: { id: true, status: true, cancelledAt: true } },
         },
         orderBy: { createdAt: 'desc' },
         skip,

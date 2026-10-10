@@ -156,6 +156,11 @@ model User {
   status         UserStatus  @default(UNVERIFIED)
   referralCode   String      @unique @default(cuid())
   emailVerified  Boolean     @default(false)
+  /// Confirmed with an SMS code at registration (or after changing the number).
+  phoneVerified  Boolean     @default(false)
+  /// Agreed to marketing (offers, reminders) and when; the CRM only targets these.
+  marketingConsent   Boolean   @default(false)
+  marketingConsentAt DateTime?
   avatarUrl      String?
   /// The language emails are written in: "ka" or "en", following the site's language switch.
   language       String      @default("ka")
@@ -167,6 +172,7 @@ model User {
 
   addresses      Address[]
   passwordResets PasswordResetToken[]
+  verificationCodes VerificationCode[]
   dogs           Dog[]
   orders         Order[]
   subscriptions  CustomerSubscription[]
@@ -254,6 +260,8 @@ model Dog {
   /// A friend's dog the owner bought a gift plan for: kept with that plan,
   /// not listed among the owner's own dogs.
   forGift          Boolean   @default(false)
+  /// A photo the owner uploaded (served from /uploads/dogs/…).
+  photoUrl         String?
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
   deletedAt        DateTime?
@@ -940,4 +948,26 @@ model PasswordResetToken {
   createdAt DateTime  @default(now())
 
   @@index([userId])
+}
+
+enum VerificationChannel {
+  EMAIL
+  PHONE
+}
+
+/// A one-time code sent to confirm an email or phone. Only its hash is kept.
+model VerificationCode {
+  id        String              @id @default(cuid())
+  userId    String
+  user      User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  channel   VerificationChannel
+  /// The email or phone number the code was sent to; changing it voids the code.
+  target    String
+  codeHash  String
+  attempts  Int                 @default(0)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime            @default(now())
+
+  @@index([userId, channel, createdAt])
 }

@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { endOfMonth, planCancellation } from './cancellation';
-import { createDueRenewals, endUnpaidRenewals } from './renewal';
+import { createDueRenewals, createExtension, endUnpaidRenewals } from './renewal';
 import { EmailService } from '../email/email.service';
 import { cancelUnpaidOrder } from '../orders/order-lifecycle';
 
@@ -76,6 +76,11 @@ export class SubscriptionsService implements OnModuleInit, OnModuleDestroy {
       ? await this.prisma.order.findMany({ where: { subscriptionId: { in: giftIds }, isGift: true }, select: { subscriptionId: true, giftRecipientName: true } })
       : [];
     return subs.map((s) => ({ ...s, giftFor: s.isGift ? giftOrders.find((o) => o.subscriptionId === s.id)?.giftRecipientName ?? null : null }));
+  }
+
+  /** "Extend": a payable order for one more term (see createExtension). */
+  extend(id: string, userId: string) {
+    return createExtension(this.prisma, id, userId);
   }
 
   async findOne(id: string, userId?: string) {

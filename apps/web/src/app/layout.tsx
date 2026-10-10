@@ -1,3 +1,4 @@
+import RefCapture from '@/components/RefCapture';
 import type { Metadata } from 'next';
 import './globals.css';
 import { CartProvider } from '@/context/CartContext';
@@ -42,6 +43,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body>
         <LanguageProvider>
           <CartProvider>
+            <RefCapture />
             <Header site={site} />
             <PromoPopup />
             {children}

@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CartService } from '../cart/cart.service';
 import { Prisma } from '@prisma/client';
@@ -86,6 +86,10 @@ export class CheckoutService {
     autoRenewal?: boolean;
     gift?: GiftDetails;
   }) {
+    // Sign-up finishes with an email and SMS code; no order before that.
+    const me = await this.prisma.user.findUnique({ where: { id: userId }, select: { emailVerified: true, phoneVerified: true } });
+    if (!me?.emailVerified || !me.phoneVerified) throw new ForbiddenException({ message: 'Please confirm your email and phone first.', code: 'VERIFY_REQUIRED' });
+
     const cart = await this.cartService.getOrCreate(userId);
     if (!cart.items.length) throw new BadRequestException('Cart is empty');
 

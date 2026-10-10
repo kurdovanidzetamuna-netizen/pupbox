@@ -8,6 +8,9 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { ReferralsService } from '../referrals/referrals.service';
 import { EmailService } from '../email/email.service';
+import { SmsService } from '../sms/sms.service';
+import { removeDogPhoto } from '../dogs/dog-photo';
+import { Channel, confirmCode, normalisePhone, sendCode, verificationState } from './verification';
 
 /** How long a "forgot password" link works. */
 const RESET_TTL_MS = 60 * 60 * 1000;
@@ -23,7 +26,17 @@ export class AuthService {
     private jwt: JwtService,
     private referrals: ReferralsService,
     private email: EmailService,
+    private sms: SmsService,
   ) {}
+
+  /** Sends a code to the account's email or phone (registration, or after changing the phone). */
+  sendVerification(userId: string, channel: Channel) {
+    return sendCode(this.prisma, this.email, this.sms, userId, channel);
+  }
+
+  confirmVerification(userId: string, channel: Channel, code: string) {
+    return confirmCode(this.prisma, userId, channel, code);
+  }
 
   /** Email addresses are case-insensitive: "Nino@…" and "nino@…" are one account. */
   private normalise(email: string) {
@@ -37,6 +50,11 @@ export class AuthService {
   async register(dto: RegisterDto) {
     const existing = await this.findByEmail(dto.email);
     if (existing) throw new ConflictException('Email already registered');
+    const phone = normalisePhone(dto.phone);
+    if (!phone) throw new BadRequestException('Enter a Georgian mobile number, e.g. 599 12 34 56');
+    if (await this.prisma.user.findFirst({ where: { phone, phoneVerified: true, deletedAt: null }, select: { id: true } })) {
+      throw new ConflictException('This phone number is already used by another account. Sign in instead.');
+    }
 
     const passwordHash = await bcrypt.hash(dto.password, 12);
 
@@ -46,8 +64,10 @@ export class AuthService {
         language: dto.language ?? 'ka',
         firstName: dto.firstName,
         lastName: dto.lastName,
-        phone: dto.phone,
+        phone,
         passwordHash,
+        marketingConsent: dto.marketingConsent === true,
+        marketingConsentAt: dto.marketingConsent === true ? new Date() : null,
       },
       select: {
         id: true,
@@ -67,8 +87,14 @@ export class AuthService {
     // Fire-and-forget welcome email
     this.email.sendWelcome({ email: user.email, firstName: user.firstName, language: dto.language ?? 'ka' }).catch(() => {});
 
+    // Both codes go out now; the next screen asks for them. A failed send
+    // doesn't undo the account — "Send again" is on that screen.
+    for (const channel of ['EMAIL', 'PHONE'] as const) {
+      await this.sendVerification(user.id, channel).catch((e) => this.logger.warn(`Verification ${channel} not sent for ${user.id}: ${e.message}`));
+    }
+
     const token = this.signToken(user.id, user.email, 'customer');
-    return { user, token };
+    return { user, token, verification: verificationState({ emailVerified: false, phoneVerified: false }) };
   }
 
   async login(dto: LoginDto) {
@@ -90,6 +116,8 @@ export class AuthService {
         referralCode: user.referralCode,
       },
       token,
+      // Not verified yet: the site sends them to finish it before anything else.
+      verification: verificationState(user),
     };
   }
 
@@ -158,6 +186,7 @@ export class AuthService {
     if (running) throw new BadRequestException('Cancel your subscription first, then delete the account.');
 
     const now = new Date();
+    const photos = await this.prisma.dog.findMany({ where: { userId, photoUrl: { not: null } }, select: { photoUrl: true } });
     await this.prisma.$transaction([
       this.prisma.user.update({
         where: { id: userId },
@@ -165,13 +194,16 @@ export class AuthService {
           email: `deleted-${userId}@deleted.invalid`, firstName: 'Deleted', lastName: 'customer', phone: null, avatarUrl: null,
           passwordHash: await bcrypt.hash(crypto.randomBytes(32).toString('hex'), 4),
           status: 'BLOCKED', deletedAt: now, passwordChangedAt: now,
+          marketingConsent: false, marketingConsentAt: null, emailVerified: false, phoneVerified: false,
         },
       }),
       this.prisma.address.updateMany({ where: { userId }, data: { firstName: 'Deleted', lastName: 'customer', phone: '', addressLine1: '—', addressLine2: null, postalCode: null, deletedAt: now } }),
-      this.prisma.dog.updateMany({ where: { userId }, data: { name: 'Deleted', breed: null, birthday: null, specialNotes: null, deletedAt: now } }),
+      this.prisma.dog.updateMany({ where: { userId }, data: { name: 'Deleted', breed: null, birthday: null, specialNotes: null, photoUrl: null, deletedAt: now } }),
       this.prisma.passwordResetToken.deleteMany({ where: { userId } }),
+      this.prisma.verificationCode.deleteMany({ where: { userId } }),
       this.prisma.cart.deleteMany({ where: { userId } }),
     ]);
+    for (const p of photos) await removeDogPhoto(p.photoUrl);
     this.logger.log(`Account ${userId} deleted at the customer's request`);
     return { ok: true };
   }

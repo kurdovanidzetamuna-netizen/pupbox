@@ -40,7 +40,8 @@ function LoginForm() {
       localStorage.setItem('pupbox_token', data.token);
       saveForEmails(lang);
       await refreshCart(); // merges anything added as a guest into the account cart
-      router.push(redirect);
+      // Sign-up wasn't finished: confirm phone and email first, then carry on.
+      router.push(data.verification && !data.verification.verified ? `/verify?redirect=${encodeURIComponent(redirect)}` : redirect);
     } catch (e: any) {
       setError(e.message);
     } finally {

@@ -1,4 +1,4 @@
-import { Logger } from '@nestjs/common';
+import { BadRequestException, Logger, NotFoundException } from '@nestjs/common';
 import type { PrismaService } from '../prisma/prisma.service';
 import type { EmailService } from '../email/email.service';
 import { shopSettings } from '../settings/settings';
@@ -60,6 +60,38 @@ export async function createDueRenewals(prisma: PrismaService, email: EmailServi
   }
   if (created) logger.log(`Created ${created} renewal order(s)`);
   return created;
+}
+
+/**
+ * The customer asks to add another term now ("Extend"), whether or not the
+ * plan renews by itself. It's the same RENEWAL order the renewal job makes —
+ * for the term after the current one — so paying it extends the plan the
+ * same way, and the job won't make a second one for that term.
+ */
+export async function createExtension(prisma: PrismaService, subscriptionId: string, userId: string) {
+  const s = await prisma.customerSubscription.findFirst({
+    where: { id: subscriptionId, userId },
+    select: {
+      id: true, status: true, cancelledAt: true, addressId: true, dogId: true, endDate: true,
+      plan: { select: { id: true, name: true, price: true, isActive: true, deletedAt: true } },
+    },
+  });
+  if (!s) throw new NotFoundException('Subscription not found');
+  if (s.status !== 'ACTIVE' || s.cancelledAt) throw new BadRequestException('Only a running plan can be extended. Choose a new plan instead.');
+  if (!s.plan.isActive || s.plan.deletedAt) throw new BadRequestException('This plan is no longer sold, so it can’t be extended. Choose a new plan instead.');
+  const open = await prisma.order.findFirst({ where: { subscriptionId: s.id, type: 'RENEWAL', status: 'PENDING' }, select: { id: true, total: true } });
+  if (open) return { orderId: open.id, total: Number(open.total) };
+  const price = Number(s.plan.price);
+  const order = await prisma.order.create({
+    data: {
+      userId, subscriptionId: s.id, addressId: s.addressId, dogId: s.dogId,
+      type: 'RENEWAL', status: 'PENDING', renewalFor: s.endDate ?? new Date(),
+      subtotal: price, deliveryCost: 0, discountAmount: 0, total: price,
+      items: { create: [{ subscriptionPlanId: s.plan.id, name: s.plan.name, price, quantity: 1, total: price }] },
+    },
+    select: { id: true },
+  });
+  return { orderId: order.id, total: price };
 }
 
 /** A renewal was paid: the plan continues for another term from where the last one ended. */

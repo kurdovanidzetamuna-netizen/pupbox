@@ -28,6 +28,7 @@ export default function MyOrdersPage() {
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [open, setOpen] = useState<string | null>(null);
 
   useEffect(() => {
     authFetch('/orders/my')
@@ -96,6 +97,18 @@ export default function MyOrdersPage() {
                 </p>
               )}
 
+              {order.isGift && order.giftRecipientName && <p className="text-sm text-amber-700 mt-1">🎁 {fill(t('ord.giftFor'), { name: order.giftRecipientName })}</p>}
+
+              <div className="mt-4 flex flex-wrap items-center gap-3">
+                <button type="button" onClick={() => setOpen(o => (o === order.id ? null : order.id))} aria-expanded={open === order.id}
+                  className="text-sm font-semibold text-teal-700 hover:underline">{open === order.id ? t('ord.hide') : t('ord.view')}</button>
+                {order.subscription && ['ACTIVE', 'PAUSED'].includes(order.subscription.status) && !order.subscription.cancelledAt && (
+                  <Link href={`/account/subscriptions?cancel=${order.subscription.id}`} className="text-sm font-medium text-gray-500 hover:text-red-600">{t('ord.managePlan')}</Link>
+                )}
+              </div>
+
+              {open === order.id && <OrderDetails order={order} />}
+
               {/* Only a PENDING order can be paid: a declined payment cancels the
                   order and releases its stock (payments.service handleWebhook). */}
               {order.status === 'PENDING' && <PayButton orderId={order.id} />}
@@ -104,6 +117,53 @@ export default function MyOrdersPage() {
         </ul>
       </div>
     </main>
+  );
+}
+
+/** Everything about one order: items with prices, where it goes, money, payment, tracking. */
+function OrderDetails({ order }: { order: any }) {
+  const { t, lang } = useLanguage();
+  const a = order.address;
+  const p = order.payments?.[0];
+  const row = (label: string, value: React.ReactNode, strong = false) => (
+    <div className={`flex justify-between gap-4 ${strong ? 'font-bold text-gray-900 pt-2 border-t border-gray-100' : 'text-gray-600'}`}><span>{label}</span><span>{value}</span></div>
+  );
+  return (
+    <div className="mt-4 rounded-xl bg-gray-50 p-4 text-sm space-y-4 animate-[fadeUp_0.25s_ease-out]">
+      <div>
+        <p className="text-xs font-semibold text-gray-500 mb-2">{t('ord.items')}</p>
+        <ul className="space-y-1.5">
+          {order.items.map((item: any) => (
+            <li key={item.id} className="flex justify-between gap-4">
+              <span className="text-gray-800">{itemName(item, lang) || item.name} × {item.quantity}<ChoiceNote choice={item.personalisation} /></span>
+              <span className="text-gray-600 whitespace-nowrap">{gel(item.total)}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+      <div className="space-y-1">
+        {row(t('ord.subtotal'), gel(order.subtotal))}
+        {Number(order.discountAmount) > 0 && row(t('ord.discount'), `−${gel(order.discountAmount)}`)}
+        {row(t('ord.delivery'), Number(order.deliveryCost) > 0 ? gel(order.deliveryCost) : t('co.delivery.free'))}
+        {row(t('ord.total'), gel(order.total), true)}
+      </div>
+      {a && (
+        <div>
+          <p className="text-xs font-semibold text-gray-500 mb-1">{t('ord.deliverTo')}</p>
+          <p className="text-gray-800">{a.firstName} {a.lastName} · {a.phone}</p>
+          <p className="text-gray-500">{a.city}, {[a.addressLine1, a.addressLine2].filter(Boolean).join(', ')}</p>
+        </div>
+      )}
+      {p && (
+        <div className="flex justify-between gap-4 text-gray-600">
+          <span>{t('ord.payment')}</span>
+          <span>{t(`ord.pay.${p.status}`, p.status)}{p.paidAt ? ` · ${new Date(p.paidAt).toLocaleDateString(lang === 'ka' ? 'ka-GE' : 'en-GB', { day: 'numeric', month: 'short' })}` : ''}</span>
+        </div>
+      )}
+      {order.trackingNumber && (
+        <div className="flex justify-between gap-4 text-gray-600"><span>{t('ord.tracking')}</span><span className="font-mono">{order.trackingNumber}</span></div>
+      )}
+    </div>
   );
 }
 
