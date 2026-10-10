@@ -4,6 +4,14 @@ import { resolveAdminPassword } from './admin-password';
 
 const prisma = new PrismaClient();
 
+/** Ready-made roles an install starts with. */
+const PRESET_ROLES = [
+  { name: 'Content Manager', description: 'Edits pages, blog and FAQ', keys: ['dashboard.view', 'cms.view', 'cms.edit', 'products.view'] },
+  { name: 'Operations Manager', description: 'Orders, stock and monthly boxes', keys: ['dashboard.view', 'orders.view', 'orders.manage', 'subscriptions.view', 'subscriptions.manage', 'products.view', 'products.edit', 'users.view'] },
+  { name: 'Finance Manager', description: 'Reports, refunds and coupons', keys: ['dashboard.view', 'reports.view', 'orders.view', 'payments.refund', 'coupons.manage', 'subscriptions.view'] },
+  { name: 'Customer Support', description: 'Helps customers with orders and plans', keys: ['dashboard.view', 'orders.view', 'subscriptions.view', 'subscriptions.manage', 'users.view', 'users.block'] },
+];
+
 async function main() {
   console.log('Seeding database...');
 
@@ -28,7 +36,6 @@ async function main() {
   const permissions = [
     { key: 'dashboard.view', module: 'dashboard', description: 'View dashboard' },
     { key: 'users.view', module: 'users', description: 'View customers' },
-    { key: 'users.edit', module: 'users', description: 'Edit customers' },
     { key: 'users.block', module: 'users', description: 'Block/unblock customers' },
     { key: 'products.view', module: 'products', description: 'View products' },
     { key: 'products.create', module: 'products', description: 'Create products' },
@@ -38,13 +45,11 @@ async function main() {
     { key: 'subscriptions.manage', module: 'subscriptions', description: 'Manage subscriptions' },
     { key: 'orders.view', module: 'orders', description: 'View orders' },
     { key: 'orders.manage', module: 'orders', description: 'Manage orders' },
-    { key: 'payments.view', module: 'payments', description: 'View payments' },
     { key: 'payments.refund', module: 'payments', description: 'Refund payments' },
     { key: 'cms.view', module: 'cms', description: 'View CMS' },
     { key: 'cms.edit', module: 'cms', description: 'Edit CMS content' },
     { key: 'reports.view', module: 'reports', description: 'View reports' },
     { key: 'admin.manage', module: 'admin', description: 'Manage admin users' },
-    { key: 'delivery.manage', module: 'delivery', description: 'Manage delivery settings' },
     { key: 'coupons.manage', module: 'coupons', description: 'Manage coupons' },
   ];
 
@@ -71,27 +76,16 @@ async function main() {
     },
   });
 
-  // Seed other roles
-  await prisma.role.upsert({
-    where: { name: 'Content Manager' },
-    update: {},
-    create: { name: 'Content Manager', description: 'Manages CMS and blog content' },
-  });
-  await prisma.role.upsert({
-    where: { name: 'Operations Manager' },
-    update: {},
-    create: { name: 'Operations Manager', description: 'Manages orders and delivery' },
-  });
-  await prisma.role.upsert({
-    where: { name: 'Finance Manager' },
-    update: {},
-    create: { name: 'Finance Manager', description: 'Manages payments and reports' },
-  });
-  await prisma.role.upsert({
-    where: { name: 'Customer Support' },
-    update: {},
-    create: { name: 'Customer Support', description: 'Handles customer issues' },
-  });
+  // Starting roles. Permissions only on first creation; admin edits them after.
+  // (The API keeps Super Admin's list complete at startup.)
+  for (const r of PRESET_ROLES) {
+    const perms = await prisma.permission.findMany({ where: { key: { in: r.keys } }, select: { id: true } });
+    await prisma.role.upsert({
+      where: { name: r.name },
+      update: {},
+      create: { name: r.name, description: r.description, permissions: { create: perms.map((p) => ({ permissionId: p.id })) } },
+    });
+  }
 
   // Seed Super Admin user. The password comes from ADMIN_PASSWORD; a fixed
   // default here would be the same publicly known login on every server.

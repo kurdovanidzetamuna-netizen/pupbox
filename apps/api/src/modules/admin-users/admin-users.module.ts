@@ -1,7 +1,7 @@
-import { Module } from '@nestjs/common';
+import { Module, OnModuleInit } from '@nestjs/common';
 import { Controller, Get, Post, Patch, Delete, Body, Param, UseGuards, Query } from '@nestjs/common';
 import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
-import { IsString, IsEmail, IsOptional, IsEnum, MinLength, IsNotIn, IsIn } from 'class-validator';
+import { IsString, IsEmail, IsOptional, IsEnum, MinLength, MaxLength, IsNotIn, IsIn, IsArray, ArrayMaxSize } from 'class-validator';
 
 /** The password early seeds gave every install; never allowed again. */
 const RETIRED = { message: 'That is the old default password. Choose another.' };
@@ -9,7 +9,7 @@ import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
 import { AdminJwtGuard } from '../admin-auth/admin-jwt.guard';
-import { AdminPerms } from '../admin-auth/admin-permissions';
+import { AdminPerms, PERMISSION_CATALOGUE, PERMISSION_KEYS } from '../admin-auth/admin-permissions';
 
 // ─── DTOs ────────────────────────────────────────────────────────────────────
 
@@ -32,35 +32,56 @@ class UpdateAdminUserDto {
 }
 
 class CreateRoleDto {
-  @IsString() name: string;
-  @IsOptional() @IsString() description?: string;
-  @IsOptional() permissionKeys?: string[];
+  @IsString() @MaxLength(80) name: string;
+  @IsOptional() @IsString() @MaxLength(300) description?: string;
+  @IsOptional() @IsArray() @ArrayMaxSize(200) @IsString({ each: true }) permissionKeys?: string[];
 }
 
 class UpdateRoleDto {
-  @IsOptional() @IsString() name?: string;
-  @IsOptional() @IsString() description?: string;
-  @IsOptional() permissionKeys?: string[];
-}
-
-class CreatePermissionDto {
-  @IsString() key: string;
-  @IsString() name: string;
-  @IsString() module: string;
-  @IsOptional() @IsString() description?: string;
-}
-
-class UpdatePermissionDto {
-  @IsOptional() @IsString() name?: string;
-  @IsOptional() @IsString() module?: string;
-  @IsOptional() @IsString() description?: string;
+  @IsOptional() @IsString() @MaxLength(80) name?: string;
+  @IsOptional() @IsString() @MaxLength(300) description?: string;
+  @IsOptional() @IsArray() @ArrayMaxSize(200) @IsString({ each: true }) permissionKeys?: string[];
 }
 
 // ─── Service ─────────────────────────────────────────────────────────────────
 
 @Injectable()
-class AdminUsersService {
+class AdminUsersService implements OnModuleInit {
   constructor(private prisma: PrismaService) {}
+
+  /**
+   * Bring the permission table in line with what the API checks: add new
+   * ones, drop ones nothing checks any more, and keep the system role
+   * (Super Admin) holding all of them.
+   */
+  async onModuleInit() {
+    try {
+      for (const p of PERMISSION_CATALOGUE) {
+        await this.prisma.permission.upsert({
+          where: { key: p.key },
+          update: { name: p.name, module: p.key.split('.')[0], description: p.description },
+          create: { key: p.key, name: p.name, module: p.key.split('.')[0], description: p.description },
+        });
+      }
+      const stale = await this.prisma.permission.findMany({ where: { key: { notIn: PERMISSION_KEYS } }, select: { id: true } });
+      if (stale.length) {
+        const ids = stale.map((p) => p.id);
+        await this.prisma.rolePermission.deleteMany({ where: { permissionId: { in: ids } } });
+        await this.prisma.permission.deleteMany({ where: { id: { in: ids } } });
+      }
+      for (const role of await this.prisma.role.findMany({ where: { isSystem: true }, select: { id: true } })) {
+        await this.syncPermissions(role.id, PERMISSION_KEYS);
+      }
+    } catch (e: any) {
+      console.error(`Permission sync failed: ${e?.message ?? e}`);
+    }
+  }
+
+  /** Only keys the API actually checks; anything else is a mistake worth saying so. */
+  private checkKeys(keys: string[]) {
+    const unknown = keys.filter((k) => !PERMISSION_KEYS.includes(k));
+    if (unknown.length) throw new BadRequestException(`Unknown permission: ${unknown.join(', ')}`);
+  }
 
   // ── Users ──────────────────────────────────────────────────────────────────
 
@@ -171,7 +192,7 @@ class AdminUsersService {
     return this.prisma.role.findMany({
       include: {
         permissions: { include: { permission: true } },
-        _count: { select: { adminUsers: true } },
+        _count: { select: { adminUsers: { where: { deletedAt: null } } } },
       },
       orderBy: { createdAt: 'asc' },
     });
@@ -180,6 +201,7 @@ class AdminUsersService {
   async createRole(dto: CreateRoleDto) {
     const exists = await this.prisma.role.findUnique({ where: { name: dto.name } });
     if (exists) throw new ConflictException('Role name already exists');
+    if (dto.permissionKeys) this.checkKeys(dto.permissionKeys);
     const role = await this.prisma.role.create({ data: { name: dto.name, description: dto.description } });
     if (dto.permissionKeys?.length) {
       await this.syncPermissions(role.id, dto.permissionKeys);
@@ -190,7 +212,12 @@ class AdminUsersService {
   async updateRole(id: string, dto: UpdateRoleDto) {
     const role = await this.prisma.role.findUnique({ where: { id } });
     if (!role) throw new NotFoundException('Role not found');
-    if (role.isSystem && dto.name) throw new BadRequestException('Cannot rename system roles');
+    if (role.isSystem && dto.name && dto.name !== role.name) throw new BadRequestException('Cannot rename system roles');
+    // The system role always has everything, so nobody can lock the shop out of its own admin.
+    if (role.isSystem && dto.permissionKeys !== undefined && PERMISSION_KEYS.some((k) => !dto.permissionKeys!.includes(k))) {
+      throw new BadRequestException(`${role.name} always has every permission. Make a new role for limited access.`);
+    }
+    if (dto.permissionKeys) this.checkKeys(dto.permissionKeys);
     const data: any = {};
     if (dto.name)        data.name        = dto.name;
     if (dto.description !== undefined) data.description = dto.description;
@@ -205,7 +232,7 @@ class AdminUsersService {
   }
 
   async deleteRole(id: string) {
-    const role = await this.prisma.role.findUnique({ where: { id }, include: { _count: { select: { adminUsers: true } } } });
+    const role = await this.prisma.role.findUnique({ where: { id }, include: { _count: { select: { adminUsers: { where: { deletedAt: null } } } } } });
     if (!role) throw new NotFoundException('Role not found');
     if (role.isSystem) throw new BadRequestException('Cannot delete system roles');
     // Removed admins keep their role id for the record; only current ones block deleting the role.
@@ -219,7 +246,7 @@ class AdminUsersService {
   async getRole(id: string) {
     const role = await this.prisma.role.findUnique({
       where: { id },
-      include: { permissions: { include: { permission: true } }, _count: { select: { adminUsers: true } } },
+      include: { permissions: { include: { permission: true } }, _count: { select: { adminUsers: { where: { deletedAt: null } } } } },
     });
     if (!role) throw new NotFoundException('Role not found');
     return role;
@@ -238,44 +265,12 @@ class AdminUsersService {
 
   // ── Permissions ────────────────────────────────────────────────────────────
 
+  /** The catalogue in display order, with the database id of each. */
   async listPermissions() {
-    return this.prisma.permission.findMany({ orderBy: [{ module: 'asc' }, { key: 'asc' }] });
+    const rows = await this.prisma.permission.findMany({ where: { key: { in: PERMISSION_KEYS } }, select: { id: true, key: true } });
+    return PERMISSION_CATALOGUE.map((p) => ({ ...p, id: rows.find((r) => r.key === p.key)?.id ?? null }));
   }
 
-  async createPermission(dto: CreatePermissionDto) {
-    const exists = await this.prisma.permission.findUnique({ where: { key: dto.key } });
-    if (exists) throw new ConflictException('Permission key already exists');
-    return this.prisma.permission.create({ data: { key: dto.key, name: dto.name, module: dto.module, description: dto.description || '' } });
-  }
-
-  async updatePermission(id: string, dto: UpdatePermissionDto) {
-    const p = await this.prisma.permission.findUnique({ where: { id } });
-    if (!p) throw new NotFoundException('Permission not found');
-    const data: any = {};
-    if (dto.name !== undefined)        data.name        = dto.name;
-    if (dto.module !== undefined)      data.module      = dto.module;
-    if (dto.description !== undefined) data.description = dto.description;
-    return this.prisma.permission.update({ where: { id }, data });
-  }
-
-  async syncPermissionDefs(defs: { key: string; name: string; module: string; description: string }[]) {
-    for (const def of defs) {
-      await this.prisma.permission.upsert({
-        where: { key: def.key },
-        update: { name: def.name, module: def.module, description: def.description },
-        create: { key: def.key, name: def.name, module: def.module, description: def.description },
-      });
-    }
-    return { synced: defs.length };
-  }
-
-  async deletePermission(id: string) {
-    const p = await this.prisma.permission.findUnique({ where: { id } });
-    if (!p) throw new NotFoundException('Permission not found');
-    await this.prisma.rolePermission.deleteMany({ where: { permissionId: id } });
-    await this.prisma.permission.delete({ where: { id } });
-    return { success: true };
-  }
 }
 
 // ─── Controllers ─────────────────────────────────────────────────────────────
@@ -315,10 +310,6 @@ class AdminRolesController {
 class AdminPermissionsController {
   constructor(private svc: AdminUsersService) {}
   @Get()    list() { return this.svc.listPermissions(); }
-  @Post()   create(@Body() dto: CreatePermissionDto) { return this.svc.createPermission(dto); }
-  @Post('sync') sync(@Body() body: { keys: any[] }) { return this.svc.syncPermissionDefs(body.keys); }
-  @Patch(':id') update(@Param('id') id: string, @Body() dto: UpdatePermissionDto) { return this.svc.updatePermission(id, dto); }
-  @Delete(':id') remove(@Param('id') id: string) { return this.svc.deletePermission(id); }
 }
 
 // ─── Module ───────────────────────────────────────────────────────────────────

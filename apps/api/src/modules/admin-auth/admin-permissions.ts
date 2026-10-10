@@ -25,3 +25,30 @@ export function allowed(spec: AdminPermsSpec | undefined, method: string, held: 
   const options = Array.isArray(need) ? need : [need];
   return options.some((p) => held.includes(p));
 }
+
+/**
+ * Every permission the API checks, in the order the Roles page shows them.
+ * This list is the only source: the database is brought in line with it at
+ * startup, and roles can only hold these keys.
+ */
+export const PERMISSION_CATALOGUE: { key: string; group: string; name: string; description: string }[] = [
+  { key: 'dashboard.view', group: 'Overview', name: 'See the dashboard', description: 'Sales, orders and subscriber numbers on the home screen.' },
+  { key: 'reports.view', group: 'Overview', name: 'See reports', description: 'Reports and exports.' },
+  { key: 'orders.view', group: 'Orders & money', name: 'See orders', description: 'Order list and details, including addresses.' },
+  { key: 'orders.manage', group: 'Orders & money', name: 'Work on orders', description: 'Change an order’s status, tracking and notes.' },
+  { key: 'payments.refund', group: 'Orders & money', name: 'Record refunds', description: 'Mark money as returned to a customer.' },
+  { key: 'coupons.manage', group: 'Orders & money', name: 'Coupons', description: 'See, create, change and switch off coupons.' },
+  { key: 'products.view', group: 'Products', name: 'See products', description: 'Products, categories and box items.' },
+  { key: 'products.create', group: 'Products', name: 'Add products', description: 'Add products and upload pictures.' },
+  { key: 'products.edit', group: 'Products', name: 'Edit products', description: 'Prices, stock, descriptions, categories, tags.' },
+  { key: 'products.delete', group: 'Products', name: 'Delete products', description: 'Remove products and categories.' },
+  { key: 'subscriptions.view', group: 'Subscriptions & boxes', name: 'See subscriptions', description: 'Plans, subscribers, monthly boxes, box campaigns.' },
+  { key: 'subscriptions.manage', group: 'Subscriptions & boxes', name: 'Manage subscriptions', description: 'Cancel or resume plans, edit plans, pack and send monthly boxes.' },
+  { key: 'users.view', group: 'Customers', name: 'See customers', description: 'Customer list, details and referrals.' },
+  { key: 'users.block', group: 'Customers', name: 'Block customers', description: 'Block or unblock a customer’s account.' },
+  { key: 'cms.view', group: 'Site content', name: 'See site content', description: 'Pages, blog, FAQ, popups and translations.' },
+  { key: 'cms.edit', group: 'Site content', name: 'Edit site content', description: 'Change and publish pages, blog, FAQ, popups, translations and shop settings.' },
+  { key: 'admin.manage', group: 'Team', name: 'Manage the team', description: 'Add or remove admins, edit roles, see the audit log.' },
+];
+
+export const PERMISSION_KEYS = PERMISSION_CATALOGUE.map((p) => p.key);
