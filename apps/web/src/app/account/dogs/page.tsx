@@ -116,7 +116,7 @@ export default function MyDogsPage() {
   const secondary = 'border border-gray-200 text-gray-600 px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-50';
 
   return (
-    <main className="min-h-screen bg-cream py-12 px-4">
+    <main className="min-h-screen bg-gray-50 py-12 px-4">
       <div className="max-w-2xl mx-auto">
         <Link href="/account" className="text-sm text-gray-500 hover:text-teal-600">← {t('acc.title')}</Link>
         <div className="flex items-end justify-between gap-4 mt-4 mb-2">

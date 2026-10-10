@@ -17,9 +17,9 @@ export default function BlogClient({ posts, total, pages, page, categories, cont
   const c = usePage(blogPage, content);
 
   return (
-    <main className="min-h-screen bg-cream">
+    <main className="min-h-screen bg-white">
       {/* HERO */}
-      <div className="bg-sun-100 py-14 px-6 text-center border-b-[3px] border-ink">
+      <div className="bg-gradient-to-br from-teal-50 to-white py-14 px-6 text-center border-b border-gray-100">
         <span className="inline-flex items-center gap-2 bg-teal-100 text-teal-700 text-xs font-bold px-4 py-1.5 rounded-full mb-5 uppercase tracking-wide">
           {c.header.badge}
         </span>

@@ -77,13 +77,21 @@ export default function PlanCard({ plan, showFullBenefits = false, isGift = fals
       tabIndex={0}
       aria-label={`${name}, ${gel(plan.price)}`}
       aria-busy={loading}
-      className={`relative flex flex-col rounded-[28px] p-6 cursor-pointer border-[3px] border-ink shadow-step-ink transition-transform duration-150 hover:-translate-y-1 focus:outline-none focus-visible:ring-4 focus-visible:ring-teal-300 ${
-        featured ? (isGift ? 'bg-coral-100 -rotate-1' : 'bg-sun-400 -rotate-1') : 'bg-white'
+      className={`relative flex flex-col rounded-2xl p-6 cursor-pointer transition-all hover:shadow-lg hover:-translate-y-0.5 focus:outline-none focus-visible:ring-4 focus-visible:ring-teal-300 ${
+        isGift
+          ? featured
+            ? 'border-2 border-amber-400 bg-white shadow-xl'
+            : 'border border-gray-100 bg-white shadow-sm hover:border-amber-200'
+          : featured
+            ? 'border-2 border-teal-500 bg-white shadow-xl'
+            : 'border border-gray-100 bg-white shadow-sm hover:border-teal-200'
       }`}
     >
       {featured && (
-        <span className={`absolute -top-4 right-5 rotate-3 text-xs font-extrabold px-3.5 py-1.5 rounded-full whitespace-nowrap shadow-step-coral ${
-          isPopular || isGift ? 'bg-coral-400 text-white' : 'bg-teal-600 text-white'
+        <span className={`absolute -top-3 left-1/2 -translate-x-1/2 text-xs font-bold px-4 py-1 rounded-full whitespace-nowrap ${
+          isGift
+            ? 'bg-amber-400 text-white'
+            : isPopular ? 'bg-teal-600 text-white' : 'bg-amber-400 text-white'
         }`}>
           {isGift
             ? t('pricing.planCard.gift')
@@ -96,49 +104,56 @@ export default function PlanCard({ plan, showFullBenefits = false, isGift = fals
       )}
 
       {isGift && (
-        <div className="absolute top-3 left-4 text-lg opacity-40 select-none" aria-hidden="true">🎁</div>
+        <div className="absolute top-3 right-3 text-lg opacity-30 select-none">🎁</div>
       )}
 
-      <h3 className="text-lg font-extrabold text-ink mb-1">{name}</h3>
-      <p className={`text-xs mb-4 ${featured ? 'text-ink/80' : 'text-gray-500'}`}>
+      <h3 className="text-lg font-bold text-teal-800 mb-1">{name}</h3>
+      <p className="text-xs text-gray-400 mb-4">
         {isGift ? fill(t('pricing.gift.card'), { plan: name }) : planText(plan, 'description', lang)}
       </p>
 
       <div className="mb-1">
-        <span className="font-display text-4xl font-bold text-ink">{gel(plan.price)}</span>
+        <span className="text-3xl font-extrabold text-teal-600">{gel(plan.price)}</span>
+        <span className="text-sm text-gray-400 ml-1">total</span>
       </div>
       {plan.monthlyEquivPrice && (
-        <p className={`text-xs mb-1 ${featured ? 'text-ink/80' : 'text-gray-500'}`}>≈ {gel(Number(plan.monthlyEquivPrice).toFixed(2))}{t('global.perMonth')}</p>
+        <p className="text-xs text-gray-400 mb-1">≈ {gel(Number(plan.monthlyEquivPrice).toFixed(2))}{t('global.perMonth')}</p>
       )}
       {Number(plan.discountPercent) > 0 && (
-        <p className="self-start text-xs font-extrabold mb-4 bg-white/80 text-coral-600 px-2.5 py-1 rounded-full">
+        <p className="text-xs text-yellow-500 font-semibold mb-4">
           {t('global.savePercent')} {plan.discountPercent}% {t('global.vsMonthly')}
         </p>
       )}
 
       <ul className="space-y-2 mb-6 flex-1">
         {benefits.map((b: string, i: number) => (
-          <li key={i} className={`flex items-start gap-2 text-sm ${featured ? 'text-ink' : 'text-gray-600'}`}>
-            <span className={`shrink-0 mt-0.5 font-bold ${featured ? 'text-ink' : 'text-teal-600'}`}>✓</span>{localBenefits ? b : translateBenefit(b)}
+          <li key={i} className="flex items-start gap-2 text-sm text-gray-600">
+            <span className={`shrink-0 mt-0.5 ${isGift ? 'text-amber-400' : 'text-teal-500'}`}>✓</span>{localBenefits ? b : translateBenefit(b)}
           </li>
         ))}
         {plan.deliveryIncluded && !benefitsMentionDelivery && (
-          <li className={`flex items-start gap-2 text-sm ${featured ? 'text-ink' : 'text-gray-600'}`}>
-            <span className={`shrink-0 mt-0.5 font-bold ${featured ? 'text-ink' : 'text-teal-600'}`}>✓</span>
+          <li className="flex items-start gap-2 text-sm text-gray-600">
+            <span className={`shrink-0 mt-0.5 ${isGift ? 'text-amber-400' : 'text-teal-500'}`}>✓</span>
             {freeDeliveryLabel}
           </li>
         )}
         {isGift && (
-          <li className={`flex items-start gap-2 text-sm ${featured ? 'text-ink' : 'text-gray-600'}`}>
-            <span className={`shrink-0 mt-0.5 font-bold ${featured ? 'text-ink' : 'text-teal-600'}`}>✓</span>
+          <li className="flex items-start gap-2 text-sm text-gray-600">
+            <span className="text-amber-400 shrink-0 mt-0.5">✓</span>
             {t('co.gift.planPerk')}
           </li>
         )}
       </ul>
 
       <div
-        className={`w-full flex items-center justify-center py-3 rounded-full font-extrabold text-sm transition ${
-          featured ? 'bg-ink text-white' : 'bg-sun-100 text-ink'
+        className={`w-full flex items-center justify-center py-3 rounded-xl font-bold text-sm transition ${
+          isGift
+            ? featured
+              ? 'bg-amber-400 text-white'
+              : 'border-2 border-amber-300 text-amber-700'
+            : featured
+              ? 'bg-teal-600 text-white'
+              : 'border-2 border-gray-200 text-gray-700'
         }`}
       >
         {loading

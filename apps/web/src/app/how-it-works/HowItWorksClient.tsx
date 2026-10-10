@@ -90,7 +90,7 @@ export default function HowItWorksClient({ content, faq }: { content: StoredCont
   const faqs = faqFor('how-it-works', faq, lang);
 
   return (
-    <main className="min-h-screen bg-cream overflow-hidden">
+    <main className="min-h-screen bg-white overflow-hidden">
       {/* Hero */}
       <section className="max-w-3xl mx-auto px-6 pt-16 pb-10 text-center">
         {hero.badge && (
@@ -117,7 +117,7 @@ export default function HowItWorksClient({ content, faq }: { content: StoredCont
 
       {/* CTA */}
       {c.on('cta') && (
-      <section className="relative overflow-hidden bg-sun-100 py-16">
+      <section className="relative overflow-hidden bg-gradient-to-br from-teal-50 via-white to-amber-50 py-16">
         <span className="absolute top-8 left-12 text-3xl opacity-10 animate-bounce" style={{ animationDuration: '3s' }}>🐾</span>
         <span className="absolute top-16 right-20 text-2xl opacity-10 animate-bounce" style={{ animationDuration: '4s', animationDelay: '0.5s' }}>🐾</span>
         <span className="absolute bottom-10 left-1/4 text-xl opacity-10 animate-bounce" style={{ animationDuration: '3.5s', animationDelay: '1s' }}>🐾</span>

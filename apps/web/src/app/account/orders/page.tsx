@@ -42,7 +42,7 @@ export default function MyOrdersPage() {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <main className="min-h-screen bg-cream">
+    <main className="min-h-screen bg-gray-50">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-10">
         <Link href="/account" className="text-sm text-gray-500 hover:text-teal-600">{t('acc.back')}</Link>
         <h1 className="text-3xl font-extrabold text-gray-900 mt-2 mb-8">{t('acc.orders')}</h1>

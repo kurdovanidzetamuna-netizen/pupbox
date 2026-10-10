@@ -39,7 +39,7 @@ export default async function CmsPage({ params }: { params: { slug: string } }) 
   // The site header and language come from the root layout; this page used to
   // draw a second header (and footer) of its own underneath it.
   return (
-    <main className="min-h-screen bg-cream">
+    <main className="min-h-screen bg-white">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-12">
         <CmsContent title={page.title} html={content?.html} text={content?.text} kaTitle={ka?.title} kaHtml={ka?.html} />
       </div>

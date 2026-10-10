@@ -33,7 +33,7 @@ export default async function ProductDetailPage({ params }: { params: { slug: st
   const ka = product.translations?.ka || {};
 
   return (
-    <main className="min-h-screen bg-cream">
+    <main className="min-h-screen bg-white">
       <div className="max-w-6xl mx-auto px-6 py-10">
         {/* Breadcrumb */}
         <nav className="text-sm text-gray-400 mb-8 flex gap-2">

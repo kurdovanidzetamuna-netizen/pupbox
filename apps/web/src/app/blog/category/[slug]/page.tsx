@@ -34,7 +34,7 @@ export default async function BlogCategoryPage({ params, searchParams }: { param
   const page = Number(searchParams.page) || 1;
 
   return (
-    <main className="min-h-screen bg-cream">
+    <main className="min-h-screen bg-white">
       <header className="border-b border-gray-100 px-6 py-4 flex items-center justify-between">
         <Link href="/" className="text-2xl font-bold text-teal-600">🐾 Pupbox</Link>
         <nav className="hidden md:flex gap-8 text-sm font-medium text-gray-600">

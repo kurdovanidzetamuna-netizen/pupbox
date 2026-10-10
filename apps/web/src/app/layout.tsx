@@ -1,11 +1,6 @@
 import RefCapture from '@/components/RefCapture';
 import type { Metadata } from 'next';
 import './globals.css';
-import { Fredoka, Noto_Sans_Georgian } from 'next/font/google';
-
-// Georgian text in Noto Sans Georgian; the logo, prices and big numbers in Fredoka.
-const sans = Noto_Sans_Georgian({ subsets: ['georgian', 'latin'], weight: ['400', '500', '600', '700', '800', '900'], variable: '--font-sans', display: 'swap' });
-const display = Fredoka({ subsets: ['latin'], weight: ['600', '700'], variable: '--font-display', display: 'swap' });
 import { CartProvider } from '@/context/CartContext';
 import { LanguageProvider } from '@/context/LanguageContext';
 import Header from '@/components/Header';
@@ -44,8 +39,8 @@ export const metadata: Metadata = {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const site = await getStoredContent(sitePage);
   return (
-    <html lang="ka" className={`${sans.variable} ${display.variable}`}>
-      <body className="font-sans bg-cream text-ink">
+    <html lang="ka">
+      <body>
         <LanguageProvider>
           <CartProvider>
             <RefCapture />

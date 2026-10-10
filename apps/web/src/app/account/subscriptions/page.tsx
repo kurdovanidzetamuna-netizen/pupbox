@@ -165,7 +165,7 @@ export default function MySubscriptionsPage() {
   const boxes = (n: number) => (n === 1 ? t('sub.box') : fill(t('sub.boxes'), { n }));
 
   return (
-    <main className="min-h-screen bg-cream">
+    <main className="min-h-screen bg-gray-50">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-10">
         <Link href="/account" className="text-sm text-gray-500 hover:text-teal-600">{t('acc.back')}</Link>
         <div className="flex items-end justify-between gap-4 mt-2 mb-8">

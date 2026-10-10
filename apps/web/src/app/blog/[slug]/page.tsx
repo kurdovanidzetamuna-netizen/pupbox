@@ -55,7 +55,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
   };
 
   return (
-    <main className="min-h-screen bg-cream">
+    <main className="min-h-screen bg-white">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
 

@@ -79,11 +79,11 @@ export default function Header({ site }: { site: StoredContent | null }) {
   const account = signedIn ? { href: '/account', label: t('nav.account') } : { href: '/login', label: t('nav.signIn') };
 
   return (
-    <header className="sticky top-0 z-50 bg-cream/95 backdrop-blur border-b-2 border-ink/5">
+    <header className="sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-gray-100">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-3">
         <Logo brand={c.brand} />
 
-        <nav className="hidden md:flex gap-8 text-[15px] font-semibold text-ink/80" aria-label="Main">
+        <nav className="hidden md:flex gap-8 text-sm font-medium text-gray-600" aria-label="Main">
           {nav.map((n, i) => (
             <SmartLink key={i} href={n.href} aria-current={isActive(n.href) ? 'page' : undefined}
               className={`transition-colors hover:text-teal-600 ${isActive(n.href) ? 'text-teal-600 font-semibold' : ''}`}>
@@ -96,7 +96,7 @@ export default function Header({ site }: { site: StoredContent | null }) {
           {signedIn ? (
             <div className="relative hidden md:block" ref={accountRef}>
               <button type="button" onClick={() => setAccountOpen(o => !o)} aria-haspopup="menu" aria-expanded={accountOpen}
-                className="flex items-center gap-1 text-sm font-bold text-gray-600 hover:text-teal-600 border-2 border-ink/80 hover:border-teal-600 px-5 py-2 rounded-full transition-colors">
+                className="flex items-center gap-1 text-sm font-bold text-gray-600 hover:text-teal-600 border border-gray-200 hover:border-teal-400 px-5 py-2 rounded-xl transition-colors">
                 {account.label}
                 <svg className={`w-3 h-3 ml-0.5 transition-transform ${accountOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} aria-hidden="true">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
@@ -114,12 +114,12 @@ export default function Header({ site }: { site: StoredContent | null }) {
               )}
             </div>
           ) : (
-            <Link href={account.href} className="hidden md:block text-sm font-bold text-gray-600 hover:text-teal-600 border-2 border-ink/80 hover:border-teal-600 px-5 py-2 rounded-full transition-colors">
+            <Link href={account.href} className="hidden md:block text-sm font-bold text-gray-600 hover:text-teal-600 border border-gray-200 hover:border-teal-400 px-5 py-2 rounded-xl transition-colors">
               {account.label}
             </Link>
           )}
           {c.header.buttonText && (
-            <SmartLink href={c.header.buttonHref} className="hidden sm:inline-flex items-center justify-center bg-coral-400 text-white text-sm font-extrabold px-5 py-2.5 hover:bg-coral-600">
+            <SmartLink href={c.header.buttonHref} className="hidden sm:inline-flex items-center justify-center bg-teal-600 text-white text-sm font-bold px-5 py-2 rounded-lg hover:bg-teal-700 transition shadow-sm">
               {c.header.buttonText}
             </SmartLink>
           )}
@@ -140,7 +140,7 @@ export default function Header({ site }: { site: StoredContent | null }) {
           {/* Language */}
           <div className="relative hidden md:block" ref={langRef}>
             <button type="button" onClick={() => setLangOpen(o => !o)} aria-haspopup="menu" aria-expanded={langOpen} aria-label={t('nav.language')}
-              className="flex items-center gap-1 text-sm font-bold text-gray-600 hover:text-teal-600 border-2 border-ink/15 hover:border-teal-600 rounded-full px-4 py-2 transition-colors">
+              className="flex items-center gap-1 text-sm font-bold text-gray-600 hover:text-teal-600 border border-gray-200 hover:border-teal-400 rounded-lg px-4 py-2 transition-colors">
               {lang === 'en' ? 'EN' : 'KA'}
               <svg className={`w-3 h-3 ml-0.5 transition-transform ${langOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
@@ -171,7 +171,7 @@ export default function Header({ site }: { site: StoredContent | null }) {
       </div>
 
       {menuOpen && (
-        <nav id="mobile-menu" aria-label="Main" className="md:hidden border-t border-ink/10 bg-cream px-4 pb-5 pt-2">
+        <nav id="mobile-menu" aria-label="Main" className="md:hidden border-t border-gray-100 bg-white px-4 pb-5 pt-2">
           <ul className="flex flex-col">
             {nav.map((n, i) => (
               <li key={i}>
@@ -191,7 +191,7 @@ export default function Header({ site }: { site: StoredContent | null }) {
             )}
           </ul>
           {c.header.buttonText && (
-            <SmartLink href={c.header.buttonHref} className="mt-4 flex w-full items-center justify-center bg-coral-400 text-white font-extrabold py-3.5 hover:bg-coral-600">
+            <SmartLink href={c.header.buttonHref} className="mt-4 flex w-full items-center justify-center bg-teal-600 text-white font-bold py-3 rounded-xl hover:bg-teal-700">
               {c.header.buttonText}
             </SmartLink>
           )}
