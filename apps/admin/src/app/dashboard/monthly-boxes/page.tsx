@@ -87,13 +87,14 @@ export default function MonthlyBoxesPage() {
   });
 
   function exportCsv() {
-    const rows = [['Box', 'Customer', 'Phone', 'City', 'Address', 'Dog', 'Size', 'Allergies', 'Contents', 'Status', 'Tracking']];
+    const rows = [['Box', 'Customer', 'Phone', 'City', 'Address', 'Dog', 'Size', 'Allergies', 'Contents', 'Gift note', 'Status', 'Tracking']];
     for (const i of shown) {
       const a = i.address, s = i.subscription;
       rows.push([
         `${i.boxNumber}/${s.boxesTotal}`, a ? `${a.firstName} ${a.lastName}` : `${s.user.firstName} ${s.user.lastName}`, a?.phone ?? '', a?.city ?? '',
         a ? [a.addressLine1, a.addressLine2].filter(Boolean).join(', ') : '', s.dog?.name ?? '', SIZE[s.dog?.size] ?? '', (s.dog?.allergies ?? []).join('; '),
-        i.campaign?.name ?? '', STATUS[i.status as Status].label, i.trackingNumber ?? '',
+        i.campaign?.name ?? '', i.gift && i.boxNumber === 1 ? `Gift from ${s.user.firstName} ${s.user.lastName}${i.gift.message ? `: ${i.gift.message}` : ''}` : '',
+        STATUS[i.status as Status].label, i.trackingNumber ?? '',
       ]);
     }
     const csv = rows.map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
@@ -240,6 +241,13 @@ export default function MonthlyBoxesPage() {
                       {s.status === 'CANCELLED' && i.status !== 'CANCELLED' && <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--red-600)' }}>Subscription cancelled</div>}
                       {s.status !== 'CANCELLED' && s.cancelledAt && <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--amber-700)' }}>Last box — customer cancelled</div>}
                       <div style={{ fontSize: 12, color: 'var(--slate-400)' }}>{s.user.email}</div>
+                      {i.gift && (
+                        <div style={{ fontSize: 12, color: 'var(--amber-800)', marginTop: 4 }}>
+                          Gift for {i.gift.for ?? 'a friend'}
+                          {/* The buyer's message goes in with the first box. */}
+                          {i.boxNumber === 1 && <div style={{ fontWeight: 700 }}>✉ Add a gift card{i.gift.message ? `: “${i.gift.message}”` : ` from ${s.user.firstName}`}</div>}
+                        </div>
+                      )}
                     </td>
                     <td style={td}>
                       {dog ? <>

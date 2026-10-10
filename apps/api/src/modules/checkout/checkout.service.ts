@@ -1,5 +1,4 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
-import * as crypto from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { CartService } from '../cart/cart.service';
 import { Prisma } from '@prisma/client';
@@ -8,28 +7,33 @@ import { cancelUnpaidOrder } from '../orders/order-lifecycle';
 
 export interface GiftDetails {
   recipientName: string;
-  recipientEmail: string;
+  recipientEmail?: string;
   message?: string;
-  /** When the gift card email should go out; null/absent means immediately. */
+  /** When the gift starts (first box, and the note to the friend); absent = now. */
   deliverOn?: string;
+  dog: {
+    name: string; size: any; allergies?: string[]; breed?: string; gender?: any; weightKg?: number;
+    foodPreferences?: string[]; toyPreferences?: string[]; chewingStrength?: string; specialNotes?: string;
+  };
 }
 
 /** Today's date in Tbilisi (UTC+4, no daylight saving), as YYYY-MM-DD. */
 const tbilisiToday = () => new Date(Date.now() + 4 * 3600_000).toISOString().slice(0, 10);
 
 /**
- * When to email a gift card: null = as soon as it's paid. A chosen day means
- * 09:00 Tbilisi time that day, so it doesn't land in the middle of the night.
+ * When a gift starts: null = as soon as it's paid. A chosen day means 09:00
+ * Tbilisi time that day — the plan starts then, the first box goes in that
+ * month's dispatch, and the friend's note (if any) is sent that morning.
  * Today or within a year; anything else is refused.
  */
 function giftSendDate(raw?: string): Date | null {
   if (!raw) return null;
   const day = String(raw).slice(0, 10);
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) throw new BadRequestException('Choose a valid date to send the gift card');
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) throw new BadRequestException('Choose a valid start date for the gift');
   const today = tbilisiToday();
   const max = new Date(Date.now() + 4 * 3600_000 + 365 * 86400_000).toISOString().slice(0, 10);
-  if (day < today) throw new BadRequestException('The gift card date can’t be in the past');
-  if (day > max) throw new BadRequestException('The gift card can be scheduled up to a year ahead');
+  if (day < today) throw new BadRequestException('The gift can’t start in the past');
+  if (day > max) throw new BadRequestException('A gift can start up to a year ahead');
   return day === today ? null : new Date(`${day}T09:00:00+04:00`);
 }
 
@@ -88,7 +92,7 @@ export class CheckoutService {
     const gift = data.gift;
     if (gift) {
       if (!gift.recipientName?.trim()) throw new BadRequestException('Recipient name is required for a gift');
-      if (!/^\S+@\S+\.\S+$/.test(gift.recipientEmail ?? '')) throw new BadRequestException('A valid recipient email is required for a gift');
+      if (!gift.dog?.name?.trim() || !gift.dog.size) throw new BadRequestException('Tell us the name and size of the dog the gift is for');
 
       const planItems = cart.items.filter((i: any) => i.subscriptionPlanId);
       if (planItems.length === 0) throw new BadRequestException('Only subscriptions can be gifted');
@@ -124,7 +128,8 @@ export class CheckoutService {
       .map((i: any) => ({ productId: i.productId, quantity: i.quantity, name: i.product?.name }));
     await reserveStock(this.prisma, productLines);
 
-    // Create or find address — only one of this customer's own.
+    // Create or find address — only one of this customer's own. For a gift
+    // these are the friend's delivery details, entered by the buyer.
     let address = data.addressId ? await this.prisma.address.findFirst({ where: { id: data.addressId, userId, deletedAt: null } }) : null;
     if (!address) {
       address = await this.prisma.address.create({
@@ -132,14 +137,34 @@ export class CheckoutService {
       });
     }
 
+    // The friend's dog, kept with the gift plan (not in the buyer's "My dogs").
+    let giftDog: { id: string } | null = null;
+    try {
+      if (gift) {
+        giftDog = await this.prisma.dog.create({
+          data: {
+            userId, forGift: true, name: gift.dog.name.trim(), size: gift.dog.size,
+            allergies: [...new Set((gift.dog.allergies ?? []).map((a) => a.trim()).filter(Boolean))],
+            breed: gift.dog.breed || null, gender: gift.dog.gender ?? null, weightKg: gift.dog.weightKg ?? null,
+            foodPreferences: gift.dog.foodPreferences ?? [], toyPreferences: gift.dog.toyPreferences ?? [],
+            chewingStrength: gift.dog.chewingStrength || null, specialNotes: gift.dog.specialNotes?.trim() || null,
+          },
+          select: { id: true },
+        });
+      }
+    } catch (e) {
+      await releaseStock(this.prisma, productLines);
+      throw e;
+    }
+    const dogId = giftDog?.id ?? (data.dogId ? (await this.prisma.dog.findFirst({ where: { id: data.dogId, userId, deletedAt: null }, select: { id: true } }))?.id ?? null : null);
+
     // Create order — and hand the held stock back if that fails.
     let order: Prisma.OrderGetPayload<{ include: { items: true; address: true; deliveryMethod: true } }>;
     try {
       order = await this.prisma.order.create({
         data: {
           userId,
-          // A gift is for someone else's dog, which is not in our database yet.
-          dogId: gift ? null : data.dogId || null,
+          dogId,
           addressId: address.id,
           deliveryMethodId: data.deliveryMethodId,
           couponId: cart.couponId || null,
@@ -171,6 +196,7 @@ export class CheckoutService {
       });
     } catch (e) {
       await releaseStock(this.prisma, productLines);
+      if (giftDog) await this.prisma.dog.delete({ where: { id: giftDog.id } }).catch(() => {});
       throw e;
     }
 
@@ -180,20 +206,16 @@ export class CheckoutService {
       for (const item of cart.items.filter((i: any) => i.subscriptionPlanId)) {
         const created = await this.prisma.customerSubscription.create({
           data: {
-            // Until claimed a gift belongs to the buyer: they paid for it, and
-            // the recipient has no account yet.
+            // A gift stays the buyer's: it shows in their account, where they
+            // can change the friend's address or cancel it.
             userId,
             planId: item.subscriptionPlanId,
-            dogId: gift ? null : data.dogId || null,
-            // A gift's address comes from the recipient when they claim it.
-            addressId: gift ? null : address.id,
+            dogId,
+            addressId: address.id,
             status: 'PENDING',
             boxesTotal: item.subscriptionPlan.boxCount,
             isGift: !!gift,
             purchasedByUserId: gift ? userId : null,
-            // Opaque, unguessable — this token is the only credential guarding
-            // the claim link that arrives by email.
-            giftClaimToken: gift ? crypto.randomBytes(24).toString('base64url') : null,
             // Never keep billing the buyer for someone else's dog; otherwise
             // honour what the customer chose at checkout.
             // Renewal only on an explicit yes: defaulting to true would renew

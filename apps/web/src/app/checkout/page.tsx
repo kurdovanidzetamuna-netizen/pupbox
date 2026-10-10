@@ -43,7 +43,7 @@ function Field({ id, label, hint, error, children }: { id: string; label: string
  * delivery and payment on one screen. Asking for less — and nothing twice —
  * is the whole point: every extra step is somewhere a customer can leave.
  */
-/** Dates for the gift card picker, in Tbilisi time (UTC+4) to match the server. */
+/** Dates for the gift start picker, in Tbilisi time (UTC+4) to match the server. */
 const tbilisiDay = (offsetDays = 0) => new Date(Date.now() + 4 * 3600_000 + offsetDays * 86400_000).toISOString().slice(0, 10);
 const todayTbilisi = () => tbilisiDay(0);
 const tomorrowTbilisi = () => tbilisiDay(1);
@@ -70,9 +70,13 @@ export default function CheckoutPage() {
     email: '', password: '', firstName: '', lastName: '', phone: '',
     city: '', addressLine1: '', addressLine2: '',
     giftRecipientName: '', giftRecipientEmail: '', giftMessage: '',
-    // Empty = email the card as soon as payment clears.
+    // Empty = the gift starts as soon as payment clears.
     giftSendOn: '',
   });
+  // The friend's dog: what their boxes are picked for.
+  const [giftDog, setGiftDog] = useState<DogProfile>(emptyDogProfile);
+  // The buyer's own phone, prefilled for themselves; not the friend's.
+  const [profilePhone, setProfilePhone] = useState('');
   const [giftLater, setGiftLater] = useState(false);
   const [dog, setDog] = useState<DogProfile>(emptyDogProfile);
   const [dogId, setDogId] = useState<string | null>(null);
@@ -133,6 +137,7 @@ export default function CheckoutPage() {
       .then(u => {
         if (!u) return;
         setSignedInEmail(u.email || '');
+        setProfilePhone(u.phone || '');
         loadMyDogs(token);
         setForm(f => ({ ...f, firstName: f.firstName || u.firstName || '', lastName: f.lastName || u.lastName || '', phone: f.phone || u.phone || '' }));
       })
@@ -207,9 +212,15 @@ export default function CheckoutPage() {
   function submitGift() {
     const e: Record<string, string> = {};
     if (!form.giftRecipientName.trim()) e.giftRecipientName = t('co.e.recipientName');
-    if (!EMAIL_RE.test(form.giftRecipientEmail.trim())) e.giftRecipientEmail = t('co.e.recipientEmail');
+    if (form.giftRecipientEmail.trim() && !EMAIL_RE.test(form.giftRecipientEmail.trim())) e.giftRecipientEmail = t('co.e.recipientEmail');
+    if (!giftDog.name.trim()) e.dogName = t('co.e.dogName');
+    if (!giftDog.size) e.dogSize = t('co.e.dogSize');
     if (giftLater && (!form.giftSendOn || form.giftSendOn < todayTbilisi() || form.giftSendOn > inAYear())) e.giftSendOn = t('co.e.giftDate');
     if (fail(e)) return;
+    // The delivery step is the friend's address: start it with their name,
+    // not the buyer's own details from the profile.
+    const [first, ...rest] = form.giftRecipientName.trim().split(/\s+/);
+    setForm(f => ({ ...f, firstName: first, lastName: rest.join(' '), phone: f.phone === profilePhone ? '' : f.phone }));
     next();
   }
 
@@ -265,9 +276,10 @@ export default function CheckoutPage() {
           ...(isGift ? {
             gift: {
               recipientName: form.giftRecipientName.trim(),
-              recipientEmail: form.giftRecipientEmail.trim(),
+              ...(form.giftRecipientEmail.trim() ? { recipientEmail: form.giftRecipientEmail.trim() } : {}),
               ...(form.giftMessage.trim() ? { message: form.giftMessage.trim() } : {}),
               ...(giftLater && form.giftSendOn ? { deliverOn: form.giftSendOn } : {}),
+              dog: toDogPayload(giftDog),
             },
           } : {}),
         }),
@@ -390,6 +402,12 @@ export default function CheckoutPage() {
                 <p className="text-sm text-gray-500 mb-6">{t('co.gift.sub')}</p>
                 <div className="space-y-4">
                   {input('giftRecipientName', t('co.gift.name'), { placeholder: 'Nino Beridze' })}
+                  <div className="pt-2">
+                    <h2 className="font-semibold text-gray-900">{t('co.gift.dogTitle')}</h2>
+                    <p className="text-xs text-gray-500 mb-3">{t('co.gift.dogSub')}</p>
+                    <DogProfileForm value={giftDog} onChange={d => { setGiftDog(d); setErrs(e => ({ ...e, dogName: '', dogSize: d.size ? '' : e.dogSize })); }} compact nameError={errs.dogName} />
+                    {errs.dogSize && <p className="text-red-500 text-xs mt-1">{errs.dogSize}</p>}
+                  </div>
                   {input('giftRecipientEmail', t('co.gift.email'), { type: 'email', placeholder: 'nino@example.com', hint: t('co.gift.emailHint') })}
                   <Field id="giftMessage" label={t('co.gift.message')} hint={`${form.giftMessage.length}/1000`} error={errs.giftMessage}>
                     <textarea id="giftMessage" value={form.giftMessage} onChange={e => update('giftMessage', e.target.value)} rows={3} maxLength={1000}
@@ -459,7 +477,8 @@ export default function CheckoutPage() {
                 {isGift && (
                   <div className="mb-6 bg-amber-50 border border-amber-200 rounded-xl p-4">
                     <p className="text-sm font-bold text-amber-900">{fill(t('co.gift.for'), { name: form.giftRecipientName })}</p>
-                    <p className="text-xs text-amber-800">{form.giftRecipientEmail}</p>
+                    {giftDog.name && <p className="text-xs text-amber-800">🐶 {giftDog.name}</p>}
+                    {form.giftRecipientEmail && <p className="text-xs text-amber-800">{form.giftRecipientEmail}</p>}
                     {form.giftMessage && <p className="text-xs italic text-amber-800 mt-2">“{form.giftMessage}”</p>}
                     {giftLater && form.giftSendOn && <p className="text-xs text-amber-800 mt-2">📅 {fill(t('co.gift.sendsOn'), { date: new Date(`${form.giftSendOn}T09:00:00+04:00`).toLocaleDateString(lang === 'ka' ? 'ka-GE' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) })}</p>}
                     <p className="text-xs text-amber-700 mt-2 pt-2 border-t border-amber-200">{fill(t('co.gift.billingNote'), { name: form.giftRecipientName })}</p>

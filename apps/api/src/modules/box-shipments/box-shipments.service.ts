@@ -32,6 +32,8 @@ const shipmentInclude = {
       plan: { select: { name: true } },
       user: { select: { id: true, email: true, firstName: true, lastName: true, language: true } },
       dog: { select: { name: true, breed: true, size: true, allergies: true, specialNotes: true } },
+      // A gift's purchase carries who it's for and the buyer's message.
+      orders: { where: { isGift: true }, select: { giftRecipientName: true, giftMessage: true }, orderBy: { createdAt: 'asc' }, take: 1 },
     },
   },
   address: true,
@@ -128,6 +130,9 @@ export class BoxShipmentsService {
     // Boxes whose contents the dog is allergic to: swap the item before packing.
     const withClashes = items.map((i) => ({
       ...i,
+      gift: i.subscription.isGift
+        ? { for: i.subscription.orders[0]?.giftRecipientName ?? null, message: i.subscription.orders[0]?.giftMessage ?? null }
+        : null,
       clashes: (i.campaign?.products ?? [])
         .map((p) => ({ product: p.product.name, allergens: allergenClash(i.subscription.dog?.allergies, p.product.allergens) }))
         .filter((c) => c.allergens.length),

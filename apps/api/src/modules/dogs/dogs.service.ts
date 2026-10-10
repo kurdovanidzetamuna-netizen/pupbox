@@ -7,7 +7,8 @@ export class DogsService {
 
   findByUser(userId: string) {
     return this.prisma.dog.findMany({
-      where: { userId, deletedAt: null },
+      // A friend's dog from a gift plan lives with that plan, not in "My dogs".
+      where: { userId, deletedAt: null, forGift: false },
       orderBy: { createdAt: 'asc' },
     });
   }

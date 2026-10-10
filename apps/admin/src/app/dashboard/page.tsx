@@ -65,10 +65,8 @@ interface InventoryAlerts {
   items: { productId: string; name: string; sku: string; quantity: number; reservedQty: number; available: number; lowStockAlert: number; severity: 'out' | 'low'; includedInBox: boolean }[];
 }
 interface GiftSummary {
-  unclaimedCount: number;
-  unclaimedValue: number;
-  staleCount: number;
-  claimedCount: number;
+  activeCount: number;
+  startingLaterCount: number;
 }
 interface BoxCampaign {
   campaignId: string; name: string; month: number; year: number; isCurrent: boolean;
@@ -266,18 +264,11 @@ export default function DashboardPage() {
               value={sub.newSubs} change={sub.newSubsChange} sub="signed up in this period" />
             <MetricCard label="Churn rate" emoji="📉" accent={sub.churnRate > 10 ? 'var(--red-600)' : CHANNEL.subscription.accent} bg="var(--red-50)"
               value={`${sub.churnRate}%`} sub={`${sub.cancelled} cancelled in period`} />
-            {/* An unclaimed gift is money taken with nothing shipped — it needs
-                chasing, so it sits on the dashboard rather than only behind a filter. */}
             <MetricCard
-              label="Unclaimed gifts" emoji="🎁" bg="var(--amber-50)"
-              accent={gifts && gifts.staleCount > 0 ? 'var(--red-600)' : gifts && gifts.unclaimedCount > 0 ? 'var(--amber-700)' : 'var(--emerald-600)'}
-              href="/dashboard/subscriptions?gifts=unclaimed"
-              value={gifts?.unclaimedCount ?? 0}
-              sub={
-                !gifts || gifts.unclaimedCount === 0
-                  ? 'all gifts claimed'
-                  : `${money(gifts.unclaimedValue)} paid, not yet shippable${gifts.staleCount > 0 ? ` · ${gifts.staleCount} over 14 days` : ''}`
-              }
+              label="Gift plans" emoji="🎁" bg="var(--amber-50)" accent="var(--amber-700)"
+              href="/dashboard/subscriptions?gifts=1"
+              value={gifts?.activeCount ?? 0}
+              sub={gifts?.startingLaterCount ? `running now · ${gifts.startingLaterCount} start later` : 'running now'}
             />
           </div>
 

@@ -215,32 +215,28 @@ ${m.body.map(p).join('\n')}${button}${(m.after ?? []).map((a) => `<p style="marg
   }
 
   /**
-   * The gift card. This email is the only way the recipient learns the gift
-   * exists, and the claim link is its only credential — until they follow it
-   * the subscription has no dog and no address, so nothing can ship.
-   * Written in the buyer's language: we know nothing about the recipient yet.
+   * To the friend: a gift plan is on its way to them; nothing to do. Written
+   * in the buyer's language — we know nothing else about the friend.
    */
-  async sendGiftCard(d: { recipientEmail: string; recipientName: string; buyerName: string; planName: string; message?: string; claimToken: string; language?: string | null }) {
+  async sendGiftCard(d: { recipientEmail: string; recipientName: string; buyerName: string; planName: string; message?: string; dogName?: string; boxes?: number; language?: string | null }) {
     const l = lang(d.language);
-    const url = `${this.siteUrl}/gift/${d.claimToken}`;
     const note = d.message
       ? `<span style="display:block;background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:14px 16px;font-style:italic;color:#92400e">“${esc(d.message)}”<br><span style="font-style:normal;font-size:13px;color:#b45309">— ${esc(d.buyerName)}</span></span>`
       : '';
-    const vars = { recipientName: d.recipientName, buyerName: d.buyerName, planName: d.planName, message: d.message ?? '', claimUrl: url, siteUrl: this.siteUrl };
+    const vars = { recipientName: d.recipientName, buyerName: d.buyerName, planName: d.planName, message: d.message ?? '', dogName: d.dogName ?? '', siteUrl: this.siteUrl };
+    const forDog = (ka: string, en: string) => (d.dogName ? (l === 'ka' ? ka : en) : '');
     await this.deliver(d.recipientEmail, 'gift_card', l, vars, l === 'ka' ? {
-      subject: 'შენს ძაღლს Pupbox აჩუქეს! 🎁',
-      heading: '🎁 შენ საჩუქარი მიიღე',
-      body: [hi(l, d.recipientName), `<strong>${esc(d.planName)}</strong> გამოწერა საჩუქრად შენი ძაღლისთვის. გამომგზავნი: <strong>${esc(d.buyerName)}</strong>.`, ...(note ? [note] : []),
-        'მოგვიყევი შენი ძაღლის შესახებ — ზომა, ჯიში და ალერგიები — და ყოველ კოლოფს მას მოვარგებთ. ერთი წუთი დაგჭირდება.'],
-      button: { text: 'საჩუქრის მიღება →', url },
-      after: [`თუ ღილაკი არ მუშაობს, ეს ბმული ბრაუზერში ჩასვი:<br>${url}`],
+      subject: `${d.buyerName}-მა შენს ძაღლს Pupbox აჩუქა! 🎁`,
+      heading: '🎁 საჩუქარი გზაშია',
+      body: [hi(l, d.recipientName), `<strong>${esc(d.buyerName)}</strong>-მა ${forDog(`<strong>${esc(d.dogName ?? '')}</strong>-ს`, '')} <strong>${esc(d.planName)}</strong> გამოწერა აჩუქა.`, ...(note ? [note] : []),
+        `${d.boxes && d.boxes > 1 ? `${d.boxes} კოლოფი` : 'კოლოფი'} ყოველთვიურად მოვა შენს მისამართზე — არაფრის გაკეთება არ გჭირდება. კურიერი მიწოდებამდე დაგიკავშირდება.`],
+      button: { text: 'გაიცანი Pupbox', url: this.siteUrl },
     } : {
       subject: `${d.buyerName} sent your dog a Pupbox gift! 🎁`,
-      heading: "🎁 You've been given a Pupbox!",
-      body: [hi(l, d.recipientName), `<strong>${esc(d.buyerName)}</strong> has given your dog a <strong>${esc(d.planName)}</strong> subscription.`, ...(note ? [note] : []),
-        "Tell us about your dog — size, breed and any allergies — and we'll tailor every box to them. It takes a minute."],
-      button: { text: 'Claim your gift →', url },
-      after: [`If the button doesn't work, paste this into your browser:<br>${url}`],
+      heading: '🎁 A gift is on its way',
+      body: [hi(l, d.recipientName), `<strong>${esc(d.buyerName)}</strong> has given ${forDog(`<strong>${esc(d.dogName ?? '')}</strong>`, 'your dog')} a <strong>${esc(d.planName)}</strong> subscription.`, ...(note ? [note] : []),
+        `${d.boxes && d.boxes > 1 ? `${d.boxes} boxes` : 'The box'} will arrive at your address, one a month — there's nothing you need to do. The courier will call before delivering.`],
+      button: { text: 'Meet Pupbox', url: this.siteUrl },
     });
   }
 

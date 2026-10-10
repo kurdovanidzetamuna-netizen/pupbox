@@ -1,5 +1,5 @@
 /**
- * Built-in copy for the shop, product page, account area and gift claim.
+ * Built-in copy for the shop, product page and account area.
  * Same precedence as the other fallbacks: the CMS (config-translations) can
  * override any key. Placeholders in {braces} are filled with `fill()`.
  */
@@ -142,6 +142,9 @@ export const STORE_STRINGS: Record<string, { en: string; ka: string }> = {
   'sub.nextRenewal':        { en: 'Next renewal',               ka: 'შემდეგი განახლება' },
   'sub.endsOn':             { en: 'Ends on',                    ka: 'სრულდება' },
   'sub.dog':                { en: 'Dog',                        ka: 'ძაღლი' },
+  'sub.gift':               { en: 'Gift',                       ka: 'საჩუქარი' },
+  'sub.giftFor':            { en: 'Gift for {name}',            ka: 'საჩუქარი — {name}' },
+  'sub.startsOn':           { en: 'Starts on',                  ka: 'იწყება' },
   'sub.price':              { en: 'Price',                      ka: 'ფასი' },
   'sub.autoRenewal':        { en: 'Auto-renewal',               ka: 'ავტომატური განახლება' },
   'sub.renewsOn':           { en: 'Renews automatically on {date}', ka: 'ავტომატურად განახლდება {date}' },
@@ -204,32 +207,4 @@ export const STORE_STRINGS: Record<string, { en: string; ka: string }> = {
   'ref.status.FIRST_ORDER_COMPLETED': { en: 'First order placed', ka: 'პირველი შეკვეთა გააკეთა' },
   'ref.status.REWARD_GRANTED': { en: '₾10 coupon sent ✓',       ka: '₾10-ის კუპონი გაიგზავნა ✓' },
   'ref.status.CANCELLED':   { en: 'Cancelled',                  ka: 'გაუქმებული' },
-
-  // ── Gift claim ──
-  'gc.loading':             { en: 'Loading your gift…',         ka: 'საჩუქარი იტვირთება…' },
-  'gc.invalid':             { en: "This gift link isn't valid", ka: 'საჩუქრის ბმული არასწორია' },
-  'gc.invalidSub':          { en: "We couldn't find a gift for this link. It may have already been claimed.", ka: 'ამ ბმულზე საჩუქარი ვერ მოიძებნა. შესაძლოა, უკვე მიღებულია.' },
-  'gc.home':                { en: 'Go to Pupbox',               ka: 'Pupbox-ზე გადასვლა' },
-  'gc.done':                { en: "You're all set!",            ka: 'ყველაფერი მზადაა!' },
-  'gc.doneSub':             { en: "{dog}'s first box is being prepared. We'll email you when it ships.", ka: '{dog}-ის პირველი ყუთი მზადდება. გაგზავნისას ელფოსტით შეგატყობინებთ.' },
-  'gc.already':             { en: 'Already claimed',            ka: 'უკვე მიღებულია' },
-  'gc.alreadySub':          { en: 'This gift has already been claimed. If that was you, sign in to see your subscription.', ka: 'ეს საჩუქარი უკვე მიღებულია. თუ ეს შენ იყავი, შედი ანგარიშში გამოწერის სანახავად.' },
-  'gc.toAccount':           { en: 'Go to my account',           ka: 'ჩემს ანგარიშზე გადასვლა' },
-  'gc.heading':             { en: "You've been given a Pupbox!", ka: 'შენ Pupbox გაჩუქეს!' },
-  'gc.headingNamed':        { en: "{name}, you've been given a Pupbox!", ka: '{name}, შენ Pupbox გაჩუქეს!' },
-  'gc.from':                { en: '{buyer} has given your dog a {plan} subscription.', ka: '{buyer}-მა შენს ძაღლს {plan} გამოწერა აჩუქა.' },
-  'gc.dogTitle':            { en: 'Tell us about your dog',     ka: 'გვიამბე შენი ძაღლის შესახებ' },
-  'gc.dogSub':              { en: 'Every box is picked for your dog, so the more we know the better.', ka: 'ყოველი ყუთი შენი ძაღლისთვის ირჩევა, ასე რომ, რაც მეტი ვიცით, მით უკეთესი.' },
-  'gc.newAccount':          { en: 'Create account',             ka: 'ანგარიშის შექმნა' },
-  'gc.haveAccount':         { en: 'I already have one',         ka: 'უკვე მაქვს' },
-  'gc.accountNote':         { en: 'You need an account to manage the subscription or update your address.', ka: 'ანგარიში გჭირდება გამოწერის სამართავად და მისამართის შესაცვლელად.' },
-  'gc.addressTitle':        { en: 'Where should we send it?',   ka: 'სად გამოგიგზავნოთ?' },
-  'gc.addressSub':          { en: "Your address. The sender didn't need to know it.", ka: 'შენი მისამართი. გამომგზავნს მისი ცოდნა არ დასჭირდა.' },
-  'gc.postal':              { en: 'Postal code',                ka: 'საფოსტო ინდექსი' },
-  'gc.claim':               { en: '🎁 Claim my gift',            ka: '🎁 საჩუქრის მიღება' },
-  'gc.claiming':            { en: 'Claiming…',                  ka: 'მიმდინარეობს…' },
-  'gc.free':                { en: 'Nothing to pay. {buyer} has already covered it.', ka: 'გადასახდელი არაფერია. {buyer}-მა უკვე დაფარა.' },
-  'gc.e.dog':               { en: "Please tell us your dog's name", ka: 'გვითხარი შენი ძაღლის სახელი' },
-  'gc.e.address':           { en: 'Please complete the delivery address', ka: 'შეავსე მიწოდების მისამართი' },
-  'gc.e.expired':           { en: 'Your session has expired. Please sign in again to claim this gift.', ka: 'სესიის ვადა ამოიწურა. საჩუქრის მისაღებად თავიდან შედი.' },
 };

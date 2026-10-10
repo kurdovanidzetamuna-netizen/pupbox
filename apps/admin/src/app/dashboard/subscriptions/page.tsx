@@ -263,15 +263,15 @@ export default function AdminSubscriptionsPage() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState('');
-  // The gift queue the dashboard card deep-links to via ?gifts=unclaimed.
+  // "Gifts only", which the dashboard card deep-links to via ?gifts=1.
   //
   // `null` means "haven't read the URL yet", and the first fetch waits for it.
   // Reading window.location during the initial render instead would not match
   // what the server rendered and breaks hydration; setting it in an effect
   // without this gate fired a second fetch racing the unfiltered one, whose
   // slower response landed last and replaced the filtered rows.
-  const [gifts, setGifts] = useState<'' | 'unclaimed' | 'claimed' | null>(null);
-  const [unclaimedGifts, setUnclaimedGifts] = useState(0);
+  const [gifts, setGifts] = useState<boolean | null>(null);
+  const [giftCount, setGiftCount] = useState(0);
   const [resending, setResending] = useState<string | null>(null);
   const [selected, setSelected] = useState<any>(null);
   const [confirm, setConfirm] = useState<null | { label: string; color: string; title: string; message: string; run: () => Promise<void> }>(null);
@@ -288,7 +288,7 @@ export default function AdminSubscriptionsPage() {
       const token = localStorage.getItem('admin_token');
       const params = new URLSearchParams();
       if (status) params.set('status', status);
-      if (gifts) params.set('gifts', gifts);
+      if (gifts) params.set('gifts', '1');
       const qs = params.toString() ? `?${params}` : '';
       const res = await fetch(`${API}/admin/subscriptions${qs}`, { headers: { Authorization: `Bearer ${token}` } });
       if (res.ok) {
@@ -297,7 +297,7 @@ export default function AdminSubscriptionsPage() {
         setSubs(data.items || []);
         setTotal(data.total || 0);
         setStatusCounts(data.statusCounts ?? {});
-        setUnclaimedGifts(data.unclaimedGifts ?? 0);
+        setGiftCount(data.giftCount ?? 0);
       }
     } catch { } finally {
       if (seq === requestSeq.current) setLoading(false);
@@ -306,7 +306,7 @@ export default function AdminSubscriptionsPage() {
 
   useEffect(() => {
     const q = new URLSearchParams(window.location.search).get('gifts');
-    setGifts(q === 'unclaimed' || q === 'claimed' ? q : '');
+    setGifts(q === '1' || q === 'true');
   }, []);
 
   useEffect(() => { if (gifts !== null) load(); }, [status, gifts]);
@@ -317,9 +317,9 @@ export default function AdminSubscriptionsPage() {
       const token = localStorage.getItem('admin_token');
       const res = await fetch(`${API}/admin/gifts/${id}/resend`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
       const body = await res.json().catch(() => ({}));
-      alert(res.ok ? `Gift card resent to ${body.to}` : `Could not resend: ${body.message ?? res.status}`);
+      alert(res.ok ? `Gift note resent to ${body.to}` : `Could not resend: ${body.message ?? res.status}`);
     } catch {
-      alert('Could not resend the gift card.');
+      alert('Could not resend the gift note.');
     } finally {
       setResending(null);
     }
@@ -382,7 +382,7 @@ export default function AdminSubscriptionsPage() {
         {tabs.map(t => (
           <button
             key={t.val}
-            onClick={() => { setStatus(t.val); setGifts(''); }}
+            onClick={() => { setStatus(t.val); setGifts(false); }}
             style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer', border: status === t.val ? 'none' : '1px solid var(--slate-200)', background: status === t.val ? 'var(--slate-900)' : 'var(--white)', color: status === t.val ? 'var(--white)' : 'var(--slate-500)', transition: 'all 0.12s' }}
           >
             {t.label}
@@ -391,33 +391,16 @@ export default function AdminSubscriptionsPage() {
         ))}
       </div>
 
-      {/* Gift queue. Separate from the status tabs because an unclaimed gift is
-          a fulfilment obligation, not a subscription state — it is paid for but
-          has no dog and no address, so nothing can ship. */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
-        {([
-          { label: '🎁 Unclaimed gifts', val: 'unclaimed' as const, count: unclaimedGifts },
-          { label: 'Claimed gifts', val: 'claimed' as const, count: null },
-        ]).map(g => {
-          const on = gifts === g.val;
-          return (
-            <button
-              key={g.val}
-              onClick={() => { setGifts(on ? '' : g.val); setStatus(''); }}
-              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 13px', borderRadius: 10, fontSize: 12.5, fontWeight: 600, cursor: 'pointer', border: `1px solid ${on ? 'var(--amber-600)' : 'var(--slate-200)'}`, background: on ? 'var(--amber-600)' : 'var(--white)', color: on ? 'var(--white)' : 'var(--slate-500)', transition: 'all 0.12s' }}
-            >
-              {g.label}
-              {g.count !== null && g.count > 0 && (
-                <span style={{ fontSize: 11, padding: '1px 7px', borderRadius: 999, background: on ? 'rgba(255,255,255,0.25)' : 'var(--amber-50)', color: on ? 'var(--white)' : 'var(--amber-700)' }}>{g.count}</span>
-              )}
-            </button>
-          );
-        })}
-        {gifts === 'unclaimed' && (
-          <span style={{ fontSize: 11.5, color: 'var(--slate-400)' }}>
-            paid for, but the recipient hasn&apos;t added their dog yet — oldest first
-          </span>
-        )}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 20, alignItems: 'center' }}>
+        <button
+          onClick={() => { setGifts(!gifts); setStatus(''); }}
+          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 13px', borderRadius: 10, fontSize: 12.5, fontWeight: 600, cursor: 'pointer', border: `1px solid ${gifts ? 'var(--amber-600)' : 'var(--slate-200)'}`, background: gifts ? 'var(--amber-600)' : 'var(--white)', color: gifts ? 'var(--white)' : 'var(--slate-500)', transition: 'all 0.12s' }}
+        >
+          🎁 Gifts only
+          {giftCount > 0 && (
+            <span style={{ fontSize: 11, padding: '1px 7px', borderRadius: 999, background: gifts ? 'rgba(255,255,255,0.25)' : 'var(--amber-50)', color: gifts ? 'var(--white)' : 'var(--amber-700)' }}>{giftCount}</span>
+          )}
+        </button>
       </div>
 
       <div style={{ background: 'var(--white)', borderRadius: 16, border: '1px solid var(--slate-200b)', overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
@@ -455,29 +438,17 @@ export default function AdminSubscriptionsPage() {
                         {s.user?.firstName} {s.user?.lastName}
                         {s.isGift && (
                           <span style={{ fontSize: 9, fontWeight: 700, padding: '1px 6px', borderRadius: 999, background: 'var(--amber-50)', color: 'var(--amber-700)', border: '1px solid var(--amber-200)', whiteSpace: 'nowrap' }}>
-                            {s.giftUnclaimed ? '🎁 UNCLAIMED' : '🎁 GIFT'}
+                            🎁 GIFT
                           </span>
                         )}
                       </p>
                       <p style={{ fontSize: 11, color: 'var(--slate-400)', margin: '2px 0 0' }}>{s.user?.email}</p>
-                      {/* Before a claim the row's "customer" is the buyer, so name the
-                          recipient explicitly or the list reads as the wrong person's. */}
-                      {s.giftUnclaimed && (
+                      {/* The row's customer is the buyer; the boxes go to the friend. */}
+                      {s.isGift && (
                         <p style={{ fontSize: 11, color: 'var(--amber-700)', margin: '3px 0 0' }}>
-                          → {s.giftRecipientName || 'recipient'} &lt;{s.giftRecipientEmail || '—'}&gt;
-                          {s.giftUnclaimed && (
-                            <span style={{ color: s.giftCardSentAt ? 'var(--slate-400)' : 'var(--amber-700)' }}>
-                              {' '}· {s.giftCardSentAt
-                                ? `card sent ${new Date(s.giftCardSentAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}`
-                                : s.giftCardScheduledFor && new Date(s.giftCardScheduledFor) > new Date()
-                                  ? `card scheduled for ${new Date(s.giftCardScheduledFor).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}`
-                                  : 'card not sent yet'}
-                            </span>
-                          )}
-                          {s.daysOutstanding !== null && (
-                            <span style={{ color: s.daysOutstanding >= 14 ? 'var(--red-600)' : 'var(--slate-400)', fontWeight: s.daysOutstanding >= 14 ? 700 : 400 }}>
-                              {' '}· unclaimed {s.daysOutstanding}d
-                            </span>
+                          → for {s.giftRecipientName || 'a friend'}{s.address?.city ? `, ${s.address.city}` : ''}
+                          {s.startDate && new Date(s.startDate) > new Date() && (
+                            <span style={{ color: 'var(--slate-400)' }}> · starts {new Date(s.startDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
                           )}
                         </p>
                       )}
@@ -487,11 +458,7 @@ export default function AdminSubscriptionsPage() {
                       <p style={{ fontSize: 11, color: 'var(--slate-400)', margin: '2px 0 0' }}>₾{Number(s.plan?.price ?? 0).toFixed(0)}</p>
                     </td>
                     <td style={{ padding: '14px 18px', color: 'var(--slate-500)' }}>
-                      {s.dog?.name
-                        ? s.dog.name
-                        : s.giftUnclaimed
-                          ? <span style={{ fontSize: 11, color: 'var(--amber-700)', fontStyle: 'italic' }}>awaiting recipient</span>
-                          : <span style={{ color: 'var(--slate-200)' }}>—</span>}
+                      {s.dog?.name ? s.dog.name : <span style={{ color: 'var(--slate-200)' }}>—</span>}
                     </td>
                     <td style={{ padding: '14px 18px' }}>
                       <span style={{ ...sc, display: 'inline-flex', alignItems: 'center', padding: '2px 10px', borderRadius: 999, fontSize: 11, fontWeight: 600 }}>{s.status}</span>
@@ -509,17 +476,14 @@ export default function AdminSubscriptionsPage() {
                     </td>
                     <td style={{ padding: '14px 18px' }} onClick={e => e.stopPropagation()}>
                       <div style={{ display: 'flex', gap: 6 }}>
-                        {/* Deliberately not offered for an unclaimed gift: forcing it
-                            ACTIVE would put a subscription with no dog and no address
-                            into the packing list. Resend the card instead. */}
-                        {s.giftUnclaimed && (
+                        {s.isGift && s.giftRecipientEmail && !s.cancelledAt && (
                           <button
                             onClick={() => resendGiftCard(s.id)}
                             disabled={resending === s.id}
-                            title="Email the gift card to the recipient again"
+                            title={`Email the "a gift is on its way" note to ${s.giftRecipientEmail} again`}
                             style={{ fontSize: 12, padding: '5px 10px', borderRadius: 8, background: 'var(--amber-50)', color: 'var(--amber-700)', border: 'none', cursor: resending === s.id ? 'default' : 'pointer', fontWeight: 600, opacity: resending === s.id ? 0.6 : 1 }}
                           >
-                            {resending === s.id ? 'Sending…' : '🎁 Resend card'}
+                            {resending === s.id ? 'Sending…' : '🎁 Resend note'}
                           </button>
                         )}
                         {s.status === 'PAUSED' && (

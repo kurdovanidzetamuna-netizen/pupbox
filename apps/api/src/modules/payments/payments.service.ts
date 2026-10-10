@@ -229,20 +229,25 @@ export class PaymentsService implements OnModuleInit, OnModuleDestroy {
       } else if (order.subscriptionId) {
         const sub = await this.prisma.customerSubscription.findUnique({
           where: { id: order.subscriptionId },
-          select: { id: true, isGift: true, giftClaimToken: true, autoRenewal: true, plan: { select: { durationValue: true, durationUnit: true } } },
+          select: { id: true, isGift: true, autoRenewal: true, plan: { select: { durationValue: true, durationUnit: true } } },
         });
 
-        if (sub && !sub.isGift) {
+        if (sub) {
+          // A gift has the friend's dog and address already, so it starts like
+          // any plan — on the buyer's chosen day if they picked one (its first
+          // box then goes in that month's dispatch). Gifts never renew.
+          const now = new Date();
+          const start = sub.isGift && order.giftDeliverOn && order.giftDeliverOn > now ? order.giftDeliverOn : now;
           await this.prisma.customerSubscription.update({
             where: { id: sub.id },
-            data: { status: 'ACTIVE', ...subscriptionPeriod(new Date(), sub.plan, sub.autoRenewal) },
+            data: { status: 'ACTIVE', ...subscriptionPeriod(start, sub.plan, sub.isGift ? false : sub.autoRenewal) },
           });
-        } else if (sub?.isGift) {
-          // A paid gift stays PENDING: there is no dog and no address yet, so
-          // it is not shippable. It activates when the recipient claims it.
-          // The card goes now, or on the buyer's chosen date (hourly sender).
+        }
+        if (sub?.isGift) {
+          // The friend's "a gift is on its way" note, if the buyer gave their
+          // email: now, or on the chosen day (hourly sender).
           sendGiftCard(this.prisma, this.email, order_id)
-            .catch((e) => this.logger.error(`Gift card email failed for order ${order_id}: ${e.message}`));
+            .catch((e) => this.logger.error(`Gift note email failed for order ${order_id}: ${e.message}`));
         }
       }
 

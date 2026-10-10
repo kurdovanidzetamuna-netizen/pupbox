@@ -53,7 +53,7 @@ export class SubscriptionsService implements OnModuleInit, OnModuleDestroy {
   }
 
   async findByUser(userId: string) {
-    return this.prisma.customerSubscription.findMany({
+    const subs = await this.prisma.customerSubscription.findMany({
       where: { userId },
       include: {
         plan: true,
@@ -70,6 +70,12 @@ export class SubscriptionsService implements OnModuleInit, OnModuleDestroy {
       },
       orderBy: { createdAt: 'desc' },
     });
+    // Gift plans: who they're for, from the purchase.
+    const giftIds = subs.filter((s) => s.isGift).map((s) => s.id);
+    const giftOrders = giftIds.length
+      ? await this.prisma.order.findMany({ where: { subscriptionId: { in: giftIds }, isGift: true }, select: { subscriptionId: true, giftRecipientName: true } })
+      : [];
+    return subs.map((s) => ({ ...s, giftFor: s.isGift ? giftOrders.find((o) => o.subscriptionId === s.id)?.giftRecipientName ?? null : null }));
   }
 
   async findOne(id: string, userId?: string) {
@@ -105,7 +111,7 @@ export class SubscriptionsService implements OnModuleInit, OnModuleDestroy {
     if (['CANCELLED', 'EXPIRED'].includes(sub.status) || sub.cancelledAt) throw new BadRequestException('Subscription already cancelled');
 
     // Never paid: nothing to refund, drop the unpaid order with it.
-    if (sub.status === 'PENDING' && !sub.isGift) {
+    if (sub.status === 'PENDING') {
       const order = await this.prisma.order.findFirst({ where: { subscriptionId: id, status: 'PENDING' }, select: { id: true } });
       if (order) await cancelUnpaidOrder(this.prisma, order.id, 'Cancelled by the customer before paying.');
       await this.prisma.customerSubscription.update({ where: { id }, data: { status: 'CANCELLED', cancelledAt: new Date(), cancelReason: reason, autoRenewal: false, nextRenewalAt: null } });
@@ -179,21 +185,14 @@ export class SubscriptionsService implements OnModuleInit, OnModuleDestroy {
   }
 
   // Admin methods
-  /**
-   * `gifts` narrows to gifted subscriptions: 'unclaimed' is the operational
-   * queue — paid for, but with no dog and no address, so nothing can ship yet.
-   */
-  async adminList(params: { status?: string; page?: number; limit?: number; gifts?: 'all' | 'unclaimed' | 'claimed' }) {
+  /** `gifts` narrows the list to gift plans (bought for a friend's dog). */
+  async adminList(params: { status?: string; page?: number; limit?: number; gifts?: boolean }) {
     const { status, page = 1, limit = 20, gifts } = params;
     const where: any = {};
     if (status) where.status = status;
-    if (gifts) {
-      where.isGift = true;
-      if (gifts === 'unclaimed') where.giftClaimedAt = null;
-      if (gifts === 'claimed') where.giftClaimedAt = { not: null };
-    }
+    if (gifts) where.isGift = true;
 
-    const [items, total, unclaimedGifts] = await Promise.all([
+    const [items, total, giftCount] = await Promise.all([
       this.prisma.customerSubscription.findMany({
         where,
         include: {
@@ -202,34 +201,31 @@ export class SubscriptionsService implements OnModuleInit, OnModuleDestroy {
           dog: true,
           address: { select: { firstName: true, lastName: true, phone: true, city: true, addressLine1: true, addressLine2: true } },
           purchasedBy: { select: { email: true, firstName: true, lastName: true } },
-          orders: { select: { giftRecipientName: true, giftRecipientEmail: true, giftDeliverOn: true, giftSentAt: true }, take: 1 },
+          // The purchase (first order) carries the gift details.
+          orders: { select: { giftRecipientName: true, giftRecipientEmail: true, giftMessage: true, giftDeliverOn: true, giftSentAt: true }, orderBy: { createdAt: 'asc' }, take: 1 },
         },
-        // Unclaimed gifts are chased oldest-first; everything else reads newest-first.
-        orderBy: { createdAt: gifts === 'unclaimed' ? 'asc' : 'desc' },
+        orderBy: { createdAt: 'desc' },
         skip: (page - 1) * limit,
         take: limit,
       }),
       this.prisma.customerSubscription.count({ where }),
-      this.prisma.customerSubscription.count({ where: { isGift: true, giftClaimedAt: null } }),
+      this.prisma.customerSubscription.count({ where: { isGift: true } }),
     ]);
     // Tab counts for the whole table, not just this page.
     const byStatus = await this.prisma.customerSubscription.groupBy({ by: ['status'], _count: { _all: true } });
     const statusCounts = Object.fromEntries(byStatus.map((r) => [r.status, r._count._all]));
 
-    const now = Date.now();
     return {
       items: items.map((s) => ({
         ...s,
         giftRecipientName: s.orders[0]?.giftRecipientName ?? null,
         giftRecipientEmail: s.orders[0]?.giftRecipientEmail ?? null,
-        giftCardScheduledFor: s.orders[0]?.giftDeliverOn ?? null,
-        giftCardSentAt: s.orders[0]?.giftSentAt ?? null,
-        giftUnclaimed: s.isGift && s.giftClaimedAt === null,
-        daysOutstanding: s.isGift && !s.giftClaimedAt ? Math.floor((now - s.createdAt.getTime()) / 86400000) : null,
+        giftMessage: s.orders[0]?.giftMessage ?? null,
+        giftNoteSentAt: s.orders[0]?.giftSentAt ?? null,
       })),
       total,
       statusCounts,
-      unclaimedGifts,
+      giftCount,
       page,
       limit,
       pages: Math.ceil(total / limit),
@@ -238,7 +234,7 @@ export class SubscriptionsService implements OnModuleInit, OnModuleDestroy {
 
   /**
    * Admin's direct changes. Status moves only for resuming a paused plan:
-   * activating happens by payment or gift claim, cancelling through cancel()
+   * activating happens by payment, cancelling through cancel()
    * so the refund rule applies, and pausing isn't offered (nothing would
    * stop the plan's time running out).
    */

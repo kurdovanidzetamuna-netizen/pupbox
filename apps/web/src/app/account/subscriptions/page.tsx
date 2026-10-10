@@ -166,6 +166,7 @@ export default function MySubscriptionsPage() {
                   <div className="flex items-start justify-between gap-3 mb-4">
                     <div>
                       <h2 className="font-bold text-gray-900 text-lg">{planText(sub.plan, 'name', lang)}</h2>
+                      {sub.isGift && <p className="text-sm font-semibold text-amber-700">🎁 {sub.giftFor ? fill(t('sub.giftFor'), { name: sub.giftFor }) : t('sub.gift')}</p>}
                       <p className="text-sm text-gray-500">{fill(t('sub.shape'), { months: months(Number(sub.plan?.durationValue) || 1), boxes: boxes(Number(sub.plan?.boxCount) || 1) })}</p>
                     </div>
                     <span className="text-xs font-bold px-3 py-1 rounded-full" style={{ background: st.bg, color: st.color }}>{t(`sub.status.${sub.status}`, sub.status)}</span>
@@ -173,6 +174,9 @@ export default function MySubscriptionsPage() {
 
                   <dl className="grid grid-cols-2 gap-3 text-sm mb-5">
                     <div className="bg-gray-50 rounded-xl p-3"><dt className="text-gray-500 text-xs mb-0.5">{t('sub.delivered')}</dt><dd className="font-bold text-gray-900">{sub.boxesDelivered} / {sub.boxesTotal}</dd></div>
+                    {sub.startDate && new Date(sub.startDate) > new Date() && (
+                      <div className="bg-amber-50 rounded-xl p-3"><dt className="text-amber-700 text-xs mb-0.5">{t('sub.startsOn')}</dt><dd className="font-bold text-gray-900">{date(sub.startDate)}</dd></div>
+                    )}
                     <div className="bg-gray-50 rounded-xl p-3"><dt className="text-gray-500 text-xs mb-0.5">{t(sub.nextRenewalAt ? 'sub.nextRenewal' : 'sub.endsOn')}</dt><dd className="font-bold text-gray-900">{sub.nextRenewalAt ? date(sub.nextRenewalAt) : sub.endDate ? date(sub.endDate) : '—'}</dd></div>
                     {sub.dog && <div className="bg-gray-50 rounded-xl p-3"><dt className="text-gray-500 text-xs mb-0.5">{t('sub.dog')}</dt><dd className="font-bold text-gray-900">{sub.dog.name}</dd></div>}
                     <div className="bg-gray-50 rounded-xl p-3"><dt className="text-gray-500 text-xs mb-0.5">{t('sub.price')}</dt><dd className="font-bold text-gray-900">{gel(sub.plan?.price)}</dd></div>
@@ -187,7 +191,7 @@ export default function MySubscriptionsPage() {
                     </div>
                   )}
 
-                  {!['CANCELLED', 'EXPIRED'].includes(sub.status) && !(sub.isGift && !sub.giftClaimedAt) && (
+                  {!['CANCELLED', 'EXPIRED'].includes(sub.status) && (
                     <div className="mb-5 rounded-xl border border-gray-100 p-4 text-sm">
                       <div className="flex items-start justify-between gap-3">
                         <div>

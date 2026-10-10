@@ -4,22 +4,41 @@ import { CartModule } from '../cart/cart.module';
 import { Controller, Post, Get, Body, UseGuards, Request, Query } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth, ApiTags, ApiOperation } from '@nestjs/swagger';
-import { IsString, IsOptional, IsEmail, IsBoolean, ValidateNested, IsDateString, MaxLength, IsNotEmpty, Matches } from 'class-validator';
+import { IsString, IsOptional, IsEmail, IsBoolean, ValidateNested, IsDateString, MaxLength, IsNotEmpty, Matches, IsEnum, IsArray, ArrayMaxSize, IsNumber, Min, Max } from 'class-validator';
+import { DogGender, DogSize } from '@prisma/client';
 import { Type, Transform } from 'class-transformer';
 
 /** Trims strings so a field of only spaces counts as empty. */
 const Trim = () => Transform(({ value }) => (typeof value === 'string' ? value.trim() : value));
 
+/** The friend's dog: its size and allergies decide what goes in each box. */
+class GiftDogDto {
+  @Trim() @IsString() @IsNotEmpty({ message: 'Tell us the dog’s name' }) @MaxLength(60) name: string;
+  @IsEnum(DogSize, { message: 'Choose the dog’s size' }) size: DogSize;
+  @IsOptional() @IsArray() @ArrayMaxSize(30) @IsString({ each: true }) @MaxLength(60, { each: true }) allergies?: string[];
+  // The rest of the dog form, all optional.
+  @IsOptional() @Trim() @IsString() @MaxLength(80) breed?: string;
+  @IsOptional() @IsEnum(DogGender) gender?: DogGender;
+  @IsOptional() @Type(() => Number) @IsNumber() @Min(0) @Max(150) weightKg?: number;
+  @IsOptional() @IsArray() @ArrayMaxSize(30) @IsString({ each: true }) @MaxLength(60, { each: true }) foodPreferences?: string[];
+  @IsOptional() @IsArray() @ArrayMaxSize(30) @IsString({ each: true }) @MaxLength(60, { each: true }) toyPreferences?: string[];
+  @IsOptional() @IsString() @MaxLength(30) chewingStrength?: string;
+  @IsOptional() @IsString() @MaxLength(500) specialNotes?: string;
+}
+
 /**
- * Buying a subscription for someone else's dog. The recipient supplies the dog
- * and address later via the claim link, so nothing about them is required here
- * beyond a name to address the card to and an email to send it to.
+ * Buying a plan for a friend's dog. The buyer gives everything needed to
+ * ship: the friend's name here, their dog, and their address and phone in the
+ * order's delivery fields. Boxes go straight to the friend; nothing to claim.
  */
 class GiftDetailsDto {
-  @IsString() @MaxLength(120) recipientName: string;
-  @IsEmail() recipientEmail: string;
+  @Trim() @IsString() @IsNotEmpty({ message: 'Recipient name is required' }) @MaxLength(120) recipientName: string;
+  /** Optional: if given, the friend gets a "a gift is on its way" email. */
+  @IsOptional() @Trim() @IsEmail({}, { message: 'Enter a valid email, or leave it empty' }) recipientEmail?: string;
   @IsOptional() @IsString() @MaxLength(1000) message?: string;
+  /** First month the boxes start (e.g. a birthday); absent = straight away. */
   @IsOptional() @IsDateString() deliverOn?: string;
+  @ValidateNested() @Type(() => GiftDogDto) dog: GiftDogDto;
 }
 
 class PrepareCheckoutDto {

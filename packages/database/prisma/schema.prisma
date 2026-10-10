@@ -251,6 +251,9 @@ model Dog {
   foodPreferences  String[]
   chewingStrength  String?
   specialNotes     String?
+  /// A friend's dog the owner bought a gift plan for: kept with that plan,
+  /// not listed among the owner's own dogs.
+  forGift          Boolean   @default(false)
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
   deletedAt        DateTime?

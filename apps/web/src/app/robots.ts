@@ -7,9 +7,8 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: '*',
         allow: '/',
-        // Prefix rules: '/checkout' also covers /checkout/thank-you. Gift claim
-        // links carry a private token and must never be indexed.
-        disallow: ['/account', '/cart', '/checkout', '/gift/', '/login', '/register', '/api/'],
+        // Prefix rules: '/checkout' also covers /checkout/thank-you.
+        disallow: ['/account', '/cart', '/checkout', '/login', '/register', '/api/'],
       },
     ],
     sitemap: `${base}/sitemap.xml`,
