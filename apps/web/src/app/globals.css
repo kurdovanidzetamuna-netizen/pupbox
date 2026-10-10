@@ -7,6 +7,22 @@
   body { @apply antialiased; }
 }
 
+/* Sunny Playground: main buttons are pills that sit on a darker "step" and
+   press down when clicked. Applies to every teal or coral filled button and
+   link, so the whole site changes at once. */
+a.bg-teal-600, button.bg-teal-600, a.bg-coral-400, button.bg-coral-400 {
+  border-radius: 9999px;
+  transition: transform 0.08s ease, box-shadow 0.08s ease, background-color 0.15s ease;
+}
+a.bg-teal-600, button.bg-teal-600 { box-shadow: 0 4px 0 #063D39; }
+a.bg-coral-400, button.bg-coral-400 { box-shadow: 0 4px 0 #C94A39; }
+a.bg-teal-600:active, button.bg-teal-600:not(:disabled):active,
+a.bg-coral-400:active, button.bg-coral-400:not(:disabled):active { transform: translateY(3px); box-shadow: 0 1px 0 #063D39; }
+button.bg-teal-600:disabled { box-shadow: none; }
+@media (prefers-reduced-motion: reduce) {
+  a.bg-teal-600, button.bg-teal-600, a.bg-coral-400, button.bg-coral-400 { transition: none; }
+}
+
 /* ── Scroll reveal animations ── */
 .fade-in-base {
   opacity: 0;
@@ -33,7 +49,7 @@
 .cms-prose p { margin: 0 0 1rem; }
 .cms-prose ul { list-style: disc; padding-left: 1.4rem; margin: 0 0 1rem; }
 .cms-prose li { margin: 0.4rem 0; }
-.cms-prose a { color: #0d9488; text-decoration: underline; text-underline-offset: 2px; }
+.cms-prose a { color: #0B5D57; text-decoration: underline; text-underline-offset: 2px; }
 .cms-prose strong { color: #111827; }
 .cms-prose code { font-size: 0.85em; background: #f3f4f6; border-radius: 4px; padding: 0.1rem 0.35rem; }
 /* Wide tables scroll inside their own box on phones instead of widening the page. */

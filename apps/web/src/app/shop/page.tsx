@@ -57,7 +57,7 @@ export default async function ShopPage({
   const baseParams = Object.fromEntries(Object.entries(searchParams).filter(([k]) => !['brand', 'page'].includes(k)));
 
   return (
-    <main className="min-h-screen bg-white">
+    <main className="min-h-screen bg-cream">
       <div className="max-w-6xl mx-auto px-6 py-12">
 
         {/* Page header */}
@@ -77,7 +77,7 @@ export default async function ShopPage({
               <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2"><T k="shop.categories" /></p>
               <ul className="space-y-0.5">
                 <li>
-                  <Link href="/shop" className={`block px-3 py-2 rounded-xl text-sm font-medium transition ${!searchParams.category ? 'bg-teal-50 text-teal-700' : 'text-gray-600 hover:bg-gray-50'}`}>
+                  <Link href="/shop" className={`block px-3 py-2 rounded-full text-sm font-medium transition ${!searchParams.category ? 'bg-sun-400 text-ink font-bold' : 'text-gray-600 hover:bg-gray-50'}`}>
                     <T k="shop.allProducts" />
                   </Link>
                 </li>
@@ -85,7 +85,7 @@ export default async function ShopPage({
                   <li key={cat.id}>
                     <Link
                       href={`/shop?category=${cat.slug}`}
-                      className={`block px-3 py-2 rounded-xl text-sm font-medium transition ${searchParams.category === cat.slug ? 'bg-teal-50 text-teal-700' : 'text-gray-600 hover:bg-gray-50'}`}
+                      className={`block px-3 py-2 rounded-full text-sm font-medium transition ${searchParams.category === cat.slug ? 'bg-sun-400 text-ink font-bold' : 'text-gray-600 hover:bg-gray-50'}`}
                     >
                       <L en={cat.name} ka={cat.translations?.ka?.name} />
                     </Link>
@@ -101,7 +101,7 @@ export default async function ShopPage({
                 <li>
                   <Link
                     href={`/shop?${new URLSearchParams(baseParams).toString()}`}
-                    className={`block px-3 py-2 rounded-xl text-sm font-medium transition ${!searchParams.brand ? 'bg-teal-50 text-teal-700' : 'text-gray-600 hover:bg-gray-50'}`}
+                    className={`block px-3 py-2 rounded-full text-sm font-medium transition ${!searchParams.brand ? 'bg-sun-400 text-ink font-bold' : 'text-gray-600 hover:bg-gray-50'}`}
                   >
                     <T k="shop.allBrands" />
                   </Link>
@@ -113,7 +113,7 @@ export default async function ShopPage({
                     : `/shop?${new URLSearchParams({ ...baseParams, brand: b }).toString()}`;
                   return (
                     <li key={b}>
-                      <Link href={href} className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium transition ${active ? 'bg-teal-50 text-teal-700' : 'text-gray-600 hover:bg-gray-50'}`}>
+                      <Link href={href} className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium transition ${active ? 'bg-sun-400 text-ink font-bold' : 'text-gray-600 hover:bg-gray-50'}`}>
                         <span className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition ${active ? 'bg-teal-600 border-teal-600' : 'border-gray-300'}`}>
                           {active && (
                             <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
@@ -154,8 +154,8 @@ export default async function ShopPage({
             ) : (
               <div className="grid grid-cols-2 lg:grid-cols-3 gap-5">
                 {products.map((product: any) => (
-                  <Link key={product.id} href={`/shop/${product.slug}`} className="group">
-                    <div className="bg-gray-50 rounded-2xl overflow-hidden aspect-square mb-3 flex items-center justify-center group-hover:bg-teal-50 transition">
+                  <Link key={product.id} href={`/shop/${product.slug}`} className="group bg-white rounded-[24px] border-2 border-ink/10 p-3 transition-all hover:border-ink hover:shadow-step-ink hover:-translate-y-1">
+                    <div className="bg-sun-100 rounded-[18px] overflow-hidden aspect-square mb-3 flex items-center justify-center">
                       {product.images?.[0] ? (
                         <img
                           src={product.images[0].url}
@@ -163,11 +163,11 @@ export default async function ShopPage({
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         />
                       ) : (
-                        <span className="text-5xl">🐾</span>
+                        <span className="text-5xl wag" aria-hidden="true">🐾</span>
                       )}
                     </div>
-                    <div>
-                      <p className="text-xs text-gray-400 font-medium mb-0.5">
+                    <div className="px-1 pb-1">
+                      <p className="text-xs text-gray-500 font-medium mb-0.5">
                         {product.brand || (product.category ? <L en={product.category.name} ka={product.category.translations?.ka?.name} /> : '')}
                       </p>
                       <h3 className="font-semibold text-gray-900 text-sm mb-1 group-hover:text-teal-600 transition leading-snug">

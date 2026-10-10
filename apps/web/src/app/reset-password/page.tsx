@@ -57,7 +57,7 @@ function ResetForm() {
   const field = 'w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400';
 
   return (
-    <main className="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-4 py-16">
+    <main className="min-h-screen bg-cream flex flex-col items-center justify-center px-4 py-16">
       <div className="bg-white rounded-2xl border border-gray-100 p-8 w-full max-w-md shadow-sm">
         <h1 className="text-2xl font-bold text-gray-900 mb-6">{t('rp.heading')}</h1>
         {done ? (

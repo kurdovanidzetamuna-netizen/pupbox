@@ -15,10 +15,10 @@ function LinkColumn({ title, links }: { title: string; links: { label: string; h
   if (!title && !shown.length) return null;
   return (
     <div>
-      {title && <p className="text-gray-900 font-semibold text-sm mb-4">{title}</p>}
+      {title && <p className="text-ink font-extrabold text-sm mb-4">{title}</p>}
       <ul className="space-y-2 text-sm">
         {shown.map((l, i) => (
-          <li key={i}><SmartLink href={l.href} className="text-gray-500 hover:text-teal-600 transition-colors">{l.label}</SmartLink></li>
+          <li key={i}><SmartLink href={l.href} className="text-ink/70 hover:text-teal-600 transition-colors">{l.label}</SmartLink></li>
         ))}
       </ul>
     </div>
@@ -33,14 +33,14 @@ export default function Footer({ site }: { site: StoredContent | null }) {
   const socials = c.on('social') ? SOCIAL.filter((s) => social[s.key]) : [];
 
   return (
-    <footer className="bg-gray-50 border-t border-gray-100 py-12 px-6">
+    <footer className="bg-sun-100 border-t-[3px] border-ink py-12 px-6">
       <div className="max-w-6xl mx-auto px-6">
         <div className="grid md:grid-cols-4 gap-8 mb-10">
           <div className="md:col-span-2">
             <Logo brand={c.brand} className="mb-3" />
-            {footer.tagline && <p className="text-sm text-gray-500 leading-relaxed max-w-xs">{footer.tagline}</p>}
+            {footer.tagline && <p className="text-sm text-ink/70 leading-relaxed max-w-xs">{footer.tagline}</p>}
             {showContact && (
-              <ul className="mt-5 space-y-1.5 text-sm text-gray-500">
+              <ul className="mt-5 space-y-1.5 text-sm text-ink/70">
                 {contact.email && <li><a href={`mailto:${contact.email}`} className="hover:text-teal-600">✉️ {contact.email}</a></li>}
                 {contact.phone && <li><a href={`tel:${contact.phone.replace(/\s/g, '')}`} className="hover:text-teal-600">📞 {contact.phone}</a></li>}
                 {contact.address && <li>📍 {contact.address}</li>}
@@ -51,7 +51,7 @@ export default function Footer({ site }: { site: StoredContent | null }) {
               <div className="flex gap-3 mt-5">
                 {socials.map((s) => (
                   <a key={s.key} href={social[s.key]} target="_blank" rel="noopener noreferrer" aria-label={s.label}
-                    className="w-9 h-9 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-500 hover:text-teal-600 hover:border-teal-300 transition">
+                    className="w-10 h-10 rounded-full bg-white border-2 border-ink flex items-center justify-center text-ink hover:bg-sun-400 transition">
                     <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d={s.path} /></svg>
                   </a>
                 ))}
@@ -61,7 +61,7 @@ export default function Footer({ site }: { site: StoredContent | null }) {
           <LinkColumn title={footer.column1Title} links={footer.column1Links} />
           <LinkColumn title={footer.column2Title} links={footer.column2Links} />
         </div>
-        <div className="border-t border-gray-200 pt-8 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-gray-400">
+        <div className="border-t-2 border-ink/10 pt-8 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-ink/60">
           <p>© {new Date().getFullYear()} {c.brand.name || 'Pupbox'}. {footer.copyright}</p>
           <div className="flex gap-6">
             {footer.legalLinks.filter((l: any) => l.label).map((l: any, i: number) => (

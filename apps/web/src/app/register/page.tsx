@@ -103,7 +103,7 @@ function RegisterForm() {
   const steps: Step[] = ['details', 'verify', 'dog'];
 
   return (
-    <main className="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-4 py-10">
+    <main className="min-h-screen bg-cream flex flex-col items-center justify-center px-4 py-10">
       <Link href="/" className="text-3xl font-bold text-teal-600 mb-6">🐾 Pupbox</Link>
       <ol className="flex items-center gap-2 mb-6 text-xs" aria-label="Sign-up steps">
         {steps.map((s, i) => {

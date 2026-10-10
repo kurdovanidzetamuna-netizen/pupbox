@@ -31,7 +31,7 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-4 py-16">
+    <main className="min-h-screen bg-cream flex flex-col items-center justify-center px-4 py-16">
       <div className="bg-white rounded-2xl border border-gray-100 p-8 w-full max-w-md shadow-sm">
         <h1 className="text-2xl font-bold text-gray-900 mb-2">{t('fp.heading')}</h1>
         {sentTo ? (

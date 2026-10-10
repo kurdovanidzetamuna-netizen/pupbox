@@ -17,7 +17,7 @@ export default async function PricesPage() {
   const content = await getStoredContent(pricingPage);
 
   return (
-    <main className="min-h-screen bg-white">
+    <main className="min-h-screen bg-cream">
       <section className="py-16">
         <div className="max-w-6xl mx-auto px-6 text-center">
           <PricesHeader content={content} />

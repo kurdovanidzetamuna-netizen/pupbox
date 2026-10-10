@@ -24,12 +24,12 @@ export default function CartPage() {
   }
 
   if (!ready) {
-    return <main className="min-h-screen bg-gray-50" aria-busy="true" />;
+    return <main className="min-h-screen bg-cream" aria-busy="true" />;
   }
 
   if (!cart || !(cart.itemCount > 0)) {
     return (
-      <main className="min-h-screen bg-white">
+      <main className="min-h-screen bg-cream">
         <div className="max-w-2xl mx-auto px-6 py-24 text-center">
           <div className="text-6xl mb-6">🛒</div>
           <h1 className="text-2xl font-bold text-gray-900 mb-3">{t('co.empty.title')}</h1>
@@ -44,7 +44,7 @@ export default function CartPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50">
+    <main className="min-h-screen bg-cream">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10">
         <h1 className="text-2xl font-bold text-gray-900 mb-8">{t('cart.title')} <span className="text-gray-400 font-medium">({cart.itemCount})</span></h1>
         {cart.pricesUpdated && <p className="-mt-5 mb-6 text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3" role="status">{t('cart.updated')}</p>}

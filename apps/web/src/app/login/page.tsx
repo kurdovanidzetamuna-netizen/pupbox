@@ -50,7 +50,7 @@ function LoginForm() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-4">
+    <main className="min-h-screen bg-cream flex flex-col items-center justify-center px-4">
       <Link href="/" className="text-3xl font-bold text-teal-600 mb-8">🐾 Pupbox</Link>
       <div className="bg-white rounded-2xl border border-gray-100 p-8 w-full max-w-md shadow-sm">
         <h1 className="text-2xl font-bold text-gray-900 mb-6">{t('login.heading')}</h1>

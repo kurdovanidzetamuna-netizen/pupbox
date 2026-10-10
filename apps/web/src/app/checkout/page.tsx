@@ -341,7 +341,7 @@ export default function CheckoutPage() {
 
   if (ready && !orderPlaced && !(cart?.itemCount > 0)) {
     return (
-      <main className="min-h-screen bg-gray-50 flex items-center justify-center px-6">
+      <main className="min-h-screen bg-cream flex items-center justify-center px-6">
         <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center max-w-md">
           <div className="text-5xl mb-4">🛒</div>
           <h1 className="text-xl font-bold text-gray-900 mb-2">{t('co.empty.title')}</h1>
@@ -359,7 +359,7 @@ export default function CheckoutPage() {
   const secondary = 'border border-gray-200 text-gray-600 px-5 py-3.5 rounded-xl font-medium hover:bg-gray-50';
 
   return (
-    <main className="min-h-screen bg-gray-50">
+    <main className="min-h-screen bg-cream">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
         <div className="flex items-center justify-between mb-6">
           <Link href="/cart" className="text-sm text-gray-500 hover:text-teal-600">{t('co.backToCart')}</Link>
