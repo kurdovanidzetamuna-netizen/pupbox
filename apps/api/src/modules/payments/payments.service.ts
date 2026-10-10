@@ -4,7 +4,6 @@ import { PaymentStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { FlittService } from './flitt.service';
 import { EmailService } from '../email/email.service';
-import { ReferralsService } from '../referrals/referrals.service';
 import { ProductsService } from '../products/products.service';
 import { subscriptionPeriod } from '../subscriptions/subscription-period';
 import { releaseStock } from '../products/stock';
@@ -25,7 +24,6 @@ export class PaymentsService implements OnModuleInit, OnModuleDestroy {
     private flitt: FlittService,
     private config: ConfigService,
     private email: EmailService,
-    private referrals: ReferralsService,
     private products: ProductsService,
   ) {}
 
@@ -265,7 +263,7 @@ export class PaymentsService implements OnModuleInit, OnModuleDestroy {
         }
       }
 
-      // Send confirmation email & check referral completion
+      // Send confirmation email
       const fullOrder = await this.prisma.order.findUnique({
         where: { id: order_id },
         include: { user: { select: { email: true, firstName: true, language: true } } },
@@ -273,20 +271,8 @@ export class PaymentsService implements OnModuleInit, OnModuleDestroy {
       if (fullOrder?.user) {
         this.email.sendPaymentConfirmation({ id: order_id, total: Number(order.total), user: fullOrder.user }).catch(() => {});
         this.notifyShop(order_id).catch((e) => this.logger.error(`New order email failed for ${order_id}: ${e.message}`));
-        // Complete referral if this is the referred user's first confirmed order
-        const confirmedOrders = await this.prisma.order.count({ where: { userId: order.userId, status: 'PAID' } });
-        if (confirmedOrders === 1) {
-          const result = await this.referrals.completeReferral(order.userId).catch(() => null);
-          if (result?.couponCode) {
-            const inviterReferral = await this.prisma.referral.findFirst({ where: { invitedId: order.userId } });
-            if (inviterReferral) {
-              const inviter = await this.prisma.user.findUnique({ where: { id: inviterReferral.inviterId }, select: { email: true, firstName: true, language: true } });
-              if (inviter) {
-                this.email.sendReferralReward({ email: inviter.email, firstName: inviter.firstName, language: inviter.language, couponCode: result.couponCode }).catch(() => {});
-              }
-            }
-          }
-        }
+        // The inviter's referral reward follows once this order is past the
+        // free-cancellation window (ReferralsService.grantDueRewards).
       }
     } else if (paymentStatus === 'FAILED' && order.status === 'PENDING') {
       // Only a still-open order: an expired one already gave its stock back.

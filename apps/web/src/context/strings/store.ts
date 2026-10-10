@@ -186,14 +186,14 @@ export const STORE_STRINGS: Record<string, { en: string; ka: string }> = {
 
   // ── Referrals ──
   'ref.title':              { en: 'Refer a friend',             ka: 'მოიწვიე მეგობარი' },
-  'ref.sub':                { en: 'Share your link. When your friend places their first order, you both get rewarded.', ka: 'გაუზიარე ბმული. როცა მეგობარი პირველ შეკვეთას გააკეთებს, ორივე მიიღებთ ჯილდოს.' },
+  'ref.sub':                { en: 'Share your link. When a friend joins and orders, you get rewarded.', ka: 'გაუზიარე ბმული. როცა მეგობარი შემოგვიერთდება და შეკვეთას გააკეთებს, ჯილდოს მიიღებ.' },
   'ref.total':              { en: 'Referred',                   ka: 'მოწვეული' },
   'ref.registered':         { en: 'Registered',                 ka: 'დარეგისტრირებული' },
   'ref.rewards':            { en: 'Rewards earned',             ka: 'მიღებული ჯილდო' },
   'ref.yourLink':           { en: 'Your referral link',         ka: 'შენი მოსაწვევი ბმული' },
   'ref.copy':               { en: 'Copy link',                  ka: 'ბმულის კოპირება' },
   'ref.copied':             { en: '✓ Copied',                   ka: '✓ დაკოპირდა' },
-  'ref.reward':             { en: "Your friend gets a discount, and when they place their first order you'll receive a ₾10 coupon.", ka: 'მეგობარი მიიღებს ფასდაკლებას, ხოლო მისი პირველი შეკვეთის შემდეგ შენ მიიღებ ₾10-ის კუპონს.' },
+  'ref.reward':             { en: "When your friend signs up with your link and their first order is confirmed, you'll get a ₾10 coupon by email.", ka: 'როცა მეგობარი შენი ბმულით დარეგისტრირდება და მისი პირველი შეკვეთა დადასტურდება, ელფოსტით მიიღებ ₾10-ის კუპონს.' },
   'ref.history':            { en: 'Referral history',           ka: 'მოწვევების ისტორია' },
   'ref.friend':             { en: 'Friend',                     ka: 'მეგობარი' },
   'ref.joined':             { en: 'Joined',                     ka: 'შემოუერთდა' },
