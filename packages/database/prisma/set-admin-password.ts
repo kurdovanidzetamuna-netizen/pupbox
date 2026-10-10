@@ -19,7 +19,7 @@ async function main() {
   if (!admin) throw new Error(`No admin with email ${email}`);
 
   const { password, generated } = resolveAdminPassword();
-  await prisma.adminUser.update({ where: { id: admin.id }, data: { passwordHash: await bcrypt.hash(password, 12) } });
+  await prisma.adminUser.update({ where: { id: admin.id }, data: { passwordHash: await bcrypt.hash(password, 12), passwordChangedAt: new Date(Math.floor(Date.now() / 1000) * 1000) } });
 
   console.log(`✓ password updated for ${email}`);
   if (generated) console.log(`  new password (shown once, store it in your password manager): ${password}`);

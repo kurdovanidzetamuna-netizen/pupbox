@@ -4,6 +4,8 @@ import { Controller, Get, Post, Put, Body, Param, UseGuards } from '@nestjs/comm
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { IsString, IsOptional, IsBoolean } from 'class-validator';
+import { AdminPerms } from '../admin-auth/admin-permissions';
+import { AdminJwtGuard } from '../admin-auth/admin-jwt.guard';
 
 class CreateTagDto {
   @IsString() name: string;
@@ -25,7 +27,9 @@ class TagsController {
 
 @ApiTags('Admin — Tags')
 @ApiBearerAuth()
-@UseGuards(AuthGuard('jwt'))
+// Was the customer guard: any shopper could create and edit tags.
+@UseGuards(AdminJwtGuard)
+@AdminPerms({ read: 'products.view', write: 'products.edit' })
 @Controller('admin/tags')
 class AdminTagsController {
   constructor(private service: TagsService) {}

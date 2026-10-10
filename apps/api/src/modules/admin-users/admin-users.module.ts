@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { Controller, Get, Post, Patch, Delete, Body, Param, UseGuards, Query } from '@nestjs/common';
 import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
-import { IsString, IsEmail, IsOptional, IsEnum, MinLength, IsNotIn } from 'class-validator';
+import { IsString, IsEmail, IsOptional, IsEnum, MinLength, IsNotIn, IsIn } from 'class-validator';
 
 /** The password early seeds gave every install; never allowed again. */
 const RETIRED = { message: 'That is the old default password. Choose another.' };
@@ -9,6 +9,7 @@ import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
 import { AdminJwtGuard } from '../admin-auth/admin-jwt.guard';
+import { AdminPerms } from '../admin-auth/admin-permissions';
 
 // ─── DTOs ────────────────────────────────────────────────────────────────────
 
@@ -16,7 +17,8 @@ class CreateAdminUserDto {
   @IsEmail() email: string;
   @IsString() firstName: string;
   @IsString() lastName: string;
-  @IsString() @MinLength(8) @IsNotIn(['Admin@123456'], RETIRED) password: string;
+  // Admins guard the whole shop: 12 characters, as the setup script requires.
+  @IsString() @MinLength(12) @IsNotIn(['Admin@123456'], RETIRED) password: string;
   @IsString() roleId: string;
 }
 
@@ -24,8 +26,9 @@ class UpdateAdminUserDto {
   @IsOptional() @IsString() firstName?: string;
   @IsOptional() @IsString() lastName?: string;
   @IsOptional() @IsString() roleId?: string;
-  @IsOptional() @IsEnum(['ACTIVE', 'INACTIVE', 'SUSPENDED']) status?: string;
-  @IsOptional() @IsString() @MinLength(8) @IsNotIn(['Admin@123456'], RETIRED) password?: string;
+  // Only what the database has: "SUSPENDED" used to pass here and crash the save.
+  @IsOptional() @IsIn(['ACTIVE', 'INACTIVE'], { message: 'Status must be ACTIVE or INACTIVE' }) status?: string;
+  @IsOptional() @IsString() @MinLength(12) @IsNotIn(['Admin@123456'], RETIRED) password?: string;
 }
 
 class CreateRoleDto {
@@ -93,7 +96,8 @@ class AdminUsersService {
   }
 
   async createUser(dto: CreateAdminUserDto) {
-    const exists = await this.prisma.adminUser.findUnique({ where: { email: dto.email } });
+    dto.email = dto.email.trim().toLowerCase();
+    const exists = await this.prisma.adminUser.findFirst({ where: { email: { equals: dto.email, mode: 'insensitive' } } });
     if (exists) throw new ConflictException('Email already in use');
     const role = await this.prisma.role.findUnique({ where: { id: dto.roleId } });
     if (!role) throw new BadRequestException('Role not found');
@@ -113,7 +117,13 @@ class AdminUsersService {
     if (dto.lastName)  data.lastName  = dto.lastName;
     if (dto.roleId)    data.roleId    = dto.roleId;
     if (dto.status)    data.status    = dto.status;
-    if (dto.password)  data.passwordHash = await bcrypt.hash(dto.password, 12);
+    if (dto.password) {
+      data.passwordHash = await bcrypt.hash(dto.password, 12);
+      // Signs out this admin's existing sessions.
+      data.passwordChangedAt = new Date(Math.floor(Date.now() / 1000) * 1000);
+    }
+    const losesManage = (dto.status && dto.status !== 'ACTIVE') || (dto.roleId && !(await this.roleCanManage(dto.roleId)));
+    if (losesManage) await this.assertAnotherManager(id);
     const updated = await this.prisma.adminUser.update({
       where: { id },
       data,
@@ -125,8 +135,29 @@ class AdminUsersService {
   async deleteUser(id: string) {
     const u = await this.prisma.adminUser.findFirst({ where: { id, deletedAt: null } });
     if (!u) throw new NotFoundException('User not found');
+    await this.assertAnotherManager(id);
     await this.prisma.adminUser.update({ where: { id }, data: { deletedAt: new Date() } });
     return { success: true };
+  }
+
+  private async roleCanManage(roleId: string) {
+    return (await this.prisma.rolePermission.count({ where: { roleId, permission: { key: 'admin.manage' } } })) > 0;
+  }
+
+  /**
+   * Someone must always be able to manage admins. Refuses a change that would
+   * leave no active admin with admin.manage (other than `exceptUserId`, or
+   * outside `exceptRoleId`) — otherwise nobody could ever fix it from admin.
+   */
+  private async assertAnotherManager(exceptUserId?: string, exceptRoleId?: string) {
+    const others = await this.prisma.adminUser.count({
+      where: {
+        deletedAt: null, status: 'ACTIVE',
+        ...(exceptUserId ? { id: { not: exceptUserId } } : {}),
+        role: { ...(exceptRoleId ? { id: { not: exceptRoleId } } : {}), permissions: { some: { permission: { key: 'admin.manage' } } } },
+      },
+    });
+    if (!others) throw new BadRequestException('This would leave nobody able to manage admins. Give another active admin that permission first.');
   }
 
   private sanitize(u: any) {
@@ -164,6 +195,9 @@ class AdminUsersService {
     if (dto.name)        data.name        = dto.name;
     if (dto.description !== undefined) data.description = dto.description;
     await this.prisma.role.update({ where: { id }, data });
+    if (dto.permissionKeys !== undefined && !dto.permissionKeys.includes('admin.manage') && (await this.roleCanManage(id))) {
+      await this.assertAnotherManager(undefined, id);
+    }
     if (dto.permissionKeys !== undefined) {
       await this.syncPermissions(id, dto.permissionKeys);
     }
@@ -174,7 +208,10 @@ class AdminUsersService {
     const role = await this.prisma.role.findUnique({ where: { id }, include: { _count: { select: { adminUsers: true } } } });
     if (!role) throw new NotFoundException('Role not found');
     if (role.isSystem) throw new BadRequestException('Cannot delete system roles');
-    if ((role as any)._count.adminUsers > 0) throw new BadRequestException('Role still has assigned users');
+    // Removed admins keep their role id for the record; only current ones block deleting the role.
+    const current = await this.prisma.adminUser.count({ where: { roleId: id, deletedAt: null } });
+    if (current > 0) throw new BadRequestException('Role still has assigned users');
+    await this.prisma.adminUser.updateMany({ where: { roleId: id, deletedAt: { not: null } }, data: { roleId: (await this.prisma.role.findFirst({ where: { isSystem: true }, select: { id: true } }))?.id ?? id } });
     await this.prisma.role.delete({ where: { id } });
     return { success: true };
   }
@@ -246,6 +283,7 @@ class AdminUsersService {
 @ApiTags('Admin — Users')
 @ApiBearerAuth()
 @UseGuards(AdminJwtGuard)
+@AdminPerms({ read: 'admin.manage', write: 'admin.manage' })
 @Controller('admin/users')
 class AdminUsersController {
   constructor(private svc: AdminUsersService) {}
@@ -259,6 +297,7 @@ class AdminUsersController {
 @ApiTags('Admin — Roles')
 @ApiBearerAuth()
 @UseGuards(AdminJwtGuard)
+@AdminPerms({ read: 'admin.manage', write: 'admin.manage' })
 @Controller('admin/roles')
 class AdminRolesController {
   constructor(private svc: AdminUsersService) {}
@@ -271,6 +310,7 @@ class AdminRolesController {
 @ApiTags('Admin — Permissions')
 @ApiBearerAuth()
 @UseGuards(AdminJwtGuard)
+@AdminPerms({ read: 'admin.manage', write: 'admin.manage' })
 @Controller('admin/permissions')
 class AdminPermissionsController {
   constructor(private svc: AdminUsersService) {}

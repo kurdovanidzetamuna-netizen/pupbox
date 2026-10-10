@@ -6,6 +6,7 @@ import { AdminJwtGuard } from '../admin-auth/admin-jwt.guard';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { IsString, IsOptional, IsBoolean, IsNotEmpty, MaxLength, Matches, IsIn, IsArray } from 'class-validator';
 import { Transform } from 'class-transformer';
+import { AdminPerms } from '../admin-auth/admin-permissions';
 
 /** Trims strings so a field of only spaces counts as empty. */
 const Trim = () => Transform(({ value }) => (typeof value === 'string' ? value.trim() : value));
@@ -65,6 +66,7 @@ class SubscriptionsController {
 @ApiTags('Admin — Subscriptions')
 @ApiBearerAuth()
 @UseGuards(AdminJwtGuard)
+@AdminPerms({ read: 'subscriptions.view', write: 'subscriptions.manage' })
 @Controller('admin/subscriptions')
 class AdminSubscriptionsController {
   constructor(private service: SubscriptionsService) {}

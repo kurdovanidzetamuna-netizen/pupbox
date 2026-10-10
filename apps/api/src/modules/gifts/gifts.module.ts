@@ -5,6 +5,7 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { EmailModule } from '../email/email.module';
 import { AdminJwtGuard } from '../admin-auth/admin-jwt.guard';
 import { GiftsService } from './gifts.service';
+import { AdminPerms } from '../admin-auth/admin-permissions';
 
 @ApiTags('gifts')
 @Controller('gifts')
@@ -34,6 +35,7 @@ export class GiftsController {
 @ApiTags('gifts')
 @ApiBearerAuth()
 @UseGuards(AdminJwtGuard)
+@AdminPerms({ read: 'subscriptions.view', write: 'subscriptions.manage' })
 @Controller('admin/gifts')
 export class AdminGiftsController {
   constructor(private readonly gifts: GiftsService) {}

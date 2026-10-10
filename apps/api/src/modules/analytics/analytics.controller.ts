@@ -3,10 +3,12 @@ import { ApiTags, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { AdminJwtGuard } from '../admin-auth/admin-jwt.guard';
 import { AnalyticsService } from './analytics.service';
 import { RANGE_KEYS } from './analytics.range';
+import { AdminPerms } from '../admin-auth/admin-permissions';
 
 @ApiTags('analytics')
 @ApiBearerAuth()
 @UseGuards(AdminJwtGuard)
+@AdminPerms({ read: 'dashboard.view', write: 'dashboard.view' })
 @Controller('analytics')
 export class AnalyticsController {
   constructor(private readonly analyticsService: AnalyticsService) {}

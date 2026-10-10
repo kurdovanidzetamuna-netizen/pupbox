@@ -3,10 +3,12 @@ import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { Response } from 'express';
 import { AdminJwtGuard } from '../admin-auth/admin-jwt.guard';
 import { ReportsService } from './reports.service';
+import { AdminPerms } from '../admin-auth/admin-permissions';
 
 @ApiTags('reports')
 @ApiBearerAuth()
 @UseGuards(AdminJwtGuard)
+@AdminPerms({ read: 'reports.view', write: 'reports.view' })
 @Controller('reports')
 export class ReportsController {
   constructor(private readonly reportsService: ReportsService) {}

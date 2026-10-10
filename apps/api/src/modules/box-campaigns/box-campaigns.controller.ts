@@ -2,10 +2,12 @@ import { Controller, Get, Post, Put, Delete, Param, Body, Query, UseGuards } fro
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { AdminJwtGuard } from '../admin-auth/admin-jwt.guard';
 import { BoxCampaignsService } from './box-campaigns.service';
+import { AdminPerms } from '../admin-auth/admin-permissions';
 
 @ApiTags('box-campaigns')
 @ApiBearerAuth()
 @UseGuards(AdminJwtGuard)
+@AdminPerms({ read: 'subscriptions.view', write: 'subscriptions.manage' })
 @Controller('box-campaigns')
 export class BoxCampaignsController {
   constructor(private readonly boxCampaignsService: BoxCampaignsService) {}

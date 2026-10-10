@@ -10,8 +10,8 @@ export class AdminAuthService {
   constructor(private prisma: PrismaService, private jwt: JwtService) {}
 
   async login(email: string, password: string) {
-    const admin = await this.prisma.adminUser.findUnique({
-      where: { email },
+    const admin = await this.prisma.adminUser.findFirst({
+      where: { email: { equals: email.trim().toLowerCase(), mode: 'insensitive' }, deletedAt: null },
       include: { role: { include: { permissions: { include: { permission: true } } } } },
     });
 

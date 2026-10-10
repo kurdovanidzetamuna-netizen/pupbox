@@ -4,6 +4,7 @@ import { ApiBearerAuth, ApiTags, ApiOperation } from '@nestjs/swagger';
 import { IsString, IsOptional } from 'class-validator';
 import { ProductsService } from './products.service';
 import { CreateProductDto } from './dto/create-product.dto';
+import { AdminPerms } from '../admin-auth/admin-permissions';
 
 class AddImageDto {
   @IsString() url: string;
@@ -17,6 +18,7 @@ class UpdateStatusDto {
 @ApiTags('Admin — Products')
 @ApiBearerAuth()
 @UseGuards(AdminJwtGuard)
+@AdminPerms({ read: 'products.view', write: 'products.edit' })
 @Controller('admin/products')
 export class AdminProductsController {
   constructor(private service: ProductsService) {}
@@ -46,6 +48,7 @@ export class AdminProductsController {
   }
 
   @Post()
+  @AdminPerms({ write: 'products.create' })
   @ApiOperation({ summary: 'Create product' })
   create(@Body() dto: CreateProductDto) { return this.service.create(dto); }
 
@@ -58,6 +61,7 @@ export class AdminProductsController {
   updateStatus(@Param('id') id: string, @Body() dto: UpdateStatusDto) { return this.service.updateStatus(id, dto.status); }
 
   @Delete(':id')
+  @AdminPerms({ write: 'products.delete' })
   @ApiOperation({ summary: 'Delete product (soft)' })
   remove(@Param('id') id: string) { return this.service.remove(id); }
 

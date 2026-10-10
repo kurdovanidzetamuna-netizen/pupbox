@@ -121,8 +121,26 @@ function NavGroup({ group, isActive }: { group: typeof NAV_GROUPS[0]; isActive: 
   );
 }
 
+/** The permission a section needs before it appears in the sidebar (the API enforces the same). */
+const NEEDS: [prefix: string, perm: string][] = [
+  ['/dashboard/admin-users', 'admin.manage'], ['/dashboard/roles', 'admin.manage'], ['/dashboard/audit', 'admin.manage'],
+  ['/dashboard/reports', 'reports.view'], ['/dashboard/orders', 'orders.view'], ['/dashboard/customers', 'users.view'],
+  ['/dashboard/referrals', 'users.view'], ['/dashboard/coupons', 'coupons.manage'],
+  ['/dashboard/products', 'products.view'], ['/dashboard/categories', 'products.view'], ['/dashboard/box-items', 'products.view'],
+  ['/dashboard/subscription-plans', 'subscriptions.view'], ['/dashboard/subscriptions', 'subscriptions.view'],
+  ['/dashboard/monthly-boxes', 'subscriptions.view'], ['/dashboard/box-campaigns', 'subscriptions.view'],
+  ['/dashboard/page-builder', 'cms.view'], ['/dashboard/blog', 'cms.view'], ['/dashboard/cms', 'cms.view'], ['/dashboard/faq', 'cms.view'],
+  ['/dashboard/promo-popups', 'cms.view'], ['/dashboard/translations', 'cms.view'], ['/dashboard/admin-translations', 'cms.view'],
+  ['/dashboard/settings', 'cms.edit'],
+];
+const needFor = (href: string) => NEEDS.find(([p]) => href === p || href.startsWith(p + '/'))?.[1];
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  const [perms, setPerms] = useState<string[] | null>(null);
+  const [denied, setDenied] = useState('');
   const pathname = usePathname();
+  // A "no access" notice belongs to the screen it came from.
+  useEffect(() => { setDenied(''); }, [pathname]);
   const router = useRouter();
   const { theme, toggleTheme } = useTheme();
 
@@ -140,8 +158,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     if (!token) return signOut();
 
     try {
-      const { exp } = JSON.parse(atob(token.split('.')[1]));
+      const { exp, permissions } = JSON.parse(atob(token.split('.')[1]));
       if (!exp || exp * 1000 <= Date.now()) return signOut();
+      setPerms(Array.isArray(permissions) ? permissions : []);
     } catch {
       return signOut(); // malformed token is no better than none
     }
@@ -152,10 +171,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     const originalFetch = window.fetch;
     window.fetch = async (...args) => {
       const res = await originalFetch(...args);
+      const url = typeof args[0] === 'string' ? args[0] : (args[0] as Request)?.url ?? '';
       if (res.status === 401) {
-        const url = typeof args[0] === 'string' ? args[0] : (args[0] as Request)?.url ?? '';
         if (url.includes('/api/v1/') && !url.includes('/auth/login')) signOut();
       }
+      // The role doesn't cover this: say so, instead of an empty screen.
+      if (res.status === 403 && url.includes('/api/v1/')) setDenied('Your role doesn’t allow this. Ask an administrator for access.');
       return res;
     };
     return () => { window.fetch = originalFetch; };
@@ -177,9 +198,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
 
         <div style={S.nav}>
-          {NAV_GROUPS.map(group => (
-            <NavGroup key={group.label} group={group} isActive={isActive} />
-          ))}
+          {NAV_GROUPS
+            .map(group => ({ ...group, items: group.items.filter(i => { const n = needFor(i.href); return !n || !perms || perms.includes(n); }) }))
+            .filter(group => group.items.length > 0)
+            .map(group => (
+              <NavGroup key={group.label} group={group} isActive={isActive} />
+            ))}
         </div>
 
         <div style={S.bottom}>
@@ -205,7 +229,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
       </aside>
 
-      <main style={S.main}>{children}</main>
+      <main style={S.main}>
+        {denied && (
+          <div role="alert" style={{ margin: '16px 28px 0', padding: '10px 14px', borderRadius: 10, background: 'var(--amber-50)', border: '1px solid var(--amber-200)', color: 'var(--amber-800)', fontSize: 13, display: 'flex', justifyContent: 'space-between', gap: 12 }}>
+            <span>{denied}</span>
+            <button onClick={() => setDenied('')} aria-label="Dismiss" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit' }}>✕</button>
+          </div>
+        )}
+        {children}
+      </main>
     </div>
   );
 }

@@ -4,6 +4,8 @@ import { ApiBearerAuth, ApiTags, ApiOperation } from '@nestjs/swagger';
 import { Prisma, UserStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { IsIn, IsOptional, IsString, MaxLength } from 'class-validator';
+import { AdminPerms } from '../admin-auth/admin-permissions';
+import { AdminJwtGuard } from '../admin-auth/admin-jwt.guard';
 
 const USER_SELECT = {
   id: true,
@@ -85,7 +87,8 @@ export class UsersController {
 
 @ApiTags('Admin — Customers')
 @ApiBearerAuth()
-@UseGuards(AuthGuard('admin-jwt'))
+@UseGuards(AdminJwtGuard)
+@AdminPerms({ read: 'users.view', write: 'users.block' })
 @Controller('admin/customers')
 export class AdminCustomersController {
   constructor(private prisma: PrismaService) {}

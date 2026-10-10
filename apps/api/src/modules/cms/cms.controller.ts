@@ -2,6 +2,7 @@ import { Controller, Get, Post, Patch, Param, Body, UseGuards } from '@nestjs/co
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { AdminJwtGuard } from '../admin-auth/admin-jwt.guard';
 import { CmsService } from './cms.service';
+import { AdminPerms } from '../admin-auth/admin-permissions';
 
 @ApiTags('cms')
 @Controller('cms')
@@ -21,6 +22,7 @@ export class CmsController {
   @Post()
   @ApiBearerAuth()
   @UseGuards(AdminJwtGuard)
+  @AdminPerms({ write: 'cms.edit' })
   upsert(@Body() body: any) {
     return this.cmsService.upsert(body);
   }
@@ -28,6 +30,7 @@ export class CmsController {
   @Patch(':slug')
   @ApiBearerAuth()
   @UseGuards(AdminJwtGuard)
+  @AdminPerms({ write: 'cms.edit' })
   update(@Param('slug') slug: string, @Body() body: any) {
     return this.cmsService.updateBySlug(slug, body);
   }

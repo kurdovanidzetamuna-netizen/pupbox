@@ -189,6 +189,8 @@ model AdminUser {
   lastName     String
   passwordHash String
   status       AdminUserStatus @default(ACTIVE)
+  /// Sign-ins issued before this are refused (set when the password changes).
+  passwordChangedAt DateTime?
   roleId       String
   role         Role            @relation(fields: [roleId], references: [id])
   createdAt    DateTime        @default(now())

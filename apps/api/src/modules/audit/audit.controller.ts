@@ -2,10 +2,12 @@ import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { AdminJwtGuard } from '../admin-auth/admin-jwt.guard';
 import { AuditService } from './audit.service';
+import { AdminPerms } from '../admin-auth/admin-permissions';
 
 @ApiTags('audit')
 @ApiBearerAuth()
 @UseGuards(AdminJwtGuard)
+@AdminPerms({ read: 'admin.manage', write: 'admin.manage' })
 @Controller('audit')
 export class AuditController {
   constructor(private readonly auditService: AuditService) {}

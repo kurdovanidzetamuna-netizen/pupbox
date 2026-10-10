@@ -3,6 +3,7 @@ import { AdminJwtGuard } from '../admin-auth/admin-jwt.guard';
 import { ApiBearerAuth, ApiTags, ApiOperation } from '@nestjs/swagger';
 import { IsString, IsOptional, IsBoolean, IsNumber, IsUUID } from 'class-validator';
 import { CategoriesService } from './categories.service';
+import { AdminPerms } from '../admin-auth/admin-permissions';
 
 class CreateCategoryDto {
   @IsString() name: string;
@@ -29,6 +30,7 @@ class UpdateCategoryDto {
 @ApiTags('Admin — Categories')
 @ApiBearerAuth()
 @UseGuards(AdminJwtGuard)
+@AdminPerms({ read: 'products.view', write: 'products.edit' })
 @Controller('admin/categories')
 export class AdminCategoriesController {
   constructor(private service: CategoriesService) {}

@@ -2,10 +2,13 @@ import { Controller, Get, Post, Patch, Delete, Body, Param, UseGuards } from '@n
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { PrismaService } from '../prisma/prisma.service';
+import { AdminPerms } from '../admin-auth/admin-permissions';
+import { AdminJwtGuard } from '../admin-auth/admin-jwt.guard';
 
 @ApiTags('Admin — Coupons')
 @ApiBearerAuth()
-@UseGuards(AuthGuard('admin-jwt'))
+@UseGuards(AdminJwtGuard)
+@AdminPerms({ read: 'coupons.manage', write: 'coupons.manage' })
 @Controller('admin/coupons')
 export class CouponsController {
   constructor(private prisma: PrismaService) {}

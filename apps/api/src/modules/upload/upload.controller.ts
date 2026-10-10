@@ -4,6 +4,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes } from '@nestjs/swagg
 import { diskStorage } from 'multer';
 import { extname, join } from 'path';
 import { AdminJwtGuard } from '../admin-auth/admin-jwt.guard';
+import { AdminPerms } from '../admin-auth/admin-permissions';
 
 const ALLOWED = ['.jpg', '.jpeg', '.png', '.svg', '.webp'];
 
@@ -16,6 +17,7 @@ const UPLOAD_DIR = join(__dirname, '..', '..', '..', 'public', 'uploads');
 @ApiTags('Upload')
 @ApiBearerAuth()
 @UseGuards(AdminJwtGuard)
+@AdminPerms({ read: ['cms.edit', 'products.edit', 'products.create'], write: ['cms.edit', 'products.edit', 'products.create'] })
 @Controller('admin/upload')
 export class UploadController {
   @Post('image')

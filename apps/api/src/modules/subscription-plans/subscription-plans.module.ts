@@ -5,6 +5,7 @@ import { AdminJwtGuard } from '../admin-auth/admin-jwt.guard';
 import { ApiBearerAuth, ApiTags, ApiOperation } from '@nestjs/swagger';
 import { IsString, IsNumber, IsOptional, IsBoolean, IsArray, IsEnum, Min } from 'class-validator';
 import { Type } from 'class-transformer';
+import { AdminPerms } from '../admin-auth/admin-permissions';
 
 enum DurationUnit { DAY = 'DAY', WEEK = 'WEEK', MONTH = 'MONTH', YEAR = 'YEAR' }
 
@@ -42,6 +43,7 @@ class SubscriptionPlansController {
 @ApiTags('Admin — Subscription Plans')
 @ApiBearerAuth()
 @UseGuards(AdminJwtGuard)
+@AdminPerms({ read: 'subscriptions.view', write: 'subscriptions.manage' })
 @Controller('admin/subscription-plans')
 class AdminSubscriptionPlansController {
   constructor(private service: SubscriptionPlansService) {}

@@ -5,6 +5,7 @@ import { ArrayNotEmpty, IsArray, IsEnum, IsInt, IsOptional, IsString, Max, MaxLe
 import { Type } from 'class-transformer';
 import { AdminJwtGuard } from '../admin-auth/admin-jwt.guard';
 import { BoxShipmentsService } from './box-shipments.service';
+import { AdminPerms } from '../admin-auth/admin-permissions';
 
 class MonthDto {
   @Type(() => Number) @IsInt() @Min(2024) @Max(2100) year: number;
@@ -25,6 +26,7 @@ class TrackingDto {
 @ApiTags('box-shipments')
 @ApiBearerAuth()
 @UseGuards(AdminJwtGuard)
+@AdminPerms({ read: 'subscriptions.view', write: 'subscriptions.manage' })
 @Controller('admin/box-shipments')
 class BoxShipmentsController {
   constructor(private service: BoxShipmentsService) {}

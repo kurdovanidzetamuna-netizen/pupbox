@@ -6,6 +6,7 @@ import { OrdersService } from './orders.service';
 import { IsEnum, IsNumber, IsOptional, IsString, MaxLength, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 import { OrderStatus } from '@prisma/client';
+import { AdminPerms } from '../admin-auth/admin-permissions';
 
 @ApiTags('orders')
 class AdminStatusDto {
@@ -41,6 +42,7 @@ export class OrdersController {
   @Get('admin')
   @ApiBearerAuth()
   @UseGuards(AdminJwtGuard)
+  @AdminPerms({ read: 'orders.view' })
   adminList(
     @Query('page') page = '1',
     @Query('limit') limit = '20',
@@ -59,6 +61,7 @@ export class OrdersController {
   @Get('admin/:id')
   @ApiBearerAuth()
   @UseGuards(AdminJwtGuard)
+  @AdminPerms({ read: 'orders.view' })
   adminGetOne(@Param('id') id: string) {
     return this.ordersService.adminGetOne(id);
   }
@@ -66,6 +69,7 @@ export class OrdersController {
   @Patch('admin/:id/status')
   @ApiBearerAuth()
   @UseGuards(AdminJwtGuard)
+  @AdminPerms({ write: 'orders.manage' })
   adminUpdateStatus(@Param('id') id: string, @Body() body: AdminStatusDto) {
     return this.ordersService.adminUpdateStatus(id, body.status, { refundAmount: body.refundAmount, reason: body.reason });
   }
@@ -73,6 +77,7 @@ export class OrdersController {
   @Post('admin/:id/refund')
   @ApiBearerAuth()
   @UseGuards(AdminJwtGuard)
+  @AdminPerms({ write: 'payments.refund' })
   adminRecordRefund(@Param('id') id: string, @Body() body: RefundDto) {
     return this.ordersService.recordRefund(id, body.amount, body.reason);
   }
@@ -80,6 +85,7 @@ export class OrdersController {
   @Patch('admin/:id/tracking')
   @ApiBearerAuth()
   @UseGuards(AdminJwtGuard)
+  @AdminPerms({ write: 'orders.manage' })
   adminUpdateTracking(@Param('id') id: string, @Body('trackingNumber') trackingNumber: string, @Body('internalNotes') internalNotes?: string) {
     return this.ordersService.adminUpdateTracking(id, trackingNumber, internalNotes);
   }
