@@ -6,6 +6,8 @@ import { authFetch, loginUrl, SessionExpiredError } from '@/lib/authFetch';
 import Modal from '@/components/ui/Modal';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import Field from '@/components/ui/Field';
+import IconButton from '@/components/ui/IconButton';
+import { Icon } from '@/components/ui/icons';
 
 const msg = async (res: Response, fallback: string) => {
   const d = await res.json().catch(() => ({}));
@@ -78,15 +80,21 @@ export default function AccountSecurity() {
     <section className="bg-white rounded-3xl ring-1 ring-gray-200/60 px-5 sm:px-6 py-2">
       <h2 className="text-[15px] font-bold text-gray-900 pt-4 pb-1">{t('acc.security')}</h2>
       <div className={`${row} border-b border-gray-100`}>
-        <div>
-          <p className="text-[13px] font-medium text-gray-800">{t('acc.password')}</p>
-          <p className="text-sm text-gray-400 tracking-widest">••••••••</p>
+        <div className="flex items-center gap-3">
+          <span className="w-9 h-9 rounded-xl bg-gray-100 text-gray-500 flex items-center justify-center"><Icon name="key" className="w-[18px] h-[18px]" /></span>
+          <div>
+            <p className="text-[13px] font-medium text-gray-800">{t('acc.password')}</p>
+            <p className="text-sm text-gray-400 tracking-widest leading-none">••••••••</p>
+          </div>
         </div>
-        <button type="button" onClick={openPw} className="px-3.5 py-1.5 rounded-full text-[13px] font-semibold text-teal-700 bg-teal-50 hover:bg-teal-100 transition">{t('acc.passwordChange')}</button>
+        <IconButton icon="edit" label={t('acc.passwordChange')} tone="primary" onClick={openPw} />
       </div>
-      <div className="py-3">
-        <button type="button" onClick={() => { setDelPassword(''); setDelError(''); setDelOpen(true); }}
-          className="-ml-3 px-3 py-1.5 rounded-full text-[13px] font-semibold text-red-600 hover:bg-red-50 transition">{t('acc.delete')}</button>
+      <div className={row}>
+        <div className="flex items-center gap-3">
+          <span className="w-9 h-9 rounded-xl bg-red-50 text-red-400 flex items-center justify-center"><Icon name="trash" className="w-[18px] h-[18px]" /></span>
+          <p className="text-[13px] font-medium text-gray-800">{t('acc.delete')}</p>
+        </div>
+        <IconButton icon="trash" label={t('acc.delete')} tone="danger" onClick={() => { setDelPassword(''); setDelError(''); setDelOpen(true); }} />
       </div>
 
       <Modal open={pwOpen} onClose={() => !pwSaving && setPwOpen(false)} title={step === 3 ? t('acc.pwDone') : t('acc.password')}>

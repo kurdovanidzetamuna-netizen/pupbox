@@ -154,4 +154,8 @@ export const ACCOUNT_STRINGS: Record<string, { en: string; ka: string }> = {
   'cards.title':            { en: 'Payment cards',               ka: 'საბანკო ბარათები' },
   'cards.none':             { en: 'No saved cards. Cards are kept securely by the bank, never by Pupbox — you can save one when you pay.', ka: 'შენახული ბარათი არ გაქვს. ბარათებს ბანკი ინახავს უსაფრთხოდ, არა Pupbox — შენახვა გადახდისას შეგეძლება.' },
   'acc.verifiedIcon':       { en: 'Confirmed',                   ka: 'დადასტურებულია' },
+  'addr.actions':           { en: 'Address actions',             ka: 'მისამართის მოქმედებები' },
+  'cards.add':              { en: 'Add a card',                  ka: 'ბარათის დამატება' },
+  'cards.soon':             { en: 'Saved when you pay',          ka: 'შეინახება გადახდისას' },
+  'cards.secure':           { en: 'Stored securely by the bank', ka: 'ინახება ბანკში, უსაფრთხოდ' },
 };

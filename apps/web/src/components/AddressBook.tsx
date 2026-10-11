@@ -5,6 +5,12 @@ import { authFetch, SessionExpiredError } from '@/lib/authFetch';
 import Modal from '@/components/ui/Modal';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import Field from '@/components/ui/Field';
+import IconButton from '@/components/ui/IconButton';
+import Menu from '@/components/ui/Menu';
+import { Icon } from '@/components/ui/icons';
+
+/** Home, work or a pin, guessed from the address's name. */
+const iconFor = (label: string | null) => /სახლ|home|ბინა/i.test(label ?? '') ? 'home' : /სამსახ|work|ოფის|office/i.test(label ?? '') ? 'work' : 'pin';
 
 type Address = { id: string; label: string | null; firstName: string; lastName: string; phone: string; city: string; addressLine1: string; addressLine2: string | null; isDefault: boolean };
 const EMPTY = { label: '', firstName: '', lastName: '', phone: '', city: '', addressLine1: '', addressLine2: '' };
@@ -71,32 +77,46 @@ export default function AddressBook({ onExpired }: { onExpired: () => void }) {
 
   return (
     <section className="bg-white rounded-3xl ring-1 ring-gray-200/60 p-5 sm:p-6">
-      <div className="flex items-center justify-between gap-3 mb-3">
-        <h2 className="text-[15px] font-bold text-gray-900">{t('addr.book')}</h2>
-        <button type="button" onClick={() => open('new')} className="px-3.5 py-1.5 rounded-full text-[13px] font-semibold text-teal-700 bg-teal-50 hover:bg-teal-100 transition">+ {t('addr.add')}</button>
+      <div className="flex items-center justify-between gap-3 mb-4">
+        <h2 className="text-[15px] font-bold text-gray-900 flex items-center gap-2">
+          {t('addr.book')}
+          {list.length > 0 && <span className="text-[11px] font-semibold text-gray-500 bg-gray-100 rounded-full px-2 py-0.5">{list.length}</span>}
+        </h2>
+        <IconButton icon="plus" label={t('addr.add')} tone="primary" onClick={() => open('new')} />
       </div>
-      {list.length === 0 ? (
-        <p className="text-[13px] text-gray-500 py-3">{t('addr.none')}</p>
-      ) : (
-        <ul className="grid sm:grid-cols-2 gap-3">
-          {list.map((a) => (
-            <li key={a.id} className={`rounded-2xl p-4 ring-1 text-[13px] ${a.isDefault ? 'ring-teal-200 bg-teal-50/40' : 'ring-gray-200/70'}`}>
-              <div className="flex items-start justify-between gap-2">
-                <p className="font-semibold text-gray-900">{a.label || `${a.firstName} ${a.lastName}`}</p>
-                {a.isDefault && <span className="text-[11px] font-semibold text-teal-700 bg-teal-100 rounded-full px-2 py-0.5 shrink-0">{t('addr.default')}</span>}
+      <ul className="grid sm:grid-cols-2 xl:grid-cols-3 gap-3">
+        {list.map((a) => (
+          <li key={a.id} className={`group relative rounded-2xl p-4 ring-1 transition-colors ${a.isDefault ? 'ring-teal-200 bg-gradient-to-br from-teal-50/70 to-white' : 'ring-gray-200/70 hover:ring-gray-300'}`}>
+            <div className="flex items-start gap-3">
+              <span className={`w-10 h-10 shrink-0 rounded-xl flex items-center justify-center ${a.isDefault ? 'bg-teal-500 text-white' : 'bg-gray-100 text-gray-500'}`}>
+                <Icon name={iconFor(a.label)} className="w-5 h-5" />
+              </span>
+              <div className="flex-1 min-w-0">
+                <p className="text-[13px] font-semibold text-gray-900 truncate flex items-center gap-1.5">
+                  {a.label || `${a.firstName} ${a.lastName}`}
+                  {a.isDefault && <span title={t('addr.default')} aria-label={t('addr.default')} className="text-amber-400"><Icon name="star" className="w-3.5 h-3.5" strokeWidth={2.4} /></span>}
+                </p>
+                <p className="text-[12px] text-gray-500 truncate">{a.city}, {a.addressLine1}</p>
+                <p className="text-[12px] text-gray-400 truncate flex items-center gap-1 mt-0.5"><Icon name="phone" className="w-3 h-3" />{a.phone}</p>
               </div>
-              {a.label && <p className="text-gray-600">{a.firstName} {a.lastName}</p>}
-              <p className="text-gray-500 mt-0.5">{a.city}, {[a.addressLine1, a.addressLine2].filter(Boolean).join(', ')}</p>
-              <p className="text-gray-500">{a.phone}</p>
-              <div className="flex gap-1 mt-2 -ml-2">
-                <button type="button" onClick={() => open(a)} className="px-2 py-1 rounded-lg text-[12px] font-semibold text-teal-700 hover:bg-teal-50">{t('dogs.edit')}</button>
-                {!a.isDefault && <button type="button" onClick={() => makeDefault(a)} className="px-2 py-1 rounded-lg text-[12px] font-semibold text-gray-600 hover:bg-gray-100">{t('addr.makeDefault')}</button>}
-                <button type="button" onClick={() => { setRemoveError(''); setToRemove(a); }} className="px-2 py-1 rounded-lg text-[12px] font-semibold text-red-500 hover:bg-red-50">{t('dogs.remove')}</button>
+              <div className="-mr-1 -mt-1">
+                <Menu label={t('addr.actions')} items={[
+                  { icon: 'edit', label: t('dogs.edit'), onClick: () => open(a) },
+                  ...(!a.isDefault ? [{ icon: 'star', label: t('addr.makeDefault'), onClick: () => makeDefault(a) }] : []),
+                  { icon: 'trash', label: t('dogs.remove'), tone: 'danger' as const, onClick: () => { setRemoveError(''); setToRemove(a); } },
+                ]} />
               </div>
-            </li>
-          ))}
-        </ul>
-      )}
+            </div>
+          </li>
+        ))}
+        <li>
+          <button type="button" onClick={() => open('new')} aria-label={t('addr.add')}
+            className="w-full h-full min-h-[84px] rounded-2xl border-2 border-dashed border-gray-200 text-gray-400 hover:border-teal-300 hover:text-teal-600 hover:bg-teal-50/40 transition-colors flex flex-col items-center justify-center gap-1">
+            <Icon name="plus" className="w-5 h-5" strokeWidth={2.2} />
+            {list.length === 0 && <span className="text-[12px] font-medium">{t('addr.add')}</span>}
+          </button>
+        </li>
+      </ul>
 
       <Modal open={editing !== null} onClose={() => !busy && setEditing(null)} title={editing === 'new' ? t('addr.add') : t('addr.edit')} size="md">
         <form onSubmit={save} className="space-y-3" noValidate>

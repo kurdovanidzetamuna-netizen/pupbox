@@ -8,6 +8,8 @@ import { authFetch, loginUrl, SessionExpiredError } from '@/lib/authFetch';
 import AccountSecurity from '@/components/AccountSecurity';
 import Field from '@/components/ui/Field';
 import AddressBook from '@/components/AddressBook';
+import IconButton from '@/components/ui/IconButton';
+import { Icon } from '@/components/ui/icons';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 
 export default function AccountPage() {
@@ -127,7 +129,7 @@ export default function AccountPage() {
             </div>
             <div className="flex gap-2">
               <Link href="/prices#plans" className="inline-flex items-center justify-center bg-teal-600 text-white text-sm font-semibold px-4 py-2 hover:bg-teal-700 whitespace-nowrap">+ {t('acc.subscribe')}</Link>
-              <button onClick={() => setAskOut(true)} className="inline-flex items-center justify-center text-sm font-semibold px-4 py-2 rounded-full text-gray-500 hover:bg-gray-100 transition whitespace-nowrap">{t('acc.signOut')}</button>
+              <IconButton icon="logout" label={t('acc.signOut')} onClick={() => setAskOut(true)} />
             </div>
           </header>
 
@@ -189,8 +191,28 @@ export default function AccountPage() {
           <AddressBook onExpired={() => router.replace(loginUrl('/account'))} />
 
           <section className="bg-white rounded-3xl ring-1 ring-gray-200/60 p-5 sm:p-6">
-            <h2 className="text-[15px] font-bold text-gray-900 mb-2">💳 {t('cards.title')}</h2>
-            <p className="text-[13px] text-gray-500 leading-relaxed">{t('cards.none')}</p>
+            <div className="flex items-center justify-between gap-3 mb-4">
+              <h2 className="text-[15px] font-bold text-gray-900">{t('cards.title')}</h2>
+              <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-teal-700 bg-teal-50 rounded-full px-2.5 py-1">
+                <Icon name="lock" className="w-3.5 h-3.5" />{t('cards.secure')}
+              </span>
+            </div>
+            <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-3">
+              {/* A ghost of a card: shows where saved cards will live, with no made-up numbers. */}
+              <div className="relative aspect-[1.6/1] max-h-44 rounded-2xl bg-gradient-to-br from-lilac-100 via-teal-50 to-teal-100 ring-1 ring-teal-100 p-4 flex flex-col justify-between overflow-hidden">
+                <div className="absolute -right-8 -bottom-10 w-40 h-40 rounded-full bg-white/40" aria-hidden="true" />
+                <div className="flex items-center justify-between">
+                  <span className="w-9 h-7 rounded-md bg-gradient-to-br from-amber-200 to-amber-300/80" aria-hidden="true" />
+                  <Icon name="card" className="w-6 h-6 text-teal-700/50" />
+                </div>
+                <div aria-hidden="true" className="flex gap-3 text-teal-900/25 text-lg tracking-[0.2em] font-bold">•••• •••• •••• ••••</div>
+                <p className="relative text-[12px] font-medium text-teal-900/60">{t('cards.soon')}</p>
+              </div>
+              <button type="button" disabled aria-label={t('cards.add')} title={t('cards.soon')}
+                className="aspect-[1.6/1] max-h-44 rounded-2xl border-2 border-dashed border-gray-200 text-gray-300 flex items-center justify-center cursor-not-allowed">
+                <Icon name="plus" className="w-6 h-6" strokeWidth={2.2} />
+              </button>
+            </div>
           </section>
         </>
       )}
