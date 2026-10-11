@@ -50,6 +50,7 @@ const NAV_GROUPS = [
     label: 'People',
     items: [
       { href: '/dashboard/customers', label: 'Customers', icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z' },
+      { href: '/dashboard/notifications', label: 'Notifications', icon: 'M15 17h5l-1.4-1.4A2 2 0 0118 14.2V11a6 6 0 00-4-5.7V5a2 2 0 10-4 0v.3C7.7 6.2 6 8.4 6 11v3.2c0 .5-.2 1-.6 1.4L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9' },
       { href: '/dashboard/crm', label: 'Dogs & CRM', icon: 'M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z' },
       { href: '/dashboard/referrals', label: 'Referrals', icon: 'M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1' },
     ],
@@ -126,7 +127,7 @@ function NavGroup({ group, isActive }: { group: typeof NAV_GROUPS[0]; isActive: 
 const NEEDS: [prefix: string, perm: string][] = [
   ['/dashboard/admin-users', 'admin.manage'], ['/dashboard/roles', 'admin.manage'], ['/dashboard/audit', 'admin.manage'],
   ['/dashboard/reports', 'reports.view'], ['/dashboard/orders', 'orders.view'], ['/dashboard/customers', 'users.view'],
-  ['/dashboard/referrals', 'users.view'], ['/dashboard/crm', 'crm.view'], ['/dashboard/coupons', 'coupons.manage'],
+  ['/dashboard/referrals', 'users.view'], ['/dashboard/crm', 'crm.view'], ['/dashboard/notifications', 'crm.view'], ['/dashboard/coupons', 'coupons.manage'],
   ['/dashboard/products', 'products.view'], ['/dashboard/categories', 'products.view'], ['/dashboard/box-items', 'products.view'],
   ['/dashboard/subscription-plans', 'subscriptions.view'], ['/dashboard/subscriptions', 'subscriptions.view'],
   ['/dashboard/monthly-boxes', 'subscriptions.view'], ['/dashboard/box-campaigns', 'subscriptions.view'],

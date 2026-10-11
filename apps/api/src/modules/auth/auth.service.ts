@@ -66,8 +66,13 @@ export class AuthService {
         lastName: dto.lastName,
         phone,
         passwordHash,
+        // The sign-up tick covers both channels; each can be switched off later.
         marketingConsent: dto.marketingConsent === true,
         marketingConsentAt: dto.marketingConsent === true ? new Date() : null,
+        marketingEmail: dto.marketingConsent === true,
+        marketingSms: dto.marketingConsent === true,
+        marketingEmailAt: dto.marketingConsent === true ? new Date() : null,
+        marketingSmsAt: dto.marketingConsent === true ? new Date() : null,
       },
       select: {
         id: true,
@@ -194,7 +199,7 @@ export class AuthService {
           email: `deleted-${userId}@deleted.invalid`, firstName: 'Deleted', lastName: 'customer', phone: null, avatarUrl: null,
           passwordHash: await bcrypt.hash(crypto.randomBytes(32).toString('hex'), 4),
           status: 'BLOCKED', deletedAt: now, passwordChangedAt: now,
-          marketingConsent: false, marketingConsentAt: null, emailVerified: false, phoneVerified: false,
+          marketingConsent: false, marketingConsentAt: null, marketingEmail: false, marketingSms: false, emailVerified: false, phoneVerified: false,
         },
       }),
       this.prisma.address.updateMany({ where: { userId }, data: { firstName: 'Deleted', lastName: 'customer', phone: '', addressLine1: '—', addressLine2: null, postalCode: null, deletedAt: now } }),

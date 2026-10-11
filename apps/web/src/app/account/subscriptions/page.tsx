@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useLanguage } from '@/context/LanguageContext';
@@ -303,20 +304,7 @@ export default function MySubscriptionsPage() {
                     <p className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">{t('sub.cancelledLast')}</p>
                   )}
                   {isActive && !sub.cancelledAt && (
-                    cancelConfirm === sub.id ? (
-                      <div className="bg-red-50 border border-red-200 rounded-xl p-4">
-                        <p className="text-sm font-semibold text-red-800 mb-1">{t('sub.cancelQ')}</p>
-                        <p className="text-sm text-red-700 mb-1">{cancelText(cancelPlan)}</p>
-                        {cancelPlan?.refund > 0 && <p className="text-xs text-red-600 mb-4">{t('sub.refundTiming')}</p>}
-                        {!(cancelPlan?.refund > 0) && <div className="mb-4" />}
-                        <div className="flex gap-2">
-                          <button onClick={() => cancelSubscription(sub.id)} disabled={!cancelPlan} className="flex-1 bg-red-600 text-white py-2 rounded-lg text-sm font-bold hover:bg-red-700 transition">{t('sub.cancelYes')}</button>
-                          <button onClick={() => setCancelConfirm(null)} className="flex-1 border border-gray-200 bg-white text-gray-700 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition">{t('sub.keep')}</button>
-                        </div>
-                      </div>
-                    ) : (
-                      <button onClick={() => askCancel(sub.id)} className="text-sm text-red-600 hover:text-red-700 font-medium transition">{t('sub.cancel')}</button>
-                    )
+                    <button onClick={() => askCancel(sub.id)} className="text-sm text-red-600 hover:text-red-700 font-medium transition">{t('sub.cancel')}</button>
                   )}
                 </li>
               );
@@ -330,6 +318,9 @@ export default function MySubscriptionsPage() {
           <span>{toast.msg}</span>
         </div>
       )}
+      <ConfirmDialog open={!!cancelConfirm} onClose={() => setCancelConfirm(null)} onConfirm={() => cancelSubscription(cancelConfirm!)}
+        busy={!cancelPlan} tone="danger" title={t('sub.cancelQ')} confirmLabel={t('sub.cancelYes')}
+        message={<><p>{cancelText(cancelPlan)}</p>{cancelPlan?.refund > 0 && <p className="text-xs text-gray-500">{t('sub.refundTiming')}</p>}</>} />
     </div>
   );
 }

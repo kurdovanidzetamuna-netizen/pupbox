@@ -3,6 +3,8 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useLanguage } from '@/context/LanguageContext';
 import { signOut } from '@/lib/signOut';
+import { useState } from 'react';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
 
 const LINKS = [
   { href: '/account', k: 'acc.profile', icon: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z' },
@@ -22,6 +24,7 @@ export default function AccountLayout({ children }: { children: React.ReactNode 
   const router = useRouter();
   const active = (href: string) => (href === '/account' ? pathname === '/account' : pathname.startsWith(href));
 
+  const [askOut, setAskOut] = useState(false);
   function leave() {
     signOut();
     router.push('/');
@@ -49,7 +52,7 @@ export default function AccountLayout({ children }: { children: React.ReactNode 
               <Link href="/prices" className="flex items-center justify-center gap-2 w-full bg-teal-600 text-white text-sm font-semibold py-2.5 hover:bg-teal-700">
                 + {t('acc.subscribe')}
               </Link>
-              <button type="button" onClick={leave} className="w-full text-sm font-semibold text-gray-500 hover:text-red-600 py-2.5 rounded-xl hover:bg-white transition">
+              <button type="button" onClick={() => setAskOut(true)} className="w-full text-sm font-semibold text-gray-500 hover:text-red-600 py-2.5 rounded-xl hover:bg-white transition">
                 {t('acc.signOut')}
               </button>
             </div>
@@ -57,6 +60,8 @@ export default function AccountLayout({ children }: { children: React.ReactNode 
         </aside>
         <div className="flex-1 min-w-0">{children}</div>
       </div>
+      <ConfirmDialog open={askOut} onClose={() => setAskOut(false)} onConfirm={leave}
+        title={t('acc.signOutQ')} message={t('acc.signOutInfo')} confirmLabel={t('acc.signOut')} />
     </main>
   );
 }

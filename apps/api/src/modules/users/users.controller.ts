@@ -5,6 +5,7 @@ import { Prisma, UserStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { IsBoolean, IsIn, IsOptional, IsString, MaxLength } from 'class-validator';
 import { normalisePhone } from '../auth/verification';
+import { consentUpdate } from './consent';
 import { AdminPerms } from '../admin-auth/admin-permissions';
 import { AdminJwtGuard } from '../admin-auth/admin-jwt.guard';
 
@@ -19,6 +20,8 @@ const USER_SELECT = {
   emailVerified: true,
   phoneVerified: true,
   marketingConsent: true,
+  marketingEmail: true,
+  marketingSms: true,
   createdAt: true,
   // The customer's own dogs; a friend's dog from a gift lives with that plan.
   dogs: { where: { deletedAt: null, forGift: false } },
@@ -35,7 +38,10 @@ class UpdateProfileDto {
   @IsOptional() @IsString() @MaxLength(30) phone?: string;
   /** Follows the site's language switch; emails are written in it. */
   @IsOptional() @IsIn(['ka', 'en']) language?: 'ka' | 'en';
-  /** "Send me offers and reminders": can be given or withdrawn any time. */
+  /** Offers and reminders, per channel: can be given or withdrawn any time. */
+  @IsOptional() @IsBoolean() marketingEmail?: boolean;
+  @IsOptional() @IsBoolean() marketingSms?: boolean;
+  /** Older clients: one switch for both channels. */
   @IsOptional() @IsBoolean() marketingConsent?: boolean;
 }
 
@@ -88,7 +94,7 @@ export class UsersController {
   @Patch('me')
   @ApiOperation({ summary: 'Update current user profile' })
   async updateProfile(@Request() req, @Body() body: UpdateProfileDto) {
-    const current = await this.prisma.user.findUnique({ where: { id: req.user.id }, select: { phone: true, marketingConsent: true } });
+    const current = await this.prisma.user.findUnique({ where: { id: req.user.id }, select: { phone: true, marketingEmail: true, marketingSms: true } });
     let phone: string | undefined;
     if (body.phone !== undefined) {
       const p = normalisePhone(body.phone);
@@ -97,13 +103,15 @@ export class UsersController {
     }
     // A new number has to be confirmed again with an SMS code.
     const phoneChanged = phone !== undefined && phone !== current?.phone;
-    const consentChanged = body.marketingConsent !== undefined && body.marketingConsent !== current?.marketingConsent;
+    const email = body.marketingEmail ?? body.marketingConsent;
+    const sms = body.marketingSms ?? body.marketingConsent;
+    const consent = email !== undefined || sms !== undefined ? consentUpdate(current!, { email, sms }) : {};
     return this.prisma.user.update({
       where: { id: req.user.id },
       data: {
         firstName: body.firstName, lastName: body.lastName, language: body.language,
         ...(phoneChanged ? { phone, phoneVerified: false } : {}),
-        ...(consentChanged ? { marketingConsent: body.marketingConsent, marketingConsentAt: body.marketingConsent ? new Date() : null } : {}),
+        ...consent,
       },
       select: USER_SELECT,
     });
@@ -141,7 +149,7 @@ export class AdminCustomersController {
       where,
       select: {
         id: true, email: true, firstName: true, lastName: true, phone: true, status: true, referralCode: true, createdAt: true,
-        emailVerified: true, phoneVerified: true, marketingConsent: true,
+        emailVerified: true, phoneVerified: true, marketingConsent: true, marketingEmail: true, marketingSms: true,
         _count: { select: { orders: true, dogs: { where: { deletedAt: null, forGift: false } } } },
       },
       orderBy: { createdAt: 'desc' },
@@ -157,6 +165,7 @@ export class AdminCustomersController {
       select: {
         id: true, email: true, firstName: true, lastName: true, phone: true, status: true, language: true, referralCode: true, createdAt: true,
         emailVerified: true, phoneVerified: true, marketingConsent: true, marketingConsentAt: true,
+        marketingEmail: true, marketingSms: true, marketingEmailAt: true, marketingSmsAt: true,
         dogs: { where: { deletedAt: null }, orderBy: { createdAt: 'asc' } },
         addresses: { where: { deletedAt: null }, select: { id: true, firstName: true, lastName: true, phone: true, city: true, addressLine1: true, addressLine2: true, isDefault: true } },
         subscriptions: {

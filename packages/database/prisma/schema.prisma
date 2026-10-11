@@ -158,9 +158,16 @@ model User {
   emailVerified  Boolean     @default(false)
   /// Confirmed with an SMS code at registration (or after changing the number).
   phoneVerified  Boolean     @default(false)
-  /// Agreed to marketing (offers, reminders) and when; the CRM only targets these.
+  /// Agreed to marketing on at least one channel (kept in step with the two below).
   marketingConsent   Boolean   @default(false)
   marketingConsentAt DateTime?
+  /// Per channel: offers and reminders by email / by SMS. The CRM only contacts
+  /// a customer on a channel they switched on.
+  marketingEmail     Boolean   @default(false)
+  marketingSms       Boolean   @default(false)
+  /// When a channel was last switched (on or off), for the consent record.
+  marketingEmailAt   DateTime?
+  marketingSmsAt     DateTime?
   avatarUrl      String?
   /// The language emails are written in: "ka" or "en", following the site's language switch.
   language       String      @default("ka")

@@ -55,7 +55,8 @@ export default function CustomerDrawer({ id, onClose }: { id: string; onClose: (
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 10 }}>
               {badge(c.emailVerified, 'Email confirmed', 'Email not confirmed')}
               {badge(c.phoneVerified, 'Phone confirmed', 'Phone not confirmed')}
-              {badge(c.marketingConsent, `Marketing OK${c.marketingConsentAt ? ` since ${day(c.marketingConsentAt)}` : ''}`, 'No marketing consent')}
+              {badge(c.marketingEmail, `Email offers${c.marketingEmailAt ? ` since ${day(c.marketingEmailAt)}` : ''}`, 'No email offers')}
+              {badge(c.marketingSms, `SMS offers${c.marketingSmsAt ? ` since ${day(c.marketingSmsAt)}` : ''}`, 'No SMS offers')}
               <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 999, background: 'var(--slate-100)', color: 'var(--slate-600)' }}>{c.status}</span>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginTop: 16 }}>

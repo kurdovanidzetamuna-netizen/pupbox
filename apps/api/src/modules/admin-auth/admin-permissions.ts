@@ -48,6 +48,7 @@ export const PERMISSION_CATALOGUE: { key: string; group: string; name: string; d
   { key: 'users.block', group: 'Customers', name: 'Block customers', description: 'Block or unblock a customer’s account.' },
   { key: 'crm.view', group: 'CRM', name: 'See CRM', description: 'Customers’ dogs with photos, plans, birthdays and marketing consent.' },
   { key: 'crm.export', group: 'CRM', name: 'Export CRM lists', description: 'Download dog and owner lists (with contact details) for campaigns.' },
+  { key: 'crm.manage', group: 'CRM', name: 'Manage notification consent', description: 'Switch a customer’s email/SMS offers off when they ask.' },
   { key: 'cms.view', group: 'Site content', name: 'See site content', description: 'Pages, blog, FAQ, popups and translations.' },
   { key: 'cms.edit', group: 'Site content', name: 'Edit site content', description: 'Change and publish pages, blog, FAQ, popups, translations and shop settings.' },
   { key: 'admin.manage', group: 'Team', name: 'Manage the team', description: 'Add or remove admins, edit roles, see the audit log.' },

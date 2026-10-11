@@ -1,6 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/context/LanguageContext';
 import DogProfileForm, { emptyDogProfile, fromDog, toDogPayload, type DogProfile } from '@/components/DogProfileForm';
@@ -96,9 +97,12 @@ export default function MyDogsPage() {
     }
   }
 
+  // Removing a dog asks first, in the shared pop-up.
+  const [toRemove, setToRemove] = useState<any>(null);
+  const [removing, setRemoving] = useState(false);
+
   async function remove(dog: any) {
-    if (!confirm(t('dogs.removeConfirm').replace('{name}', dog.name))) return;
-    setError(''); setNotice('');
+    setError(''); setNotice(''); setRemoving(true);
     try {
       const res = await authFetch(`/me/dogs/${dog.id}`, { method: 'DELETE' });
       if (!res.ok) {
@@ -109,7 +113,7 @@ export default function MyDogsPage() {
       await load();
     } catch (e) {
       if (e instanceof SessionExpiredError) expired();
-    }
+    } finally { setRemoving(false); setToRemove(null); }
   }
 
   const primary = 'bg-teal-600 text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-teal-700 disabled:opacity-50';
@@ -175,12 +179,14 @@ export default function MyDogsPage() {
                 </div>
                 <div className="flex gap-2 shrink-0">
                   <button onClick={() => open(d.id)} className="text-sm font-medium text-teal-700 hover:underline">{t('dogs.edit')}</button>
-                  <button onClick={() => remove(d)} className="text-sm text-gray-400 hover:text-red-600">{t('dogs.remove')}</button>
+                  <button onClick={() => setToRemove(d)} className="text-sm text-gray-400 hover:text-red-600">{t('dogs.remove')}</button>
                 </div>
               </li>
             ))}
           </ul>
         )}
-      </div>
+        <ConfirmDialog open={!!toRemove} onClose={() => setToRemove(null)} onConfirm={() => remove(toRemove)} busy={removing} tone="danger"
+        title={t('dogs.removeTitle').replace('{name}', toRemove?.name ?? '')} message={t('dogs.removeInfo')} confirmLabel={t('dogs.remove')} />
+    </div>
   );
 }
