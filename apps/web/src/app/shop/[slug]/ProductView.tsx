@@ -142,7 +142,7 @@ export default function ProductView({ product, related, content }: { product: an
 
         <div className="grid grid-cols-1 md:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:grid-cols-[minmax(0,440px)_minmax(0,1fr)] gap-6 md:gap-10 lg:gap-14 items-start [&>*]:min-w-0">
           {/* ── Gallery ── */}
-          <div className="md:sticky md:top-24">
+          <div>
             <div className={`relative aspect-[4/3] md:aspect-square rounded-3xl overflow-hidden touch-pan-y select-none ${soldOut ? 'bg-gray-100' : `bg-gradient-to-br ${look.tint}`}`}
               onPointerDown={(e) => { swipeX.current = e.clientX; }}
               onPointerUp={(e) => { const dx = e.clientX - (swipeX.current ?? e.clientX); swipeX.current = null; if (Math.abs(dx) > 40) step(dx < 0 ? 1 : -1); }}>
@@ -207,12 +207,18 @@ export default function ProductView({ product, related, content }: { product: an
               {soldOut ? t('shop.outOfStock') : low ? fill(t('shop.onlyLeft'), { n: left }) : t('shop.inStock')}
             </p>
 
-            {/* Who it's for: two short lines */}
-            <dl className="mt-5 space-y-2 text-[12px]">
-              <div className="flex items-center gap-2.5">
-                <dt className="w-14 shrink-0 font-semibold text-gray-400">{t('pdp.size')}</dt>
-                <dd className="flex gap-1">
-                  {DOG_SIZES.map((sz, i) => {
+            {/* Size and age: one size row. A product you choose a size for shows
+                only the choice; otherwise the dog sizes it suits. */}
+            <dl className="mt-5 space-y-2.5 text-[12px]">
+              <div className="flex items-center gap-2.5" {...(sizes.length && !soldOut ? { 'aria-invalid': !!errs.size, tabIndex: errs.size ? -1 : undefined } : {})}>
+                <dt className="w-14 shrink-0 font-semibold text-gray-400">{t('pdp.size')}{sizes.length > 0 && !soldOut && <span className="text-red-400"> *</span>}</dt>
+                <dd className="flex flex-wrap gap-1.5">
+                  {sizes.length > 0 && !soldOut ? sizes.map((sz) => (
+                    <button key={sz} type="button" onClick={() => { setSize(sz); setErrs((x) => ({ ...x, size: undefined })); }} aria-pressed={size === sz}
+                      className={`min-w-[2.25rem] h-8 px-3 rounded-lg text-[12px] font-bold transition-colors ${size === sz ? 'bg-teal-50 text-teal-800 ring-2 ring-teal-300' : 'bg-white text-gray-700 ring-1 ring-gray-200/80 hover:bg-teal-50/50 hover:ring-teal-200'}`}>
+                      {sz}
+                    </button>
+                  )) : DOG_SIZES.map((sz, i) => {
                     const on = !product.dogSizes?.length || product.dogSizes.includes(sz);
                     return (
                       <span key={sz} title={`${t(`dog.size.${sz}`)} · ${t(`dog.sizeHint.${sz}`)}`} aria-label={`${t(`dog.size.${sz}`)}${on ? '' : ' —'}`}
@@ -223,6 +229,7 @@ export default function ProductView({ product, related, content }: { product: an
                   })}
                 </dd>
               </div>
+              {errs.size && <FieldError message={errs.size} className="!mt-0 pl-[4.125rem]" />}
               <div className="flex items-center gap-2.5">
                 <dt className="w-14 shrink-0 font-semibold text-gray-400">{t('pdp.age')}</dt>
                 <dd className="text-gray-700 font-medium">
@@ -231,31 +238,17 @@ export default function ProductView({ product, related, content }: { product: an
               </div>
             </dl>
 
-            {/* Choices the product needs */}
-            {!soldOut && sizes.length > 0 && (
-              <fieldset className="mt-6" aria-invalid={!!errs.size} tabIndex={errs.size ? -1 : undefined}>
-                <legend className="text-[12px] font-bold uppercase tracking-wider text-gray-400 mb-2">{t('pdp.p.size')} <span className="text-red-400">*</span></legend>
-                <div className="flex flex-wrap gap-2">
-                  {sizes.map((s) => (
-                    <button key={s} type="button" onClick={() => { setSize(s); setErrs((x) => ({ ...x, size: undefined })); }} aria-pressed={size === s}
-                      className={`min-w-[52px] h-10 px-4 rounded-full text-[13px] font-bold transition-colors ${size === s ? 'bg-teal-50 text-teal-800 ring-1 ring-teal-200' : 'bg-white text-gray-700 ring-1 ring-gray-200/80 hover:bg-teal-50/40 hover:ring-teal-200'}`}>
-                      {s}
-                    </button>
-                  ))}
+            {/* Engraved name, quantity and add — one line */}
+            <div className="mt-6 flex flex-col sm:flex-row sm:items-start gap-3">
+              {!soldOut && engr && (
+                <div className="sm:flex-1 min-w-0">
+                  <Field id="engraving" label={t('pdp.p.name')} value={engraving} required maxLength={engr.maxLength} error={errs.engraving}
+                    hint={fill(t('pdp.p.hint'), { n: engr.maxLength - [...engraving].length })}
+                    onChange={(v) => { setEngraving(v); setErrs((x) => ({ ...x, engraving: undefined })); }} />
                 </div>
-                <FieldError message={errs.size} />
-              </fieldset>
-            )}
-            {!soldOut && engr && (
-              <div className="mt-5">
-                <Field id="engraving" label={t('pdp.p.name')} value={engraving} required maxLength={engr.maxLength} error={errs.engraving}
-                  hint={fill(t('pdp.p.hint'), { n: engr.maxLength - [...engraving].length })}
-                  onChange={(v) => { setEngraving(v); setErrs((x) => ({ ...x, engraving: undefined })); }} />
-              </div>
-            )}
-
-            {/* Buy */}
-            <div className="mt-6 hidden sm:block">{buy(false)}</div>
+              )}
+              <div className="hidden sm:flex sm:h-12 sm:items-center shrink-0">{buy(false)}</div>
+            </div>
             {basket.error && <FieldError message={basket.error} />}
 
             {c.on('perks') && <PerksStrip items={c.perks.items} className="mt-5" />}
