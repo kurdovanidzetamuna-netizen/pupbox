@@ -2,6 +2,15 @@
 import { useEffect, useRef, useState } from 'react';
 import { Icon } from './icons';
 
+/** Idle and on/open colours for an icon trigger. */
+const TONES = {
+  gray: ['bg-gray-100 text-gray-600 hover:bg-gray-200/70 hover:text-gray-900', 'bg-teal-50 text-teal-700'],
+  mint: ['bg-teal-50 text-teal-700 hover:bg-teal-100', 'bg-teal-100 text-teal-800'],
+  lilac: ['bg-lilac-50 text-lilac-600 hover:bg-lilac-100', 'bg-lilac-100 text-lilac-600'],
+  sky: ['bg-sky-50 text-sky-600 hover:bg-sky-100', 'bg-sky-100 text-sky-700'],
+  peach: ['bg-peach-50 text-peach-600 hover:bg-peach-100', 'bg-peach-100 text-peach-600'],
+} as const;
+
 export type MenuItem = { icon?: string; label: string; onClick: () => void; tone?: 'danger'; /** A choice that's currently on (shows ✓). */ checked?: boolean; /** A thin line above it (e.g. before Reset). */ divider?: boolean };
 
 /**
@@ -11,7 +20,7 @@ export type MenuItem = { icon?: string; label: string; onClick: () => void; tone
  * label shows as a tooltip. Closes on outside click or Escape; arrow keys
  * move between items.
  */
-export default function Menu({ items, label, icon = 'more', active = false, size = 'sm', align = 'right', title, onReset, resetDisabled = false, resetLabel = '' }: {
+export default function Menu({ items, label, icon = 'more', active = false, size = 'sm', align = 'right', title, tone = 'gray', onReset, resetDisabled = false, resetLabel = '' }: {
   items: MenuItem[];
   label: string;
   /** The trigger's icon. */
@@ -22,6 +31,8 @@ export default function Menu({ items, label, icon = 'more', active = false, size
   align?: 'left' | 'right';
   /** A small header: the menu's name and a ↺ that puts the default back (greyed while it's already the default). */
   title?: string;
+  /** A soft colour for an icon trigger. */
+  tone?: keyof typeof TONES;
   onReset?: () => void;
   resetDisabled?: boolean;
   resetLabel?: string;
@@ -51,7 +62,7 @@ export default function Menu({ items, label, icon = 'more', active = false, size
         className={`relative inline-flex items-center justify-center rounded-full transition-colors ${size === 'md' ? 'w-10 h-10' : 'w-8 h-8'} ${
           icon === 'more'
             ? (open ? 'bg-gray-100 text-gray-900' : 'text-gray-400 hover:text-gray-800 hover:bg-gray-100')
-            : (open || active ? 'bg-teal-50 text-teal-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200/70 hover:text-gray-900')}`}>
+            : (open || active ? TONES[tone][1] : TONES[tone][0])}`}>
         <Icon name={icon} className={icon === 'more' ? 'w-5 h-5' : 'w-[18px] h-[18px]'} strokeWidth={icon === 'more' ? 3 : 2} />
         {active && <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-peach-400 ring-2 ring-white" aria-hidden="true" />}
       </button>
