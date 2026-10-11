@@ -89,6 +89,10 @@ export const STORE_STRINGS: Record<string, { en: string; ka: string }> = {
   'pdp.goodFor':            { en: 'Good for',                   ka: 'კარგია' },
   'pdp.prevImg':            { en: 'Previous photo',             ka: 'წინა ფოტო' },
   'pdp.nextImg':            { en: 'Next photo',                 ka: 'შემდეგი ფოტო' },
+  'pdp.addMore':            { en: 'add one more',               ka: 'კიდევ ერთის დამატება' },
+  'pdp.picks':              { en: 'Your picks',                 ka: 'შენი არჩევანი' },
+  'pdp.picksHint':          { en: 'pick another size or name to add a different one', ka: 'სხვა ზომის ან სახელის დასამატებლად აირჩიე ახალი' },
+  'pdp.pickEdit':           { en: 'Show this choice',           ka: 'ამ არჩევანის ჩვენება' },
   'pdp.addError':           { en: 'Could not add to cart. Please try again.', ka: 'კალათაში დამატება ვერ მოხერხდა. სცადე თავიდან.' },
 
   // ── Account ──

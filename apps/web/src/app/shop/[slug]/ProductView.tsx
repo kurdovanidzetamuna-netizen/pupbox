@@ -59,11 +59,15 @@ export default function ProductView({ product, related, content }: { product: an
   const [engraving, setEngraving] = useState('');
   const [qty, setQty] = useState(1);
   const [errs, setErrs] = useState<{ size?: string; engraving?: string }>({});
-  const [justAdded, setJustAdded] = useState(false);
 
-  // The page always starts fresh (1, nothing chosen); what's already in the
-  // basket shows only on the 🛍 tag. Adding again adds to it.
+  // The page always starts fresh (1, nothing chosen). Each size / name is its
+  // own basket line, so several can be picked; the button shows when the
+  // current choice is already in the basket.
   const room = Math.max(0, left - basket.totalInCart);
+  const choice = needsChoice ? { ...(engr ? { engraving: engraving.trim() } : {}), ...(sizes.length ? { size } : {}) } : null;
+  const complete = (!sizes.length || !!size) && (!engr || !!engraving.trim());
+  const match = complete ? basket.lineFor(choice) : null;
+  const picked = !!match && qty === 1;
 
   async function addToBasket() {
     const e: typeof errs = {};
@@ -71,11 +75,14 @@ export default function ProductView({ product, related, content }: { product: an
     if (engr && !engraving.trim()) e.engraving = t('pdp.p.needName');
     setErrs(e);
     if (e.size || e.engraving) return;
-    const ok = await basket.add(qty, needsChoice ? { ...(engr ? { engraving: engraving.trim() } : {}), ...(sizes.length ? { size } : {}) } : undefined);
-    if (ok) {
-      setQty(1); setEngraving('');
-      setJustAdded(true); setTimeout(() => setJustAdded(false), 1800);
-    }
+    if (await basket.add(qty, choice)) setQty(1);
+  }
+
+  /** Put a picked line's size and name back in the form. */
+  function choose(l: any) {
+    if (l.personalisation?.size) setSize(l.personalisation.size);
+    if (engr) setEngraving(l.personalisation?.engraving ?? '');
+    setQty(1); setErrs({});
   }
 
   // Coming back with the browser's Back button can restore the page as it
@@ -110,14 +117,19 @@ export default function ProductView({ product, related, content }: { product: an
     <div className="flex items-center gap-2.5">
       <QuantityStepper value={qty} onLess={() => setQty((q) => Math.max(1, q - 1))} onMore={() => setQty((q) => Math.min(room || 1, q + 1))} max={room} />
       {(
-        <button type="button" onClick={addToBasket} disabled={busy || room === 0} aria-label={`${t('shop.quickAdd')} · ${money(Number(price) * qty)}`} title={t('shop.quickAdd')}
+        <button type="button" onClick={addToBasket} disabled={busy || room === 0}
+          aria-label={picked ? `${fill(t('shop.inBasket'), { n: match!.quantity })} · ${t('pdp.addMore')}` : `${t('shop.quickAdd')} · ${money(Number(price) * qty)}`}
+          title={picked ? `${fill(t('shop.inBasket'), { n: match!.quantity })} · ${t('pdp.addMore')}` : t('shop.quickAdd')}
           className={`flex-1 sm:flex-none inline-flex items-center justify-center gap-2 rounded-full font-extrabold transition-colors disabled:opacity-50 ${
-            justAdded ? 'bg-teal-100 text-teal-800' : 'bg-teal-600 text-white hover:bg-teal-700'} h-9 px-4 text-[13.5px]`}>
-          {busy ? <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+            picked ? 'bg-teal-50 text-teal-800 ring-1 ring-teal-200 hover:bg-teal-100' : 'bg-teal-600 text-white hover:bg-teal-700'} h-9 px-4 text-[13.5px]`}>
+          {busy ? <span className={`w-4 h-4 border-2 rounded-full animate-spin ${picked ? 'border-teal-200 border-t-teal-600' : 'border-white/40 border-t-white'}`} />
             : <><span className="relative">
-                <Icon name={justAdded ? 'check' : 'bag'} className="w-[18px] h-[18px]" strokeWidth={2.2} />
-                {qty > 1 && !justAdded && (
-                  <span key={qty} className="absolute -top-2 -right-2.5 min-w-[16px] h-4 px-1 rounded-full bg-white text-teal-700 text-[10px] font-extrabold leading-4 text-center animate-[pop_0.25s_ease-out]">{qty}</span>
+                <Icon name={picked ? 'check' : 'bag'} className="w-[18px] h-[18px]" strokeWidth={2.2} />
+                {(picked || qty > 1) && (
+                  <span key={picked ? `in${match!.quantity}` : qty}
+                    className={`absolute -top-2 -right-2.5 min-w-[16px] h-4 px-1 rounded-full text-[10px] font-extrabold leading-4 text-center animate-[pop_0.25s_ease-out] ${picked ? 'bg-teal-600 text-white' : 'bg-white text-teal-700'}`}>
+                    {picked ? match!.quantity : qty}
+                  </span>
                 )}
               </span><span className="tabular-nums">{money(Number(price) * qty)}</span></>}
         </button>
@@ -264,6 +276,32 @@ export default function ProductView({ product, related, content }: { product: an
               <div className="hidden sm:flex sm:h-12 sm:items-center shrink-0">{buy(false)}</div>
             </div>
             {basket.error && <FieldError message={basket.error} />}
+
+            {/* What was picked this visit: one row per size / name */}
+            {needsChoice && basket.lines.length > 0 && (
+              <div className="mt-4 rounded-2xl bg-teal-50/50 ring-1 ring-teal-100/70 p-2.5 animate-[fadeUp_0.2s_ease-out]">
+                <p className="px-1.5 pb-1.5 text-[11.5px] text-gray-500">
+                  <span className="font-bold text-teal-800">{t('pdp.picks')}</span> · {t('pdp.picksHint')}
+                </p>
+                <ul className="space-y-1">
+                  {basket.lines.map((l) => {
+                    const on = match?.id === l.id;
+                    return (
+                      <li key={l.id} className={`flex items-center gap-2 rounded-xl pl-1.5 pr-1 py-1 ${on ? 'bg-white ring-1 ring-teal-200' : ''}`}>
+                        <button type="button" onClick={() => choose(l)} title={t('pdp.pickEdit')}
+                          className="flex-1 min-w-0 flex items-center gap-2 text-left rounded-lg py-1 hover:text-teal-800">
+                          {l.personalisation?.size && <span className="shrink-0 min-w-[2rem] h-6 px-2 rounded-md bg-white ring-1 ring-teal-100 text-[11.5px] font-bold text-teal-800 inline-flex items-center justify-center">{l.personalisation.size}</span>}
+                          {l.personalisation?.engraving && <span className="truncate text-[13px] font-semibold text-gray-800">„{l.personalisation.engraving}“</span>}
+                          <span className="ml-auto shrink-0 text-[12px] font-bold text-gray-500 tabular-nums">{money(Number(l.price) * l.quantity)}</span>
+                        </button>
+                        <QuantityStepper value={l.quantity} busy={busy} trashAtOne max={l.quantity + room}
+                          onLess={() => basket.setLine(l, l.quantity - 1)} onMore={() => basket.setLine(l, l.quantity + 1)} />
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
 
             {c.on('perks') && <PerksStrip items={c.perks.items} className="mt-5" />}
 

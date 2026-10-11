@@ -5,6 +5,7 @@ import { checkChoice, sameChoice } from '../products/personalisation';
 
 const cartInclude = {
   items: {
+    orderBy: { createdAt: 'asc' as const },
     include: {
       product: { include: { images: { where: { isPrimary: true }, take: 1 }, inventory: true } },
       subscriptionPlan: true,
