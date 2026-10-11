@@ -12,6 +12,8 @@ import ProductCard from '@/components/shop/ProductCard';
 import Menu from '@/components/ui/Menu';
 import PerksStrip from '@/components/shop/PerksStrip';
 
+const DOG_SIZES = ['EXTRA_SMALL', 'SMALL', 'MEDIUM', 'LARGE', 'EXTRA_LARGE'];
+
 const SORTS = [
   { v: '', k: 'shop.sort.default' },
   { v: 'price_asc', k: 'shop.sort.priceAsc' },
@@ -48,6 +50,7 @@ export default function ShopView({ products, total, pages, page, categories, bra
   const brand = params.get('brand') || '';
   const sort = params.get('sort') || '';
   const search = params.get('search') || '';
+  const size = params.get('size') || '';
   const [query, setQuery] = useState(search);
   useEffect(() => setQuery(search), [search]);
 
@@ -67,6 +70,7 @@ export default function ShopView({ products, total, pages, page, categories, bra
     activeCat && { key: 'category', label: catName(activeCat) },
     brand && { key: 'brand', label: t(`collection.${brand}`, brand) },
     search && { key: 'search', label: `„${search}“` },
+    size && { key: 'size', label: `🐕 ${t(`dog.size.${size}`)}` },
   ].filter(Boolean) as { key: string; label: string }[];
 
   const chip = (on: boolean) =>
@@ -132,6 +136,12 @@ export default function ShopView({ products, total, pages, page, categories, bra
           )}
 
           <div className="ml-auto flex items-center gap-1.5">
+            <Menu icon="paw" size="md" tone="mint" title={t('pdp.size')} onReset={() => go({ size: null })} resetDisabled={!size} resetLabel={t('shop.reset')}
+              label={size ? `${t('pdp.size')}: ${t(`dog.size.${size}`)}` : t('pdp.size')} active={!!size}
+              items={[
+                { label: t('shop.allSizes'), checked: !size, onClick: () => go({ size: null }) },
+                ...DOG_SIZES.map((s) => ({ label: `${t(`dog.size.${s}`)} · ${t(`dog.sizeHint.${s}`)}`, checked: size === s, onClick: () => go({ size: s }) })),
+              ]} />
             {brands.length > 0 && (
               <Menu icon="filter" size="md" tone="mint" title={t('shop.brands')} onReset={() => go({ brand: null })} resetDisabled={!brand} resetLabel={t('shop.reset')} label={brand ? `${t('shop.brands')}: ${t(`collection.${brand}`, brand)}` : t('shop.brands')} active={!!brand}
                 items={[
@@ -160,7 +170,7 @@ export default function ShopView({ products, total, pages, page, categories, bra
             )}
           </div>
         ) : (
-          <div key={`${category}|${brand}|${sort}|${search}|${page}`} className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
+          <div key={`${category}|${brand}|${sort}|${search}|${size}|${page}`} className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
             {products.map((p, i) => <ProductCard key={p.id} product={p} index={i} />)}
           </div>
         )}

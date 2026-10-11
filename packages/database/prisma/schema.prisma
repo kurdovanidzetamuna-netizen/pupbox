@@ -102,6 +102,13 @@ enum DogSize {
   EXTRA_LARGE
 }
 
+/// A dog's age group, for what a product suits.
+enum LifeStage {
+  PUPPY
+  ADULT
+  SENIOR
+}
+
 enum DurationUnit {
   DAY
   WEEK
@@ -372,6 +379,12 @@ model Product {
   /// What a dog could react to, from the same list dogs' allergies use
   /// (Chicken, Beef, …). Monthly Boxes warns when a box clashes with its dog.
   allergens       String[]   @default([])
+  /// Dog sizes it suits; empty means every size.
+  dogSizes        DogSize[]  @default([])
+  /// Ages it suits; empty means every age.
+  lifeStages      LifeStage[] @default([])
+  /// A short "good for" line (English; Georgian in translations.ka.goodFor).
+  goodFor         String?
   /// What customers choose before adding to cart, e.g. { engraving: { maxLength: 12 }, sizes: ["S", "M", "L"] }. Null = nothing to choose.
   personalisation Json?
   status           ProductStatus  @default(DRAFT)

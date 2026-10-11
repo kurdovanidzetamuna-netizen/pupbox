@@ -17,6 +17,9 @@ import InBasketTag from '@/components/shop/InBasketTag';
 import PerksStrip from '@/components/shop/PerksStrip';
 
 const money = (n: unknown) => `₾${Number(n).toFixed(2)}`;
+const DOG_SIZES = ['EXTRA_SMALL', 'SMALL', 'MEDIUM', 'LARGE', 'EXTRA_LARGE'];
+const SIZE_SHORT = ['XS', 'S', 'M', 'L', 'XL'];
+const STAGE_ICON: Record<string, string> = { PUPPY: '🍼', ADULT: '🐕', SENIOR: '🦴', ALL: '✨' };
 
 /**
  * A product, built from the shop's own pieces: gallery, the shared title,
@@ -35,11 +38,14 @@ export default function ProductView({ product, related, content }: { product: an
   const name = pick(product.name, ka.name);
   const short = pick(product.shortDescription, ka.shortDescription);
   const description = pick(product.description, ka.description);
+  const goodFor = pick(product.goodFor, ka.goodFor);
   const catName = product.category ? pick(product.category.name, product.category.translations?.ka?.name) : '';
   const look = categoryLook(product.category);
 
   const images: any[] = [...(product.images ?? [])].sort((a, b) => Number(b.isPrimary) - Number(a.isPrimary));
   const [shown, setShown] = useState(0);
+  const swipeX = useRef<number | null>(null);
+  const step = (d: number) => images.length > 1 && setShown((i) => (i + d + images.length) % images.length);
   const left = available(product.inventory);
   const soldOut = left === 0;
   const low = !soldOut && left <= Number(product.inventory?.lowStockAlert || 0);
@@ -90,29 +96,29 @@ export default function ProductView({ product, related, content }: { product: an
 
   /** The buy controls: one place, used in the page and in the phone bar. */
   const buy = (compact: boolean) => soldOut ? (
-    <span className={`inline-flex items-center gap-2 rounded-full bg-gray-100 text-gray-500 font-bold ${compact ? 'h-11 px-4 text-[13px]' : 'h-12 px-5 text-[14px]'}`}>
+    <span className="inline-flex items-center gap-2 rounded-full bg-gray-100 text-gray-500 font-bold h-9 px-4 text-[13px]">
       <Icon name="ban" className="w-5 h-5" strokeWidth={2.2} />{t('shop.outOfStock')}
     </span>
   ) : (
     <div className="flex items-center gap-2.5">
       {bound ? (
-        <QuantityStepper size={compact ? 'sm' : 'lg'} value={line!.quantity} onLess={basket.less} onMore={basket.more} max={left} busy={busy} trashAtOne
+        <QuantityStepper value={line!.quantity} onLess={basket.less} onMore={basket.more} max={left} busy={busy} trashAtOne
           label={fill(t('shop.inBasket'), { n: inCart })} />
       ) : (
-        <QuantityStepper size={compact ? 'sm' : 'lg'} value={qty} onLess={() => setQty((q) => Math.max(1, q - 1))} onMore={() => setQty((q) => Math.min(room || 1, q + 1))} max={room} />
+        <QuantityStepper value={qty} onLess={() => setQty((q) => Math.max(1, q - 1))} onMore={() => setQty((q) => Math.min(room || 1, q + 1))} max={room} />
       )}
       {bound ? (
         <Link href="/cart" aria-label={t('pdp.viewCart')} title={t('pdp.viewCart')}
-          className={`inline-flex items-center justify-center gap-2 rounded-full bg-teal-50 text-teal-700 ring-1 ring-teal-100 font-bold hover:bg-teal-100 transition-colors ${compact ? 'h-11 px-4 text-[13px]' : 'h-12 px-5 text-[14px]'}`}>
-          <Icon name="bag" className="w-5 h-5" strokeWidth={2.2} />
+          className={`inline-flex items-center justify-center gap-2 rounded-full bg-teal-50 text-teal-700 ring-1 ring-teal-100 font-bold hover:bg-teal-100 transition-colors h-9 px-3.5 text-[13px]`}>
+          <Icon name="bag" className="w-[18px] h-[18px]" strokeWidth={2.2} />
           <Icon name="check" className="w-4 h-4" strokeWidth={2.6} />
         </Link>
       ) : (
         <button type="button" onClick={addToBasket} disabled={busy || room === 0} aria-label={`${t('shop.quickAdd')} · ${money(Number(price) * qty)}`} title={t('shop.quickAdd')}
           className={`flex-1 sm:flex-none inline-flex items-center justify-center gap-2 rounded-full font-extrabold transition-colors disabled:opacity-50 ${
-            justAdded ? 'bg-teal-100 text-teal-800' : 'bg-teal-600 text-white hover:bg-teal-700'} ${compact ? 'h-11 px-5 text-[14px]' : 'h-12 px-7 text-[15px]'}`}>
-          {busy ? <span className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-            : <><Icon name={justAdded ? 'check' : 'bag'} className="w-5 h-5" strokeWidth={2.2} /><span className="tabular-nums">{money(Number(price) * qty)}</span></>}
+            justAdded ? 'bg-teal-100 text-teal-800' : 'bg-teal-600 text-white hover:bg-teal-700'} h-9 px-4 text-[13.5px]`}>
+          {busy ? <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+            : <><Icon name={justAdded ? 'check' : 'bag'} className="w-[18px] h-[18px]" strokeWidth={2.2} /><span className="tabular-nums">{money(Number(price) * qty)}</span></>}
         </button>
       )}
     </div>
@@ -135,32 +141,47 @@ export default function ProductView({ product, related, content }: { product: an
           <span className="text-gray-600 truncate">{name}</span>
         </nav>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10 lg:gap-14 items-start [&>*]:min-w-0">
+        <div className="grid grid-cols-1 md:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:grid-cols-[minmax(0,440px)_minmax(0,1fr)] gap-6 md:gap-10 lg:gap-14 items-start [&>*]:min-w-0">
           {/* ── Gallery ── */}
           <div className="md:sticky md:top-24">
-            <div className={`relative aspect-square rounded-[2rem] overflow-hidden ${soldOut ? 'bg-gray-100' : `bg-gradient-to-br ${look.tint}`}`}>
+            <div className={`relative aspect-square rounded-3xl overflow-hidden touch-pan-y select-none ${soldOut ? 'bg-gray-100' : `bg-gradient-to-br ${look.tint}`}`}
+              onPointerDown={(e) => { swipeX.current = e.clientX; }}
+              onPointerUp={(e) => { const dx = e.clientX - (swipeX.current ?? e.clientX); swipeX.current = null; if (Math.abs(dx) > 40) step(dx < 0 ? 1 : -1); }}>
               {images[shown] ? (
-                <img key={images[shown].id} src={images[shown].url} alt={images[shown].altText || name}
+                <img key={images[shown].id} src={images[shown].url} alt={images[shown].altText || name} draggable={false}
                   className={`w-full h-full object-cover animate-[fadeIn_0.25s_ease-out] ${soldOut ? 'grayscale opacity-60' : ''}`} />
               ) : (
-                <span className={`absolute inset-0 flex items-center justify-center text-[120px] ${soldOut ? 'grayscale opacity-40' : 'animate-[wag_3s_ease-in-out_infinite]'}`} aria-hidden="true">{look.icon}</span>
+                <span className={`absolute inset-0 flex items-center justify-center text-[96px] ${soldOut ? 'grayscale opacity-40' : 'animate-[wag_3s_ease-in-out_infinite]'}`} aria-hidden="true">{look.icon}</span>
               )}
-              <span className="absolute top-4 left-4 flex flex-col items-start gap-1.5">
-                {sale && <span className="text-[12px] font-extrabold px-2.5 py-1 rounded-full bg-peach-400 text-white">−{off}%</span>}
-                {low && <span className="text-[12px] font-bold px-2.5 py-1 rounded-full bg-amber-100 text-amber-800">{fill(t('shop.onlyLeft'), { n: left })}</span>}
+              <span className="absolute top-3 left-3 flex flex-col items-start gap-1.5">
+                {sale && <span className="text-[11.5px] font-extrabold px-2 py-0.5 rounded-full bg-peach-400 text-white">−{off}%</span>}
+                {low && <span className="text-[11.5px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">{fill(t('shop.onlyLeft'), { n: left })}</span>}
               </span>
-              <InBasketTag count={inCart} onRemove={basket.remove} busy={busy} className="absolute top-4 right-4 h-8 text-[13px]" />
+              <InBasketTag count={inCart} onRemove={basket.remove} busy={busy} className="absolute top-3 right-3" />
+              {images.length > 1 && (<>
+                <button type="button" onClick={() => step(-1)} aria-label={t('pdp.prevImg')}
+                  className="absolute left-2.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/85 text-gray-700 flex items-center justify-center hover:bg-white backdrop-blur">
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" aria-hidden="true"><path d="M15 6l-6 6 6 6" /></svg>
+                </button>
+                <button type="button" onClick={() => step(1)} aria-label={t('pdp.nextImg')}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/85 text-gray-700 flex items-center justify-center hover:bg-white backdrop-blur">
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>
+                </button>
+                <span className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5" aria-hidden="true">
+                  {images.map((_, i) => <span key={i} className={`h-1.5 rounded-full transition-all ${i === shown ? 'w-4 bg-white' : 'w-1.5 bg-white/60'}`} />)}
+                </span>
+              </>)}
               {soldOut && (
-                <span className="absolute inset-x-0 bottom-0 flex items-center justify-center gap-2 py-2.5 bg-gray-700/75 text-white text-[13px] font-bold">
+                <span className="absolute inset-x-0 bottom-0 flex items-center justify-center gap-2 py-2 bg-gray-700/75 text-white text-[12.5px] font-bold">
                   <Icon name="ban" className="w-4 h-4" strokeWidth={2.4} />{t('shop.outOfStock')}
                 </span>
               )}
             </div>
             {images.length > 1 && (
-              <div className="mt-3 flex gap-2 overflow-x-auto [scrollbar-width:none]">
+              <div className="mt-2.5 flex gap-2 overflow-x-auto [scrollbar-width:none]">
                 {images.map((img, i) => (
                   <button key={img.id} type="button" onClick={() => setShown(i)} aria-label={`${name} ${i + 1}`} aria-pressed={i === shown}
-                    className={`shrink-0 w-16 h-16 rounded-2xl overflow-hidden ring-2 transition ${i === shown ? 'ring-teal-300' : 'ring-transparent opacity-70 hover:opacity-100'}`}>
+                    className={`shrink-0 w-14 h-14 rounded-xl overflow-hidden ring-2 transition ${i === shown ? 'ring-teal-300' : 'ring-transparent opacity-70 hover:opacity-100'}`}>
                     <img src={img.url} alt="" className="w-full h-full object-cover" />
                   </button>
                 ))}
@@ -179,13 +200,43 @@ export default function ProductView({ product, related, content }: { product: an
             <Heading title={name} subtitle={short || undefined} className="!mb-4" />
 
             <div className="flex items-end gap-3 flex-wrap">
-              <span className={`text-[32px] leading-none font-black tracking-tight ${soldOut ? 'text-gray-400' : sale ? 'text-peach-600' : 'text-gray-900'}`}>{money(price)}</span>
+              <span className={`text-[28px] leading-none font-black tracking-tight ${soldOut ? 'text-gray-400' : sale ? 'text-peach-600' : 'text-gray-900'}`}>{money(price)}</span>
               {sale && <span className="text-[16px] text-gray-400 line-through mb-0.5">{money(product.price)}</span>}
             </div>
             <p className={`mt-2 inline-flex items-center gap-1.5 text-[12.5px] font-semibold ${soldOut ? 'text-gray-400' : low ? 'text-amber-700' : 'text-teal-700'}`}>
               <span className={`w-2 h-2 rounded-full ${soldOut ? 'bg-gray-300' : low ? 'bg-amber-400' : 'bg-teal-400'}`} aria-hidden="true" />
               {soldOut ? t('shop.outOfStock') : low ? fill(t('shop.onlyLeft'), { n: left }) : t('shop.inStock')}
             </p>
+
+            {/* Who it's for */}
+            <div className="mt-5 rounded-2xl bg-gray-50/80 p-3.5 sm:p-4">
+              <p className="text-[11px] font-bold uppercase tracking-wider text-gray-400 mb-2.5">{t('pdp.suits')}</p>
+              <div className="flex flex-wrap items-end gap-1.5" role="list" aria-label={t('pdp.size')}>
+                {DOG_SIZES.map((sz, i) => {
+                  const on = !product.dogSizes?.length || product.dogSizes.includes(sz);
+                  return (
+                    <span key={sz} role="listitem" title={`${t(`dog.size.${sz}`)} · ${t(`dog.sizeHint.${sz}`)}`}
+                      className={`flex flex-col items-center justify-end gap-0.5 w-[54px] rounded-xl py-1.5 ${on ? 'bg-white ring-1 ring-teal-200 text-teal-800' : 'text-gray-300'}`}>
+                      <span aria-hidden="true" style={{ fontSize: 14 + i * 3 }} className={on ? '' : 'grayscale opacity-40'}>🐕</span>
+                      <span className="text-[10px] font-bold leading-none">{SIZE_SHORT[i]}</span>
+                    </span>
+                  );
+                })}
+                <span className="ml-1 mb-1 text-[11.5px] text-gray-500">
+                  {product.dogSizes?.length ? product.dogSizes.map((sz: string) => t(`dog.sizeHint.${sz}`)).join(' · ') : t('pdp.allSizes')}
+                </span>
+              </div>
+              <div className="mt-3 flex flex-wrap gap-1.5">
+                {(product.lifeStages?.length ? product.lifeStages : ['ALL']).map((st: string) => (
+                  <span key={st} className="inline-flex items-center gap-1 h-7 px-2.5 rounded-full bg-white ring-1 ring-gray-200/70 text-[12px] font-semibold text-gray-700">
+                    <span aria-hidden="true">{STAGE_ICON[st]}</span>{t(`pdp.stage.${st}`)}
+                  </span>
+                ))}
+              </div>
+              {goodFor && (
+                <p className="mt-3 flex items-start gap-2 text-[12.5px] text-gray-700"><span aria-hidden="true">💡</span><span><b className="font-semibold">{t('pdp.goodFor')}:</b> {goodFor}</span></p>
+              )}
+            </div>
 
             {/* Choices the product needs */}
             {!soldOut && sizes.length > 0 && (

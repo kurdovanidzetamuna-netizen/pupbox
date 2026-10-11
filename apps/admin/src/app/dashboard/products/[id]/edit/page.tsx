@@ -7,6 +7,7 @@ import PricingSection from '@/components/PricingSection';
 import ErrorPopup from '@/components/ErrorPopup';
 import PersonalisationCard, { EMPTY_PERSONALISATION, personalisationFromProduct, personalisationPayload, type PersonalisationForm } from '@/components/PersonalisationCard';
 import AllergensCard from '@/components/AllergensCard';
+import SuitsCard, { EMPTY_SUITS, suitsFromProduct, type Suits } from '@/components/SuitsCard';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 
@@ -38,6 +39,7 @@ export default function EditProductPage() {
   const [ka, setKa] = useState({ name: '', shortDescription: '', description: '', seoTitle: '', seoDesc: '' });
   const [personalisation, setPersonalisation] = useState<PersonalisationForm>(EMPTY_PERSONALISATION);
   const [allergens, setAllergens] = useState<string[]>([]);
+  const [suits, setSuits] = useState<Suits>(EMPTY_SUITS);
 
   useEffect(() => {
     const token = localStorage.getItem('admin_token');
@@ -71,6 +73,7 @@ export default function EditProductPage() {
       const kaData = product.translations?.ka;
       setPersonalisation(personalisationFromProduct(product));
       setAllergens(product.allergens ?? []);
+      setSuits(suitsFromProduct(product));
       if (kaData) setKa({ name: kaData.name || '', shortDescription: kaData.shortDescription || '', description: kaData.description || '', seoTitle: kaData.seoTitle || '', seoDesc: kaData.seoDesc || '' });
     }).catch(() => {}).finally(() => setLoading(false));
   }, [id]);
@@ -131,6 +134,12 @@ export default function EditProductPage() {
     } catch { setImageError('Upload failed'); } finally { setUploadingImage(false); }
   }
 
+  async function makeMain(imageId: string) {
+    const token = localStorage.getItem('admin_token');
+    const res = await fetch(`${API}/admin/products/${productId}/images/${imageId}/primary`, { method: 'PATCH', headers: { Authorization: `Bearer ${token}` } });
+    if (res.ok) setImages(await res.json());
+  }
+
   async function removeImage(imageId: string) {
     const token = localStorage.getItem('admin_token');
     try {
@@ -183,9 +192,12 @@ export default function EditProductPage() {
     if (form.seoDesc) body.seoDesc = form.seoDesc;
     if (form.stockQuantity) body.stockQuantity = Number(form.stockQuantity);
     if (form.lowStockAlert) body.lowStockAlert = Number(form.lowStockAlert);
-    if (hasKa) body.translations = { ka: { ...ka } };
+    if (hasKa || suits.goodForKa.trim()) body.translations = { ka: { ...ka, goodFor: suits.goodForKa.trim() } };
     body.personalisation = personalisationPayload(personalisation);
     body.allergens = allergens;
+    body.dogSizes = suits.dogSizes;
+    body.lifeStages = suits.lifeStages;
+    body.goodFor = suits.goodFor.trim();
 
     try {
       const res = await fetch(`${API}/admin/products/${productId}`, {
@@ -243,10 +255,15 @@ export default function EditProductPage() {
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 16 }}>
               {images.map((img, i) => (
                 <div key={img.id} style={{ position: 'relative', width: 96, height: 96 }}>
-                  <img src={img.url} alt={img.altText || ''} style={{ width: 96, height: 96, objectFit: 'cover', borderRadius: 10, border: i === 0 ? '2px solid var(--teal-600)' : '1px solid var(--slate-200)', transition: 'box-shadow 0.15s' }}
+                  <img src={img.url} alt={img.altText || ''} style={{ width: 96, height: 96, objectFit: 'cover', borderRadius: 10, border: img.isPrimary ? '2px solid var(--teal-600)' : '1px solid var(--slate-200)', transition: 'box-shadow 0.15s' }}
                     onMouseEnter={e => { (e.currentTarget as HTMLImageElement).style.boxShadow = '0 4px 14px rgba(0,0,0,0.12)'; }}
                     onMouseLeave={e => { (e.currentTarget as HTMLImageElement).style.boxShadow = 'none'; }} />
-                  {i === 0 && <span style={{ position: 'absolute', bottom: 4, left: 4, fontSize: 9, fontWeight: 700, background: 'var(--teal-600)', color: 'var(--white)', borderRadius: 4, padding: '1px 5px' }}>MAIN</span>}
+                  {img.isPrimary ? (
+                    <span style={{ position: 'absolute', bottom: 4, left: 4, fontSize: 9, fontWeight: 700, background: 'var(--teal-600)', color: 'var(--white)', borderRadius: 4, padding: '1px 5px' }}>MAIN</span>
+                  ) : (
+                    <button type="button" onClick={() => makeMain(img.id)} title="Make this the main photo" aria-label="Make this the main photo"
+                      style={{ position: 'absolute', bottom: 4, left: 4, fontSize: 10, fontWeight: 700, background: 'rgba(255,255,255,0.92)', color: 'var(--teal-700, #0f766e)', border: '1px solid var(--slate-200)', borderRadius: 6, padding: '1px 6px', cursor: 'pointer' }}>☆ Main</button>
+                  )}
                   <button type="button" onClick={() => removeImage(img.id)}
                     onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1.2)'; (e.currentTarget as HTMLButtonElement).style.background = 'var(--red-700)'; }}
                     onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)'; (e.currentTarget as HTMLButtonElement).style.background = 'var(--red-600)'; }}
@@ -399,6 +416,7 @@ export default function EditProductPage() {
 
         {/* Allergens */}
         <AllergensCard value={allergens} onChange={setAllergens} disabled={isKa} style={sectionStyle} />
+        <SuitsCard value={suits} onChange={setSuits} style={sectionStyle} />
 
         {/* Inventory */}
         <div style={sectionStyle}>

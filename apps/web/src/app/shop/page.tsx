@@ -11,14 +11,14 @@ export const generateMetadata = () => pageMetadata(shopPage);
 export default async function ShopPage({
   searchParams,
 }: {
-  searchParams: { category?: string; search?: string; page?: string; sort?: string; brand?: string };
+  searchParams: { category?: string; search?: string; page?: string; sort?: string; brand?: string; size?: string };
 }) {
   // Category, search, brand, sort and page all go to the API, so ordering
   // and filtering apply to the whole catalogue rather than one page of it.
   const params: Record<string, string> = {};
   // The visitor's language, so A–Z sorts by the names they read.
   params.lang = cookies().get(LANG_COOKIE)?.value === 'en' ? 'en' : 'ka';
-  for (const k of ['category', 'search', 'page', 'sort', 'brand'] as const) {
+  for (const k of ['category', 'search', 'page', 'sort', 'brand', 'size'] as const) {
     if (searchParams[k]) params[k] = searchParams[k]!;
   }
 

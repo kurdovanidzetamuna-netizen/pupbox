@@ -1,4 +1,5 @@
-import { IsString, IsOptional, IsBoolean, IsNumber, IsArray, IsEnum, Min } from 'class-validator';
+import { IsString, IsOptional, IsBoolean, IsNumber, IsArray, IsEnum, Min, MaxLength } from 'class-validator';
+import { DogSize, LifeStage } from '@prisma/client';
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 
@@ -25,4 +26,9 @@ export class CreateProductDto {
   @IsOptional() @IsArray() @IsString({ each: true }) allergens?: string[];
   /** { engraving?: { maxLength }, sizes?: string[] }, or null for none. Cleaned by parseConfig. */
   @IsOptional() personalisation?: unknown;
+  /** Dog sizes and ages it suits; empty means all. */
+  @IsOptional() @IsArray() @IsEnum(DogSize, { each: true }) dogSizes?: DogSize[];
+  @IsOptional() @IsArray() @IsEnum(LifeStage, { each: true }) lifeStages?: LifeStage[];
+  /** A short "good for" line, e.g. "Strong chewers". Georgian goes in translations.ka.goodFor. */
+  @IsOptional() @IsString() @MaxLength(160) goodFor?: string;
 }

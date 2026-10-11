@@ -35,7 +35,8 @@ export default function ProductCard({ product, index = 0 }: { product: any; inde
   const sale = product.salePrice && Number(product.salePrice) < Number(product.price);
   const off = sale ? Math.round((1 - Number(product.salePrice) / Number(product.price)) * 100) : 0;
   const needsChoice = !!(product.personalisation?.engraving || product.personalisation?.sizes?.length);
-  const img = product.images?.[0];
+  // The photo admin marked as main, else the first.
+  const img = product.images?.find((i: any) => i.isPrimary) ?? product.images?.[0];
   const href = `/shop/${product.slug}`;
   const look = categoryLook(product.category);
 

@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
-import { Prisma, ProductStatus } from '@prisma/client';
+import { DogSize, Prisma, ProductStatus } from '@prisma/client';
 import { parseConfig } from './personalisation';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateProductDto } from './dto/create-product.dto';
@@ -35,8 +35,10 @@ export class ProductsService {
     lang?: string;
     /** A brand, or a tag name for products filed under a tag instead. */
     brand?: string;
+    /** A dog size: products for it, plus those that suit every size. */
+    size?: DogSize;
   }) {
-    const { page = 1, limit = 20, categorySlug, search, status, adminView = false, includedInBox, sort, brand, lang } = params;
+    const { page = 1, limit = 20, categorySlug, search, status, adminView = false, includedInBox, sort, brand, lang, size } = params;
     const skip = (page - 1) * limit;
 
     const where: any = { deletedAt: null };
@@ -70,6 +72,7 @@ export class ProductsService {
     if (brand) {
       and.push({ OR: [{ brand }, { tags: { some: { tag: { name: brand } } } }] });
     }
+    if (size) and.push({ OR: [{ dogSizes: { has: size } }, { dogSizes: { isEmpty: true } }] });
     if (and.length) where.AND = and;
 
     // Sorting and filtering happen here, across the whole catalogue. The shop
@@ -230,8 +233,25 @@ export class ProductsService {
     });
   }
 
+  /** Removing the main photo hands "main" to the next one. */
   async removeImage(imageId: string) {
-    return this.prisma.productImage.delete({ where: { id: imageId } });
+    const img = await this.prisma.productImage.delete({ where: { id: imageId } });
+    if (img.isPrimary) {
+      const next = await this.prisma.productImage.findFirst({ where: { productId: img.productId }, orderBy: { sortOrder: 'asc' } });
+      if (next) await this.prisma.productImage.update({ where: { id: next.id }, data: { isPrimary: true } });
+    }
+    return img;
+  }
+
+  /** Makes one photo the main one (shown first in the shop and on the product page). */
+  async setPrimaryImage(productId: string, imageId: string) {
+    const img = await this.prisma.productImage.findFirst({ where: { id: imageId, productId } });
+    if (!img) throw new NotFoundException('Image not found');
+    await this.prisma.$transaction([
+      this.prisma.productImage.updateMany({ where: { productId }, data: { isPrimary: false } }),
+      this.prisma.productImage.update({ where: { id: imageId }, data: { isPrimary: true } }),
+    ]);
+    return this.prisma.productImage.findMany({ where: { productId }, orderBy: { sortOrder: 'asc' } });
   }
 
   async syncStatusFromStock(productId: string, quantity: number) {

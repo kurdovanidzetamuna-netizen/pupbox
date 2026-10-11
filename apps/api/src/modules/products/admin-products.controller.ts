@@ -71,6 +71,12 @@ export class AdminProductsController {
     return this.service.addImage(id, dto.url, dto.altText);
   }
 
+  @Patch(':id/images/:imageId/primary')
+  @ApiOperation({ summary: 'Make an image the main one' })
+  setPrimaryImage(@Param('id') id: string, @Param('imageId') imageId: string) {
+    return this.service.setPrimaryImage(id, imageId);
+  }
+
   @Delete(':id/images/:imageId')
   @ApiOperation({ summary: 'Remove product image' })
   removeImage(@Param('imageId') imageId: string) {

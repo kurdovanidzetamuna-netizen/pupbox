@@ -7,6 +7,7 @@ import PricingSection from '@/components/PricingSection';
 import ErrorPopup from '@/components/ErrorPopup';
 import PersonalisationCard, { EMPTY_PERSONALISATION, personalisationFromProduct, personalisationPayload, type PersonalisationForm } from '@/components/PersonalisationCard';
 import AllergensCard from '@/components/AllergensCard';
+import SuitsCard, { EMPTY_SUITS, type Suits } from '@/components/SuitsCard';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 
@@ -52,6 +53,7 @@ function NewProductForm() {
   const [ka, setKa] = useState({ name: '', shortDescription: '', description: '', seoTitle: '', seoDesc: '' });
   const [personalisation, setPersonalisation] = useState<PersonalisationForm>(EMPTY_PERSONALISATION);
   const [allergens, setAllergens] = useState<string[]>([]);
+  const [suits, setSuits] = useState<Suits>(EMPTY_SUITS);
 
   const [queuedFiles, setQueuedFiles] = useState<File[]>([]);
   const [queuedPreviews, setQueuedPreviews] = useState<string[]>([]);
@@ -130,7 +132,7 @@ function NewProductForm() {
 
     const translations: any = {};
     const hasKa = Object.values(ka).some(v => v.trim() !== '');
-    if (hasKa) translations.ka = { ...ka };
+    if (hasKa || suits.goodForKa.trim()) translations.ka = { ...ka, ...(suits.goodForKa.trim() ? { goodFor: suits.goodForKa.trim() } : {}) };
 
     const body: any = {
       name: form.name, slug: form.slug, sku: form.sku,
@@ -145,10 +147,13 @@ function NewProductForm() {
     if (form.salePrice) body.salePrice = Number(form.salePrice);
     if (form.seoTitle) body.seoTitle = form.seoTitle;
     if (form.seoDesc) body.seoDesc = form.seoDesc;
-    if (hasKa) body.translations = translations;
+    if (translations.ka) body.translations = translations;
     const chosen = personalisationPayload(personalisation);
     if (chosen) body.personalisation = chosen;
     if (allergens.length) body.allergens = allergens;
+    if (suits.dogSizes.length) body.dogSizes = suits.dogSizes;
+    if (suits.lifeStages.length) body.lifeStages = suits.lifeStages;
+    if (suits.goodFor.trim()) body.goodFor = suits.goodFor.trim();
 
     try {
       const res = await fetch(`${API}/admin/products`, {
@@ -377,6 +382,7 @@ function NewProductForm() {
 
         {/* Allergens */}
         <AllergensCard value={allergens} onChange={setAllergens} disabled={isKa} style={sectionStyle} />
+        <SuitsCard value={suits} onChange={setSuits} style={sectionStyle} />
 
         {/* Inventory */}
         <div style={sectionStyle}>
