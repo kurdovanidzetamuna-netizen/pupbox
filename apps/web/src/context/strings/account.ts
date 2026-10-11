@@ -6,7 +6,7 @@ export const ACCOUNT_STRINGS: Record<string, { en: string; ka: string }> = {
   // ── Sign-up ──
   'reg.phone':              { en: 'Mobile number',              ka: 'მობილურის ნომერი' },
   'reg.phoneHint':          { en: "We'll text you a code to confirm it.", ka: 'დასადასტურებლად SMS კოდს გამოგიგზავნით.' },
-  'reg.referral':           { en: 'Referral code (optional)',   ka: 'მოწვევის კოდი (არასავალდებულო)' },
+  'reg.referral':           { en: 'Referral code',   ka: 'მოწვევის კოდი' },
   'reg.referralFrom':       { en: 'Invited by a friend — the code is filled in for you.', ka: 'მეგობარმა მოგიწვია — კოდი უკვე შევსებულია.' },
   'reg.consent':            { en: 'Send me offers, tips and reminders about my dog (you can stop any time).', ka: 'გამომიგზავნეთ შეთავაზებები, რჩევები და შეხსენებები ჩემი ძაღლის შესახებ (ნებისმიერ დროს შემიძლია გავაუქმო).' },
   'reg.e.firstName':        { en: 'First name is required',     ka: 'სახელი აუცილებელია' },
@@ -148,7 +148,7 @@ export const ACCOUNT_STRINGS: Record<string, { en: string; ka: string }> = {
   'addr.none':              { en: 'No saved addresses yet — add one for faster checkout.', ka: 'შენახული მისამართი ჯერ არ გაქვს — დაამატე სწრაფი შეკვეთისთვის.' },
   'addr.default':           { en: 'Default',                     ka: 'ძირითადი' },
   'addr.makeDefault':       { en: 'Make default',                ka: 'ძირითადად დაყენება' },
-  'addr.label':             { en: 'Name (optional)',             ka: 'სახელწოდება (არასავალდებულო)' },
+  'addr.label':             { en: 'Name',             ka: 'სახელწოდება' },
   'addr.labelHint':         { en: 'e.g. Home, Work, Mum’s',      ka: 'მაგ. სახლი, სამსახური, დედასთან' },
   'addr.removeTitle':       { en: 'Remove this address?',        ka: 'წავშალოთ ეს მისამართი?' },
   'cards.title':            { en: 'Payment cards',               ka: 'საბანკო ბარათები' },

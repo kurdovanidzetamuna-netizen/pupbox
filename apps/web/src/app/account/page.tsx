@@ -162,12 +162,19 @@ export default function AccountPage() {
                 <Field id="email" label={t('acc.email')} value={user?.email || ''} disabled trailing={badge(!!user?.emailVerified)} />
                 <Field id="phone" type="tel" label={t('co.f.phone')} value={form.phone} autoComplete="tel" error={fieldErrors.phone} trailing={badge(!!user?.phoneVerified)}
                   onChange={v => { setForm({ ...form, phone: v }); setFieldErrors(f => ({ ...f, phone: '' })); setSuccess(''); }} />
-                <div className="flex items-center justify-end gap-3 pt-1">
-                  {success && <span className="text-sm text-teal-700" role="status">{success}</span>}
-                  <button type="submit" disabled={saving || !changed} className="bg-teal-600 text-white text-sm font-semibold px-5 py-2 hover:bg-teal-700 disabled:opacity-40">
-                    {saving ? t('co.saving') : t('acc.save')}
-                  </button>
-                </div>
+                {/* Buttons appear only once something was changed; Cancel puts it back. */}
+                {changed ? (
+                  <div className="flex items-center justify-end gap-2 pt-1 animate-[fadeUp_0.15s_ease-out]">
+                    <button type="button" disabled={saving}
+                      onClick={() => { setForm({ firstName: user.firstName || '', lastName: user.lastName || '', phone: user.phone || '' }); setFieldErrors({}); setError(''); }}
+                      className="px-4 py-2 rounded-full text-[13px] font-semibold text-gray-600 hover:bg-gray-100 transition">{t('ui.cancel')}</button>
+                    <button type="submit" disabled={saving} className="bg-teal-600 text-white text-[13px] font-semibold px-5 py-2 hover:bg-teal-700">
+                      {saving ? t('co.saving') : t('acc.save')}
+                    </button>
+                  </div>
+                ) : success ? (
+                  <p className="text-right text-[13px] text-teal-700 pt-1" role="status">✓ {success}</p>
+                ) : null}
               </form>
             </section>
 
