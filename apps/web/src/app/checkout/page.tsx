@@ -1,4 +1,5 @@
 'use client';
+import { formatDate } from '@/lib/dates';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -519,7 +520,7 @@ export default function CheckoutPage() {
                     {giftDog.name && <p className="text-xs text-amber-800">🐶 {giftDog.name}</p>}
                     {form.giftRecipientEmail && <p className="text-xs text-amber-800">{form.giftRecipientEmail}</p>}
                     {form.giftMessage && <p className="text-xs italic text-amber-800 mt-2">“{form.giftMessage}”</p>}
-                    {giftLater && form.giftSendOn && <p className="text-xs text-amber-800 mt-2">📅 {fill(t('co.gift.sendsOn'), { date: new Date(`${form.giftSendOn}T09:00:00+04:00`).toLocaleDateString(lang === 'ka' ? 'ka-GE' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) })}</p>}
+                    {giftLater && form.giftSendOn && <p className="text-xs text-amber-800 mt-2">📅 {fill(t('co.gift.sendsOn'), { date: formatDate(new Date(`${form.giftSendOn}T09:00:00+04:00`), lang, { day: 'numeric', month: 'long', year: 'numeric' }) })}</p>}
                     <p className="text-xs text-amber-700 mt-2 pt-2 border-t border-amber-200">{fill(t('co.gift.billingNote'), { name: form.giftRecipientName })}</p>
                   </div>
                 )}

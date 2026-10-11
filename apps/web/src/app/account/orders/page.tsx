@@ -1,4 +1,5 @@
 'use client';
+import { formatDate } from '@/lib/dates';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -65,7 +66,7 @@ export default function MyOrdersPage() {
                 <div>
                   <p className="text-sm text-gray-500 mb-1">{fill(t('ord.number'), { n: order.id.slice(-8).toUpperCase() })}</p>
                   <p className="text-xs text-gray-400">
-                    {new Date(order.createdAt).toLocaleDateString(lang === 'ka' ? 'ka-GE' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
+                    {formatDate(new Date(order.createdAt), lang, { day: 'numeric', month: 'long', year: 'numeric' })}
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
@@ -92,7 +93,7 @@ export default function MyOrdersPage() {
                 <p className="text-sm mt-2 rounded-lg px-3 py-2 bg-teal-50 text-teal-900">
                   {order.refund.owed > 0
                     ? fill(t('ord.refundOwed'), { money: gel(order.refund.owed) })
-                    : fill(t('ord.refunded'), { money: gel(order.refund.refunded), date: order.refund.refundedAt ? new Date(order.refund.refundedAt).toLocaleDateString(lang === 'ka' ? 'ka-GE' : 'en-GB', { day: 'numeric', month: 'long' }) : '' })}
+                    : fill(t('ord.refunded'), { money: gel(order.refund.refunded), date: order.refund.refundedAt ? formatDate(new Date(order.refund.refundedAt), lang, { day: 'numeric', month: 'long' }) : '' })}
                 </p>
               )}
 
@@ -160,7 +161,7 @@ function OrderDetails({ order }: { order: any }) {
       {p && (
         <div className="flex justify-between gap-4 text-gray-600">
           <span>{t('ord.payment')}</span>
-          <span>{t(`ord.pay.${p.status}`, p.status)}{p.paidAt ? ` · ${new Date(p.paidAt).toLocaleDateString(lang === 'ka' ? 'ka-GE' : 'en-GB', { day: 'numeric', month: 'short' })}` : ''}</span>
+          <span>{t(`ord.pay.${p.status}`, p.status)}{p.paidAt ? ` · ${formatDate(new Date(p.paidAt), lang, { day: 'numeric', month: 'short' })}` : ''}</span>
         </div>
       )}
       {order.trackingNumber && (

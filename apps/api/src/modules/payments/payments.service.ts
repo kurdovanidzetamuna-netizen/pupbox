@@ -1,6 +1,7 @@
 import { Injectable, BadRequestException, NotFoundException, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PaymentStatus } from '@prisma/client';
+import { notify } from '../notifications/notify';
 import { PrismaService } from '../prisma/prisma.service';
 import { FlittService } from './flitt.service';
 import { EmailService } from '../email/email.service';
@@ -275,6 +276,7 @@ export class PaymentsService implements OnModuleInit, OnModuleDestroy {
       });
       if (fullOrder?.user) {
         this.email.sendPaymentConfirmation({ id: order_id, total: Number(order.total), user: fullOrder.user }).catch(() => {});
+        notify(this.prisma, order.userId, 'ORDER_PAID', { orderId: order_id, total: Number(order.total), kind: order.type, gift: !!order.isGift }, '/account/orders');
         this.notifyShop(order_id).catch((e) => this.logger.error(`New order email failed for ${order_id}: ${e.message}`));
         // The inviter's referral reward follows once this order is past the
         // free-cancellation window (ReferralsService.grantDueRewards).
@@ -284,6 +286,7 @@ export class PaymentsService implements OnModuleInit, OnModuleDestroy {
       await this.prisma.order.update({ where: { id: order_id }, data: { status: 'CANCELLED' } });
       const lines = await this.prisma.orderItem.findMany({ where: { orderId: order_id, productId: { not: null } }, select: { productId: true, quantity: true } });
       await releaseStock(this.prisma, lines.map((l) => ({ productId: l.productId!, quantity: l.quantity })));
+      notify(this.prisma, order.userId, 'PAYMENT_FAILED', { orderId: order_id, total: Number(order.total), kind: order.type }, order.type === 'RENEWAL' ? '/account/subscriptions' : '/cart');
     }
 
     return { status: 'ok' };

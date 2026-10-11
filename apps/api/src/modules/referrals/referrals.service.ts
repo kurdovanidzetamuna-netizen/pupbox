@@ -1,5 +1,6 @@
 import { Injectable, BadRequestException, NotFoundException, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { randomBytes } from 'crypto';
+import { notify } from '../notifications/notify';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
 import { shopSettings } from '../settings/settings';
@@ -113,7 +114,7 @@ export class ReferralsService implements OnModuleInit, OnModuleDestroy {
     if (!count) return false;
     const referral = await this.prisma.referral.findUniqueOrThrow({
       where: { id: referralId },
-      select: { inviter: { select: { email: true, firstName: true, language: true } } },
+      select: { inviterId: true, inviter: { select: { email: true, firstName: true, language: true } } },
     });
     // Random: the code is the only thing standing between it and anyone else.
     const couponCode = `REF-${randomBytes(5).toString('hex').toUpperCase()}`;
@@ -139,6 +140,7 @@ export class ReferralsService implements OnModuleInit, OnModuleDestroy {
       await this.prisma.referral.update({ where: { id: referralId }, data: { status: 'REGISTERED' } });
       throw e;
     }
+    notify(this.prisma, referral.inviterId, 'REFERRAL_REWARD', { couponCode, amount: REWARD_GEL }, '/account/referrals');
     this.email
       .sendReferralReward({ email: referral.inviter.email, firstName: referral.inviter.firstName, language: referral.inviter.language, couponCode })
       .catch((e) => this.logger.error(`Referral reward email failed: ${e.message}`));

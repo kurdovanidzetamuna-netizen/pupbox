@@ -1,4 +1,5 @@
 'use client';
+import { formatDate } from '@/lib/dates';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -80,7 +81,7 @@ export default function ReferralsPage() {
                     {data.referrals.map((r: any) => (
                       <tr key={r.id} className="border-t border-gray-50">
                         <td className="px-4 py-3 text-gray-700">{r.invited ? `${r.invited.firstName} ${r.invited.lastName}` : t('ref.pending')}</td>
-                        <td className="px-4 py-3 text-gray-500 text-xs">{r.invited?.createdAt ? new Date(r.invited.createdAt).toLocaleDateString(lang === 'ka' ? 'ka-GE' : 'en-GB') : '—'}</td>
+                        <td className="px-4 py-3 text-gray-500 text-xs">{r.invited?.createdAt ? formatDate(new Date(r.invited.createdAt), lang) : '—'}</td>
                         <td className="px-4 py-3">
                           <span className={`text-xs font-medium px-2 py-1 rounded-full ${r.status === 'REWARD_GRANTED' ? 'bg-teal-100 text-teal-800' : r.status === 'REGISTERED' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'}`}>
                             {t(`ref.status.${r.status}`, r.status)}

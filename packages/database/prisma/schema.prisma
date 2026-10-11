@@ -180,6 +180,7 @@ model User {
   addresses      Address[]
   passwordResets PasswordResetToken[]
   verificationCodes VerificationCode[]
+  notifications  Notification[]
   dogs           Dog[]
   orders         Order[]
   subscriptions  CustomerSubscription[]
@@ -977,4 +978,36 @@ model VerificationCode {
   createdAt DateTime            @default(now())
 
   @@index([userId, channel, createdAt])
+}
+
+/// What a notification is about; the web app words it in the customer's language.
+enum NotificationType {
+  WELCOME
+  ORDER_PAID
+  PAYMENT_FAILED
+  ORDER_SHIPPED
+  ORDER_DELIVERED
+  RENEWAL_DUE
+  BOX_SHIPPED
+  BOX_DELIVERED
+  GIFT_SENT
+  REFUNDED
+  REFERRAL_REWARD
+}
+
+/// The customer's in-app notification centre (the bell).
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType
+  /// Details used to word it (order number, plan name in ka/en, tracking…).
+  data      Json             @default("{}")
+  /// Where tapping it goes, e.g. /account/orders.
+  link      String?
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  @@index([userId, createdAt])
+  @@index([userId, readAt])
 }

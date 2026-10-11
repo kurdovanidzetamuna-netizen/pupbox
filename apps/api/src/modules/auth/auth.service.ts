@@ -4,6 +4,7 @@ import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
 
 import { PrismaService } from '../prisma/prisma.service';
+import { notify } from '../notifications/notify';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { ReferralsService } from '../referrals/referrals.service';
@@ -90,6 +91,7 @@ export class AuthService {
     }
 
     // Fire-and-forget welcome email
+    notify(this.prisma, user.id, 'WELCOME', { firstName: user.firstName }, '/account/dogs');
     this.email.sendWelcome({ email: user.email, firstName: user.firstName, language: dto.language ?? 'ka' }).catch(() => {});
 
     // Both codes go out now; the next screen asks for them. A failed send

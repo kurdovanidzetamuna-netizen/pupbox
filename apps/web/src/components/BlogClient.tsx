@@ -1,4 +1,5 @@
 'use client';
+import { formatDate } from '@/lib/dates';
 import Link from 'next/link';
 import { useLanguage } from '@/context/LanguageContext';
 import { blogPage, type StoredContent } from '@pupbox/content';
@@ -71,7 +72,7 @@ export default function BlogClient({ posts, total, pages, page, categories, cont
                         <div className="flex items-center justify-between mt-4">
                           {post.publishedAt && (
                             <p className="text-xs text-gray-400">
-                              {new Date(post.publishedAt).toLocaleDateString(lang === 'ka' ? 'ka-GE' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                              {formatDate(new Date(post.publishedAt), lang, { day: 'numeric', month: 'short', year: 'numeric' })}
                             </p>
                           )}
                           <span className="text-xs font-semibold text-teal-600 group-hover:underline">{t('blog.readMore')}</span>

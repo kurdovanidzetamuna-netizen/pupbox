@@ -1,4 +1,5 @@
 'use client';
+import { formatDate } from '@/lib/dates';
 import { useEffect, useState } from 'react';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import IconButton from '@/components/ui/IconButton';
@@ -37,7 +38,7 @@ export default function MySubscriptionsPage() {
   const [addrError, setAddrError] = useState('');
 
   const expired = () => router.replace(loginUrl('/account/subscriptions'));
-  const date = (d: string) => new Date(d).toLocaleDateString(lang === 'ka' ? 'ka-GE' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  const date = (d: string) => formatDate(new Date(d), lang, { day: 'numeric', month: 'short', year: 'numeric' });
 
   useEffect(() => {
     authFetch('/me/subscriptions')
@@ -270,7 +271,7 @@ export default function MySubscriptionsPage() {
                           <li key={b.id} className="flex items-center justify-between gap-3 px-3 py-2.5">
                             <span className="text-gray-900">
                               <span className="font-semibold">{fill(t('sub.boxN'), { n: b.boxNumber })}</span>
-                              <span className="text-gray-400"> · {new Date(b.year, b.month - 1, 1).toLocaleDateString(lang === 'ka' ? 'ka-GE' : 'en-GB', { month: 'long', year: 'numeric' })}</span>
+                              <span className="text-gray-400"> · {formatDate(new Date(b.year, b.month - 1, 1), lang, { month: 'long', year: 'numeric' })}</span>
                             </span>
                             <span className="text-right">
                               <span className={`text-xs font-bold ${b.status === 'SHIPPED' || b.status === 'DELIVERED' ? 'text-teal-700' : 'text-gray-500'}`}>{t(`sub.box.${b.status}`, b.status)}</span>

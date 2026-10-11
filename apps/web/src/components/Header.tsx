@@ -9,6 +9,7 @@ import { useCart } from '@/context/CartContext';
 import { usePage } from '@/lib/usePage';
 import Logo from '@/components/Logo';
 import SmartLink from '@/components/SmartLink';
+import NotificationBell from '@/components/NotificationBell';
 
 /** Logo, menu and button come from admin → Page Builder → Header & Footer. */
 export default function Header({ site }: { site: StoredContent | null }) {
@@ -106,6 +107,8 @@ export default function Header({ site }: { site: StoredContent | null }) {
               </button>
             ))}
           </div>
+
+          {signedIn && <NotificationBell />}
 
           {/* Account: one tap straight to My account (everything else is in its menu). */}
           {signedIn ? (

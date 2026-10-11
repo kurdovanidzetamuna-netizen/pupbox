@@ -1,5 +1,6 @@
 import { BadRequestException, Logger, NotFoundException } from '@nestjs/common';
 import type { PrismaService } from '../prisma/prisma.service';
+import { notify, planNames } from '../notifications/notify';
 import type { EmailService } from '../email/email.service';
 import { shopSettings } from '../settings/settings';
 import { subscriptionPeriod } from './subscription-period';
@@ -57,6 +58,7 @@ export async function createDueRenewals(prisma: PrismaService, email: EmailServi
       email: s.user.email, firstName: s.user.firstName, language: s.user.language,
       planName: (s.user.language !== 'en' && kaName) || s.plan.name, amount: price, renewsOn: s.nextRenewalAt!, orderId: order.id,
     }).catch((e) => logger.error(`Renewal email failed for ${s.id}: ${e.message}`));
+    await notify(prisma, s.userId, 'RENEWAL_DUE', { orderId: order.id, plan: planNames(s.plan), amount: price, renewsOn: s.nextRenewalAt!.toISOString() }, '/account/subscriptions');
   }
   if (created) logger.log(`Created ${created} renewal order(s)`);
   return created;

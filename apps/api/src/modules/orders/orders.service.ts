@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, Logger, NotFoundException } from '@nes
 import { OrderStatus } from '@prisma/client';
 import { allowedNext, cancelUnpaidOrder, wasPaid } from './order-lifecycle';
 import { PrismaService } from '../prisma/prisma.service';
+import { notify } from '../notifications/notify';
 import { EmailService } from '../email/email.service';
 
 @Injectable()
@@ -202,6 +203,7 @@ export class OrdersService {
         },
       }),
     ]);
+    notify(this.prisma, order.userId, 'REFUNDED', { orderId: id, amount, full: fully }, '/account/orders');
     return this.adminGetOne(id);
   }
 
@@ -269,7 +271,9 @@ export class OrdersService {
     if (to === 'SHIPPED' && !order.shippedAt) {
       this.email.sendOrderShipped({ ...order.user, orderId: order.id, trackingNumber: order.trackingNumber })
         .catch((e) => this.logger.error(`Order shipped email failed for ${id}: ${e.message}`));
+      notify(this.prisma, order.userId, 'ORDER_SHIPPED', { orderId: order.id, tracking: order.trackingNumber ?? null }, '/account/orders');
     }
+    if (to === 'DELIVERED' && order.status !== 'DELIVERED') notify(this.prisma, order.userId, 'ORDER_DELIVERED', { orderId: order.id }, '/account/orders');
     return this.adminGetOne(id);
   }
 

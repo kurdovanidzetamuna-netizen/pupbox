@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { BoxShipmentStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { notify } from '../notifications/notify';
 import { EmailService } from '../email/email.service';
 
 /**
@@ -232,6 +233,12 @@ export class BoxShipmentsService {
       await this.moveStock(r.id, status);
     }
 
+    if (status === 'DELIVERED') {
+      for (const r of movable) {
+        const b = await this.prisma.boxShipment.findUnique({ where: { id: r.id }, select: { boxNumber: true, subscription: { select: { userId: true, boxesTotal: true, isGift: true, dog: { select: { name: true } }, orders: { where: { isGift: true }, select: { giftRecipientName: true }, take: 1 } } } } });
+        if (b) notify(this.prisma, b.subscription.userId, 'BOX_DELIVERED', { dogName: b.subscription.dog?.name ?? null, boxNumber: b.boxNumber, boxesTotal: b.subscription.boxesTotal, gift: b.subscription.isGift, recipient: b.subscription.orders[0]?.giftRecipientName ?? null }, '/account/subscriptions');
+      }
+    }
     for (const id of newlySent) this.notifyShipped(id).catch((e) => this.logger.error(`Box shipped email failed for ${id}: ${e.message}`));
 
     return { updated: movable.length, skipped: rows.length - movable.length };
@@ -272,6 +279,7 @@ export class BoxShipmentsService {
     const s = await this.prisma.boxShipment.findUnique({ where: { id: shipmentId }, include: shipmentInclude });
     if (!s) return;
     const { user, dog, boxesTotal } = s.subscription;
+    notify(this.prisma, user.id, 'BOX_SHIPPED', { dogName: dog?.name ?? null, boxNumber: s.boxNumber, boxesTotal, tracking: s.trackingNumber, gift: s.subscription.isGift, recipient: s.subscription.orders[0]?.giftRecipientName ?? null }, '/account/subscriptions');
     await this.email.sendBoxShipped({
       email: user.email,
       firstName: user.firstName,

@@ -1,3 +1,4 @@
+import { notify } from '../notifications/notify';
 import type { PrismaService } from '../prisma/prisma.service';
 import type { EmailService } from '../email/email.service';
 
@@ -18,7 +19,7 @@ export async function sendGiftCard(prisma: PrismaService, email: EmailService, o
   const order = await prisma.order.findUnique({
     where: { id: orderId },
     select: {
-      isGift: true, status: true, giftRecipientName: true, giftRecipientEmail: true, giftMessage: true, giftSentAt: true, giftDeliverOn: true,
+      isGift: true, status: true, userId: true, giftRecipientName: true, giftRecipientEmail: true, giftMessage: true, giftSentAt: true, giftDeliverOn: true,
       user: { select: { firstName: true, lastName: true, language: true } },
       subscription: { select: { cancelledAt: true, boxesTotal: true, dog: { select: { name: true } }, plan: { select: { name: true, slug: true, translations: true } } } },
     },
@@ -57,6 +58,7 @@ export async function sendGiftCard(prisma: PrismaService, email: EmailService, o
     throw e;
   }
   if (again) await prisma.order.update({ where: { id: orderId }, data: { giftSentAt: new Date() } });
+  else await notify(prisma, order.userId, 'GIFT_SENT', { orderId, recipient: order.giftRecipientName ?? '' }, '/account/orders');
   return { sent: true, to: order.giftRecipientEmail };
 }
 
