@@ -58,7 +58,7 @@ export default async function ShopPage({
 
   return (
     <main className="min-h-screen bg-white">
-      <div className="max-w-6xl mx-auto px-6 py-12">
+      <div className="max-w-7xl mx-auto px-6 py-12">
 
         {/* Page header */}
         <div className="mb-8">

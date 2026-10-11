@@ -32,7 +32,7 @@ export default function BlogClient({ posts, total, pages, page, categories, cont
       </div>
 
       {/* CONTENT */}
-      <div className="max-w-6xl mx-auto px-6 py-12">
+      <div className="max-w-7xl mx-auto px-6 py-12">
         <div className="flex gap-10">
           {/* Posts grid */}
           <div className="flex-1 min-w-0">

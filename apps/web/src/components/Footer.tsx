@@ -34,7 +34,7 @@ export default function Footer({ site }: { site: StoredContent | null }) {
 
   return (
     <footer className="bg-gray-50 border-t border-gray-100 py-12 px-6">
-      <div className="max-w-6xl mx-auto px-6">
+      <div className="max-w-7xl mx-auto px-6">
         <div className="grid md:grid-cols-4 gap-8 mb-10">
           <div className="md:col-span-2">
             <Logo brand={c.brand} className="mb-3" />

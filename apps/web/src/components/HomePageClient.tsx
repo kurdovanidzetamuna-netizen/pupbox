@@ -31,7 +31,7 @@ export default function HomePageClient({ plans, content, faq }: Props) {
         <section className="relative overflow-hidden bg-gradient-to-br from-teal-50 via-white to-amber-50 py-16">
           <div className="absolute -top-24 -left-24 w-96 h-96 bg-teal-200 rounded-full opacity-20 blur-3xl pointer-events-none" />
           <div className="absolute -bottom-24 -right-24 w-96 h-96 bg-amber-200 rounded-full opacity-25 blur-3xl pointer-events-none" />
-          <div className="relative max-w-6xl mx-auto px-6">
+          <div className="relative max-w-7xl mx-auto px-6">
             <div className="grid md:grid-cols-2 gap-12 items-center">
               <div>
                 {hero.badge && (
@@ -119,7 +119,7 @@ export default function HomePageClient({ plans, content, faq }: Props) {
       {/* ── STATS ── */}
       {c.on('stats') && stats.items.length > 0 && (
         <section className="border-y border-gray-100 bg-white py-6">
-          <div className="max-w-6xl mx-auto px-6 grid gap-8 text-center" style={{ gridTemplateColumns: `repeat(${stats.items.length}, minmax(0, 1fr))` }}>
+          <div className="max-w-7xl mx-auto px-6 grid gap-8 text-center" style={{ gridTemplateColumns: `repeat(${stats.items.length}, minmax(0, 1fr))` }}>
             {stats.items.map((s: any, i: number) => (
               <div key={i}>
                 <p className="text-3xl font-extrabold text-teal-600">{s.value}</p>
@@ -133,7 +133,7 @@ export default function HomePageClient({ plans, content, faq }: Props) {
       {/* ── WHAT'S IN THE BOX ── */}
       {c.on('whatsInBox') && (
         <section className="py-16 bg-white">
-          <div className="max-w-6xl mx-auto px-6">
+          <div className="max-w-7xl mx-auto px-6">
             <div className="text-center mb-14">
               <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-4">{box.heading}</h2>
               {box.description && <p className="text-lg text-gray-500 max-w-2xl mx-auto">{box.description}</p>}
@@ -156,7 +156,7 @@ export default function HomePageClient({ plans, content, faq }: Props) {
       {/* ── HOW IT WORKS ── */}
       {c.on('howItWorks') && (
         <section className="bg-teal-50 py-16">
-          <div className="max-w-6xl mx-auto px-6">
+          <div className="max-w-7xl mx-auto px-6">
             <div className="text-center mb-14">
               <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-4">{hiw.heading}</h2>
               {hiw.description && <p className="text-gray-500 text-lg">{hiw.description}</p>}
@@ -180,7 +180,7 @@ export default function HomePageClient({ plans, content, faq }: Props) {
       {/* ── PLANS ── */}
       {c.on('plans') && plans.length > 0 && (
         <section className="py-16 bg-white" id="pricing">
-          <div className="max-w-6xl mx-auto px-6">
+          <div className="max-w-7xl mx-auto px-6">
             <div className="text-center mb-14">
               <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-4">{c.plans.heading}</h2>
               {c.plans.description && <p className="text-lg text-gray-500">{c.plans.description}</p>}
@@ -193,7 +193,7 @@ export default function HomePageClient({ plans, content, faq }: Props) {
       {/* ── TESTIMONIALS ── placeholder reviews until launch, by decision */}
       {c.on('testimonials') && testimonials.items.length > 0 && (
         <section className="bg-teal-50 py-16">
-          <div className="max-w-6xl mx-auto px-6">
+          <div className="max-w-7xl mx-auto px-6">
             <div className="text-center mb-14">
               <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-4">{testimonials.heading}</h2>
               {testimonials.description && <p className="text-lg text-gray-500">{testimonials.description}</p>}

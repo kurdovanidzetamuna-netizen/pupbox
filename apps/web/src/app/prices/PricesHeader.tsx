@@ -18,7 +18,7 @@ export function PricesIncludes({ content }: { content: StoredContent | null }) {
   if (!c.on('includes') || !c.includes.items.length) return null;
   return (
     <section className="py-16 bg-teal-50">
-      <div className="max-w-6xl mx-auto px-6">
+      <div className="max-w-7xl mx-auto px-6">
         <h2 className="text-xl font-bold text-gray-900 mb-6 text-center">{c.includes.heading}</h2>
         <div className="grid md:grid-cols-3 gap-4 text-sm text-gray-600">
           {c.includes.items.map((item: any, i: number) => (

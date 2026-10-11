@@ -45,7 +45,7 @@ export default async function BlogCategoryPage({ params, searchParams }: { param
         <Link href="/subscribe" className="inline-flex items-center justify-center bg-teal-600 text-white text-sm font-medium px-4 py-2 rounded-full hover:bg-teal-700 transition">Subscribe</Link>
       </header>
 
-      <div className="max-w-6xl mx-auto px-6 py-12">
+      <div className="max-w-7xl mx-auto px-6 py-12">
         <nav className="text-sm text-gray-400 mb-8 flex gap-2">
           <Link href="/blog" className="hover:text-teal-600">Blog</Link>
           <span>/</span>

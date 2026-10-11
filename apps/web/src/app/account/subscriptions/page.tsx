@@ -165,9 +165,7 @@ export default function MySubscriptionsPage() {
   const boxes = (n: number) => (n === 1 ? t('sub.box') : fill(t('sub.boxes'), { n }));
 
   return (
-    <main className="min-h-screen bg-gray-50">
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-10">
-        <Link href="/account" className="text-sm text-gray-500 hover:text-teal-600">{t('acc.back')}</Link>
+    <div>
         <div className="flex items-end justify-between gap-4 mt-2 mb-8">
           <h1 className="text-3xl font-extrabold text-gray-900">{t('acc.subscriptions')}</h1>
           {subs.length > 0 && <Link href="/prices" className="shrink-0 bg-teal-600 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-teal-700">{t('sub.addPlan')}</Link>}
@@ -325,7 +323,6 @@ export default function MySubscriptionsPage() {
             })}
           </ul>
         )}
-      </div>
 
       {toast && (
         <div role="status" className={`fixed bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-3 px-5 py-3 rounded-xl shadow-xl text-white text-sm font-semibold z-50 ${toast.ok ? 'bg-teal-700' : 'bg-red-600'}`}>
@@ -333,6 +330,6 @@ export default function MySubscriptionsPage() {
           <span>{toast.msg}</span>
         </div>
       )}
-    </main>
+    </div>
   );
 }

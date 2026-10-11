@@ -19,7 +19,7 @@ export default async function PricesPage() {
   return (
     <main className="min-h-screen bg-white">
       <section className="py-16">
-        <div className="max-w-6xl mx-auto px-6 text-center">
+        <div className="max-w-7xl mx-auto px-6 text-center">
           <PricesHeader content={content} />
           <PlanSection plans={plans} />
         </div>

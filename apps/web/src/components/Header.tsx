@@ -80,7 +80,7 @@ export default function Header({ site }: { site: StoredContent | null }) {
 
   return (
     <header className="sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-gray-100">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-3">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-3">
         <Logo brand={c.brand} />
 
         <nav className="hidden md:flex gap-8 text-sm font-medium text-gray-600" aria-label="Main">

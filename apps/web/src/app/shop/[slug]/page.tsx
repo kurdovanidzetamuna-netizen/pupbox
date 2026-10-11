@@ -34,7 +34,7 @@ export default async function ProductDetailPage({ params }: { params: { slug: st
 
   return (
     <main className="min-h-screen bg-white">
-      <div className="max-w-6xl mx-auto px-6 py-10">
+      <div className="max-w-7xl mx-auto px-6 py-10">
         {/* Breadcrumb */}
         <nav className="text-sm text-gray-400 mb-8 flex gap-2">
           <Link href="/shop" className="hover:text-teal-600"><T k="shop.title" /></Link>

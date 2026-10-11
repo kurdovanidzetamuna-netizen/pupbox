@@ -45,7 +45,7 @@ export default function CartPage() {
 
   return (
     <main className="min-h-screen bg-gray-50">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10">
         <h1 className="text-2xl font-bold text-gray-900 mb-8">{t('cart.title')} <span className="text-gray-400 font-medium">({cart.itemCount})</span></h1>
         {cart.pricesUpdated && <p className="-mt-5 mb-6 text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3" role="status">{t('cart.updated')}</p>}
 

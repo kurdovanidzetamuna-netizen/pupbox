@@ -80,7 +80,7 @@ export default function AccountSecurity() {
 
   return (
     <>
-      <section className="bg-white rounded-2xl border border-gray-100 p-6">
+      <section className="bg-white rounded-3xl border border-gray-100 p-6 sm:p-8">
         <h2 className="font-semibold text-gray-800 mb-5">{t('sec.title')}</h2>
         <form onSubmit={changePassword} className="space-y-4" noValidate>
           <div>
@@ -104,13 +104,13 @@ export default function AccountSecurity() {
         </form>
       </section>
 
-      <section className="bg-white rounded-2xl border border-gray-100 p-6">
+      <section className="bg-white rounded-3xl border border-gray-100 p-6 sm:p-8">
         <h2 className="font-semibold text-gray-800 mb-1">{t('sec.dataTitle')}</h2>
         <p className="text-sm text-gray-500 mb-4">{t('sec.dataSub')}</p>
         <button onClick={downloadData} disabled={exporting} className="text-sm font-medium text-teal-700 border border-teal-200 px-4 py-2 rounded-xl hover:bg-teal-50 disabled:opacity-50">{exporting ? t('co.saving') : t('sec.dataBtn')}</button>
       </section>
 
-      <section className="bg-white rounded-2xl border border-gray-100 p-6">
+      <section className="bg-white rounded-3xl border border-gray-100 p-6 sm:p-8">
         <h2 className="font-semibold text-gray-800 mb-1">{t('sec.deleteTitle')}</h2>
         <p className="text-sm text-gray-500 mb-4">{t('sec.deleteSub')}</p>
         {!delOpen ? (
