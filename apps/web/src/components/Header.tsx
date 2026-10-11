@@ -18,10 +18,8 @@ export default function Header({ site }: { site: StoredContent | null }) {
   const { cart } = useCart();
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [langOpen, setLangOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
   const [signedIn, setSignedIn] = useState(false);
-  const langRef = useRef<HTMLDivElement>(null);
   const accountRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
@@ -36,7 +34,6 @@ export default function Header({ site }: { site: StoredContent | null }) {
   useEffect(() => {
     setSignedIn(!!localStorage.getItem('pupbox_token'));
     setMenuOpen(false);
-    setLangOpen(false);
     setAccountOpen(false);
   }, [pathname]);
 
@@ -64,18 +61,8 @@ export default function Header({ site }: { site: StoredContent | null }) {
     { href: '/account/dogs', label: t('acc.dogs') },
   ];
 
-  // The language menu opens on click (not hover) so it works by touch and
-  // keyboard; it closes on an outside click or Escape.
-  useEffect(() => {
-    if (!langOpen) return;
-    const onDown = (e: MouseEvent) => { if (!langRef.current?.contains(e.target as Node)) setLangOpen(false); };
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setLangOpen(false); };
-    document.addEventListener('mousedown', onDown);
-    document.addEventListener('keydown', onKey);
-    return () => { document.removeEventListener('mousedown', onDown); document.removeEventListener('keydown', onKey); };
-  }, [langOpen]);
 
-  const chooseLang = (l: 'en' | 'ka') => { setLang(l); setLangOpen(false); };
+  const chooseLang = (l: 'en' | 'ka') => setLang(l);
   const account = signedIn ? { href: '/account', label: t('nav.account') } : { href: '/login', label: t('nav.signIn') };
 
   return (
@@ -137,25 +124,19 @@ export default function Header({ site }: { site: StoredContent | null }) {
             )}
           </Link>
 
-          {/* Language */}
-          <div className="relative hidden md:block" ref={langRef}>
-            <button type="button" onClick={() => setLangOpen(o => !o)} aria-haspopup="menu" aria-expanded={langOpen} aria-label={t('nav.language')}
-              className="flex items-center gap-1 text-sm font-bold text-gray-600 hover:text-teal-600 border border-gray-200 hover:border-teal-400 rounded-lg px-4 py-2 transition-colors">
-              {lang === 'en' ? 'EN' : 'KA'}
-              <svg className={`w-3 h-3 ml-0.5 transition-transform ${langOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} aria-hidden="true">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
-            {langOpen && (
-              <div role="menu" className="absolute right-0 top-full mt-1.5 w-32 bg-white border border-gray-100 rounded-xl shadow-lg overflow-hidden z-50">
-                {([['ka', 'ქართული'], ['en', 'English']] as const).map(([code, label]) => (
-                  <button key={code} type="button" role="menuitemradio" aria-checked={lang === code} onClick={() => chooseLang(code)}
-                    className={`w-full px-4 py-2.5 text-sm font-medium text-left transition-colors ${lang === code ? 'bg-teal-50 text-teal-700' : 'text-gray-600 hover:bg-gray-50'}`}>
-                    {label}
-                  </button>
-                ))}
-              </div>
-            )}
+          {/* Language: two options, so a one-tap toggle, Georgian first. */}
+          <div role="radiogroup" aria-label={t('nav.language')}
+            className="relative hidden md:grid grid-cols-2 items-center p-1 rounded-full bg-gray-100 ring-1 ring-gray-200/70">
+            <span aria-hidden="true"
+              className={`absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-full bg-white shadow-sm ring-1 ring-teal-100 transition-transform duration-300 ease-out ${lang === 'en' ? 'translate-x-full' : 'translate-x-0'}`}
+              style={{ left: 4 }} />
+            {([['ka', 'ქა', 'ქართული'], ['en', 'EN', 'English']] as const).map(([code, short, full]) => (
+              <button key={code} type="button" role="radio" aria-checked={lang === code} aria-label={full} title={full}
+                onClick={() => chooseLang(code)}
+                className={`relative z-10 min-w-[44px] px-3 py-1.5 text-xs font-bold rounded-full transition-colors ${lang === code ? 'text-teal-700' : 'text-gray-500 hover:text-gray-800'}`}>
+                {short}
+              </button>
+            ))}
           </div>
 
           {/* Phone & tablet menu */}
@@ -195,10 +176,10 @@ export default function Header({ site }: { site: StoredContent | null }) {
               {c.header.buttonText}
             </SmartLink>
           )}
-          <div className="mt-4 flex gap-2" role="group" aria-label={t('nav.language')}>
+          <div className="mt-4 grid grid-cols-2 gap-1 p-1 rounded-full bg-gray-100" role="radiogroup" aria-label={t('nav.language')}>
             {([['ka', 'ქართული'], ['en', 'English']] as const).map(([code, label]) => (
-              <button key={code} type="button" onClick={() => chooseLang(code)} aria-pressed={lang === code}
-                className={`flex-1 py-2.5 rounded-xl text-sm font-bold border ${lang === code ? 'border-teal-600 bg-teal-50 text-teal-700' : 'border-gray-200 text-gray-600'}`}>
+              <button key={code} type="button" role="radio" onClick={() => chooseLang(code)} aria-checked={lang === code}
+                className={`py-2.5 rounded-full text-sm font-bold transition-colors ${lang === code ? 'bg-white text-teal-700 shadow-sm' : 'text-gray-500'}`}>
                 {label}
               </button>
             ))}
