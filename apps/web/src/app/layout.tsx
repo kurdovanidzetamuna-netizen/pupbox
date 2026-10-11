@@ -1,4 +1,5 @@
 import RefCapture from '@/components/RefCapture';
+import OfflineGame from '@/components/OfflineGame';
 import type { Metadata } from 'next';
 import './globals.css';
 import { Noto_Sans_Georgian } from 'next/font/google';
@@ -48,6 +49,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <LanguageProvider>
           <CartProvider>
             <RefCapture />
+            <OfflineGame />
             <Header site={site} />
             <PromoPopup />
             {children}

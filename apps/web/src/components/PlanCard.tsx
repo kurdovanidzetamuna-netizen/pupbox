@@ -13,7 +13,7 @@ interface Props {
   isGift?: boolean;
 }
 
-export default function PlanCard({ plan, showFullBenefits = false, isGift = false }: Props) {
+export default function PlanCard({ plan, isGift = false }: Props) {
   const { addPlan } = useCart();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -61,7 +61,9 @@ export default function PlanCard({ plan, showFullBenefits = false, isGift = fals
   // Georgian benefits written in admin win over the built-in phrase map.
   const localBenefits = planBenefits(plan, lang);
   const source: string[] = localBenefits || plan.benefits || [];
-  const rawBenefits = showFullBenefits ? source : source.slice(0, 4);
+  // Three key benefits read at a glance; the rest are summed up as "+N".
+  const rawBenefits = source.slice(0, 3);
+  const moreBenefits = Math.max(0, source.length - rawBenefits.length);
   // Most plans already list "Free delivery" as a benefit; adding the
   // deliveryIncluded line as well showed it twice. The CMS label also carries
   // its own tick, which doubled the ✓.
@@ -89,7 +91,7 @@ export default function PlanCard({ plan, showFullBenefits = false, isGift = fals
       tabIndex={0}
       aria-label={`${name}, ${gel(plan.price)}`}
       aria-busy={loading}
-      className={`group relative flex flex-col text-left rounded-[28px] p-7 cursor-pointer transition-all duration-300 hover:-translate-y-1.5 focus:outline-none focus-visible:ring-4 focus-visible:ring-teal-200 ${
+      className={`group relative flex flex-col text-left rounded-3xl p-5 cursor-pointer transition-all duration-300 hover:-translate-y-1.5 focus:outline-none focus-visible:ring-4 focus-visible:ring-teal-200 ${
         featured
           ? isGift
             ? 'bg-gradient-to-b from-peach-50 to-white ring-2 ring-peach-400/60 shadow-soft'
@@ -108,12 +110,12 @@ export default function PlanCard({ plan, showFullBenefits = false, isGift = fals
         <h3 className="text-lg font-bold text-gray-800">{name}</h3>
         {isGift && <span className="text-xl" aria-hidden="true">🎁</span>}
       </div>
-      <p className="text-sm mt-1.5 min-h-[2.5rem] leading-snug text-gray-500">
+      <p className="text-xs mt-1 leading-snug text-gray-500 line-clamp-1">
         {isGift ? fill(t('pricing.gift.card'), { plan: name }) : planText(plan, 'description', lang)}
       </p>
 
-      <p className="mt-5 text-[2.6rem] leading-none font-extrabold tracking-tight text-gray-800">{gel(plan.price)}</p>
-      <div className="mt-3 flex flex-wrap items-center gap-2 min-h-[1.75rem]">
+      <p className="mt-4 text-3xl leading-none font-extrabold tracking-tight text-gray-800">{gel(plan.price)}</p>
+      <div className="mt-2 flex flex-wrap items-center gap-2 min-h-[1.5rem]">
         {plan.monthlyEquivPrice && (
           <span className="text-sm text-gray-500">≈ {gel(Number(plan.monthlyEquivPrice).toFixed(2))}{t('global.perMonth')}</span>
         )}
@@ -124,9 +126,9 @@ export default function PlanCard({ plan, showFullBenefits = false, isGift = fals
         )}
       </div>
 
-      <div className="my-6 h-px bg-gray-100" />
+      <div className="my-4 h-px bg-gray-100" />
 
-      <ul className="space-y-3 mb-8 flex-1">
+      <ul className="space-y-2 mb-5 flex-1">
         {benefits.map((b: string, i: number) => (
           <li key={i} className="flex items-start gap-2.5 text-sm text-gray-600">{check}{localBenefits ? b : translateBenefit(b)}</li>
         ))}
@@ -136,10 +138,11 @@ export default function PlanCard({ plan, showFullBenefits = false, isGift = fals
         {isGift && (
           <li className="flex items-start gap-2.5 text-sm text-gray-600">{check}{t('co.gift.planPerk')}</li>
         )}
+        {moreBenefits > 0 && <li className="text-xs font-semibold text-teal-700 pl-7">+{moreBenefits}</li>}
       </ul>
 
       <div
-        className={`w-full flex items-center justify-center gap-2 py-3.5 rounded-full font-bold text-sm transition-all duration-200 ${
+        className={`w-full flex items-center justify-center gap-2 py-3 rounded-full font-bold text-sm transition-all duration-200 ${
           featured
             ? isGift
               ? 'bg-peach-400 text-white shadow-[0_10px_24px_-10px_rgba(233,120,74,0.6)] group-hover:bg-peach-600'

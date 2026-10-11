@@ -83,4 +83,20 @@ export const ACCOUNT_STRINGS: Record<string, { en: string; ka: string }> = {
   'ord.pay.REFUNDED':       { en: 'Refunded',                    ka: 'დაბრუნებულია' },
   'ord.pay.PARTIALLY_REFUNDED': { en: 'Partly refunded',         ka: 'ნაწილობრივ დაბრუნებულია' },
   'ord.giftFor':            { en: 'Gift for {name}',             ka: 'საჩუქარი — {name}' },
+
+  // ── Pupbox Run (mini game) ──
+  'game.title':             { en: 'Pupbox Run — help the pup jump!', ka: 'Pupbox Run — დაეხმარე ლეკვს ხტომაში!' },
+  'game.how':               { en: 'Tap, click or press Space to jump. Catch bones for +5.', ka: 'დააჭირე ან Space — ხტომა. დაიჭირე ძვლები +5 ქულისთვის.' },
+  'game.start':             { en: 'Play',                        ka: 'თამაში' },
+  'game.again':             { en: 'Play again',                  ka: 'თავიდან' },
+  'game.over':              { en: 'Oops! Bumped into something', ka: 'უი! რაღაცას შეეჯახა' },
+  'game.record':            { en: 'New best score! 🎉',          ka: 'ახალი რეკორდი! 🎉' },
+  'game.score':             { en: 'Score',                       ka: 'ქულა' },
+  'game.best':              { en: 'Best',                        ka: 'რეკორდი' },
+  'game.aria':              { en: 'Pupbox Run game. Press Space to jump.', ka: 'თამაში Pupbox Run. ხტომისთვის დააჭირე Space-ს.' },
+  'game.break':             { en: 'Break time 🐾',                ka: 'შესვენება 🐾' },
+  'game.breakSub':          { en: 'A quick game while you choose. Beat your best!', ka: 'პატარა თამაში, სანამ ირჩევ. გააუმჯობესე რეკორდი!' },
+  'game.offline':           { en: "You're offline",              ka: 'ინტერნეტი გაითიშა' },
+  'game.offlineSub':        { en: 'No internet right now — play while it comes back.', ka: 'ინტერნეტი ახლა არ არის — ითამაშე, სანამ დაბრუნდება.' },
+  'game.close':             { en: 'Close',                       ka: 'დახურვა' },
 };
