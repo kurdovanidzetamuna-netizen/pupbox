@@ -46,7 +46,7 @@ export default function AccountLayout({ children }: { children: React.ReactNode 
               ))}
             </ul>
             <div className="hidden lg:block mt-6 space-y-2">
-              <Link href="/prices" className="flex items-center justify-center gap-2 w-full bg-teal-600 text-white text-sm font-bold py-3 hover:bg-teal-700">
+              <Link href="/prices" className="flex items-center justify-center gap-2 w-full bg-teal-600 text-white text-sm font-semibold py-2.5 hover:bg-teal-700">
                 + {t('acc.subscribe')}
               </Link>
               <button type="button" onClick={leave} className="w-full text-sm font-semibold text-gray-500 hover:text-red-600 py-2.5 rounded-xl hover:bg-white transition">

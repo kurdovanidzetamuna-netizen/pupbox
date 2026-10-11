@@ -73,7 +73,7 @@ export default function Header({ site }: { site: StoredContent | null }) {
 
         <div className="flex items-center gap-2 sm:gap-3">
           {c.header.buttonText && (
-            <SmartLink href={c.header.buttonHref} className="group hidden sm:inline-flex items-center justify-center gap-1.5 bg-teal-600 text-white text-sm font-bold h-10 pl-5 pr-4 hover:bg-teal-700">
+            <SmartLink href={c.header.buttonHref} className="group hidden sm:inline-flex items-center justify-center gap-1.5 bg-teal-600 text-white text-sm font-semibold h-9 pl-4 pr-3 hover:bg-teal-700">
               {c.header.buttonText}
               <svg className="w-4 h-4 transition-transform group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
             </SmartLink>
@@ -110,14 +110,14 @@ export default function Header({ site }: { site: StoredContent | null }) {
           {/* Account: one tap straight to My account (everything else is in its menu). */}
           {signedIn ? (
             <Link href="/account" aria-label={t('nav.account')} title={t('nav.account')}
-              className={`hidden md:inline-flex items-center justify-center w-10 h-10 rounded-full text-sm font-extrabold transition ring-2 ${
-                pathname.startsWith('/account') ? 'ring-teal-400 bg-teal-500 text-white' : 'ring-transparent bg-gradient-to-br from-teal-300 to-teal-500 text-white hover:ring-teal-200'}`}>
+              className={`hidden md:inline-flex items-center justify-center w-9 h-9 rounded-full text-sm font-bold transition-colors ${
+                pathname.startsWith('/account') ? 'bg-teal-100 text-teal-800' : 'bg-teal-50 text-teal-700 hover:bg-teal-100'}`}>
               {initial || (
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
               )}
             </Link>
           ) : (
-            <Link href="/login" className="hidden md:inline-flex items-center h-10 px-4 rounded-full text-sm font-bold text-teal-700 bg-teal-50 hover:bg-teal-100 transition">
+            <Link href="/login" className="hidden md:inline-flex items-center h-9 px-4 rounded-full text-sm font-semibold text-teal-700 bg-teal-50 hover:bg-teal-100 transition">
               {t('nav.signIn')}
             </Link>
           )}

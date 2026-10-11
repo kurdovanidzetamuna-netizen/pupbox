@@ -103,7 +103,7 @@ export default function AccountPage() {
         <>
           <header className="relative overflow-hidden rounded-[28px] bg-gradient-to-br from-teal-50 via-white to-lilac-50 ring-1 ring-teal-100/70 p-6 sm:p-8 flex flex-col sm:flex-row sm:items-center gap-5 shadow-soft">
             <div className="absolute -right-10 -top-12 w-48 h-48 rounded-full bg-teal-100/60 blur-2xl pointer-events-none" aria-hidden="true" />
-            <div className="relative w-16 h-16 rounded-2xl bg-gradient-to-br from-teal-300 to-teal-500 text-white text-2xl font-extrabold flex items-center justify-center shrink-0 shadow-glow">
+            <div className="relative w-16 h-16 rounded-2xl bg-gradient-to-br from-teal-300 to-teal-500 text-white text-2xl font-extrabold flex items-center justify-center shrink-0 ">
               {(user?.firstName?.[0] || user?.email?.[0] || '?').toUpperCase()}
             </div>
             <div className="relative flex-1 min-w-0">
@@ -111,8 +111,8 @@ export default function AccountPage() {
               <p className="text-sm text-gray-500 truncate">{user?.email}</p>
             </div>
             <div className="relative flex gap-3">
-              <Link href="/prices" className="inline-flex items-center justify-center bg-teal-600 text-white text-sm font-bold px-5 py-3 rounded-xl hover:bg-teal-700 transition shadow-sm whitespace-nowrap">+ {t('acc.subscribe')}</Link>
-              <button onClick={logout} className="inline-flex items-center justify-center bg-white/80 ring-1 ring-gray-200 text-gray-600 text-sm font-semibold px-5 py-3 rounded-full hover:ring-red-200 hover:text-red-600 transition whitespace-nowrap">{t('acc.signOut')}</button>
+              <Link href="/prices" className="inline-flex items-center justify-center bg-teal-600 text-white text-sm font-semibold px-4 py-2 rounded-xl hover:bg-teal-700 whitespace-nowrap">+ {t('acc.subscribe')}</Link>
+              <button onClick={logout} className="inline-flex items-center justify-center bg-white/80 ring-1 ring-gray-200 text-gray-600 text-sm font-semibold px-4 py-2 rounded-full hover:ring-red-200 hover:text-red-600 transition whitespace-nowrap">{t('acc.signOut')}</button>
             </div>
           </header>
 
@@ -154,7 +154,7 @@ export default function AccountPage() {
                   {input('phone', t('co.f.phone'))}
                   <p className={`text-xs mt-1.5 ${user?.phoneVerified ? 'text-teal-700' : 'text-amber-700'}`}>{user?.phoneVerified ? `✓ ${t('acc.verified')}` : t('acc.notVerified')}</p>
                 </div>
-                <button type="submit" disabled={saving} className="bg-teal-600 text-white px-7 py-3 rounded-xl font-semibold hover:bg-teal-700 transition disabled:opacity-50">
+                <button type="submit" disabled={saving} className="bg-teal-600 text-white text-sm px-6 py-2.5 rounded-xl font-semibold hover:bg-teal-700 disabled:opacity-50">
                   {saving ? t('co.saving') : t('acc.save')}
                 </button>
               </form>

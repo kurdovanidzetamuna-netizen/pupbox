@@ -48,8 +48,8 @@ const config: Config = {
         '3xl': '2rem',
       },
       boxShadow: {
-        soft: '0 10px 40px -12px rgba(36, 48, 58, 0.14)',
-        glow: '0 12px 30px -10px rgba(34, 163, 139, 0.45)',
+        soft: '0 2px 12px -4px rgba(36, 48, 58, 0.08)',
+        glow: '0 4px 14px -6px rgba(34, 163, 139, 0.28)',
       },
     },
   },
