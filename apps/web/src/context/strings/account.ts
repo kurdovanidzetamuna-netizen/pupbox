@@ -9,8 +9,8 @@ export const ACCOUNT_STRINGS: Record<string, { en: string; ka: string }> = {
   'reg.referral':           { en: 'Referral code',   ka: 'მოწვევის კოდი' },
   'reg.referralFrom':       { en: 'Invited by a friend — the code is filled in for you.', ka: 'მეგობარმა მოგიწვია — კოდი უკვე შევსებულია.' },
   'reg.consent':            { en: 'Send me offers, tips and reminders about my dog (you can stop any time).', ka: 'გამომიგზავნეთ შეთავაზებები, რჩევები და შეხსენებები ჩემი ძაღლის შესახებ (ნებისმიერ დროს შემიძლია გავაუქმო).' },
-  'reg.e.firstName':        { en: 'First name is required',     ka: 'სახელი აუცილებელია' },
-  'reg.e.lastName':         { en: 'Last name is required',      ka: 'გვარი აუცილებელია' },
+  'reg.e.firstName':        { en: 'First name is required',     ka: 'სახელი სავალდებულოა' },
+  'reg.e.lastName':         { en: 'Last name is required',      ka: 'გვარი სავალდებულოა' },
   'reg.e.email':            { en: 'Enter a valid email address', ka: 'შეიყვანე სწორი ელფოსტა' },
   'reg.e.password':         { en: 'At least 8 characters',      ka: 'მინიმუმ 8 სიმბოლო' },
   'reg.e.phone':            { en: 'Enter a valid mobile number', ka: 'შეიყვანე სწორი მობილურის ნომერი' },
@@ -243,4 +243,12 @@ export const ACCOUNT_STRINGS: Record<string, { en: string; ka: string }> = {
   'map.search':             { en: 'Search a street or place',    ka: 'მოძებნე ქუჩა ან ადგილი' },
   'map.locate':             { en: 'My location',                 ka: 'ჩემი მდებარეობა' },
   'map.hint':               { en: 'Move the map so the pin sits on your door.', ka: 'გადაადგილე რუკა, რომ ნიშნული შენს კარზე იყოს.' },
+
+  // ── Form errors ──
+  'ui.e.required':          { en: 'This field is required',      ka: 'სავალდებულო ველია' },
+  'ui.e.missing':           { en: 'Fill in the {n} required fields marked in red.', ka: 'შეავსე წითლად მონიშნული {n} სავალდებულო ველი.' },
+  'ui.e.missingOne':        { en: 'Fill in the required field marked in red.', ka: 'შეავსე წითლად მონიშნული სავალდებულო ველი.' },
+  'ui.e.phone':             { en: 'Phone is required',           ka: 'ტელეფონი სავალდებულოა' },
+  'ui.e.city':              { en: 'City is required',            ka: 'ქალაქი სავალდებულოა' },
+  'ui.e.street':            { en: 'Street and number are required', ka: 'ქუჩა და ნომერი სავალდებულოა' },
 };

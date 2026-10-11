@@ -8,6 +8,7 @@ import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import Field from '@/components/ui/Field';
 import IconButton from '@/components/ui/IconButton';
 import { Icon } from '@/components/ui/icons';
+import { revealFirstError } from '@/components/ui/FormError';
 
 const msg = async (res: Response, fallback: string) => {
   const d = await res.json().catch(() => ({}));
@@ -28,13 +29,16 @@ export default function AccountSecurity() {
   const [pwOpen, setPwOpen] = useState(false);
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [pw, setPw] = useState({ current: '', next: '', again: '' });
-  const [pwError, setPwError] = useState('');
+  // Which field the message belongs under.
+  const [pwErr, setPwErr] = useState<{ at: 'current' | 'next' | 'again'; text: string } | null>(null);
+  const setPwError = (text: string, at: 'current' | 'next' | 'again' = 'again') => setPwErr(text ? { at, text } : null);
+  const pwError = (at: 'current' | 'next' | 'again') => (pwErr?.at === at ? pwErr.text : '');
   const [pwSaving, setPwSaving] = useState(false);
 
   function openPw() { setPw({ current: '', next: '', again: '' }); setPwError(''); setStep(1); setPwOpen(true); }
 
   async function savePassword() {
-    if (pw.next.length < 8) return setPwError(t('rp.e.short'));
+    if (pw.next.length < 8) return setPwError(t('rp.e.short'), 'next');
     if (pw.next !== pw.again) return setPwError(t('rp.e.match'));
     setPwSaving(true); setPwError('');
     try {
@@ -42,7 +46,7 @@ export default function AccountSecurity() {
       if (!res.ok) {
         // A wrong current password sends them back to step 1 with the reason.
         const text = await msg(res, t('co.e.generic'));
-        if (res.status === 400) { setStep(1); }
+        if (res.status === 400) { setStep(1); return setPwError(text, 'current'); }
         return setPwError(text);
       }
       const data = await res.json().catch(() => ({}));
@@ -59,10 +63,11 @@ export default function AccountSecurity() {
   const [delOpen, setDelOpen] = useState(false);
   const [delPassword, setDelPassword] = useState('');
   const [delError, setDelError] = useState('');
+  const [delFieldError, setDelFieldError] = useState('');
   const [deleting, setDeleting] = useState(false);
 
   async function deleteAccount() {
-    if (!delPassword) return setDelError(t('login.e.password'));
+    if (!delPassword) { setDelFieldError(t('login.e.password')); return revealFirstError(); }
     setDeleting(true); setDelError('');
     try {
       const res = await authFetch('/auth/delete-account', { method: 'POST', body: JSON.stringify({ password: delPassword }) });
@@ -94,7 +99,7 @@ export default function AccountSecurity() {
           <span className="w-9 h-9 rounded-xl bg-red-50 text-red-400 flex items-center justify-center"><Icon name="trash" className="w-[18px] h-[18px]" /></span>
           <p className="text-[13px] font-medium text-gray-800">{t('acc.delete')}</p>
         </div>
-        <IconButton icon="trash" label={t('acc.delete')} tone="danger" onClick={() => { setDelPassword(''); setDelError(''); setDelOpen(true); }} />
+        <IconButton icon="trash" label={t('acc.delete')} tone="danger" onClick={() => { setDelPassword(''); setDelError(''); setDelFieldError(''); setDelOpen(true); }} />
       </div>
 
       <Modal open={pwOpen} onClose={() => !pwSaving && setPwOpen(false)} title={step === 3 ? t('acc.pwDone') : t('acc.password')}>
@@ -105,22 +110,22 @@ export default function AccountSecurity() {
           </div>
         )}
         {step === 1 && (
-          <form onSubmit={(e) => { e.preventDefault(); if (!pw.current) return setPwError(t('login.e.password')); setPwError(''); setStep(2); }} className="space-y-4">
+          <form noValidate onSubmit={(e) => { e.preventDefault(); if (!pw.current) return setPwError(t('login.e.password'), 'current'); setPwError(''); setStep(2); }} className="space-y-4">
             <p className="text-sm text-gray-600">{t('acc.pwStep1')}</p>
-            <Field id="pw-current" type="password" label={t('acc.pwCurrent')} value={pw.current} autoComplete="current-password"
-              onChange={(v) => { setPw({ ...pw, current: v }); setPwError(''); }} error={pwError} />
+            <Field id="pw-current" type="password" label={t('acc.pwCurrent')} value={pw.current} autoComplete="current-password" required
+              onChange={(v) => { setPw({ ...pw, current: v }); setPwError(''); }} error={pwError('current')} />
             <div className="flex justify-end pt-2">
               <button type="submit" className="bg-teal-600 text-white text-sm font-semibold px-6 py-2.5 hover:bg-teal-700">{t('ui.next')}</button>
             </div>
           </form>
         )}
         {step === 2 && (
-          <form onSubmit={(e) => { e.preventDefault(); savePassword(); }} className="space-y-4">
+          <form noValidate onSubmit={(e) => { e.preventDefault(); savePassword(); }} className="space-y-4">
             <p className="text-sm text-gray-600">{t('acc.pwStep2')}</p>
-            <Field id="pw-new" type="password" label={t('acc.pwNew')} value={pw.next} autoComplete="new-password" hint={t('acc.pwHint')}
-              onChange={(v) => { setPw({ ...pw, next: v }); setPwError(''); }} />
-            <Field id="pw-again" type="password" label={t('acc.pwAgain')} value={pw.again} autoComplete="new-password"
-              onChange={(v) => { setPw({ ...pw, again: v }); setPwError(''); }} error={pwError} />
+            <Field id="pw-new" type="password" label={t('acc.pwNew')} value={pw.next} autoComplete="new-password" hint={t('acc.pwHint')} required
+              onChange={(v) => { setPw({ ...pw, next: v }); setPwError(''); }} error={pwError('next')} />
+            <Field id="pw-again" type="password" label={t('acc.pwAgain')} value={pw.again} autoComplete="new-password" required
+              onChange={(v) => { setPw({ ...pw, again: v }); setPwError(''); }} error={pwError('again')} />
             <div className="flex justify-between pt-2">
               <button type="button" onClick={() => { setStep(1); setPwError(''); }} className="px-4 py-2.5 rounded-full text-sm font-semibold text-gray-600 hover:bg-gray-100">{t('ui.back')}</button>
               <button type="submit" disabled={pwSaving} className="bg-teal-600 text-white text-sm font-semibold px-6 py-2.5 hover:bg-teal-700">{pwSaving ? t('ui.wait') : t('acc.save')}</button>
@@ -139,8 +144,8 @@ export default function AccountSecurity() {
       <ConfirmDialog open={delOpen} onClose={() => setDelOpen(false)} onConfirm={deleteAccount} busy={deleting} error={delError}
         tone="danger" title={t('acc.deleteTitle')} confirmLabel={t('acc.deleteConfirm')}
         message={<><p>{t('acc.deleteInfo1')}</p><p>{t('acc.deleteInfo2')}</p></>}>
-        <Field id="del-pw" type="password" label={t('acc.deletePw')} value={delPassword} autoComplete="current-password"
-          onChange={(v) => { setDelPassword(v); setDelError(''); }} />
+        <Field id="del-pw" type="password" label={t('acc.deletePw')} value={delPassword} autoComplete="current-password" required error={delFieldError}
+          onChange={(v) => { setDelPassword(v); setDelError(''); setDelFieldError(''); }} />
       </ConfirmDialog>
     </section>
   );

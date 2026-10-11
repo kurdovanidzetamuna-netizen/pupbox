@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/context/LanguageContext';
 import DogProfileForm, { emptyDogProfile, fromDog, toDogPayload, type DogProfile } from '@/components/DogProfileForm';
 import { authFetch, loginUrl, SessionExpiredError } from '@/lib/authFetch';
+import { FormAlert, revealFirstError } from '@/components/ui/FormError';
 
 const SIZE_KEY: Record<string, string> = { EXTRA_SMALL: 'XS', SMALL: 'S', MEDIUM: 'M', LARGE: 'L', EXTRA_LARGE: 'XL' };
 
@@ -50,7 +51,7 @@ export default function MyDogsPage() {
   }
 
   async function save() {
-    if (!draft.name.trim()) { setNameError(t('co.e.dogName')); return; }
+    if (!draft.name.trim()) { setNameError(t('co.e.dogName')); return revealFirstError(); }
     setSaving(true); setError('');
     try {
       const res = await authFetch(editing === 'new' ? '/me/dogs' : `/me/dogs/${editing}`, {
@@ -138,7 +139,7 @@ export default function MyDogsPage() {
         <p className="text-[13px] text-gray-500 mb-5">{t('dogs.sub')}</p>
 
         {notice && <p className="mb-4 text-sm text-teal-800 bg-teal-50 border border-teal-100 rounded-xl px-4 py-3" role="status">✓ {notice}</p>}
-        {error && <p className="mb-4 text-sm text-red-600 bg-red-50 rounded-xl px-4 py-3" role="alert">{error}</p>}
+        <FormAlert message={error} className="mb-4" />
 
         {editing !== null && (
           <section className="bg-white rounded-[28px] ring-1 ring-gray-200/60 p-6 mb-6">

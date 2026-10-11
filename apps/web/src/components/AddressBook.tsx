@@ -10,6 +10,7 @@ import PhoneInput, { isValidPhone } from '@/components/ui/PhoneInput';
 import Menu from '@/components/ui/Menu';
 import { Icon } from '@/components/ui/icons';
 import { parsePhoneNumberFromString } from 'libphonenumber-js';
+import { FormAlert, countErrors, revealFirstError } from '@/components/ui/FormError';
 
 /** Home, work or a pin, guessed from the address's name. */
 /** +995 599 11 12 22 rather than +995599111222. */
@@ -41,7 +42,9 @@ export default function AddressBook({ onExpired, addTick = 0, onCount }: {
   const [removeError, setRemoveError] = useState('');
   const [phoneOk, setPhoneOk] = useState(false);
   const [pin, setPin] = useState<Pin | null>(null);
-  const [phoneErr, setPhoneErr] = useState('');
+  // One message per required field, shown under it.
+  const [errs, setErrs] = useState<Record<string, string>>({});
+  const [tried, setTried] = useState(false);
 
   const load = () => authFetch('/me/addresses').then((r) => r.json()).then((d) => Array.isArray(d) && setList(d))
     .catch((e) => { if (e instanceof SessionExpiredError) onExpired(); });
@@ -50,7 +53,7 @@ export default function AddressBook({ onExpired, addTick = 0, onCount }: {
   useEffect(() => { onCount?.(list.length); }, [list.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function open(a: Address | 'new') {
-    setEditing(a); setError(''); setPhoneErr('');
+    setEditing(a); setError(''); setErrs({}); setTried(false);
     setPhoneOk(a !== 'new' && isValidPhone(a.phone));
     setPin(a !== 'new' && a.latitude != null && a.longitude != null ? { lat: a.latitude, lng: a.longitude } : null);
     setForm(a === 'new' ? EMPTY : { label: a.label ?? '', firstName: a.firstName, lastName: a.lastName, phone: a.phone, city: a.city, addressLine1: a.addressLine1, addressLine2: a.addressLine2 ?? '' });
@@ -58,7 +61,14 @@ export default function AddressBook({ onExpired, addTick = 0, onCount }: {
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
-    if (!phoneOk) return setPhoneErr(t('reg.e.phone'));
+    const e2: Record<string, string> = {};
+    if (!form.city.trim()) e2.city = t('ui.e.city');
+    if (!form.addressLine1.trim()) e2.addressLine1 = t('ui.e.street');
+    if (!form.firstName.trim()) e2.firstName = t('co.e.firstName');
+    if (!form.lastName.trim()) e2.lastName = t('co.e.lastName');
+    if (!phoneOk) e2.phone = t(form.phone ? 'reg.e.phone' : 'ui.e.phone');
+    setErrs(e2); setTried(true);
+    if (countErrors(e2)) return revealFirstError(document.getElementById('address-form'));
     setBusy(true); setError('');
     try {
       const isNew = editing === 'new';
@@ -91,7 +101,7 @@ export default function AddressBook({ onExpired, addTick = 0, onCount }: {
     } finally { setBusy(false); }
   }
 
-  const set = (k: keyof typeof EMPTY) => (v: string) => { setForm((f) => ({ ...f, [k]: v })); setError(''); };
+  const set = (k: keyof typeof EMPTY) => (v: string) => { setForm((f) => ({ ...f, [k]: v })); setError(''); setErrs((e) => ({ ...e, [k]: '' })); };
 
   return (
     <>
@@ -125,7 +135,6 @@ export default function AddressBook({ onExpired, addTick = 0, onCount }: {
 
       <Modal open={editing !== null} onClose={() => !busy && setEditing(null)} title={editing === 'new' ? t('addr.add') : t('addr.edit')} size="lg"
         footer={<>
-          {error && <p className="mr-auto text-[12.5px] text-red-600" role="alert">{error}</p>}
           <button type="button" onClick={() => setEditing(null)} className="px-4 sm:px-5 py-2.5 rounded-full text-[13px] font-semibold text-gray-600 hover:bg-gray-100">{t('ui.cancel')}</button>
           <button type="submit" form="address-form" disabled={busy} className="bg-teal-600 text-white text-[13px] font-semibold px-5 sm:px-6 py-2.5 hover:bg-teal-700">{busy ? t('ui.wait') : t(editing === 'new' ? 'addr.saveNew' : 'acc.save')}</button>
         </>}>
@@ -133,24 +142,28 @@ export default function AddressBook({ onExpired, addTick = 0, onCount }: {
         {/* Phones: one column, map first. Tablets and up: the map fills the
             left side; every field sits on the right, so both end together. */}
         <form id="address-form" onSubmit={save} noValidate className="grid md:grid-cols-2 gap-x-6 gap-y-3 pt-1">
+          {(error || (tried && countErrors(errs) > 0)) && (
+            <FormAlert message={error} missing={countErrors(errs)} className="md:col-span-2" />
+          )}
           <div className="min-w-0 md:min-h-[420px]">
             <MapPicker key={`map-${editing === 'new' ? 'new' : editing?.id ?? 'none'}`} value={pin} mapClassName="h-56 sm:h-64 md:h-auto md:flex-1"
               onPick={(p) => {
                 setPin({ lat: p.lat, lng: p.lng });
                 setForm((f) => ({ ...f, ...(p.city !== undefined ? { city: p.city, addressLine1: p.street ?? '' } : {}) }));
+                if (p.city) setErrs((e) => ({ ...e, city: '', ...(p.street ? { addressLine1: '' } : {}) }));
               }} />
           </div>
           <div className="space-y-3 min-w-0">
-            <Field id="a-city" label={t('co.f.city')} value={form.city} onChange={set('city')} autoComplete="address-level2" required />
-            <Field id="a-line1" label={t('co.f.address')} value={form.addressLine1} onChange={set('addressLine1')} autoComplete="address-line1" required />
+            <Field id="a-city" label={t('co.f.city')} value={form.city} onChange={set('city')} error={errs.city} autoComplete="address-level2" required />
+            <Field id="a-line1" label={t('co.f.address')} value={form.addressLine1} onChange={set('addressLine1')} error={errs.addressLine1} autoComplete="address-line1" required />
             <Field id="a-line2" label={t('co.f.address2')} value={form.addressLine2} onChange={set('addressLine2')} autoComplete="address-line2" />
             <div className="pt-1 border-t border-gray-100" />
             <div className="grid grid-cols-2 gap-3">
-              <Field id="a-first" label={t('co.f.firstName')} value={form.firstName} onChange={set('firstName')} autoComplete="given-name" required />
-              <Field id="a-last" label={t('co.f.lastName')} value={form.lastName} onChange={set('lastName')} autoComplete="family-name" required />
+              <Field id="a-first" label={t('co.f.firstName')} value={form.firstName} onChange={set('firstName')} error={errs.firstName} autoComplete="given-name" required />
+              <Field id="a-last" label={t('co.f.lastName')} value={form.lastName} onChange={set('lastName')} error={errs.lastName} autoComplete="family-name" required />
             </div>
             <PhoneInput floatLabel key={editing === 'new' ? 'new' : editing?.id ?? 'none'} id="a-phone" label={t('co.f.phone')} value={form.phone} required
-              onChange={(v, valid) => { set('phone')(v); setPhoneOk(valid); setPhoneErr(''); }} error={phoneErr} />
+              onChange={(v, valid) => { set('phone')(v); setPhoneOk(valid); }} error={errs.phone} />
             <Field id="a-label" label={t('addr.label')} value={form.label} onChange={set('label')} maxLength={40} hint={t('addr.labelHint')} />
           </div>
         </form>

@@ -18,7 +18,7 @@ class CancelDto {
 class AddressDto {
   @Trim() @IsString() @IsNotEmpty() @MaxLength(80) firstName: string;
   @Trim() @IsString() @IsNotEmpty() @MaxLength(80) lastName: string;
-  @Trim() @IsString() @Matches(/^\+?[0-9\s()-]{7,20}$/) phone: string;
+  @Trim() @IsString() @Matches(/^\+?[0-9\s()-]{7,20}$/, { message: 'Enter a valid phone number' }) phone: string;
   @Trim() @IsString() @IsNotEmpty() @MaxLength(80) city: string;
   @Trim() @IsString() @IsNotEmpty() @MaxLength(200) addressLine1: string;
   @IsOptional() @Trim() @IsString() @MaxLength(200) addressLine2?: string;

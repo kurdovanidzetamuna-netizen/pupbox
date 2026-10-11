@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { getCountries, getCountryCallingCode, parsePhoneNumberFromString, type CountryCode } from 'libphonenumber-js';
 import { useLanguage } from '@/context/LanguageContext';
+import { FieldError } from './FormError';
 
 /** Countries most Pupbox customers come from, shown first; Georgia is the default. */
 const TOP: CountryCode[] = ['GE', 'TR', 'AM', 'AZ', 'UA', 'RU', 'IL', 'DE', 'GB', 'US'];
@@ -143,7 +144,7 @@ export default function PhoneInput({ id, value, onChange, label, error, autoFocu
         ) : input}
         {trailing}
       </div>
-      {error && <p className="mt-1 px-1 text-[11.5px] text-red-500">{error}</p>}
+      <FieldError message={error} />
       {open && (
         <div className="absolute left-0 top-full mt-1.5 z-50 w-full sm:w-80 rounded-2xl bg-white ring-1 ring-gray-200 shadow-[0_8px_30px_-10px_rgba(36,48,58,0.25)] p-1.5 animate-[fadeUp_0.12s_ease-out]">
           <input autoFocus value={query} onChange={(e) => setQuery(e.target.value)} placeholder={lang === 'ka' ? 'ქვეყანა ან კოდი…' : 'Country or code…'}

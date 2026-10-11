@@ -6,6 +6,7 @@ import { saveForEmails, useLanguage } from '@/context/LanguageContext';
 import { useCart } from '@/context/CartContext';
 import { safeRedirect } from '@/lib/safeRedirect';
 import { API_URL } from '@/lib/api';
+import { FieldError, FormAlert, countErrors, revealFirstError } from '@/components/ui/FormError';
 
 function LoginForm() {
   const router = useRouter();
@@ -25,7 +26,7 @@ function LoginForm() {
     const errs: Record<string, string> = {};
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) errs.email = t('login.e.email');
     if (!form.password) errs.password = t('login.e.password');
-    if (Object.keys(errs).length > 0) { setFieldErrors(errs); return; }
+    if (countErrors(errs)) { setFieldErrors(errs); return revealFirstError(); }
     setFieldErrors({});
     setLoading(true);
     setError('');
@@ -55,17 +56,17 @@ function LoginForm() {
       <div className="bg-white rounded-2xl border border-gray-100 p-8 w-full max-w-md shadow-sm">
         <h1 className="text-2xl font-bold text-gray-900 mb-6">{t('login.heading')}</h1>
         {sessionExpired && !error && <p className="text-amber-800 text-sm mb-4 bg-amber-50 px-3 py-2 rounded-lg" role="status">{t('acc.sessionExpired')}</p>}
-        {error && <p className="text-red-500 text-sm mb-4 bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <FormAlert message={error} className="mb-4" />
+        <form noValidate onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">{t('login.email')} <span className="text-red-500">*</span></label>
-            <input type="email" value={form.email} onChange={e => { setForm({ ...form, email: e.target.value }); setFieldErrors(f => ({ ...f, email: '' })); }} className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 ${fieldErrors.email ? 'border-red-400 bg-red-50' : 'border-gray-200'}`} placeholder="you@example.com" />
-            {fieldErrors.email && <p className="text-red-500 text-xs mt-1">⚠ {fieldErrors.email}</p>}
+            <input type="email" aria-invalid={!!fieldErrors.email} value={form.email} onChange={e => { setForm({ ...form, email: e.target.value }); setFieldErrors(f => ({ ...f, email: '' })); }} className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 ${fieldErrors.email ? 'border-red-400 bg-red-50' : 'border-gray-200'}`} placeholder="you@example.com" />
+            <FieldError message={fieldErrors.email} />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">{t('login.password')} <span className="text-red-500">*</span></label>
-            <input type="password" value={form.password} onChange={e => { setForm({ ...form, password: e.target.value }); setFieldErrors(f => ({ ...f, password: '' })); }} className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 ${fieldErrors.password ? 'border-red-400 bg-red-50' : 'border-gray-200'}`} placeholder="••••••••" />
-            {fieldErrors.password && <p className="text-red-500 text-xs mt-1">⚠ {fieldErrors.password}</p>}
+            <input type="password" aria-invalid={!!fieldErrors.password} value={form.password} onChange={e => { setForm({ ...form, password: e.target.value }); setFieldErrors(f => ({ ...f, password: '' })); }} className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 ${fieldErrors.password ? 'border-red-400 bg-red-50' : 'border-gray-200'}`} placeholder="••••••••" />
+            <FieldError message={fieldErrors.password} />
             <div className="text-right mt-2">
               <Link href="/forgot-password" className="text-sm text-teal-600 hover:underline">{t('login.forgot')}</Link>
             </div>

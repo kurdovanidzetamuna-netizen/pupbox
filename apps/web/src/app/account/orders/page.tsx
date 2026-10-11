@@ -10,6 +10,7 @@ import { gel } from '@/lib/format';
 import ChoiceNote from '@/components/ChoiceNote';
 import Menu from '@/components/ui/Menu';
 import { itemName } from '@/lib/localize';
+import { FieldError, FormAlert } from '@/components/ui/FormError';
 
 /** Every OrderStatus the API can return, with a colour and a label key. */
 const STATUS_STYLE: Record<string, string> = {
@@ -50,7 +51,7 @@ export default function MyOrdersPage() {
         {loading && (
           <div className="flex justify-center py-20"><div className="w-8 h-8 border-4 border-teal-200 border-t-teal-600 rounded-full animate-spin" /></div>
         )}
-        {error && <p className="text-red-600 text-center py-20" role="alert">{error}</p>}
+        <FormAlert message={error} className="my-10" />
         {!loading && !error && orders.length === 0 && (
           <div className="text-center py-20 text-gray-500">
             <div className="text-5xl mb-4" aria-hidden="true">📦</div>
@@ -195,7 +196,7 @@ function PayButton({ orderId }: { orderId: string }) {
         className="bg-teal-600 text-white text-sm px-5 py-2 rounded-full font-medium hover:bg-teal-700 transition disabled:opacity-50">
         {paying ? t('ord.redirecting') : t('ord.pay')}
       </button>
-      {error && <p className="text-red-600 text-xs mt-2" role="alert">{error}</p>}
+      <FieldError message={error} />
     </div>
   );
 }

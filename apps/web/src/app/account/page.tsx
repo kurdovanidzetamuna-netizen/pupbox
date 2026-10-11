@@ -13,6 +13,7 @@ import Modal from '@/components/ui/Modal';
 import IconButton from '@/components/ui/IconButton';
 import { Icon } from '@/components/ui/icons';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
+import { FormAlert, countErrors, revealFirstError } from '@/components/ui/FormError';
 
 export default function AccountPage() {
   const router = useRouter();
@@ -46,7 +47,7 @@ export default function AccountPage() {
     if (!form.lastName.trim()) errs.lastName = t('co.e.lastName');
     if (form.phone !== (user?.phone || '') && !phoneOk) errs.phone = t('reg.e.phone');
     setFieldErrors(errs);
-    if (Object.keys(errs).length) return;
+    if (countErrors(errs)) return revealFirstError();
     setSaving(true); setError(''); setSuccess('');
     try {
       const res = await authFetch('/users/me', { method: 'PATCH', body: JSON.stringify(form) });
@@ -152,7 +153,7 @@ export default function AccountPage() {
           <div className="grid lg:grid-cols-5 gap-5 items-start">
             <section className="lg:col-span-3 bg-white rounded-3xl ring-1 ring-gray-200/60 p-5 sm:p-6">
               <h2 className="text-[15px] font-bold text-gray-900 mb-4">{t('acc.details')}</h2>
-              {error && <p className="text-red-600 text-sm mb-4 bg-red-50 px-4 py-2.5 rounded-xl" role="alert">{error}</p>}
+              <FormAlert message={error} missing={countErrors(fieldErrors)} className="mb-4" />
               <form onSubmit={save} className="space-y-3" noValidate>
                 <div className="grid sm:grid-cols-2 gap-3">
                   {field('firstName', t('co.f.firstName'), true)}

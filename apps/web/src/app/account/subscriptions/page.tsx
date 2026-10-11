@@ -11,6 +11,9 @@ import { fill } from '@/context/strings/purchase';
 import { authFetch, loginUrl, SessionExpiredError } from '@/lib/authFetch';
 import { planText } from '@/lib/localize';
 import { gel } from '@/lib/format';
+import Field from '@/components/ui/Field';
+import PhoneInput, { isValidPhone } from '@/components/ui/PhoneInput';
+import { FormAlert, countErrors, revealFirstError } from '@/components/ui/FormError';
 
 const STATUS_STYLE: Record<string, { bg: string; color: string }> = {
   ACTIVE:         { bg: '#f0fdf4', color: '#166534' },
@@ -36,6 +39,9 @@ export default function MySubscriptionsPage() {
   const [addr, setAddr] = useState({ firstName: '', lastName: '', phone: '', city: '', addressLine1: '', addressLine2: '' });
   const [addrSaving, setAddrSaving] = useState(false);
   const [addrError, setAddrError] = useState('');
+  const [addrErrs, setAddrErrs] = useState<Record<string, string>>({});
+  const [addrPhoneOk, setAddrPhoneOk] = useState(true);
+  const setA = (k: keyof typeof addr) => (v: string) => { setAddr(a => ({ ...a, [k]: v })); setAddrError(''); setAddrErrs(e => ({ ...e, [k]: '' })); };
 
   const expired = () => router.replace(loginUrl('/account/subscriptions'));
   const date = (d: string) => formatDate(new Date(d), lang, { day: 'numeric', month: 'short', year: 'numeric' });
@@ -69,14 +75,20 @@ export default function MySubscriptionsPage() {
   function openAddress(sub: any) {
     const a = sub.address ?? {};
     setAddr({ firstName: a.firstName ?? '', lastName: a.lastName ?? '', phone: a.phone ?? '', city: a.city ?? '', addressLine1: a.addressLine1 ?? '', addressLine2: a.addressLine2 ?? '' });
-    setAddrError('');
+    setAddrError(''); setAddrErrs({}); setAddrPhoneOk(isValidPhone(a.phone ?? ''));
     setAddrFor(sub.id);
   }
 
   async function saveAddress(sub: any) {
-    const required = ['firstName', 'lastName', 'phone', 'city', 'addressLine1'] as const;
-    if (required.some(k => !addr[k].trim())) { setAddrError(t('addr.e.required')); return; }
-    if (!/^\+?[0-9\s()-]{7,20}$/.test(addr.phone.trim())) { setAddrError(t('addr.e.phone')); return; }
+    const errs: Record<string, string> = {
+      firstName: addr.firstName.trim() ? '' : t('co.e.firstName'),
+      lastName: addr.lastName.trim() ? '' : t('co.e.lastName'),
+      phone: addr.phone && addrPhoneOk ? '' : t(addr.phone ? 'reg.e.phone' : 'ui.e.phone'),
+      city: addr.city.trim() ? '' : t('ui.e.city'),
+      addressLine1: addr.addressLine1.trim() ? '' : t('ui.e.street'),
+    };
+    setAddrErrs(errs);
+    if (countErrors(errs)) return revealFirstError();
     setAddrSaving(true); setAddrError('');
     try {
       const res = await authFetch(`/me/subscriptions/${sub.id}/address`, { method: 'PATCH', body: JSON.stringify({ ...addr, addressLine2: addr.addressLine2 || undefined }) });
@@ -244,21 +256,24 @@ export default function MySubscriptionsPage() {
                         {addrFor !== sub.id && <IconButton icon="edit" label={t('addr.change')} size="sm" onClick={() => openAddress(sub)} />}
                       </div>
                       {addrFor === sub.id && (
-                        <div className="mt-4 grid sm:grid-cols-2 gap-3">
-                          {([['firstName', 'co.f.firstName'], ['lastName', 'co.f.lastName'], ['phone', 'co.f.phone'], ['city', 'co.f.city'], ['addressLine1', 'co.f.address'], ['addressLine2', 'co.f.address2']] as const).map(([k, label]) => (
-                            <label key={k} className={k === 'addressLine1' || k === 'addressLine2' ? 'sm:col-span-2' : ''}>
-                              <span className="block text-xs font-medium text-gray-600 mb-1">{t(label)}</span>
-                              <input value={addr[k]} onChange={e => { setAddr(a => ({ ...a, [k]: e.target.value })); setAddrError(''); }}
-                                type={k === 'phone' ? 'tel' : 'text'} autoComplete={k === 'phone' ? 'tel' : k === 'city' ? 'address-level2' : k === 'addressLine1' ? 'address-line1' : k === 'addressLine2' ? 'address-line2' : k === 'firstName' ? 'given-name' : 'family-name'}
-                                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400" />
-                            </label>
-                          ))}
-                          {addrError && <p className="sm:col-span-2 text-sm text-red-600" role="alert">{addrError}</p>}
-                          <div className="sm:col-span-2 flex gap-2">
-                            <button onClick={() => saveAddress(sub)} disabled={addrSaving} className="bg-teal-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-teal-700 disabled:opacity-50">{addrSaving ? t('co.saving') : t('addr.save')}</button>
-                            <button onClick={() => setAddrFor(null)} className="border border-gray-200 text-gray-600 px-4 py-2 rounded-lg text-sm">{t('dogs.cancel')}</button>
+                        <form onSubmit={e => { e.preventDefault(); saveAddress(sub); }} noValidate className="mt-4 grid sm:grid-cols-2 gap-3">
+                          {(addrError || countErrors(addrErrs) > 0) && <FormAlert message={addrError} missing={countErrors(addrErrs)} className="sm:col-span-2" />}
+                          <Field id={`pa-first-${sub.id}`} label={t('co.f.firstName')} value={addr.firstName} onChange={setA('firstName')} autoComplete="given-name" required error={addrErrs.firstName} />
+                          <Field id={`pa-last-${sub.id}`} label={t('co.f.lastName')} value={addr.lastName} onChange={setA('lastName')} autoComplete="family-name" required error={addrErrs.lastName} />
+                          <div className="sm:col-span-2">
+                            <PhoneInput floatLabel id={`pa-phone-${sub.id}`} label={t('co.f.phone')} value={addr.phone} required error={addrErrs.phone}
+                              onChange={(v, ok) => { setA('phone')(v); setAddrPhoneOk(ok); }} />
                           </div>
-                        </div>
+                          <Field id={`pa-city-${sub.id}`} label={t('co.f.city')} value={addr.city} onChange={setA('city')} autoComplete="address-level2" required error={addrErrs.city} />
+                          <Field id={`pa-line1-${sub.id}`} label={t('co.f.address')} value={addr.addressLine1} onChange={setA('addressLine1')} autoComplete="address-line1" required error={addrErrs.addressLine1} />
+                          <div className="sm:col-span-2">
+                            <Field id={`pa-line2-${sub.id}`} label={t('co.f.address2')} value={addr.addressLine2} onChange={setA('addressLine2')} autoComplete="address-line2" />
+                          </div>
+                          <div className="sm:col-span-2 flex justify-end gap-2">
+                            <button type="button" onClick={() => setAddrFor(null)} className="px-4 py-2 rounded-full text-[13px] font-semibold text-gray-600 hover:bg-gray-100">{t('dogs.cancel')}</button>
+                            <button type="submit" disabled={addrSaving} className="bg-teal-600 text-white px-5 py-2 text-[13px] font-semibold hover:bg-teal-700 disabled:opacity-50">{addrSaving ? t('co.saving') : t('addr.save')}</button>
+                          </div>
+                        </form>
                       )}
                     </div>
                   )}

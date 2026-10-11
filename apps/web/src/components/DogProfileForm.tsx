@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useLanguage } from '@/context/LanguageContext';
 import { fill } from '@/context/strings/purchase';
 import { ALLERGENS } from '@pupbox/content';
+import { FieldError } from '@/components/ui/FormError';
 
 /**
  * Tell-us-about-your-dog, as tappable choices rather than a form.
@@ -148,7 +149,7 @@ function ChipGroup({ options, selected, onChange, tone = 'teal', addLabel }: {
   );
 }
 
-export default function DogProfileForm({ value, onChange, showOptional = true, compact = false, nameError }: {
+export default function DogProfileForm({ value, onChange, showOptional = true, compact = false, nameError, sizeError }: {
   value: DogProfile;
   onChange: (d: DogProfile) => void;
   /** Hide the preference sections where a shorter form matters more. */
@@ -160,6 +161,8 @@ export default function DogProfileForm({ value, onChange, showOptional = true, c
    */
   compact?: boolean;
   nameError?: string;
+  /** When the size is required (a gift) and missing. */
+  sizeError?: string;
 }) {
   const { t } = useLanguage();
   const [expanded, setExpanded] = useState(false);
@@ -176,7 +179,7 @@ export default function DogProfileForm({ value, onChange, showOptional = true, c
           <label htmlFor="dog-name" className="text-sm font-semibold text-gray-900 block mb-2.5">{t('dog.name')} <span className="text-teal-600">*</span></label>
           <input id="dog-name" value={value.name} onChange={(e) => set('name', e.target.value)} aria-invalid={!!nameError}
             className={`${field} ${nameError ? 'border-red-400 bg-red-50' : ''}`} placeholder={t('dog.namePh')} />
-          {nameError && <p className="text-red-500 text-xs mt-1">{nameError}</p>}
+          <FieldError message={nameError} />
         </div>
         {showDetails && (
           <div>
@@ -187,7 +190,7 @@ export default function DogProfileForm({ value, onChange, showOptional = true, c
       </div>
 
       <Section title={t('dog.size')} hint={t('dog.sizeHint')}>
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+        <div className={`grid grid-cols-2 sm:grid-cols-5 gap-2 rounded-xl ${sizeError ? 'ring-2 ring-red-200 ring-offset-2' : ''}`} aria-invalid={!!sizeError} tabIndex={sizeError ? -1 : undefined}>
           {SIZES.map((s) => {
             const active = value.size === s.value;
             return (
@@ -200,6 +203,7 @@ export default function DogProfileForm({ value, onChange, showOptional = true, c
             );
           })}
         </div>
+        <FieldError message={sizeError} />
       </Section>
 
       <Section title={t('dog.allergies')} hint={t('dog.allergiesHint')}>

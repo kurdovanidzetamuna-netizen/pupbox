@@ -15,6 +15,7 @@ import ChoiceNote from '@/components/ChoiceNote';
 import VerifyCodes from '@/components/VerifyCodes';
 import PhoneInput from '@/components/ui/PhoneInput';
 import { forgetReferral, storedReferral } from '@/lib/referral';
+import { FieldError, FormAlert, countErrors, revealFirstError } from '@/components/ui/FormError';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -31,12 +32,12 @@ type StepKey = 'account' | 'dog' | 'gift' | 'delivery';
  * component declared inside the page is a new type on every render, which
  * remounts the input and drops focus after each keystroke.
  */
-function Field({ id, label, hint, error, children }: { id: string; label: string; hint?: string; error?: string; children: React.ReactNode }) {
+function Field({ id, label, hint, error, required, children }: { id: string; label: string; hint?: string; error?: string; required?: boolean; children: React.ReactNode }) {
   return (
     <div>
-      <label htmlFor={id} className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+      <label htmlFor={id} className="block text-sm font-medium text-gray-700 mb-1">{label}{required && <span className="text-red-400"> *</span>}</label>
       {children}
-      {error ? <p className="text-red-500 text-xs mt-1">{error}</p> : hint ? <p className="text-xs text-gray-400 mt-1">{hint}</p> : null}
+      {error ? <FieldError message={error} /> : hint ? <p className="text-xs text-gray-400 mt-1">{hint}</p> : null}
     </div>
   );
 }
@@ -191,8 +192,9 @@ export default function CheckoutPage() {
 
   function fail(e: Record<string, string>) {
     setErrs(e);
-    if (Object.keys(e).length) setError(t('co.e.fix'));
-    return Object.keys(e).length > 0;
+    setError('');
+    if (countErrors(e)) revealFirstError();
+    return countErrors(e) > 0;
   }
 
   async function submitAccount() {
@@ -202,7 +204,7 @@ export default function CheckoutPage() {
     if (!EMAIL_RE.test(form.email.trim())) e.email = t('co.e.email');
     if (!form.password) e.password = t('co.e.passwordReq');
     else if (isNewAccount && form.password.length < 8) e.password = t('co.e.passwordLen');
-    if (isNewAccount && !signupPhoneOk) e.signupPhone = t('reg.e.phone');
+    if (isNewAccount && !signupPhoneOk) e.signupPhone = t(signupPhone ? 'reg.e.phone' : 'ui.e.phone');
     if (fail(e)) return;
 
     setError(''); setLoading(true);
@@ -269,7 +271,8 @@ export default function CheckoutPage() {
     const e: Record<string, string> = {};
     if (!form.firstName.trim()) e.firstName = t('co.e.firstName');
     if (!form.lastName.trim()) e.lastName = t('co.e.lastName');
-    if (!form.phone.trim() || !deliveryPhoneOk) e.phone = t('co.e.phone');
+    if (!form.phone.trim()) e.phone = t('ui.e.phone');
+    else if (!deliveryPhoneOk) e.phone = t('co.e.phone');
     if (!form.city.trim()) e.city = t('co.e.city');
     if (!form.addressLine1.trim()) e.addressLine1 = t('co.e.address');
     if (!selectedDelivery) e.delivery = t('co.e.delivery');
@@ -342,8 +345,10 @@ export default function CheckoutPage() {
 
   const field = (key: string) =>
     `w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 ${errs[key] ? 'border-red-400 bg-red-50' : 'border-gray-200'}`;
+  // Every field is required unless it's one of these.
+  const OPTIONAL = new Set<keyof typeof form>(['addressLine2', 'giftRecipientEmail', 'giftMessage']);
   const input = (id: keyof typeof form, label: string, opts: { type?: string; placeholder?: string; hint?: string; autoComplete?: string } = {}) => (
-    <Field id={id} label={label} hint={opts.hint} error={errs[id]}>
+    <Field id={id} label={label} hint={opts.hint} error={errs[id]} required={!OPTIONAL.has(id)}>
       <input id={id} type={opts.type || 'text'} value={form[id]} onChange={e => update(id, e.target.value)}
         aria-invalid={!!errs[id]} placeholder={opts.placeholder} autoComplete={opts.autoComplete} className={field(id)} />
     </Field>
@@ -422,7 +427,7 @@ export default function CheckoutPage() {
                   )}
                   {input('email', t('co.f.email'), { type: 'email', placeholder: 'you@example.com', autoComplete: 'email' })}
                   {isNewAccount && (
-                    <Field id="signupPhone" label={t('reg.phone')} hint={t('reg.phoneHint')} error={errs.signupPhone}>
+                    <Field id="signupPhone" required label={t('reg.phone')} hint={t('reg.phoneHint')} error={errs.signupPhone}>
                       <PhoneInput id="signupPhone" label={t('reg.phone')} value={signupPhone} required
                         onChange={(v, ok) => { setSignupPhone(v); setSignupPhoneOk(ok); setErrs(er => ({ ...er, signupPhone: '' })); }} />
                     </Field>
@@ -434,7 +439,7 @@ export default function CheckoutPage() {
                       <span>{t('reg.consent')}</span>
                     </label>
                   )}
-                  {error && <p className="text-red-500 text-sm" role="alert">{error}</p>}
+                  <FormAlert message={error} missing={countErrors(errs)} />
                   {isNewAccount && <LegalNotice />}
                   <button type="submit" disabled={loading} className={primary}>{loading ? t('co.wait') : t('co.continue')}</button>
                 </form>
@@ -451,8 +456,7 @@ export default function CheckoutPage() {
                   <div className="pt-2">
                     <h2 className="font-semibold text-gray-900">{t('co.gift.dogTitle')}</h2>
                     <p className="text-xs text-gray-500 mb-3">{t('co.gift.dogSub')}</p>
-                    <DogProfileForm value={giftDog} onChange={d => { setGiftDog(d); setErrs(e => ({ ...e, dogName: '', dogSize: d.size ? '' : e.dogSize })); }} compact nameError={errs.dogName} />
-                    {errs.dogSize && <p className="text-red-500 text-xs mt-1">{errs.dogSize}</p>}
+                    <DogProfileForm value={giftDog} onChange={d => { setGiftDog(d); setErrs(e => ({ ...e, dogName: '', dogSize: d.size ? '' : e.dogSize })); }} compact nameError={errs.dogName} sizeError={errs.dogSize} />
                   </div>
                   {input('giftRecipientEmail', t('co.gift.email'), { type: 'email', placeholder: 'nino@example.com', hint: t('co.gift.emailHint') })}
                   <Field id="giftMessage" label={t('co.gift.message')} hint={`${form.giftMessage.length}/1000`} error={errs.giftMessage}>
@@ -470,7 +474,7 @@ export default function CheckoutPage() {
                       ))}
                     </div>
                     {giftLater && (
-                      <Field id="giftSendOn" label={t('co.gift.date')} hint={t('co.gift.dateHint')} error={errs.giftSendOn}>
+                      <Field id="giftSendOn" required label={t('co.gift.date')} hint={t('co.gift.dateHint')} error={errs.giftSendOn}>
                         <input id="giftSendOn" type="date" value={form.giftSendOn} min={todayTbilisi()} max={inAYear()}
                           onChange={e => update('giftSendOn', e.target.value)} className={`${field('giftSendOn')} mt-2`} />
                       </Field>
@@ -478,7 +482,7 @@ export default function CheckoutPage() {
                   </fieldset>
                 </div>
                 <p className="mt-5 bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800">{t('co.gift.note')}</p>
-                {error && <p className="text-red-500 text-sm mt-4" role="alert">{error}</p>}
+                <FormAlert message={error} missing={countErrors(errs)} className="mt-4" />
                 <div className="flex gap-3 mt-6">
                   {stepIndex > 0 && <button type="button" onClick={back} className={secondary}>{t('co.back')}</button>}
                   <button type="button" onClick={submitGift} className={primary}>{t('co.continue')}</button>
@@ -509,7 +513,7 @@ export default function CheckoutPage() {
                   </div>
                 )}
                 <DogProfileForm value={dog} onChange={d => { setDog(d); setErrs(e => ({ ...e, dogName: '' })); }} compact nameError={errs.dogName} />
-                {error && <p className="text-red-500 text-sm mt-4" role="alert">{error}</p>}
+                <FormAlert message={error} missing={countErrors(errs)} className="mt-4" />
                 <div className="flex gap-3 mt-8">
                   {stepIndex > 0 && <button type="button" onClick={back} className={secondary}>{t('co.back')}</button>}
                   <button type="button" onClick={submitDog} disabled={loading} className={primary}>{loading ? t('co.saving') : t('co.continue')}</button>
@@ -537,7 +541,7 @@ export default function CheckoutPage() {
                     {input('firstName', t('co.f.firstName'), { autoComplete: 'given-name' })}
                     {input('lastName', t('co.f.lastName'), { autoComplete: 'family-name' })}
                   </div>
-                  <Field id="phone" label={t('co.f.phone')} error={errs.phone}>
+                  <Field id="phone" required label={t('co.f.phone')} error={errs.phone}>
                     {/* Mounts with the step, after any prefill, so the picker shows that number's country. */}
                     <PhoneInput id="phone" label={t('co.f.phone')} value={form.phone}
                       onChange={(v, ok) => { setForm(f => ({ ...f, phone: v })); setDeliveryPhoneOk(ok || !v); setErrs(er => ({ ...er, phone: '' })); }} />
@@ -553,7 +557,7 @@ export default function CheckoutPage() {
                 </div>
 
                 <h2 className="font-semibold text-gray-900 mt-8 mb-3">{t('co.delivery.method')}</h2>
-                <div className="space-y-3" role="radiogroup" aria-label={t('co.delivery.method')}>
+                <div className="space-y-3" role="radiogroup" aria-label={t('co.delivery.method')} aria-invalid={!!errs.delivery} tabIndex={errs.delivery ? -1 : undefined}>
                   {deliveryMethods.map(m => {
                     const days = String(m.estimatedDays ?? '');
                     return (
@@ -582,11 +586,11 @@ export default function CheckoutPage() {
                     );
                   })}
                 </div>
-                {errs.delivery && <p className="text-red-500 text-xs mt-2">{errs.delivery}</p>}
+                <FieldError message={errs.delivery} />
 
                 {/* Renewal is spelled out — price and period — not just a tick. */}
                 {offersRenewal && (
-                  <fieldset className="mt-6">
+                  <fieldset className="mt-6" aria-invalid={!!errs.renewal} tabIndex={errs.renewal ? -1 : undefined}>
                     <legend className="font-semibold text-gray-900 mb-3">{t('co.renew.choose')}</legend>
                     <div className="grid sm:grid-cols-2 gap-3">
                       {[
@@ -603,7 +607,7 @@ export default function CheckoutPage() {
                         </label>
                       ))}
                     </div>
-                    {errs.renewal && <p className="text-red-500 text-xs mt-2">{errs.renewal}</p>}
+                    <FieldError message={errs.renewal} />
                   </fieldset>
                 )}
 
@@ -614,7 +618,7 @@ export default function CheckoutPage() {
                     <span className="block text-[12px] text-gray-500">🔒 {t('co.saveCardHint')}</span>
                   </span>
                 </label>
-                {error && <p className="text-red-500 text-sm mt-5" role="alert">{error}</p>}
+                <FormAlert message={error} missing={countErrors(errs)} className="mt-5" />
                 <div className="flex gap-3 mt-6">
                   {stepIndex > 0 && <button type="button" onClick={back} className={secondary}>{t('co.back')}</button>}
                   <button type="button" onClick={pay} disabled={loading} className={primary}>

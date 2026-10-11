@@ -7,6 +7,7 @@ import Confetti from '@/components/Confetti';
 import OtpInput from '@/components/ui/OtpInput';
 import PhoneInput from '@/components/ui/PhoneInput';
 import { Icon } from '@/components/ui/icons';
+import { FieldError } from '@/components/ui/FormError';
 
 type Channel = 'PHONE' | 'EMAIL';
 interface Me { email: string; phone: string | null; emailVerified: boolean; phoneVerified: boolean }
@@ -126,7 +127,7 @@ export default function VerifyCodes({ onDone }: { onDone: () => void }) {
           {busy === channel && <span className="w-5 h-5 border-2 border-teal-200 border-t-teal-600 rounded-full animate-spin" aria-hidden="true" />}
         </div>
         {channel === 'PHONE' && editingPhone ? (
-          <form onSubmit={e => { e.preventDefault(); if (phoneValid) savePhone(); }} className="animate-[fadeUp_0.15s_ease-out]">
+          <form noValidate onSubmit={e => { e.preventDefault(); if (phoneValid) savePhone(); }} className="animate-[fadeUp_0.15s_ease-out]">
             <PhoneInput id="new-phone" label={t('reg.phone')} value={newPhone} autoFocus
               onChange={(v, ok) => { setNewPhone(v); setPhoneValid(ok); }}
               trailing={
@@ -146,7 +147,7 @@ export default function VerifyCodes({ onDone }: { onDone: () => void }) {
             onChange={v => { setCodes(c => ({ ...c, [channel]: v })); setErrors(er => ({ ...er, [channel]: '' })); }}
             onComplete={v => confirm(channel, v)} />
         )}
-        {errors[channel] && <p className="text-red-500 text-[12px] mt-2" role="alert">{errors[channel]}</p>}
+        <FieldError message={errors[channel]} className="mt-2" />
         {notes[channel] && !errors[channel] && <p className="text-teal-700 text-[12px] mt-2">{notes[channel]}</p>}
         {!(channel === 'PHONE' && editingPhone) && <div className="mt-2.5 flex items-center gap-4 text-[12px]">
           {wait[channel] > 0

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useLanguage } from '@/context/LanguageContext';
 import { fill } from '@/context/strings/purchase';
 import { API_URL } from '@/lib/api';
+import { FieldError, FormAlert, countErrors, revealFirstError } from '@/components/ui/FormError';
 
 /** Asks for a reset link. Says the same thing whether or not the account exists. */
 export default function ForgotPasswordPage() {
@@ -11,12 +12,13 @@ export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
   const [sentTo, setSentTo] = useState('');
   const [error, setError] = useState('');
+  const [emailError, setEmailError] = useState('');
   const [loading, setLoading] = useState(false);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     const value = email.trim();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) { setError(t('login.e.email')); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) { setEmailError(t('login.e.email')); return revealFirstError(); }
     setLoading(true);
     setError('');
     try {
@@ -42,9 +44,10 @@ export default function ForgotPasswordPage() {
             <form onSubmit={submit} className="space-y-4" noValidate>
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">{t('login.email')}</label>
-                <input id="email" type="email" autoComplete="email" value={email} onChange={e => { setEmail(e.target.value); setError(''); }}
-                  className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 ${error ? 'border-red-400 bg-red-50' : 'border-gray-200'}`} placeholder="you@example.com" />
-                {error && <p className="text-red-500 text-xs mt-1" role="alert">⚠ {error}</p>}
+                <input id="email" type="email" autoComplete="email" value={email} onChange={e => { setEmail(e.target.value); setError(''); setEmailError(''); }} aria-invalid={!!emailError}
+                  className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 ${emailError ? 'border-red-400 bg-red-50' : 'border-gray-200'}`} placeholder="you@example.com" />
+                <FieldError message={emailError} />
+                <FormAlert message={error} className="mt-3" />
               </div>
               <button type="submit" disabled={loading} className="w-full bg-teal-600 text-white py-3 rounded-xl font-semibold hover:bg-teal-700 transition disabled:opacity-50">
                 {loading ? t('fp.sending') : t('fp.btn')}

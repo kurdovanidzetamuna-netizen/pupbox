@@ -13,6 +13,7 @@ import DogProfileForm, { emptyDogProfile, toDogPayload, type DogProfile } from '
 import { API_URL } from '@/lib/api';
 import { authFetch } from '@/lib/authFetch';
 import { forgetReferral, rememberReferral, storedReferral } from '@/lib/referral';
+import { FieldError, FormAlert, countErrors, revealFirstError } from '@/components/ui/FormError';
 
 type Step = 'details' | 'verify' | 'dog';
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -58,9 +59,9 @@ function RegisterForm() {
     if (!form.firstName.trim()) errs.firstName = t('reg.e.firstName');
     if (!form.lastName.trim()) errs.lastName = t('reg.e.lastName');
     if (!EMAIL_RE.test(form.email.trim())) errs.email = t('reg.e.email');
-    if (!phoneOk) errs.phone = t('reg.e.phone');
+    if (!phoneOk) errs.phone = t(form.phone ? 'reg.e.phone' : 'ui.e.phone');
     if (form.password.length < 8) errs.password = t('reg.e.password');
-    if (Object.keys(errs).length) { setFieldErrors(errs); return; }
+    if (countErrors(errs)) { setFieldErrors(errs); return revealFirstError(); }
     setFieldErrors({});
     setLoading(true);
     setError('');
@@ -90,7 +91,7 @@ function RegisterForm() {
   const verified = useCallback(() => { setStep('dog'); window.scrollTo({ top: 0 }); }, []);
 
   async function saveDog() {
-    if (!dog.name.trim()) { setFieldErrors({ dogName: t('co.e.dogName') }); return; }
+    if (!dog.name.trim()) { setFieldErrors({ dogName: t('co.e.dogName') }); return revealFirstError(); }
     setLoading(true); setError('');
     try {
       const res = await authFetch('/me/dogs', { method: 'POST', body: JSON.stringify(toDogPayload(dog)) });
@@ -101,7 +102,8 @@ function RegisterForm() {
   }
 
   const field = (key: string) => `w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 ${fieldErrors[key] ? 'border-red-400 bg-red-50' : 'border-gray-200'}`;
-  const err = (key: string) => fieldErrors[key] && <p className="text-red-500 text-xs mt-1">⚠ {fieldErrors[key]}</p>;
+  const err = (key: string) => <FieldError message={fieldErrors[key]} />;
+  const bad = (key: string) => ({ 'aria-invalid': !!fieldErrors[key] });
   const steps: Step[] = ['details', 'verify', 'dog'];
 
   return (
@@ -124,23 +126,23 @@ function RegisterForm() {
           <>
             <h1 className="text-2xl font-bold text-gray-900 mb-1">{t('register.heading')}</h1>
             <p className="text-sm text-gray-500 mb-6">{t('register.subheading')}</p>
-            {error && <p className="text-red-500 text-sm mb-4 bg-red-50 px-3 py-2 rounded-lg" role="alert">{error}</p>}
+            <FormAlert message={error} missing={countErrors(fieldErrors)} className="mb-4" />
             <form onSubmit={handleSubmit} className="space-y-4" noValidate>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">{t('register.firstName')} <span className="text-red-500">*</span></label>
-                  <input id="firstName" autoComplete="given-name" value={form.firstName} onChange={e => set('firstName', e.target.value)} className={field('firstName')} />
+                  <input id="firstName" {...bad('firstName')} autoComplete="given-name" value={form.firstName} onChange={e => set('firstName', e.target.value)} className={field('firstName')} />
                   {err('firstName')}
                 </div>
                 <div>
                   <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">{t('register.lastName')} <span className="text-red-500">*</span></label>
-                  <input id="lastName" autoComplete="family-name" value={form.lastName} onChange={e => set('lastName', e.target.value)} className={field('lastName')} />
+                  <input id="lastName" {...bad('lastName')} autoComplete="family-name" value={form.lastName} onChange={e => set('lastName', e.target.value)} className={field('lastName')} />
                   {err('lastName')}
                 </div>
               </div>
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">{t('login.email')} <span className="text-red-500">*</span></label>
-                <input id="email" type="email" autoComplete="email" value={form.email} onChange={e => set('email', e.target.value)} className={field('email')} placeholder="anna@example.com" />
+                <input id="email" type="email" {...bad('email')} autoComplete="email" value={form.email} onChange={e => set('email', e.target.value)} className={field('email')} placeholder="anna@example.com" />
                 {err('email')}
               </div>
               <div>
@@ -151,7 +153,7 @@ function RegisterForm() {
               </div>
               <div>
                 <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">{t('login.password')} <span className="text-red-500">*</span></label>
-                <input id="password" type="password" autoComplete="new-password" value={form.password} onChange={e => set('password', e.target.value)} className={field('password')} placeholder="••••••••" />
+                <input id="password" type="password" {...bad('password')} autoComplete="new-password" value={form.password} onChange={e => set('password', e.target.value)} className={field('password')} placeholder="••••••••" />
                 {err('password')}
               </div>
               <div>
@@ -189,7 +191,7 @@ function RegisterForm() {
             <h1 className="text-2xl font-bold text-gray-900 mb-1">{t('wel.title')}</h1>
             <p className="text-sm text-gray-500 mb-6">{t('wel.sub')}</p>
             <DogProfileForm value={dog} onChange={d => { setDog(d); setFieldErrors({}); }} compact nameError={fieldErrors.dogName} />
-            {error && <p className="text-red-500 text-sm mt-4" role="alert">{error}</p>}
+            <FormAlert message={error} className="mt-4" />
             <div className="flex gap-3 mt-6">
               <button type="button" onClick={() => router.push(redirect)} className="border border-gray-200 text-gray-600 px-5 py-3 rounded-xl font-medium hover:bg-gray-50">{t('wel.skip')}</button>
               <button type="button" onClick={saveDog} disabled={loading} className="flex-1 bg-teal-600 text-white py-3 rounded-xl font-bold hover:bg-teal-700 disabled:opacity-50">{loading ? t('co.saving') : t('wel.save')}</button>

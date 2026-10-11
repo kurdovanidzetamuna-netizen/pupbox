@@ -4,6 +4,7 @@ import Confetti from '@/components/Confetti';
 import { useSearchParams } from 'next/navigation';
 import { Suspense, useState } from 'react';
 import { useLanguage } from '@/context/LanguageContext';
+import { FormAlert } from '@/components/ui/FormError';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 
@@ -56,7 +57,7 @@ function ThankyouContent() {
 
   const primary = 'inline-flex items-center justify-center bg-teal-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-teal-700 transition disabled:opacity-50';
   const secondary = 'inline-flex items-center justify-center border border-gray-200 text-gray-600 px-6 py-3 rounded-xl font-medium hover:bg-gray-50 transition';
-  const errorLine = error && <p className="text-red-500 text-sm mb-4" role="alert">{error}</p>;
+  const errorLine = <FormAlert message={error} className="mb-4" />;
 
   if (isFailed) {
     return (

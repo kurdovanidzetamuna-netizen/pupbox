@@ -7,6 +7,7 @@ import { fill } from '@/context/strings/purchase';
 import { gel } from '@/lib/format';
 import { itemName } from '@/lib/localize';
 import ChoiceNote from '@/components/ChoiceNote';
+import { FieldError } from '@/components/ui/FormError';
 
 export default function CartPage() {
   const { t, lang } = useLanguage();
@@ -105,7 +106,7 @@ export default function CartPage() {
                   <button onClick={removeCoupon} className="text-red-500 hover:text-red-700 text-sm">{t('cart.removeCoupon')}</button>
                 </div>
               ) : (
-                <form className="flex gap-2" onSubmit={e => { e.preventDefault(); handleApplyCoupon(); }}>
+                <form noValidate className="flex gap-2" onSubmit={e => { e.preventDefault(); handleApplyCoupon(); }}>
                   <input type="text" placeholder={t('cart.promoPh')} value={couponInput} onChange={e => setCouponInput(e.target.value)} aria-label={t('cart.promo')}
                     className="flex-1 min-w-0 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400" />
                   <button type="submit" disabled={couponLoading} className="bg-teal-50 text-teal-700 hover:bg-teal-100 px-4 py-2 rounded-full text-sm font-semibold disabled:opacity-50">
@@ -113,7 +114,7 @@ export default function CartPage() {
                   </button>
                 </form>
               )}
-              {couponError && <p className="text-red-500 text-xs mt-2" role="alert">{couponError}</p>}
+              <FieldError message={couponError} />
             </div>
 
             <div className="bg-white rounded-xl border border-gray-100 p-5">

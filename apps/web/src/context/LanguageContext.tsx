@@ -55,7 +55,7 @@ const FB: Record<string, { en: string; ka: string }> = {
   'login.noAccount':         { en: "Don't have an account?",              ka: 'ანგარიში არ გაქვს?' },
   'login.createOne':         { en: 'Create one',                          ka: 'შექმენი' },
   'login.forgot':            { en: 'Forgot password?',                    ka: 'დაგავიწყდა პაროლი?' },
-  'login.e.email':           { en: 'Enter a valid email address',         ka: 'შეიყვანე სწორი ელ-ფოსტა' },
+  'login.e.email':           { en: 'Enter a valid email address',         ka: 'შეიყვანე სწორი ელფოსტა' },
   'login.e.password':        { en: 'Enter your password',                 ka: 'შეიყვანე პაროლი' },
   'fp.heading':              { en: 'Forgot your password?',               ka: 'დაგავიწყდა პაროლი?' },
   'fp.sub':                  { en: "Enter your email and we'll send you a link to set a new one.", ka: 'შეიყვანე ელ-ფოსტა და გამოგიგზავნით ბმულს ახალი პაროლის დასაყენებლად.' },

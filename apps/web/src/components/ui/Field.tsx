@@ -1,4 +1,5 @@
 'use client';
+import { FieldError } from './FormError';
 
 /**
  * A text field with the label inside it: it sits in the middle while the
@@ -40,7 +41,7 @@ export default function Field({ id, label, value, onChange, type = 'text', error
         </label>
         {trailing && <span className="absolute right-3 top-1/2 -translate-y-1/2">{trailing}</span>}
       </div>
-      {(error || hint) && <p id={`${id}-note`} className={`mt-1 px-1 text-[11.5px] ${error ? 'text-red-500' : 'text-gray-500'}`}>{error || hint}</p>}
+      {error ? <FieldError id={`${id}-note`} message={error} /> : hint ? <p id={`${id}-note`} className="mt-1 px-1 text-[11.5px] text-gray-500">{hint}</p> : null}
     </div>
   );
 }

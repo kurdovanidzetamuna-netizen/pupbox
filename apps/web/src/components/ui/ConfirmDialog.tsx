@@ -1,6 +1,7 @@
 'use client';
 import Modal from './Modal';
 import { useLanguage } from '@/context/LanguageContext';
+import { FormAlert } from './FormError';
 
 /**
  * "Are you sure?" for any action that matters (delete, cancel, sign out…):
@@ -28,7 +29,7 @@ export default function ConfirmDialog({ open, onClose, onConfirm, title, message
     <Modal open={open} onClose={busy ? () => {} : onClose} title={title}>
       {message && <div className="text-sm text-gray-600 leading-relaxed space-y-2">{message}</div>}
       {children && <div className="mt-4">{children}</div>}
-      {error && <p className="mt-3 text-sm text-red-600" role="alert">{error}</p>}
+      <FormAlert message={error} className="mt-3" />
       <div className="mt-6 flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
         <button type="button" onClick={cancelPrimary ? onConfirm : onClose} disabled={busy}
           className="px-5 py-2.5 rounded-full text-sm font-semibold text-gray-600 hover:bg-gray-100 transition">{cancelPrimary ? (busy ? t('ui.wait') : confirmLabel) : (cancelLabel ?? t('ui.cancel'))}</button>

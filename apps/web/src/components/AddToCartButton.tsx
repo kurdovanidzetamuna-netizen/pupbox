@@ -4,6 +4,7 @@ import { useCart } from '@/context/CartContext';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/context/LanguageContext';
 import { fill } from '@/context/strings/purchase';
+import { FieldError } from '@/components/ui/FormError';
 
 type Personalisation = { engraving?: { maxLength: number }; sizes?: string[] } | null;
 
@@ -83,7 +84,7 @@ export default function AddToCartButton({ productId, inStock, maxQty, personalis
         </button>
       )}
     </div>
-    {error && <p role="alert" className="text-red-500 text-sm mt-2">{error}</p>}
+    <FieldError message={error} />
     {qty >= max && max !== Infinity && <p className="text-xs text-gray-400 mt-2">{fill(t('pdp.onlyLeft'), { n: max })}</p>}
     </div>
   );
