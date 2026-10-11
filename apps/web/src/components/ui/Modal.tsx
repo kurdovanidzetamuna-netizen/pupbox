@@ -12,13 +12,15 @@ const WIDTH = { sm: 'sm:max-w-md', md: 'sm:max-w-lg', lg: 'sm:max-w-3xl' } as co
  * bottom. Escape and the backdrop close it; focus moves in on open and back
  * where it was on close.
  */
-export default function Modal({ open, onClose, title, children, footer, size = 'sm' }: {
+export default function Modal({ open, onClose, title, children, footer, header, size = 'sm' }: {
   open: boolean;
   onClose: () => void;
   title: React.ReactNode;
   children: React.ReactNode;
   /** Buttons pinned under the scrolling part. */
   footer?: React.ReactNode;
+  /** A custom top (e.g. a coloured hero) in place of the plain title row; × stays. */
+  header?: React.ReactNode;
   size?: keyof typeof WIDTH;
 }) {
   const box = useRef<HTMLDivElement>(null);
@@ -45,9 +47,18 @@ export default function Modal({ open, onClose, title, children, footer, size = '
     <div className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center sm:p-6 text-left">
       <div className="absolute inset-0 bg-gray-900/30 backdrop-blur-[2px] animate-[fadeIn_0.15s_ease-out]" onClick={onClose} aria-hidden="true" />
       <div ref={box} role="dialog" aria-modal="true" tabIndex={-1} aria-label={typeof title === 'string' ? title : undefined}
-        className={`relative w-full ${WIDTH[size]} flex flex-col max-h-[92dvh] sm:max-h-[min(860px,calc(100dvh-3rem))] bg-white rounded-t-3xl sm:rounded-3xl ring-1 ring-gray-200/70 outline-none animate-[fadeUp_0.2s_ease-out]`}>
+        className={`relative w-full ${WIDTH[size]} flex flex-col max-h-[92dvh] sm:max-h-[min(860px,calc(100dvh-3rem))] bg-white rounded-t-3xl sm:rounded-3xl ring-1 ring-gray-200/70 outline-none overflow-hidden animate-[fadeUp_0.2s_ease-out]`}>
         {/* Phones: a handle, so it reads as a sheet you can dismiss. */}
-        <span className="sm:hidden mx-auto mt-2.5 h-1 w-10 rounded-full bg-gray-200 shrink-0" aria-hidden="true" />
+        <span className={`sm:hidden mx-auto mt-2.5 h-1 w-10 rounded-full bg-gray-200 shrink-0 ${header ? 'absolute left-1/2 -translate-x-1/2 top-0 z-10 bg-black/10' : ''}`} aria-hidden="true" />
+        {header ? (
+          <div className="relative shrink-0">
+            {header}
+            <button type="button" data-close onClick={onClose} aria-label="×"
+              className="absolute right-3 top-3 sm:right-4 sm:top-4 z-10 w-9 h-9 rounded-full bg-white/70 backdrop-blur text-gray-500 hover:bg-white hover:text-gray-800 flex items-center justify-center">
+              <Icon name="close" className="w-[18px] h-[18px]" />
+            </button>
+          </div>
+        ) : (
         <div className="flex items-center justify-between gap-4 px-5 sm:px-7 pt-3 sm:pt-6 pb-3 shrink-0">
           <h2 className="text-[17px] sm:text-lg font-bold text-gray-900 leading-tight">{title}</h2>
           <button type="button" data-close onClick={onClose} aria-label="×"
@@ -55,7 +66,8 @@ export default function Modal({ open, onClose, title, children, footer, size = '
             <Icon name="close" className="w-[18px] h-[18px]" />
           </button>
         </div>
-        <div className={`flex-1 min-h-0 overflow-y-auto overscroll-contain px-5 sm:px-7 ${footer ? 'pb-4' : 'pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:pb-7'}`}>
+        )}
+        <div className={`flex-1 min-h-0 overflow-y-auto overscroll-contain px-5 sm:px-7 ${header ? 'pt-5' : ''} ${footer ? 'pb-4' : 'pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:pb-7'}`}>
           {children}
         </div>
         {footer && (

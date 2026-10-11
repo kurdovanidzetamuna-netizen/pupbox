@@ -6,7 +6,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { gel } from '@/lib/format';
 import { fill } from '@/context/strings/purchase';
 import { planText, planBenefits } from '@/lib/localize';
-import Modal from '@/components/ui/Modal';
+import PlanDetails from '@/components/PlanDetails';
 
 interface Props {
   plan: any;
@@ -177,31 +177,9 @@ export default function PlanCard({ plan, isGift = false }: Props) {
       </button>
     </div>
 
-    <Modal open={showAll} onClose={() => setShowAll(false)} title={name} size="md"
-      footer={<>
-        <button type="button" onClick={() => setShowAll(false)} className="px-5 py-2.5 rounded-full text-[13px] font-semibold text-gray-600 hover:bg-gray-100">{t('ui.close')}</button>
-        <button type="button" onClick={handleChoose} disabled={loading}
-          className={`px-6 py-2.5 rounded-full text-[13px] font-bold text-white ${isGift ? 'bg-peach-400 hover:bg-peach-600' : 'bg-teal-600 hover:bg-teal-700'}`}>
-          {loading ? t('global.loading') : isGift ? t('pricing.planCard.giftCta') : t('pricing.planCard.cta')}
-        </button>
-      </>}>
-      <div className={`rounded-2xl p-4 mb-4 ${isGift ? 'bg-peach-50' : 'bg-teal-50/70'}`}>
-        <p className="text-[12.5px] text-gray-600 leading-snug">{isGift ? fill(t('pricing.gift.card'), { plan: name }) : planText(plan, 'description', lang)}</p>
-        <div className="mt-3 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-          <span className="text-2xl font-extrabold tracking-tight text-gray-900">{gel(plan.price)}</span>
-          {plan.monthlyEquivPrice && <span className="text-[13px] text-gray-500">≈ {gel(Number(plan.monthlyEquivPrice).toFixed(2))}{t('global.perMonth')}</span>}
-          {Number(plan.discountPercent) > 0 && (
-            <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-white text-teal-700">{t('global.savePercent')} {plan.discountPercent}%</span>
-          )}
-        </div>
-      </div>
-      <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">{t('plan.included')}</p>
-      <ul className="space-y-2.5">
-        {allBenefits.map((b, i) => (
-          <li key={i} className="flex items-start gap-2.5 text-[13.5px] text-gray-700">{check}{b}</li>
-        ))}
-      </ul>
-    </Modal>
+    <PlanDetails open={showAll} onClose={() => setShowAll(false)} onChoose={handleChoose} loading={loading} plan={plan} isGift={isGift}
+      name={name} description={isGift ? fill(t('pricing.gift.card'), { plan: name }) : planText(plan, 'description', lang)}
+      benefits={allBenefits} badge={featured ? label : undefined} />
     </>
   );
 }
