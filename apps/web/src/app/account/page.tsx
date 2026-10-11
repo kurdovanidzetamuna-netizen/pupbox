@@ -101,13 +101,12 @@ export default function AccountPage() {
         <div className="flex justify-center py-20"><div className="w-8 h-8 border-4 border-teal-200 border-t-teal-600 rounded-full animate-spin" /></div>
       ) : (
         <>
-          <header className="relative overflow-hidden rounded-[28px] bg-gradient-to-br from-teal-50 via-white to-lilac-50 ring-1 ring-teal-100/70 p-6 sm:p-8 flex flex-col sm:flex-row sm:items-center gap-5">
-            <div className="absolute -right-10 -top-12 w-48 h-48 rounded-full bg-teal-100/60 blur-2xl pointer-events-none" aria-hidden="true" />
-            <div className="relative w-16 h-16 rounded-2xl bg-gradient-to-br from-teal-300 to-teal-500 text-white text-2xl font-extrabold flex items-center justify-center shrink-0 ">
+          <header className="relative overflow-hidden rounded-[28px] bg-white ring-1 ring-gray-200/60 p-6 sm:p-8 flex flex-col sm:flex-row sm:items-center gap-5">
+            <div className="relative w-16 h-16 rounded-2xl bg-teal-100 text-teal-700 text-2xl font-bold flex items-center justify-center shrink-0 ">
               {(user?.firstName?.[0] || user?.email?.[0] || '?').toUpperCase()}
             </div>
             <div className="relative flex-1 min-w-0">
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 truncate">{[user?.firstName, user?.lastName].filter(Boolean).join(' ') || t('acc.title')}</h1>
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 truncate capitalize">{[user?.firstName, user?.lastName].filter(Boolean).join(' ') || t('acc.title')}</h1>
               <p className="text-sm text-gray-500 truncate">{user?.email}</p>
             </div>
             <div className="relative flex gap-3">
