@@ -8,8 +8,10 @@ export type Pin = { lat: number; lng: number };
 /** city/street are '' when the spot has none (e.g. a field): the pin moved, so the old street no longer applies. */
 export type Picked = Pin & { city?: string; street?: string };
 
-/** Tbilisi, where the map starts when there is no pin yet. */
-const TBILISI: Pin = { lat: 41.7151, lng: 44.8271 };
+/** Tbilisi, where the map starts when there is no pin yet: the whole city in view. */
+const TBILISI: Pin = { lat: 41.7167, lng: 44.7833 };
+const CITY_ZOOM = 12;
+const STREET_ZOOM = 17;
 const GOOGLE_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 
 type Suggestion = { id: string; text: string; sub?: string };
@@ -21,7 +23,7 @@ type Suggestion = { id: string; text: string; sub?: string };
  */
 interface Engine {
   /** onMoved fires only when the customer moved the map (drag), never for a resize. */
-  mount(el: HTMLElement, at: Pin, onStart: () => void, onMoved: (p: Pin) => void): Promise<void>;
+  mount(el: HTMLElement, at: Pin, zoom: number, onStart: () => void, onMoved: (p: Pin) => void): Promise<void>;
   moveTo(p: Pin): void;
   search(q: string): Promise<Suggestion[]>;
   resolve(s: Suggestion): Promise<Picked | null>;
@@ -57,17 +59,17 @@ function googleEngine(lang: string): Engine {
   // Closed before the script arrived (React may mount twice): build nothing.
   let dead = false;
   return {
-    async mount(el, at, onStart, onMoved) {
+    async mount(el, at, zoom, onStart, onMoved) {
       g = await loadGoogle(lang);
       if (dead) return;
-      map = new g.maps.Map(el, { center: at, zoom: 16, disableDefaultUI: true, zoomControl: true, gestureHandling: 'greedy', clickableIcons: false });
+      map = new g.maps.Map(el, { center: at, zoom, disableDefaultUI: true, zoomControl: true, gestureHandling: 'greedy', clickableIcons: false });
       geocoder = new g.maps.Geocoder();
       places = new g.maps.places.AutocompleteService();
       let dragged = false;
       map.addListener('dragstart', () => { dragged = true; onStart(); });
       map.addListener('idle', () => { if (!dragged) return; dragged = false; const c = map.getCenter(); onMoved({ lat: c.lat(), lng: c.lng() }); });
     },
-    moveTo(p) { map?.panTo(p); },
+    moveTo(p) { map?.panTo(p); if (map && map.getZoom() < STREET_ZOOM) map.setZoom(STREET_ZOOM); },
     async search(q) {
       const res = await places.getPlacePredictions({ input: q, componentRestrictions: { country: 'ge' }, language: lang });
       return (res?.predictions ?? []).slice(0, 5).map((p: any) => ({ id: p.place_id, text: p.structured_formatting?.main_text ?? p.description, sub: p.structured_formatting?.secondary_text }));
@@ -101,10 +103,11 @@ function osmEngine(lang: string): Engine {
   let resize: ResizeObserver | undefined;
   const q = (path: string) => fetch(`${NOMINATIM}${path}&format=jsonv2&addressdetails=1&accept-language=${lang}`).then((r) => r.json());
   return {
-    async mount(el, at, onStart, onMoved) {
+    async mount(el, at, zoom, onStart, onMoved) {
       const L = (await import('leaflet')).default;
       if (dead) return;
-      map = L.map(el, { zoomControl: true, attributionControl: true }).setView([at.lat, at.lng], 16);
+      map = L.map(el, { zoomControl: true, attributionControl: true }).setView([at.lat, at.lng], zoom);
+      map.attributionControl.setPrefix(false);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(map);
       let dragged = false;
       map.on('dragstart', () => { dragged = true; onStart(); });
@@ -115,7 +118,7 @@ function osmEngine(lang: string): Engine {
       resize = new ResizeObserver(() => map?.invalidateSize({ pan: false }));
       resize.observe(el);
     },
-    moveTo(p) { map?.setView([p.lat, p.lng], Math.max(map.getZoom(), 16)); },
+    moveTo(p) { map?.setView([p.lat, p.lng], Math.max(map.getZoom(), STREET_ZOOM)); },
     async search(text) {
       const list = await q(`/search?countrycodes=ge&limit=5&q=${encodeURIComponent(text)}`);
       return (Array.isArray(list) ? list : []).map((r: any) => ({ id: `${r.lat},${r.lon}`, text: r.name || r.display_name.split(',')[0], sub: r.display_name.split(',').slice(1, 3).join(',').trim() }));
@@ -166,7 +169,7 @@ export default function MapPicker({ value, onPick, mapClassName = 'h-52 sm:h-56'
     const e = GOOGLE_KEY ? googleEngine(lang) : osmEngine(lang);
     engine.current = e;
     let timer: ReturnType<typeof setTimeout>;
-    e.mount(box.current!, value ?? TBILISI, () => setMoving(true), (p) => {
+    e.mount(box.current!, value ?? TBILISI, value ? STREET_ZOOM : CITY_ZOOM, () => setMoving(true), (p) => {
       setMoving(false);
       clearTimeout(timer);
       timer = setTimeout(() => lookUp(p), 350);
@@ -209,7 +212,7 @@ export default function MapPicker({ value, onPick, mapClassName = 'h-52 sm:h-56'
   if (failed) return null;
 
   return (
-    <div className="space-y-2">
+    <div className="flex flex-col gap-2 h-full">
       <div className="relative">
         <Icon name="pin" className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
         <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t('map.search')} aria-label={t('map.search')}
