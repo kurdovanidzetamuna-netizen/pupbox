@@ -36,7 +36,7 @@ function LoginForm() {
         body: JSON.stringify(form),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Login failed');
+      if (!res.ok) throw new Error(data.message || t('co.e.generic'));
       localStorage.setItem('pupbox_token', data.token);
       saveForEmails(lang);
       await refreshCart(); // merges anything added as a guest into the account cart

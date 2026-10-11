@@ -27,10 +27,10 @@ export default function SubscribePlanCard({ plan }: { plan: any }) {
   return (
     <div className={`relative flex flex-col rounded-2xl border-2 p-6 text-left transition ${isPopular ? 'border-teal-500 shadow-lg' : isBest ? 'border-amber-400 shadow-md' : 'border-gray-100'}`}>
       {isPopular && (
-        <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-teal-600 text-white text-xs font-bold px-3 py-1 rounded-full">⭐ Most Popular</span>
+        <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-teal-600 text-white text-xs font-bold px-3 py-1 rounded-full">{t('pricing.planCard.popular')}</span>
       )}
       {isBest && (
-        <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-amber-400 text-white text-xs font-bold px-3 py-1 rounded-full whitespace-nowrap">🏆 Best Value</span>
+        <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-amber-400 text-white text-xs font-bold px-3 py-1 rounded-full whitespace-nowrap">{t('pricing.planCard.bestValue')}</span>
       )}
 
       <h3 className="text-lg font-bold text-gray-900 mb-1">{plan.name}</h3>

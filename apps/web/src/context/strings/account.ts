@@ -107,4 +107,5 @@ export const ACCOUNT_STRINGS: Record<string, { en: string; ka: string }> = {
   'aria.mainNav':           { en: 'Main menu',                   ka: 'მთავარი მენიუ' },
   'aria.checkoutSteps':     { en: 'Checkout steps',              ka: 'შეკვეთის ეტაპები' },
   'aria.signupSteps':       { en: 'Sign-up steps',               ka: 'რეგისტრაციის ეტაპები' },
+  'blog.tags':              { en: 'Tags',                        ka: 'თეგები' },
 };

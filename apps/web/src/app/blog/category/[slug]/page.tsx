@@ -21,8 +21,8 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   const cat = await getCategory(params.slug);
   if (!cat) return { title: 'გვერდი ვერ მოიძებნა' };
   return {
-    title: `${cat.name} — Dog Care Tips | Pupbox Blog`,
-    description: cat.description || `Browse all ${cat.name} articles on the Pupbox blog.`,
+    title: `${cat.translations?.ka?.name || cat.name} — ძაღლის მოვლის რჩევები | Pupbox ბლოგი`,
+    description: cat.description || `${cat.translations?.ka?.name || cat.name} — ყველა სტატია Pupbox-ის ბლოგზე.`,
   };
 }
 

@@ -51,7 +51,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
     image: post.featuredImage,
     datePublished: post.publishedAt,
     dateModified: post.updatedAt,
-    author: { '@type': 'Person', name: post.authorName || 'Pupbox Team' },
+    author: { '@type': 'Person', name: post.authorName || 'Pupbox-ის გუნდი' },
     publisher: { '@type': 'Organization', name: 'Pupbox', logo: { '@type': 'ImageObject', url: `${process.env.NEXT_PUBLIC_SITE_URL}/logo.png` } },
   };
 
@@ -103,7 +103,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
 
         {post.tags?.length > 0 && (
           <div className="mt-10 pt-6 border-t border-gray-100">
-            <span className="text-sm text-gray-400 mr-3">Tags:</span>
+            <span className="text-sm text-gray-400 mr-3"><T k="blog.tags" />:</span>
             {post.tags.map((t: any) => (
               <span key={t.tag.id} className="inline-block bg-teal-50 text-teal-700 text-xs font-medium px-3 py-1 rounded-full mr-2 mb-2">
                 {t.tag.name}

@@ -1,5 +1,6 @@
 'use client';
-import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
+import { toGeorgian } from '@/lib/apiMessages';
 import { PURCHASE_STRINGS } from './strings/purchase';
 import { STORE_STRINGS } from './strings/store';
 import { ACCOUNT_STRINGS } from './strings/account';
@@ -144,6 +145,30 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
         setCms(map);
       })
       .catch(() => {});
+  }, []);
+
+  // The API writes its error messages in English. Every error response from
+  // it is put into Georgian here, once, before any page shows it — so no
+  // form or toast can show an English message to a Georgian visitor.
+  const langRef = useRef(lang);
+  langRef.current = lang;
+  useEffect(() => {
+    const original = window.fetch;
+    window.fetch = async (...args) => {
+      const res = await original(...args);
+      const url = typeof args[0] === 'string' ? args[0] : (args[0] as Request)?.url ?? String(args[0]);
+      if (res.ok || langRef.current !== 'ka' || !url.startsWith(API)) return res;
+      if (!(res.headers.get('content-type') || '').includes('application/json')) return res;
+      try {
+        const data = await res.clone().json();
+        if (data && (typeof data.message === 'string' || Array.isArray(data.message))) {
+          data.message = Array.isArray(data.message) ? data.message.map(toGeorgian) : toGeorgian(data.message);
+          return new Response(JSON.stringify(data), { status: res.status, statusText: res.statusText, headers: res.headers });
+        }
+      } catch {}
+      return res;
+    };
+    return () => { window.fetch = original; };
   }, []);
 
   // Screen readers and search engines read the page language from <html>.

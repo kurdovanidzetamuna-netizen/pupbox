@@ -11,7 +11,7 @@ const organizationJsonLd = {
   '@type': 'Organization',
   name: 'Pupbox',
   url: process.env.NEXT_PUBLIC_SITE_URL || 'https://pupbox.ge',
-  description: 'Curated monthly subscription boxes for your dog. Fresh treats, toys, and accessories delivered across Georgia.',
+  description: 'ყოველთვიური კოლოფი შენი ძაღლისთვის: ნუგბარი, სათამაშოები და აქსესუარები — მიწოდება მთელ საქართველოში.',
 };
 
 export default async function HomePage() {

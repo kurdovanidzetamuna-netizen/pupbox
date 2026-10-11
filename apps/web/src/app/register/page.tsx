@@ -72,7 +72,7 @@ function RegisterForm() {
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error((Array.isArray(data.message) ? data.message[0] : data.message) || 'Registration failed');
+      if (!res.ok) throw new Error((Array.isArray(data.message) ? data.message[0] : data.message) || t('co.e.generic'));
       localStorage.setItem('pupbox_token', data.token);
       forgetReferral();
       await refreshCart(); // merges anything added as a guest into the account cart
@@ -92,7 +92,7 @@ function RegisterForm() {
     setLoading(true); setError('');
     try {
       const res = await authFetch('/me/dogs', { method: 'POST', body: JSON.stringify(toDogPayload(dog)) });
-      if (!res.ok) throw new Error((await res.json().catch(() => ({})))?.message || 'Error');
+      if (!res.ok) throw new Error((await res.json().catch(() => ({})))?.message || t('co.e.generic'));
       router.push(redirect);
     } catch (e: any) { setError(e.message); }
     finally { setLoading(false); }
