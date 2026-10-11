@@ -26,7 +26,7 @@ export default function Menu({ items, label }: { items: MenuItem[]; label: strin
     };
     document.addEventListener('mousedown', onDown);
     document.addEventListener('keydown', onKey);
-    box.current?.querySelector<HTMLButtonElement>('[role="menuitem"]')?.focus();
+    box.current?.querySelector<HTMLButtonElement>('[role="menuitem"]')?.focus({ preventScroll: true });
     return () => { document.removeEventListener('mousedown', onDown); document.removeEventListener('keydown', onKey); };
   }, [open]);
   return (

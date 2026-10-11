@@ -5,14 +5,12 @@ import { useLanguage } from '@/context/LanguageContext';
 import { signOut } from '@/lib/signOut';
 import { useState } from 'react';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
-import { useUnread } from '@/lib/notifications';
 
 const LINKS = [
   { href: '/account', k: 'acc.profile', icon: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z' },
   { href: '/account/orders', k: 'acc.orders', icon: 'M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z' },
   { href: '/account/subscriptions', k: 'acc.subscriptions', icon: 'M4 4v5h.6m15.4 2A8 8 0 004.6 9M4.6 9H9m11 11v-5h-.6m0 0a8 8 0 01-15.4-2m15.4 2H15' },
   { href: '/account/dogs', k: 'acc.dogs', icon: 'M4.3 6.3a4.5 4.5 0 000 6.4L12 20.4l7.7-7.7a4.5 4.5 0 00-6.4-6.4L12 7.6l-1.3-1.3a4.5 4.5 0 00-6.4 0z' },
-  { href: '/account/notifications', k: 'acc.notifications', icon: 'M15 17h5l-1.4-1.4A2 2 0 0118 14.2V11a6 6 0 00-4-5.7V5a2 2 0 10-4 0v.3C7.7 6.2 6 8.4 6 11v3.2c0 .5-.2 1-.6 1.4L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9' },
   { href: '/account/referrals', k: 'acc.referrals', icon: 'M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7' },
 ];
 
@@ -24,8 +22,6 @@ export default function AccountLayout({ children }: { children: React.ReactNode 
   const { t } = useLanguage();
   const pathname = usePathname();
   const router = useRouter();
-  // The header bell already polls; this only reads the shared count.
-  const unread = useUnread(false);
   const active = (href: string) => (href === '/account' ? pathname === '/account' : pathname.startsWith(href));
 
   const [askOut, setAskOut] = useState(false);
@@ -40,7 +36,7 @@ export default function AccountLayout({ children }: { children: React.ReactNode 
         <aside className="lg:w-64 shrink-0">
           <nav aria-label={t('acc.title')} className="lg:sticky lg:top-24">
             <p className="hidden lg:block text-xs font-bold text-gray-400 uppercase tracking-wider px-3 mb-3">{t('acc.title')}</p>
-            <ul className="flex lg:flex-col gap-1 overflow-x-auto pb-2 lg:pb-0 -mx-4 px-4 lg:mx-0 lg:px-0">
+            <ul className="flex lg:flex-col gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden pb-1 lg:pb-0 -mx-4 px-4 lg:mx-0 lg:px-0">
               {LINKS.map((l) => (
                 <li key={l.href} className="shrink-0">
                   <Link href={l.href} aria-current={active(l.href) ? 'page' : undefined}
@@ -48,9 +44,6 @@ export default function AccountLayout({ children }: { children: React.ReactNode 
                       active(l.href) ? 'bg-white text-teal-700 ring-1 ring-teal-100' : 'text-gray-500 hover:bg-white/70 hover:text-gray-800'}`}>
                     <svg className="w-[18px] h-[18px] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={l.icon} /></svg>
                     {t(l.k)}
-                    {l.href === '/account/notifications' && unread > 0 && (
-                      <span className="ml-auto min-w-[20px] h-5 px-1.5 rounded-full bg-peach-100 text-peach-600 text-[11px] font-bold leading-5 text-center tabular-nums">{unread > 99 ? '99+' : unread}</span>
-                    )}
                   </Link>
                 </li>
               ))}

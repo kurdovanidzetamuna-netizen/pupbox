@@ -181,6 +181,7 @@ model User {
   passwordResets PasswordResetToken[]
   verificationCodes VerificationCode[]
   notifications  Notification[]
+  savedCards     SavedCard[]
   dogs           Dog[]
   orders         Order[]
   subscriptions  CustomerSubscription[]
@@ -1010,4 +1011,24 @@ model Notification {
 
   @@index([userId, createdAt])
   @@index([userId, readAt])
+}
+
+/// A card the customer chose to save at payment. The bank keeps the card;
+/// we keep only its token (never sent to the browser) and what to show.
+model SavedCard {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider  String    @default("FLITT")
+  /// The bank's token for charging this card again (Flitt "rectoken").
+  token     String    @unique
+  brand     String
+  last4     String
+  expMonth  Int
+  expYear   Int
+  isDefault Boolean   @default(false)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([userId])
 }

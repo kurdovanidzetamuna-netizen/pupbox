@@ -50,6 +50,8 @@ export class FlittService {
     description: string;
     serverCallbackUrl: string;
     responseUrl: string;
+    /** Ask Flitt for a token to charge this card again (the customer ticked "save card"). */
+    saveCard?: boolean;
   }): Promise<{ checkoutUrl: string; paymentId: string }> {
     const amountInTetri = Math.round(opts.amount * 100);
 
@@ -64,6 +66,7 @@ export class FlittService {
       // The bank page closes after an hour, well before an unpaid order is
       // cancelled (2 h), so nobody pays for stock that was already released.
       lifetime: 3600,
+      ...(opts.saveCard ? { required_rectoken: 'Y' } : {}),
     };
 
     params.signature = this.buildSignature(params);

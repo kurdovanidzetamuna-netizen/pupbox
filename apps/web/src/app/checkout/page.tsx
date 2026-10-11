@@ -64,6 +64,8 @@ export default function CheckoutPage() {
   // doesn't flash the empty-cart screen.
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [loading, setLoading] = useState(false);
+  // Keep the card with the bank for renewals and next orders (the customer can untick).
+  const [saveCard, setSaveCard] = useState(true);
   const [error, setError] = useState('');
   const [errs, setErrs] = useState<Record<string, string>>({});
 
@@ -313,7 +315,7 @@ export default function CheckoutPage() {
       // Straight to the bank: "Pay" should mean pay, not "create an order and
       // then press Pay again". If payment can't start, the order page offers it.
       try {
-        const pr = await fetch(`${API_URL}/payments/initiate/${order.id}`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
+        const pr = await fetch(`${API_URL}/payments/initiate/${order.id}`, { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ saveCard }) });
         const p = pr.ok ? await pr.json() : null;
         if (p?.checkoutUrl) { window.location.href = p.checkoutUrl; return; }
       } catch {}
@@ -596,6 +598,13 @@ export default function CheckoutPage() {
                   </fieldset>
                 )}
 
+                <label className="mt-5 flex items-start gap-3 rounded-xl bg-gray-50 px-4 py-3 cursor-pointer">
+                  <input type="checkbox" checked={saveCard} onChange={e => setSaveCard(e.target.checked)} className="mt-0.5 w-4 h-4 accent-teal-600 shrink-0" />
+                  <span>
+                    <span className="block text-[13px] font-semibold text-gray-800">{t('co.saveCard')}</span>
+                    <span className="block text-[12px] text-gray-500">🔒 {t('co.saveCardHint')}</span>
+                  </span>
+                </label>
                 {error && <p className="text-red-500 text-sm mt-5" role="alert">{error}</p>}
                 <div className="flex gap-3 mt-6">
                   {stepIndex > 0 && <button type="button" onClick={back} className={secondary}>{t('co.back')}</button>}

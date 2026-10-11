@@ -9,6 +9,7 @@ import AccountSecurity from '@/components/AccountSecurity';
 import Field from '@/components/ui/Field';
 import PhoneInput from '@/components/ui/PhoneInput';
 import AddressBook from '@/components/AddressBook';
+import PaymentCards from '@/components/PaymentCards';
 import Modal from '@/components/ui/Modal';
 import IconButton from '@/components/ui/IconButton';
 import { Icon } from '@/components/ui/icons';
@@ -101,13 +102,6 @@ export default function AccountPage() {
 
   const unverified = user && (!user.emailVerified || !user.phoneVerified);
 
-  const quick = [
-    { href: '/account/subscriptions', icon: '📋', k: 'acc.subscriptions', tint: 'bg-teal-50' },
-    { href: '/account/orders', icon: '📦', k: 'acc.orders', tint: 'bg-sky-50' },
-    { href: '/account/dogs', icon: '🐶', k: 'acc.dogs', tint: 'bg-amber-50', count: user?.dogs?.length },
-    { href: '/account/referrals', icon: '🎁', k: 'acc.referrals', tint: 'bg-peach-50' },
-    { href: '/shop', icon: '🛍️', k: 'acc.shop', tint: 'bg-lilac-50' },
-  ];
   // Confirmed: just a small check; not yet confirmed: a small amber dot (both with a tooltip).
   const badge = (ok: boolean) => ok ? (
     <span title={t('acc.verifiedIcon')} aria-label={t('acc.verifiedIcon')} className="flex w-5 h-5 rounded-full bg-teal-100 text-teal-700 items-center justify-center">
@@ -129,36 +123,32 @@ export default function AccountPage() {
         <div className="flex justify-center py-20"><div className="w-8 h-8 border-4 border-teal-200 border-t-teal-600 rounded-full animate-spin" /></div>
       ) : (
         <>
-          <header className="bg-white rounded-3xl ring-1 ring-gray-200/60 p-5 flex flex-col sm:flex-row sm:items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-teal-100 text-teal-700 text-xl font-bold flex items-center justify-center shrink-0">
-              {(user?.firstName?.[0] || user?.email?.[0] || '?').toUpperCase()}
-            </div>
-            <div className="flex-1 min-w-0">
-              <h1 className="text-xl font-bold text-gray-900 truncate capitalize">{[user?.firstName, user?.lastName].filter(Boolean).join(' ') || t('acc.title')}</h1>
-              <p className="text-sm text-gray-500 truncate">{user?.email}</p>
-            </div>
-            <div className="flex gap-2">
-              <Link href="/prices#plans" className="inline-flex items-center justify-center bg-teal-600 text-white text-sm font-semibold px-4 py-2 hover:bg-teal-700 whitespace-nowrap">+ {t('acc.subscribe')}</Link>
-              <IconButton icon="logout" label={t('acc.signOut')} onClick={() => setAskOut(true)} />
+          {/* One slim row: who you are; the menu on the left has the sections. */}
+          <header className="bg-white rounded-3xl ring-1 ring-gray-200/60 px-4 py-3.5 sm:px-5">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-100 to-lilac-100 text-teal-700 text-[15px] font-bold flex items-center justify-center shrink-0">
+                {(user?.firstName?.[0] || user?.email?.[0] || '?').toUpperCase()}
+              </div>
+              <div className="flex-1 min-w-0">
+                <h1 className="text-[15px] font-bold text-gray-900 truncate capitalize leading-tight">{[user?.firstName, user?.lastName].filter(Boolean).join(' ') || t('acc.title')}</h1>
+                <p className="text-[12px] text-gray-500 truncate">{user?.email}</p>
+              </div>
+              <Link href="/prices#plans" aria-label={t('acc.subscribe')} title={t('acc.subscribe')}
+                className="inline-flex items-center gap-1 h-8 pl-2.5 pr-3 rounded-full bg-teal-50 text-teal-700 text-[12px] font-semibold hover:bg-teal-100 whitespace-nowrap">
+                <Icon name="plus" className="w-3.5 h-3.5" strokeWidth={2.6} /><span className="hidden sm:inline">{t('acc.subscribe')}</span>
+              </Link>
+              <IconButton icon="logout" size="sm" label={t('acc.signOut')} onClick={() => setAskOut(true)} />
             </div>
           </header>
 
           {unverified && (
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl bg-amber-50 ring-1 ring-amber-200 px-5 py-3">
-              <p className="text-sm text-amber-900">⚠️ {t('ver.banner')}</p>
-              <Link href="/verify?redirect=/account" className="shrink-0 text-center bg-amber-500 text-white px-4 py-1.5 rounded-full text-sm font-semibold hover:bg-amber-600">{t('ver.bannerBtn')}</Link>
+            <div className="flex items-center gap-3 rounded-2xl bg-amber-50 ring-1 ring-amber-200/70 pl-4 pr-1.5 py-1.5">
+              <Icon name="alert" className="w-4 h-4 text-amber-500 shrink-0" />
+              <p className="flex-1 text-[12.5px] text-amber-900">{t('ver.banner')}</p>
+              <Link href="/verify?redirect=/account" className="shrink-0 bg-amber-500 text-white px-3.5 py-1.5 rounded-full text-[12px] font-semibold hover:bg-amber-600">{t('ver.bannerBtn')}</Link>
             </div>
           )}
 
-          <nav aria-label={t('acc.title')} className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3">
-            {quick.map(l => (
-              <Link key={l.href} href={l.href} className="group flex items-center gap-3 bg-white ring-1 ring-gray-200/60 rounded-2xl px-4 py-3 hover:ring-teal-200 transition-colors">
-                <span className={`w-9 h-9 rounded-xl flex items-center justify-center text-lg shrink-0 ${l.tint}`} aria-hidden="true">{l.icon}</span>
-                <span className="flex-1 min-w-0 text-[13px] font-medium text-gray-800 leading-tight">{t(l.k)}</span>
-                {l.count ? <span className="text-xs font-bold text-gray-500 bg-gray-100 rounded-full px-2 py-0.5">{l.count}</span> : null}
-              </Link>
-            ))}
-          </nav>
 
           <div className="grid lg:grid-cols-5 gap-5 items-start">
             <section className="lg:col-span-3 bg-white rounded-3xl ring-1 ring-gray-200/60 p-5 sm:p-6">
@@ -210,30 +200,7 @@ export default function AccountPage() {
 
           <AddressBook onExpired={() => router.replace(loginUrl('/account'))} />
 
-          <section className="bg-white rounded-3xl ring-1 ring-gray-200/60 p-5 sm:p-6">
-            <div className="flex items-center justify-between gap-3 mb-4">
-              <h2 className="text-[15px] font-bold text-gray-900">{t('cards.title')}</h2>
-              <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-teal-700 bg-teal-50 rounded-full px-2.5 py-1">
-                <Icon name="lock" className="w-3.5 h-3.5" />{t('cards.secure')}
-              </span>
-            </div>
-            <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-3">
-              {/* A ghost of a card: shows where saved cards will live, with no made-up numbers. */}
-              <div className="relative aspect-[1.6/1] max-h-44 rounded-2xl bg-gradient-to-br from-lilac-100 via-teal-50 to-teal-100 ring-1 ring-teal-100 p-4 flex flex-col justify-between overflow-hidden">
-                <div className="absolute -right-8 -bottom-10 w-40 h-40 rounded-full bg-white/40" aria-hidden="true" />
-                <div className="flex items-center justify-between">
-                  <span className="w-9 h-7 rounded-md bg-gradient-to-br from-amber-200 to-amber-300/80" aria-hidden="true" />
-                  <Icon name="card" className="w-6 h-6 text-teal-700/50" />
-                </div>
-                <div aria-hidden="true" className="flex gap-3 text-teal-900/25 text-lg tracking-[0.2em] font-bold">•••• •••• •••• ••••</div>
-                <p className="relative text-[12px] font-medium text-teal-900/60">{t('cards.soon')}</p>
-              </div>
-              <button type="button" disabled aria-label={t('cards.add')} title={t('cards.soon')}
-                className="aspect-[1.6/1] max-h-44 rounded-2xl border-2 border-dashed border-gray-200 text-gray-300 flex items-center justify-center cursor-not-allowed">
-                <Icon name="plus" className="w-6 h-6" strokeWidth={2.2} />
-              </button>
-            </div>
-          </section>
+          <PaymentCards onExpired={() => router.replace(loginUrl('/account'))} />
         </>
       )}
 

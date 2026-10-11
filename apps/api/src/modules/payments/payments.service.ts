@@ -2,6 +2,7 @@ import { Injectable, BadRequestException, NotFoundException, Logger, OnModuleIni
 import { ConfigService } from '@nestjs/config';
 import { PaymentStatus } from '@prisma/client';
 import { notify } from '../notifications/notify';
+import { saveCardFromBank } from './saved-cards';
 import { PrismaService } from '../prisma/prisma.service';
 import { FlittService } from './flitt.service';
 import { EmailService } from '../email/email.service';
@@ -61,7 +62,7 @@ export class PaymentsService implements OnModuleInit, OnModuleDestroy {
     return { expired };
   }
 
-  async initiatePayment(orderId: string, userId: string) {
+  async initiatePayment(orderId: string, userId: string, { saveCard = false } = {}) {
     const order = await this.prisma.order.findFirst({
       where: { id: orderId, userId, status: 'PENDING' },
       include: { items: true },
@@ -82,6 +83,7 @@ export class PaymentsService implements OnModuleInit, OnModuleDestroy {
       description: `Pupbox order #${order.id.slice(-8).toUpperCase()}`,
       serverCallbackUrl: `${apiUrl}/payments/webhook/flitt`,
       responseUrl: `${siteUrl}/checkout/thank-you?order=${order.id}`,
+      saveCard,
     });
 
     // Record pending payment
@@ -276,6 +278,7 @@ export class PaymentsService implements OnModuleInit, OnModuleDestroy {
       });
       if (fullOrder?.user) {
         this.email.sendPaymentConfirmation({ id: order_id, total: Number(order.total), user: fullOrder.user }).catch(() => {});
+        if (body.rectoken) await saveCardFromBank(this.prisma, order.userId, body);
         notify(this.prisma, order.userId, 'ORDER_PAID', { orderId: order_id, total: Number(order.total), kind: order.type, gift: !!order.isGift }, '/account/orders');
         this.notifyShop(order_id).catch((e) => this.logger.error(`New order email failed for ${order_id}: ${e.message}`));
         // The inviter's referral reward follows once this order is past the

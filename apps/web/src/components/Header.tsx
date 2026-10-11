@@ -72,37 +72,21 @@ export default function Header({ site }: { site: StoredContent | null }) {
           ))}
         </nav>
 
-        <div className="flex items-center gap-2 sm:gap-3">
-          {c.header.buttonText && (
-            <SmartLink href={c.header.buttonHref} className="group hidden sm:inline-flex items-center justify-center gap-1.5 bg-teal-600 text-white text-sm font-semibold h-9 pl-4 pr-3 hover:bg-teal-700">
-              {c.header.buttonText}
-              <svg className="w-4 h-4 transition-transform group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
-            </SmartLink>
-          )}
-
-          {/* Cart — the only way back to the basket from any page. */}
-          <Link href="/cart" aria-label={`${t('nav.cart')}${count ? ` (${count})` : ''}`}
-            className="relative inline-flex items-center justify-center w-10 h-10 rounded-full text-gray-700 hover:bg-gray-100 hover:text-teal-600 transition">
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.3 2.3c-.6.6-.2 1.7.7 1.7H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-            </svg>
-            {count > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 bg-teal-600 text-white text-[11px] font-bold min-w-[20px] h-5 px-1 rounded-full flex items-center justify-center">
-                {count > 9 ? '9+' : count}
-              </span>
-            )}
-          </Link>
-
-          {/* Language: two options, so a one-tap toggle, Georgian first. */}
+        {/*
+          Right side, quietest to loudest: language (rarely changed), then the
+          customer's own things (alerts, account, basket), then the one action
+          we want most — Subscribe — last, where the eye ends.
+        */}
+        <div className="flex items-center gap-1 sm:gap-1.5">
           <div role="radiogroup" aria-label={t('nav.language')}
-            className="relative hidden md:grid grid-cols-2 items-center p-1 rounded-full bg-gray-100 ring-1 ring-gray-200/70">
+            className="relative hidden md:grid grid-cols-2 items-center h-7 p-0.5 mr-1.5 rounded-full bg-gray-100">
             <span aria-hidden="true"
-              className={`absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-full bg-white shadow-sm ring-1 ring-teal-100 transition-transform duration-300 ease-out ${lang === 'en' ? 'translate-x-full' : 'translate-x-0'}`}
-              style={{ left: 4 }} />
+              className={`absolute top-0.5 bottom-0.5 w-[calc(50%-2px)] rounded-full bg-white ring-1 ring-gray-200/80 transition-transform duration-300 ease-out ${lang === 'en' ? 'translate-x-full' : 'translate-x-0'}`}
+              style={{ left: 2 }} />
             {([['ka', 'ქა', 'ქართული'], ['en', 'EN', 'English']] as const).map(([code, short, full]) => (
               <button key={code} type="button" role="radio" aria-checked={lang === code} aria-label={full} title={full}
                 onClick={() => chooseLang(code)}
-                className={`relative z-10 min-w-[44px] px-3 py-1.5 text-xs font-bold rounded-full transition-colors ${lang === code ? 'text-teal-700' : 'text-gray-500 hover:text-gray-800'}`}>
+                className={`relative z-10 h-6 px-2 text-[10.5px] font-bold rounded-full transition-colors ${lang === code ? 'text-teal-700' : 'text-gray-400 hover:text-gray-700'}`}>
                 {short}
               </button>
             ))}
@@ -110,19 +94,39 @@ export default function Header({ site }: { site: StoredContent | null }) {
 
           {signedIn && <NotificationBell />}
 
-          {/* Account: one tap straight to My account (everything else is in its menu). */}
+          {/* Account: one tap straight to My account. */}
           {signedIn ? (
             <Link href="/account" aria-label={t('nav.account')} title={t('nav.account')}
-              className={`hidden md:inline-flex items-center justify-center w-9 h-9 rounded-full text-sm font-bold transition-colors ${
+              className={`hidden md:inline-flex items-center justify-center w-9 h-9 rounded-full text-[13px] font-bold transition-colors ${
                 pathname.startsWith('/account') ? 'bg-teal-100 text-teal-800' : 'bg-teal-50 text-teal-700 hover:bg-teal-100'}`}>
               {initial || (
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
               )}
             </Link>
           ) : (
-            <Link href="/login" className="hidden md:inline-flex items-center h-9 px-4 rounded-full text-sm font-semibold text-teal-700 bg-teal-50 hover:bg-teal-100 transition">
+            <Link href="/login" className="hidden md:inline-flex items-center h-9 px-3.5 rounded-full text-[13px] font-semibold text-gray-700 hover:text-teal-700 hover:bg-teal-50 transition">
               {t('nav.signIn')}
             </Link>
+          )}
+
+          {/* Cart — the only way back to the basket from any page. */}
+          <Link href="/cart" aria-label={`${t('nav.cart')}${count ? ` (${count})` : ''}`} title={t('nav.cart')}
+            className="relative inline-flex items-center justify-center w-9 h-9 rounded-full text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.3 2.3c-.6.6-.2 1.7.7 1.7H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
+            {count > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 bg-teal-600 text-white text-[10px] font-bold min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center ring-2 ring-white">
+                {count > 9 ? '9+' : count}
+              </span>
+            )}
+          </Link>
+
+          {c.header.buttonText && (
+            <SmartLink href={c.header.buttonHref} className="group hidden sm:inline-flex items-center justify-center gap-1.5 ml-1.5 bg-teal-600 text-white text-[13px] font-semibold h-9 pl-4 pr-3 hover:bg-teal-700">
+              {c.header.buttonText}
+              <svg className="w-4 h-4 transition-transform group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+            </SmartLink>
           )}
 
           {/* Phone & tablet menu */}
@@ -165,7 +169,7 @@ export default function Header({ site }: { site: StoredContent | null }) {
           <div className="mt-4 grid grid-cols-2 gap-1 p-1 rounded-full bg-gray-100" role="radiogroup" aria-label={t('nav.language')}>
             {([['ka', 'ქართული'], ['en', 'English']] as const).map(([code, label]) => (
               <button key={code} type="button" role="radio" onClick={() => chooseLang(code)} aria-checked={lang === code}
-                className={`py-2.5 rounded-full text-sm font-bold transition-colors ${lang === code ? 'bg-white text-teal-700 shadow-sm' : 'text-gray-500'}`}>
+                className={`py-2.5 rounded-full text-sm font-bold transition-colors ${lang === code ? 'bg-white text-teal-700 ring-1 ring-gray-200/80' : 'text-gray-500'}`}>
                 {label}
               </button>
             ))}
