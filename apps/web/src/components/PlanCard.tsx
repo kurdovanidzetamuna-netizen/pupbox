@@ -6,6 +6,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { gel } from '@/lib/format';
 import { fill } from '@/context/strings/purchase';
 import { planText, planBenefits } from '@/lib/localize';
+import Modal from '@/components/ui/Modal';
 
 interface Props {
   plan: any;
@@ -17,6 +18,7 @@ export default function PlanCard({ plan, isGift = false }: Props) {
   const { addPlan } = useCart();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [showAll, setShowAll] = useState(false);
   const { t, lang } = useLanguage();
   const name = planText(plan, 'name', lang);
 
@@ -70,6 +72,13 @@ export default function PlanCard({ plan, isGift = false }: Props) {
   const freeDeliveryLabel = t('pricing.planCard.freeDelivery').replace(/^\s*✓\s*/, '');
   const benefitsMentionDelivery = source.some(b => /free delivery|უფასო მიწოდება/i.test(b));
   const benefits = rawBenefits;
+  const benefitText = (b: string) => (localBenefits ? b : translateBenefit(b));
+  // Everything the plan includes, for the "+N" pop-up.
+  const allBenefits = [
+    ...source.map(benefitText),
+    ...(plan.deliveryIncluded && !benefitsMentionDelivery ? [freeDeliveryLabel] : []),
+    ...(isGift ? [t('co.gift.planPerk')] : []),
+  ];
 
   // Soft & friendly: every card is light; the featured one gets a mint wash,
   // a gentle glow and the one filled button.
@@ -84,12 +93,11 @@ export default function PlanCard({ plan, isGift = false }: Props) {
     : isPopular ? t('pricing.planCard.popular') : isBest ? t('pricing.planCard.bestValue') : badge;
 
   return (
+    <>
+    {/* A tap anywhere on the card chooses it; the real controls inside are
+        buttons (Choose, and "+N" which only opens the full list). */}
     <div
       onClick={handleChoose}
-      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleChoose(); } }}
-      role="button"
-      tabIndex={0}
-      aria-label={`${name}, ${gel(plan.price)}`}
       aria-busy={loading}
       className={`group relative flex flex-col text-left rounded-3xl p-5 cursor-pointer transition-all duration-300 hover:-translate-y-1.5 focus:outline-none focus-visible:ring-4 focus-visible:ring-teal-200 ${
         featured
@@ -130,7 +138,7 @@ export default function PlanCard({ plan, isGift = false }: Props) {
 
       <ul className="space-y-2 mb-5 flex-1">
         {benefits.map((b: string, i: number) => (
-          <li key={i} className="flex items-start gap-2.5 text-sm text-gray-600">{check}{localBenefits ? b : translateBenefit(b)}</li>
+          <li key={i} className="flex items-start gap-2.5 text-sm text-gray-600">{check}{benefitText(b)}</li>
         ))}
         {plan.deliveryIncluded && !benefitsMentionDelivery && (
           <li className="flex items-start gap-2.5 text-sm text-gray-600">{check}{freeDeliveryLabel}</li>
@@ -138,11 +146,20 @@ export default function PlanCard({ plan, isGift = false }: Props) {
         {isGift && (
           <li className="flex items-start gap-2.5 text-sm text-gray-600">{check}{t('co.gift.planPerk')}</li>
         )}
-        {moreBenefits > 0 && <li className="text-xs font-semibold text-teal-700 pl-7">+{moreBenefits}</li>}
+        {moreBenefits > 0 && (
+          <li className="pl-7">
+            <button type="button" onClick={e => { e.stopPropagation(); setShowAll(true); }}
+              className={`inline-flex items-center gap-1 h-7 px-2.5 -ml-1 rounded-full text-xs font-semibold transition-colors ${tone === 'peach' ? 'text-peach-600 bg-peach-50 hover:bg-peach-100' : 'text-teal-700 bg-teal-50 hover:bg-teal-100'}`}>
+              {fill(t('plan.more'), { n: moreBenefits })}
+              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>
+            </button>
+          </li>
+        )}
       </ul>
 
-      <div
-        className={`w-full flex items-center justify-center gap-2 py-3 rounded-full font-bold text-sm transition-all duration-200 ${
+      <button type="button" disabled={loading} aria-label={`${isGift ? t('pricing.planCard.giftCta') : t('pricing.planCard.cta')}: ${name}, ${gel(plan.price)}`}
+        onClick={e => { e.stopPropagation(); handleChoose(); }}
+        className={`w-full flex items-center justify-center gap-2 py-3 rounded-full font-bold text-sm transition-all duration-200 focus:outline-none focus-visible:ring-4 focus-visible:ring-teal-200 ${
           featured
             ? isGift
               ? 'bg-peach-400 text-white group-hover:bg-peach-600'
@@ -157,7 +174,34 @@ export default function PlanCard({ plan, isGift = false }: Props) {
           : isGift
             ? t('pricing.planCard.giftCta')
             : t('pricing.planCard.cta')}
-      </div>
+      </button>
     </div>
+
+    <Modal open={showAll} onClose={() => setShowAll(false)} title={name} size="md"
+      footer={<>
+        <button type="button" onClick={() => setShowAll(false)} className="px-5 py-2.5 rounded-full text-[13px] font-semibold text-gray-600 hover:bg-gray-100">{t('ui.close')}</button>
+        <button type="button" onClick={handleChoose} disabled={loading}
+          className={`px-6 py-2.5 rounded-full text-[13px] font-bold text-white ${isGift ? 'bg-peach-400 hover:bg-peach-600' : 'bg-teal-600 hover:bg-teal-700'}`}>
+          {loading ? t('global.loading') : isGift ? t('pricing.planCard.giftCta') : t('pricing.planCard.cta')}
+        </button>
+      </>}>
+      <div className={`rounded-2xl p-4 mb-4 ${isGift ? 'bg-peach-50' : 'bg-teal-50/70'}`}>
+        <p className="text-[12.5px] text-gray-600 leading-snug">{isGift ? fill(t('pricing.gift.card'), { plan: name }) : planText(plan, 'description', lang)}</p>
+        <div className="mt-3 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+          <span className="text-2xl font-extrabold tracking-tight text-gray-900">{gel(plan.price)}</span>
+          {plan.monthlyEquivPrice && <span className="text-[13px] text-gray-500">≈ {gel(Number(plan.monthlyEquivPrice).toFixed(2))}{t('global.perMonth')}</span>}
+          {Number(plan.discountPercent) > 0 && (
+            <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-white text-teal-700">{t('global.savePercent')} {plan.discountPercent}%</span>
+          )}
+        </div>
+      </div>
+      <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">{t('plan.included')}</p>
+      <ul className="space-y-2.5">
+        {allBenefits.map((b, i) => (
+          <li key={i} className="flex items-start gap-2.5 text-[13.5px] text-gray-700">{check}{b}</li>
+        ))}
+      </ul>
+    </Modal>
+    </>
   );
 }

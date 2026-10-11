@@ -111,6 +111,7 @@ export const ACCOUNT_STRINGS: Record<string, { en: string; ka: string }> = {
 
   // ── Shared pop-ups & compact account ──
   'ui.cancel':              { en: 'Cancel',                      ka: 'გაუქმება' },
+  'ui.close':               { en: 'Close',                       ka: 'დახურვა' },
   'ui.wait':                { en: 'Please wait…',                ka: 'მოითმინე…' },
   'ui.back':                { en: 'Back',                        ka: 'უკან' },
   'ui.next':                { en: 'Continue',                    ka: 'გაგრძელება' },
@@ -237,6 +238,10 @@ export const ACCOUNT_STRINGS: Record<string, { en: string; ka: string }> = {
   'wallet.addresses':       { en: 'Addresses',                   ka: 'მისამართები' },
   'wallet.cards':           { en: 'Cards',                       ka: 'ბარათები' },
   'wallet.summary':         { en: '{a} addresses · {c} cards',   ka: '{a} მისამართი · {c} ბარათი' },
+
+  // ── Plan cards ──
+  'plan.more':              { en: '+{n} more',                   ka: '+{n} სხვა' },
+  'plan.included':          { en: 'What’s included',            ka: 'რას მოიცავს' },
 
   // ── Map ──
   'addr.saveNew':           { en: 'Save address',                ka: 'მისამართის შენახვა' },

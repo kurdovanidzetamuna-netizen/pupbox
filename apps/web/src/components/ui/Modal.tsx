@@ -1,5 +1,6 @@
 'use client';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Icon } from './icons';
 
 const WIDTH = { sm: 'sm:max-w-md', md: 'sm:max-w-lg', lg: 'sm:max-w-3xl' } as const;
@@ -21,6 +22,10 @@ export default function Modal({ open, onClose, title, children, footer, size = '
   size?: keyof typeof WIDTH;
 }) {
   const box = useRef<HTMLDivElement>(null);
+  // Drawn at the end of <body>: inside an animated or transformed section a
+  // fixed pop-up would be boxed into that section instead of the screen.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   useEffect(() => {
     if (!open) return;
     const before = document.activeElement as HTMLElement | null;
@@ -34,10 +39,10 @@ export default function Modal({ open, onClose, title, children, footer, size = '
     const overflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => { document.removeEventListener('keydown', onKey); document.body.style.overflow = overflow; before?.focus?.(); };
-  }, [open, onClose]);
-  if (!open) return null;
-  return (
-    <div className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center sm:p-6">
+  }, [open, onClose, mounted]);
+  if (!open || !mounted) return null;
+  return createPortal(
+    <div className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center sm:p-6 text-left">
       <div className="absolute inset-0 bg-gray-900/30 backdrop-blur-[2px] animate-[fadeIn_0.15s_ease-out]" onClick={onClose} aria-hidden="true" />
       <div ref={box} role="dialog" aria-modal="true" tabIndex={-1} aria-label={typeof title === 'string' ? title : undefined}
         className={`relative w-full ${WIDTH[size]} flex flex-col max-h-[92dvh] sm:max-h-[min(860px,calc(100dvh-3rem))] bg-white rounded-t-3xl sm:rounded-3xl ring-1 ring-gray-200/70 outline-none animate-[fadeUp_0.2s_ease-out]`}>
@@ -59,6 +64,7 @@ export default function Modal({ open, onClose, title, children, footer, size = '
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
