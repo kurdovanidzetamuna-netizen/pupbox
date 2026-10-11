@@ -21,7 +21,7 @@ export default async function PricesPage() {
       <section id="plans" className="py-16 scroll-mt-20">
         <div className="max-w-7xl mx-auto px-6 text-center">
           <PricesHeader content={content} />
-          <PlanSection plans={plans} />
+          <PlanSection plans={plans} content={content} />
         </div>
       </section>
 

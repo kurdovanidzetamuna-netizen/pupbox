@@ -2,12 +2,13 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import PlanCard from '@/components/PlanCard';
-import { useLanguage } from '@/context/LanguageContext';
+import type { StoredContent } from '@pupbox/content';
+import { usePlanLabels } from '@/lib/planLabels';
 
-function PlanSectionInner({ plans }: { plans: any[] }) {
+function PlanSectionInner({ plans, content }: { plans: any[]; content: StoredContent | null }) {
   const params = useSearchParams();
   const [mode, setMode] = useState<'self' | 'gift'>(params.get('gift') === 'true' ? 'gift' : 'self');
-  const { t } = useLanguage();
+  const L = usePlanLabels(content);
 
   useEffect(() => {
     if (params.get('gift') === 'true') setMode('gift');
@@ -29,7 +30,7 @@ function PlanSectionInner({ plans }: { plans: any[] }) {
                 : 'text-gray-500 hover:text-gray-700'
             }`}
           >
-            {t('pricing.toggle.myDog')}
+            {L.toggleMine}
           </button>
           <button
             onClick={() => setMode('gift')}
@@ -39,7 +40,7 @@ function PlanSectionInner({ plans }: { plans: any[] }) {
                 : 'text-gray-500 hover:text-gray-700'
             }`}
           >
-            {t('pricing.toggle.gift')}
+            {L.toggleGift}
           </button>
         </div>
       </div>
@@ -49,9 +50,9 @@ function PlanSectionInner({ plans }: { plans: any[] }) {
         <div className="max-w-2xl mx-auto mb-10 bg-amber-50 border border-amber-200 rounded-2xl px-6 py-4 flex items-start gap-4">
           <span className="text-2xl shrink-0">🎁</span>
           <div>
-            <p className="font-bold text-amber-800 text-sm mb-0.5">{t('pricing.gift.heading')}</p>
+            <p className="font-bold text-amber-800 text-sm mb-0.5">{L.giftHeading}</p>
             <p className="text-amber-700 text-xs leading-relaxed">
-              {t('pricing.gift.banner')}
+              {L.giftBanner}
             </p>
           </div>
         </div>
@@ -59,7 +60,7 @@ function PlanSectionInner({ plans }: { plans: any[] }) {
 
       {/* Plans grid */}
       {shown.length === 0 ? (
-        <p className="text-gray-400">{t('pricing.none')}</p>
+        <p className="text-gray-400">{L.empty}</p>
       ) : (
         <div
           key={mode}
@@ -67,7 +68,7 @@ function PlanSectionInner({ plans }: { plans: any[] }) {
           style={{ animation: 'fadeSlideIn 0.3s ease both' }}
         >
           {shown.map((plan: any) => (
-            <PlanCard key={plan.id} plan={plan} showFullBenefits isGift={mode === 'gift'} />
+            <PlanCard key={plan.id} plan={plan} isGift={mode === 'gift'} labels={L} />
           ))}
         </div>
       )}
@@ -87,10 +88,10 @@ function PlanSectionInner({ plans }: { plans: any[] }) {
  * prerender it. This component is rendered by both / and /prices — without the
  * wrapper the production build fails on both pages.
  */
-export default function PlanSection({ plans }: { plans: any[] }) {
+export default function PlanSection({ plans, content }: { plans: any[]; content: StoredContent | null }) {
   return (
     <Suspense fallback={null}>
-      <PlanSectionInner plans={plans} />
+      <PlanSectionInner plans={plans} content={content} />
     </Suspense>
   );
 }

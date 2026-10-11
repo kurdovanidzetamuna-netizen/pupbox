@@ -1,7 +1,7 @@
 import { api } from '@/lib/api';
 import { Metadata } from 'next';
 import HomePageClient from '@/components/HomePageClient';
-import { homePage } from '@pupbox/content';
+import { homePage, pricingPage } from '@pupbox/content';
 import { getFaq, getStoredContent, pageMetadata } from '@/lib/content';
 
 export const generateMetadata = () => pageMetadata(homePage, { fullTitle: true });
@@ -17,12 +17,12 @@ const organizationJsonLd = {
 export default async function HomePage() {
   let plans: any[] = [];
   try { plans = await api.plans.list(); } catch {}
-  const [content, faq] = await Promise.all([getStoredContent(homePage), getFaq()]);
+  const [content, faq, pricing] = await Promise.all([getStoredContent(homePage), getFaq(), getStoredContent(pricingPage)]);
 
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }} />
-      <HomePageClient plans={plans} content={content} faq={faq} />
+      <HomePageClient plans={plans} content={content} faq={faq} pricing={pricing} />
     </>
   );
 }

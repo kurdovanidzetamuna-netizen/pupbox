@@ -3,6 +3,7 @@ import Modal from '@/components/ui/Modal';
 import { useLanguage } from '@/context/LanguageContext';
 import { fill } from '@/context/strings/purchase';
 import { gel } from '@/lib/format';
+import type { PlanLabels } from '@/lib/planLabels';
 
 /** A friendly icon for a benefit, guessed from its words (Georgian or English). */
 const ICONS: [RegExp, string, string][] = [
@@ -26,7 +27,7 @@ const iconFor = (text: string) => {
  * Everything a plan includes, as a bright pop-up: a coloured top with the
  * price and saving, quick facts, the full list as icon tiles, and Choose.
  */
-export default function PlanDetails({ open, onClose, onChoose, loading, plan, name, description, benefits, badge, isGift }: {
+export default function PlanDetails({ open, onClose, onChoose, loading, plan, name, description, benefits, badge, isGift, labels: L }: {
   open: boolean;
   onClose: () => void;
   onChoose: () => void;
@@ -37,6 +38,7 @@ export default function PlanDetails({ open, onClose, onChoose, loading, plan, na
   benefits: string[];
   badge?: string;
   isGift?: boolean;
+  labels: PlanLabels;
 }) {
   const { t } = useLanguage();
   const saving = Number(plan.discountPercent) || 0;
@@ -85,7 +87,7 @@ export default function PlanDetails({ open, onClose, onChoose, loading, plan, na
         <button type="button" onClick={onChoose} disabled={loading}
           className={`group w-full flex items-center justify-center gap-2 py-3.5 rounded-full text-[14px] font-bold text-white transition-colors ${peach ? 'bg-peach-400 hover:bg-peach-600' : 'bg-teal-600 hover:bg-teal-700'}`}>
           {loading ? t('global.loading') : <>
-            {isGift ? t('plan.giftThis') : t('plan.chooseThis')}
+            {isGift ? L.giftThis : L.chooseThis}
             <span className="opacity-70">·</span>{gel(plan.price)}
             <svg className="w-4 h-4 transition-transform group-hover:translate-x-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
           </>}
@@ -100,7 +102,7 @@ export default function PlanDetails({ open, onClose, onChoose, loading, plan, na
           ))}
         </div>
       )}
-      <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2.5">{t('plan.included')}</p>
+      <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2.5">{L.included}</p>
       <ul className="grid sm:grid-cols-2 gap-2 pb-1">
         {benefits.map((b, i) => {
           const { emoji, tile } = iconFor(b);

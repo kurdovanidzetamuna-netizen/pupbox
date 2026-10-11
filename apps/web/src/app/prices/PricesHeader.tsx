@@ -24,7 +24,8 @@ export function PricesIncludes({ content }: { content: StoredContent | null }) {
           {c.includes.items.map((item: any, i: number) => (
             <div key={i} className="flex items-start gap-3 bg-white rounded-xl p-4 border border-teal-100">
               <span className="text-xl">{item.icon}</span>
-              <span>{item.text}</span>
+              {/* Older saved texts began with the same emoji as the icon. */}
+              <span>{String(item.text ?? '').replace(/^\p{Extended_Pictographic}\uFE0F?\s*/u, '')}</span>
             </div>
           ))}
         </div>

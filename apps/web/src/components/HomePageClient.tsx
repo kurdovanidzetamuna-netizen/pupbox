@@ -14,12 +14,14 @@ interface Props {
   plans: any[];
   content: StoredContent | null;
   faq: FaqItem[] | null;
+  /** Pricing Page content: the plan cards' words are edited there. */
+  pricing: StoredContent | null;
 }
 
 const CARD_TINTS = ['bg-teal-50', 'bg-blue-50', 'bg-green-50', 'bg-purple-50', 'bg-amber-50', 'bg-pink-50'];
 
 /** Every word, picture and list here is edited in admin → Page Builder → Home Page. */
-export default function HomePageClient({ plans, content, faq }: Props) {
+export default function HomePageClient({ plans, content, faq, pricing }: Props) {
   const { lang, t } = useLanguage();
   const c = usePage(homePage, content);
   const { hero, stats, whatsInBox: box, howItWorks: hiw, testimonials } = c;
@@ -186,7 +188,7 @@ export default function HomePageClient({ plans, content, faq }: Props) {
               <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900 mb-2">{c.plans.heading}</h2>
               {c.plans.description && <p className="text-base text-gray-500">{c.plans.description}</p>}
             </div>
-            <PlanSection plans={plans} />
+            <PlanSection plans={plans} content={pricing} />
           </div>
         </section>
       )}

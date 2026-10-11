@@ -7,14 +7,16 @@ import { gel } from '@/lib/format';
 import { fill } from '@/context/strings/purchase';
 import { planText, planBenefits } from '@/lib/localize';
 import PlanDetails from '@/components/PlanDetails';
+import type { PlanLabels } from '@/lib/planLabels';
 
 interface Props {
   plan: any;
-  showFullBenefits?: boolean;
   isGift?: boolean;
+  /** Words from admin → Page Builder → Pricing Page → Plans. */
+  labels: PlanLabels;
 }
 
-export default function PlanCard({ plan, isGift = false }: Props) {
+export default function PlanCard({ plan, isGift = false, labels: L }: Props) {
   const { addPlan } = useCart();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -69,7 +71,7 @@ export default function PlanCard({ plan, isGift = false }: Props) {
   // Most plans already list "Free delivery" as a benefit; adding the
   // deliveryIncluded line as well showed it twice. The CMS label also carries
   // its own tick, which doubled the ✓.
-  const freeDeliveryLabel = t('pricing.planCard.freeDelivery').replace(/^\s*✓\s*/, '');
+  const freeDeliveryLabel = L.freeDelivery.replace(/^\s*✓\s*/, '');
   const benefitsMentionDelivery = source.some(b => /free delivery|უფასო მიწოდება/i.test(b));
   const benefits = rawBenefits;
   const benefitText = (b: string) => (localBenefits ? b : translateBenefit(b));
@@ -89,8 +91,8 @@ export default function PlanCard({ plan, isGift = false }: Props) {
     </span>
   );
   const label = isGift
-    ? t('pricing.planCard.gift')
-    : isPopular ? t('pricing.planCard.popular') : isBest ? t('pricing.planCard.bestValue') : badge;
+    ? L.giftBadge
+    : isPopular ? L.popular : isBest ? L.bestValue : badge;
 
   return (
     <>
@@ -119,7 +121,7 @@ export default function PlanCard({ plan, isGift = false }: Props) {
         {isGift && <span className="text-xl" aria-hidden="true">🎁</span>}
       </div>
       <p className="text-xs mt-1 leading-snug text-gray-500 line-clamp-1">
-        {isGift ? fill(t('pricing.gift.card'), { plan: name }) : planText(plan, 'description', lang)}
+        {isGift ? fill(L.giftCard, { plan: name }) : planText(plan, 'description', lang)}
       </p>
 
       <p className="mt-4 text-3xl leading-none font-extrabold tracking-tight text-gray-800">{gel(plan.price)}</p>
@@ -150,14 +152,14 @@ export default function PlanCard({ plan, isGift = false }: Props) {
           <li className="pl-7">
             <button type="button" onClick={e => { e.stopPropagation(); setShowAll(true); }}
               className={`inline-flex items-center gap-1 h-7 px-2.5 -ml-1 rounded-full text-xs font-semibold transition-colors ${tone === 'peach' ? 'text-peach-600 bg-peach-50 hover:bg-peach-100' : 'text-teal-700 bg-teal-50 hover:bg-teal-100'}`}>
-              {fill(t('plan.more'), { n: moreBenefits })}
+              {fill(L.more, { n: moreBenefits })}
               <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>
             </button>
           </li>
         )}
       </ul>
 
-      <button type="button" disabled={loading} aria-label={`${isGift ? t('pricing.planCard.giftCta') : t('pricing.planCard.cta')}: ${name}, ${gel(plan.price)}`}
+      <button type="button" disabled={loading} aria-label={`${isGift ? L.giftCta : L.cta}: ${name}, ${gel(plan.price)}`}
         onClick={e => { e.stopPropagation(); handleChoose(); }}
         className={`w-full flex items-center justify-center gap-2 py-3 rounded-full font-bold text-sm transition-all duration-200 focus:outline-none focus-visible:ring-4 focus-visible:ring-teal-200 ${
           featured
@@ -172,13 +174,13 @@ export default function PlanCard({ plan, isGift = false }: Props) {
         {loading
           ? t('global.loading')
           : isGift
-            ? t('pricing.planCard.giftCta')
-            : t('pricing.planCard.cta')}
+            ? L.giftCta
+            : L.cta}
       </button>
     </div>
 
     <PlanDetails open={showAll} onClose={() => setShowAll(false)} onChoose={handleChoose} loading={loading} plan={plan} isGift={isGift}
-      name={name} description={isGift ? fill(t('pricing.gift.card'), { plan: name }) : planText(plan, 'description', lang)}
+      name={name} description={isGift ? fill(L.giftCard, { plan: name }) : planText(plan, 'description', lang)} labels={L}
       benefits={allBenefits} badge={featured ? label : undefined} />
     </>
   );

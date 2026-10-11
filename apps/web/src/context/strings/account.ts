@@ -103,7 +103,6 @@ export const ACCOUNT_STRINGS: Record<string, { en: string; ka: string }> = {
   // ── Small labels that used to be English-only ──
   'crumb.blog':             { en: 'Blog',                        ka: 'ბლოგი' },
   'blog.catEmpty':          { en: 'No posts in this category yet.', ka: 'ამ კატეგორიაში სტატიები ჯერ არ არის.' },
-  'pricing.gift.heading':   { en: 'Gifting a Pupbox subscription', ka: 'Pupbox-ის გამოწერა საჩუქრად' },
   'aria.mainNav':           { en: 'Main menu',                   ka: 'მთავარი მენიუ' },
   'aria.checkoutSteps':     { en: 'Checkout steps',              ka: 'შეკვეთის ეტაპები' },
   'aria.signupSteps':       { en: 'Sign-up steps',               ka: 'რეგისტრაციის ეტაპები' },
@@ -240,14 +239,10 @@ export const ACCOUNT_STRINGS: Record<string, { en: string; ka: string }> = {
   'wallet.summary':         { en: '{a} addresses · {c} cards',   ka: '{a} მისამართი · {c} ბარათი' },
 
   // ── Plan cards ──
-  'plan.more':              { en: '+{n} more',                   ka: '+{n} სხვა' },
-  'plan.included':          { en: 'What’s included',            ka: 'რას მოიცავს' },
   'plan.fact.box':          { en: '{n} box',                     ka: '{n} კოლოფი' },
   'plan.fact.boxes':        { en: '{n} boxes',                   ka: '{n} კოლოფი' },
   'plan.fact.month':        { en: '{n} month',                   ka: '{n} თვე' },
   'plan.fact.months':       { en: '{n} months',                  ka: '{n} თვე' },
-  'plan.chooseThis':        { en: 'Choose this plan',            ka: 'ამ გეგმის არჩევა' },
-  'plan.giftThis':          { en: 'Gift this plan',              ka: 'საჩუქრად გაგზავნა' },
 
   // ── Map ──
   'addr.saveNew':           { en: 'Save address',                ka: 'მისამართის შენახვა' },

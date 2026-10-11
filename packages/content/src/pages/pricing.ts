@@ -1,5 +1,5 @@
 import type { PageDef } from '../types';
-import { d, bare, tx, text, area, icon, list, seo } from '../fields';
+import { d, bare, tx, text, area, icon, list, note, seo } from '../fields';
 
 const item = (iconChar: string, en: [string, string], ka: [string, string]) =>
   ({ icon: iconChar, name: tx(en[0], ka[0]), desc: tx(en[1], ka[1]) });
@@ -15,6 +15,28 @@ export const pricingPage: PageDef = {
       fields: [
         text('heading', 'Heading', d('pricing.hero.heading')),
         text('description', 'Description', d('pricing.hero.sub')),
+      ],
+    },
+    {
+      id: 'plans', label: 'Plans', icon: '🗂️', canHide: false,
+      fields: [
+        note('plansNote', 'The plans themselves (name, price, benefits, badge, gift on/off) are edited in Subscription Plans. Here: the words around them, on this page and on Home.', '/dashboard/subscription-plans'),
+        text('toggleMine', 'Switch: for my dog', d('pricing.toggle.myDog')),
+        text('toggleGift', 'Switch: as a gift', d('pricing.toggle.gift')),
+        text('giftHeading', 'Gift note: heading', d('pricing.gift.heading')),
+        area('giftBanner', 'Gift note: text', d('pricing.gift.banner')),
+        text('giftCard', 'Gift card line', d('pricing.gift.card'), '{plan} is replaced by the plan name.'),
+        text('cta', 'Card button', d('pricing.planCard.cta')),
+        text('giftCta', 'Card button (gift)', d('pricing.planCard.giftCta')),
+        text('popular', 'Badge: Most popular', d('pricing.planCard.popular')),
+        text('bestValue', 'Badge: Best value', d('pricing.planCard.bestValue')),
+        text('giftBadge', 'Badge on gift cards', d('pricing.planCard.gift')),
+        text('freeDelivery', 'Free delivery line', d('pricing.planCard.freeDelivery'), 'Shown when a plan includes delivery but its benefits don’t say so.'),
+        text('more', 'More benefits link', d('plan.more'), '{n} is replaced by how many more.'),
+        text('included', 'Pop-up: list heading', d('plan.included')),
+        text('chooseThis', 'Pop-up: button', d('plan.chooseThis')),
+        text('giftThis', 'Pop-up: button (gift)', d('plan.giftThis')),
+        text('empty', 'When there are no plans', d('pricing.none')),
       ],
     },
     {
