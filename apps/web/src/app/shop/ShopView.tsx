@@ -10,6 +10,7 @@ import { Heading } from '@/components/ui/Heading';
 import { Icon } from '@/components/ui/icons';
 import ProductCard from '@/components/shop/ProductCard';
 import Menu from '@/components/ui/Menu';
+import PerksStrip from '@/components/shop/PerksStrip';
 
 const SORTS = [
   { v: '', k: 'shop.sort.default' },
@@ -93,13 +94,7 @@ export default function ShopView({ products, total, pages, page, categories, bra
               </button>
             </div>
           </form>
-          {c.on('perks') && c.perks.items?.length > 0 && (
-            <ul className="mt-4 flex flex-wrap gap-x-5 gap-y-2">
-              {c.perks.items.map((p: any, i: number) => (
-                <li key={i} className="inline-flex items-center gap-1.5 text-[12.5px] font-medium text-gray-600"><span aria-hidden="true">{p.icon}</span>{p.text}</li>
-              ))}
-            </ul>
-          )}
+          {c.on('perks') && <PerksStrip items={c.perks.items} className="mt-4" />}
         </div>
       </section>
 

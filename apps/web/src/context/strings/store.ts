@@ -66,6 +66,8 @@ export const STORE_STRINGS: Record<string, { en: string; ka: string }> = {
   'pdp.p.needName':         { en: 'Enter the name to engrave.', ka: 'ჩაწერე ამოსატვიფრი სახელი.' },
   'pdp.p.needSize':         { en: 'Choose a size.',             ka: 'აირჩიე ზომა.' },
   'pdp.p.engraving':        { en: 'Engraving',                  ka: 'წარწერა' },
+  'pdp.allergens':          { en: 'Contains',                   ka: 'შეიცავს' },
+  'pdp.similar':            { en: 'You may also like',          ka: 'შეიძლება მოგეწონოს' },
   'pdp.addError':           { en: 'Could not add to cart. Please try again.', ka: 'კალათაში დამატება ვერ მოხერხდა. სცადე თავიდან.' },
 
   // ── Account ──
