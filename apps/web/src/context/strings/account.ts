@@ -162,4 +162,5 @@ export const ACCOUNT_STRINGS: Record<string, { en: string; ka: string }> = {
   'acc.offInfo':            { en: 'You’d miss birthday treats for your dog, restock reminders and members-only offers.', ka: 'გამოგრჩება ძაღლის დაბადების დღის საჩუქრები, შეხსენებები და მხოლოდ წევრებისთვის შეთავაზებები.' },
   'acc.offKeep':            { en: 'Keep them',                   ka: 'დავტოვოთ' },
   'acc.offConfirm':         { en: 'Turn off',                    ka: 'გამორთვა' },
+  'ver.newNumberHint':      { en: 'We’ll text a new code to this number.', ka: 'ამ ნომერზე ახალ კოდს გამოგიგზავნით.' },
 };

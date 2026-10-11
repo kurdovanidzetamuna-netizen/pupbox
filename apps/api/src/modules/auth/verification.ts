@@ -33,9 +33,12 @@ export async function sendCode(prisma: PrismaService, email: EmailService, sms: 
 
   const recent = await prisma.verificationCode.findMany({
     where: { userId, channel, createdAt: { gt: new Date(Date.now() - 3600_000) } },
-    orderBy: { createdAt: 'desc' }, select: { createdAt: true },
+    orderBy: { createdAt: 'desc' }, select: { createdAt: true, target: true },
   });
-  const wait = recent[0] ? Math.ceil((recent[0].createdAt.getTime() + RESEND_AFTER_MS - Date.now()) / 1000) : 0;
+  // The one-a-minute wait is per number/address: a corrected phone number
+  // gets its code straight away. The hourly cap counts every code.
+  const lastHere = recent.find((r) => r.target === target);
+  const wait = lastHere ? Math.ceil((lastHere.createdAt.getTime() + RESEND_AFTER_MS - Date.now()) / 1000) : 0;
   if (wait > 0) throw new HttpException(`Please wait ${wait} seconds before asking for a new code.`, HttpStatus.TOO_MANY_REQUESTS);
   if (recent.length >= MAX_PER_HOUR) throw new HttpException('Too many codes asked for. Try again in an hour.', HttpStatus.TOO_MANY_REQUESTS);
 
