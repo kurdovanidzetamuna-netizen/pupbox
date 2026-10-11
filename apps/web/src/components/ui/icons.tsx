@@ -32,6 +32,8 @@ const P: Record<string, string> = {
   filter: 'M4 5h16l-6 7.5V19l-4 2v-8.5L4 5z',
   sliders: 'M4 7h10M18 7h2M4 17h4M12 17h8M16 5v4M10 15v4',
   reset: 'M4 12a8 8 0 1 0 2.3-5.6L4 8.7M4 4v4.7h4.7',
+  bag: 'M5 8h14l-1 12H6L5 8zM9 8V6a3 3 0 016 0v2',
+  minus: 'M5 12h14',
   logout: 'M15 4h3a2 2 0 012 2v12a2 2 0 01-2 2h-3M10 16l-4-4 4-4M6 12h11',
 };
 

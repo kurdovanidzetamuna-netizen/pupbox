@@ -13,15 +13,16 @@ const money = (n: unknown) => `₾${Number(n).toFixed(2)}`;
 export const available = (inv: any) => (inv ? Math.max(0, Number(inv.quantity) - Number(inv.reservedQty || 0)) : 0);
 
 /**
- * A product in the grid: big image with its badges (sale, low stock, sold
- * out), a round ＋ that adds one to the basket right here, then category,
- * name and price. Products that need a choice (size, engraving) open their
- * page instead of adding.
+ * A compact product card: a soft image with its badges, name, a two-line
+ * description and the price. ＋ adds one; once it's in the basket the button
+ * becomes − n + (up to what's in stock) and a 🛍 n badge marks the card.
+ * Products that need a choice (size, engraving) open their page instead.
  */
 export default function ProductCard({ product, index = 0 }: { product: any; index?: number }) {
   const { t, lang } = useLanguage();
-  const { addProduct } = useCart();
-  const [state, setState] = useState<'idle' | 'adding' | 'added' | 'error'>('idle');
+  const { cart, addProduct, updateItem, removeItem } = useCart();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(false);
 
   const ka = product.translations?.ka ?? {};
   const name = (lang === 'ka' && ka.name?.trim()) || product.name;
@@ -37,74 +38,84 @@ export default function ProductCard({ product, index = 0 }: { product: any; inde
   const href = `/shop/${product.slug}`;
   const look = categoryLook(product.category);
 
-  async function quickAdd() {
-    if (soldOut || state === 'adding') return;
-    setState('adding');
-    try {
-      await addProduct(product.id, 1);
-      setState('added');
-      setTimeout(() => setState('idle'), 1600);
-    } catch {
-      setState('error');
-      setTimeout(() => setState('idle'), 2000);
-    }
+  // What's already in the basket: all lines for this product (a named bowl
+  // can be in it several times, once per name).
+  const lines: any[] = (cart?.items ?? []).filter((i: any) => i.productId === product.id);
+  const inCart = lines.reduce((n, i) => n + Number(i.quantity || 0), 0);
+  const line = lines.length === 1 ? lines[0] : null;
+
+  async function run(fn: () => Promise<void>) {
+    if (busy) return;
+    setBusy(true); setError(false);
+    try { await fn(); } catch { setError(true); setTimeout(() => setError(false), 2000); } finally { setBusy(false); }
   }
+  const add = () => run(() => (line ? updateItem(line.id, line.quantity + 1) : addProduct(product.id, 1)));
+  const less = () => line && run(() => (line.quantity <= 1 ? removeItem(line.id) : updateItem(line.id, line.quantity - 1)));
 
   return (
-    <div className="group relative flex flex-col animate-[fadeUp_0.35s_ease-out_both]" style={{ animationDelay: `${Math.min(index, 8) * 40}ms` }}>
-      <div className="relative">
-      <Link href={href} tabIndex={-1} aria-hidden="true" className={`block relative aspect-square rounded-3xl overflow-hidden bg-gradient-to-br ${look.tint} ${soldOut ? 'opacity-70' : ''}`}>
+    <div className={`group relative flex flex-col rounded-3xl bg-white p-2 sm:p-2.5 transition-all duration-200 animate-[fadeUp_0.35s_ease-out_both] ${
+      inCart ? 'ring-2 ring-teal-300' : 'ring-1 ring-gray-100 hover:ring-teal-200'}`} style={{ animationDelay: `${Math.min(index, 10) * 35}ms` }}>
+      <Link href={href} tabIndex={-1} aria-hidden="true"
+        className={`relative block aspect-[4/3] rounded-2xl overflow-hidden bg-gradient-to-br ${look.tint} ${soldOut ? 'opacity-60' : ''}`}>
         {img ? (
-          <img src={img.url} alt={img.altText || name} loading="lazy"
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.04]" />
+          <img src={img.url} alt="" loading="lazy" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.05]" />
         ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <span className="text-6xl transition-transform duration-500 group-hover:scale-110 group-hover:-rotate-6" aria-hidden="true">{look.icon}</span>
-          </div>
+          <span className="absolute inset-0 flex items-center justify-center text-[44px] transition-transform duration-500 group-hover:scale-110 group-hover:-rotate-6">{look.icon}</span>
         )}
-
-        {/* Badges, top-left */}
-        <div className="absolute top-3 left-3 flex flex-col items-start gap-1.5">
-          {sale && <span className="text-[11px] font-extrabold px-2 py-1 rounded-full bg-peach-400 text-white">−{off}%</span>}
+        <span className="absolute top-2 left-2 flex flex-col items-start gap-1">
+          {sale && <span className="text-[10.5px] font-extrabold px-1.5 py-0.5 rounded-full bg-peach-400 text-white">−{off}%</span>}
           {soldOut
-            ? <span className="text-[11px] font-bold px-2 py-1 rounded-full bg-white/90 text-gray-600">{t('shop.outOfStock')}</span>
-            : low && <span className="text-[11px] font-bold px-2 py-1 rounded-full bg-amber-100 text-amber-800">{fill(t('shop.onlyLeft'), { n: left })}</span>}
-        </div>
+            ? <span className="text-[10.5px] font-bold px-1.5 py-0.5 rounded-full bg-white/90 text-gray-600">{t('shop.outOfStock')}</span>
+            : low && <span className="text-[10.5px] font-bold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800">{fill(t('shop.onlyLeft'), { n: left })}</span>}
+        </span>
       </Link>
 
-        {/* Quick add, bottom-right */}
-        {!soldOut && (needsChoice ? (
+      {/* In the basket: how many */}
+      {inCart > 0 && (
+        <span className="absolute top-3.5 right-3.5 inline-flex items-center gap-1 h-7 pl-1.5 pr-2 rounded-full bg-teal-600 text-white text-[12px] font-bold animate-[pop_0.3s_ease-out]"
+          title={fill(t('shop.inBasket'), { n: inCart })} aria-label={fill(t('shop.inBasket'), { n: inCart })}>
+          <Icon name="bag" className="w-4 h-4" strokeWidth={2.2} />{inCart}
+        </span>
+      )}
+
+      <Link href={href} className="px-1 pt-2.5 flex-1 flex flex-col rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-300">
+        {category && <span className="text-[10.5px] font-bold uppercase tracking-wider text-teal-700/70 truncate">{category}</span>}
+        <h3 className="mt-0.5 text-[13.5px] font-bold text-gray-900 leading-snug line-clamp-2 group-hover:text-teal-700 transition-colors">{name}</h3>
+        {short && <p className="mt-1 text-[12px] text-gray-500 leading-snug line-clamp-2">{short}</p>}
+      </Link>
+
+      <div className="px-1 pt-2.5 pb-0.5 flex items-center justify-between gap-2">
+        <div className="min-w-0 leading-none">
+          <span className={`text-[15px] font-extrabold ${sale ? 'text-peach-600' : 'text-gray-900'}`}>{money(sale ? product.salePrice : product.price)}</span>
+          {sale && <span className="block sm:inline sm:ml-1.5 mt-0.5 text-[11px] text-gray-400 line-through">{money(product.price)}</span>}
+        </div>
+
+        {soldOut ? null : needsChoice ? (
           <Link href={href} aria-label={`${t('shop.choose')}: ${name}`} title={t('shop.choose')}
-            className="absolute bottom-3 right-3 w-11 h-11 rounded-full bg-white/95 text-teal-700 flex items-center justify-center hover:bg-teal-600 hover:text-white transition-colors">
-            <Icon name="sliders" className="w-5 h-5" strokeWidth={2.2} />
+            className="w-9 h-9 shrink-0 rounded-full bg-teal-50 text-teal-700 flex items-center justify-center hover:bg-teal-600 hover:text-white transition-colors">
+            <Icon name="sliders" className="w-[18px] h-[18px]" strokeWidth={2.2} />
           </Link>
+        ) : line ? (
+          <div className="flex items-center h-9 rounded-full bg-teal-600 text-white" role="group" aria-label={fill(t('shop.inBasket'), { n: inCart })}>
+            <button type="button" onClick={less} disabled={busy} aria-label={t('shop.less')} title={t('shop.less')}
+              className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-teal-700 disabled:opacity-60">
+              <Icon name={line.quantity <= 1 ? 'trash' : 'minus'} className="w-4 h-4" strokeWidth={2.4} />
+            </button>
+            <span className="min-w-[1.25rem] text-center text-[13px] font-extrabold tabular-nums" aria-live="polite">{busy ? '…' : line.quantity}</span>
+            <button type="button" onClick={add} disabled={busy || inCart >= left} aria-label={t('shop.more')} title={inCart >= left ? fill(t('shop.onlyLeft'), { n: left }) : t('shop.more')}
+              className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-teal-700 disabled:opacity-40">
+              <Icon name="plus" className="w-4 h-4" strokeWidth={2.4} />
+            </button>
+          </div>
         ) : (
-          <button type="button" onClick={quickAdd} aria-label={`${t('shop.quickAdd')}: ${name}`} title={t('shop.quickAdd')}
-            className={`absolute bottom-3 right-3 w-11 h-11 rounded-full flex items-center justify-center transition-all duration-200 active:scale-90 ${
-              state === 'added' ? 'bg-teal-500 text-white scale-110' : state === 'error' ? 'bg-red-500 text-white' : 'bg-white/95 text-teal-700 hover:bg-teal-600 hover:text-white'}`}>
-            {state === 'adding'
-              ? <span className="w-4 h-4 border-2 border-teal-200 border-t-teal-600 rounded-full animate-spin" />
-              : <Icon name={state === 'added' ? 'check' : state === 'error' ? 'alert' : 'plus'} className="w-5 h-5" strokeWidth={2.4} />}
+          <button type="button" onClick={add} disabled={busy} aria-label={`${t('shop.quickAdd')}: ${name}`} title={t('shop.quickAdd')}
+            className={`w-9 h-9 shrink-0 rounded-full flex items-center justify-center transition-colors active:scale-90 ${
+              error ? 'bg-red-500 text-white' : 'bg-teal-50 text-teal-700 hover:bg-teal-600 hover:text-white'}`}>
+            {busy ? <span className="w-4 h-4 border-2 border-teal-200 border-t-teal-600 rounded-full animate-spin" />
+              : <Icon name={error ? 'alert' : 'plus'} className="w-[18px] h-[18px]" strokeWidth={2.4} />}
           </button>
-        ))}
-        {state === 'added' && (
-          <span role="status" className="absolute bottom-3 right-16 h-11 px-3 inline-flex items-center rounded-full bg-gray-900/80 text-white text-[12px] font-semibold animate-[fadeUp_0.2s_ease-out]">
-            {t('shop.added')}
-          </span>
         )}
       </div>
-
-      <Link href={href} className="pt-3 px-1 flex-1 flex flex-col rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-300">
-        {(category || product.brand) && (
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 truncate">{category || product.brand}</p>
-        )}
-        <h3 className="mt-0.5 text-[14px] font-semibold text-gray-900 leading-snug line-clamp-2 group-hover:text-teal-700 transition-colors">{name}</h3>
-        {short && <p className="mt-1 text-[12px] text-gray-500 line-clamp-1">{short}</p>}
-        <div className="mt-auto pt-2 flex items-baseline gap-2">
-          <span className={`text-[16px] font-extrabold ${sale ? 'text-peach-600' : 'text-gray-900'}`}>{money(sale ? product.salePrice : product.price)}</span>
-          {sale && <span className="text-[12px] text-gray-400 line-through">{money(product.price)}</span>}
-        </div>
-      </Link>
     </div>
   );
 }

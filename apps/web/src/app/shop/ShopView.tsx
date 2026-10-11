@@ -79,17 +79,17 @@ export default function ShopView({ products, total, pages, page, categories, bra
       <section className="bg-gradient-to-br from-teal-50 via-white to-peach-50/70">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-8 sm:pt-10 pb-7">
           <Heading title={c.header.heading} subtitle={c.header.description || undefined} className="!mb-5" />
-          <form role="search" onSubmit={(e) => { e.preventDefault(); go({ search: query.trim() || null }); }} className="max-w-2xl">
-            <div className="flex items-center rounded-full bg-white ring-1 ring-gray-200/80 focus-within:ring-2 focus-within:ring-teal-300 pl-2 pr-1.5 py-1.5 transition">
+          <form role="search" onSubmit={(e) => { e.preventDefault(); go({ search: query.trim() || null }); }} className="w-full">
+            <div className="flex items-center h-14 sm:h-16 rounded-full bg-white ring-1 ring-gray-200/80 focus-within:ring-2 focus-within:ring-teal-300 pl-3 pr-2 transition">
               <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t('shop.search')} aria-label={t('shop.search')}
-                className="flex-1 min-w-0 h-10 bg-transparent px-3.5 text-[14px] text-gray-900 placeholder:text-gray-400 outline-none [&::-webkit-search-cancel-button]:hidden" />
+                className="flex-1 min-w-0 h-full bg-transparent px-3.5 text-[15px] sm:text-[16px] text-gray-900 placeholder:text-gray-400 outline-none [&::-webkit-search-cancel-button]:hidden" />
               {query && (
                 <button type="button" onClick={() => { setQuery(''); if (search) go({ search: null }); }} aria-label={t('shop.clear')}
                   className="w-9 h-9 rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-700 flex items-center justify-center"><Icon name="close" className="w-4 h-4" /></button>
               )}
               <button type="submit" aria-label={t('shop.find')} title={t('shop.find')}
-                className="w-10 h-10 shrink-0 rounded-full bg-teal-600 text-white flex items-center justify-center hover:bg-teal-700 transition-colors">
-                <Icon name="search" className="w-[18px] h-[18px]" strokeWidth={2.4} />
+                className="w-11 h-11 sm:w-12 sm:h-12 shrink-0 rounded-full bg-teal-600 text-white flex items-center justify-center hover:bg-teal-700 transition-colors">
+                <Icon name="search" className="w-5 h-5" strokeWidth={2.4} />
               </button>
             </div>
           </form>
@@ -163,7 +163,7 @@ export default function ShopView({ products, total, pages, page, categories, bra
             )}
           </div>
         ) : (
-          <div key={`${category}|${brand}|${sort}|${search}|${page}`} className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-x-4 gap-y-8 sm:gap-x-6">
+          <div key={`${category}|${brand}|${sort}|${search}|${page}`} className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
             {products.map((p, i) => <ProductCard key={p.id} product={p} index={i} />)}
           </div>
         )}
