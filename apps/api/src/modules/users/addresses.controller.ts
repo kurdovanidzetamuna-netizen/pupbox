@@ -2,7 +2,7 @@ import { BadRequestException, Body, Controller, Delete, Get, NotFoundException, 
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsBoolean, IsNotEmpty, IsOptional, IsString, Matches, MaxLength } from 'class-validator';
+import { IsBoolean, IsNotEmpty, IsNumber, IsOptional, IsString, Matches, Max, MaxLength, Min, ValidateIf } from 'class-validator';
 import { PartialType } from '@nestjs/swagger';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -17,10 +17,13 @@ class AddressDto {
   @Trim() @IsString() @IsNotEmpty({ message: 'Address is required' }) @MaxLength(200) addressLine1: string;
   @IsOptional() @Trim() @IsString() @MaxLength(200) addressLine2?: string;
   @IsOptional() @IsBoolean() isDefault?: boolean;
+  /** The map pin (Georgia and around; null clears it), so the courier finds the door. */
+  @IsOptional() @ValidateIf((_, v) => v !== null) @IsNumber() @Min(35) @Max(48) latitude?: number;
+  @IsOptional() @ValidateIf((_, v) => v !== null) @IsNumber() @Min(36) @Max(52) longitude?: number;
 }
 class UpdateAddressDto extends PartialType(AddressDto) {}
 
-const SELECT = { id: true, label: true, firstName: true, lastName: true, phone: true, city: true, addressLine1: true, addressLine2: true, isDefault: true } as const;
+const SELECT = { id: true, label: true, firstName: true, lastName: true, phone: true, city: true, addressLine1: true, addressLine2: true, latitude: true, longitude: true, isDefault: true } as const;
 
 /** The customer's saved delivery addresses: list, add, edit, remove, choose the default. */
 @ApiTags('My Addresses')

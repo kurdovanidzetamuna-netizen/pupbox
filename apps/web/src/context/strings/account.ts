@@ -237,4 +237,9 @@ export const ACCOUNT_STRINGS: Record<string, { en: string; ka: string }> = {
   'wallet.addresses':       { en: 'Addresses',                   ka: 'მისამართები' },
   'wallet.cards':           { en: 'Cards',                       ka: 'ბარათები' },
   'wallet.summary':         { en: '{a} addresses · {c} cards',   ka: '{a} მისამართი · {c} ბარათი' },
+
+  // ── Map ──
+  'map.search':             { en: 'Search a street or place',    ka: 'მოძებნე ქუჩა ან ადგილი' },
+  'map.locate':             { en: 'My location',                 ka: 'ჩემი მდებარეობა' },
+  'map.hint':               { en: 'Move the map so the pin sits on your door.', ka: 'გადაადგილე რუკა, რომ ნიშნული შენს კარზე იყოს.' },
 };

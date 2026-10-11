@@ -294,6 +294,9 @@ model Address {
   addressLine1 String
   addressLine2 String?
   postalCode   String?
+  /// The pin the customer set on the map, for the courier.
+  latitude     Float?
+  longitude    Float?
   isDefault    Boolean  @default(false)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt

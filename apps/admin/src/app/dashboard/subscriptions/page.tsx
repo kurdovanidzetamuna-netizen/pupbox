@@ -1,4 +1,5 @@
 'use client';
+import MapLink from '@/components/MapLink';
 import { useState, useEffect, useRef } from 'react';
 import { ALLERGENS } from '@pupbox/content';
 
@@ -209,7 +210,7 @@ function DetailModal({ sub, onClose, onCancel, onResume, onSaved }: {
               {editing === 'address' ? <AddressEditor sub={sub} onSaved={onSaved} onDone={() => setEditing(null)} /> : sub.address ? (
                 <p style={{ margin: 0, padding: '10px 14px', fontSize: 13, color: 'var(--slate-800)', lineHeight: 1.5 }}>
                   {sub.address.firstName} {sub.address.lastName} · {sub.address.phone}<br />
-                  <span style={{ color: 'var(--slate-500)' }}>{sub.address.city}, {[sub.address.addressLine1, sub.address.addressLine2].filter(Boolean).join(', ')}</span>
+                  <span style={{ color: 'var(--slate-500)' }}>{sub.address.city}, {[sub.address.addressLine1, sub.address.addressLine2].filter(Boolean).join(', ')}</span><MapLink address={sub.address} />
                 </p>
               ) : <p style={{ margin: 0, padding: '10px 14px', fontSize: 13, color: 'var(--amber-700)' }}>No address yet.</p>}
             </div>

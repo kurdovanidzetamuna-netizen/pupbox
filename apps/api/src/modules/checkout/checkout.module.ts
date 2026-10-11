@@ -59,6 +59,9 @@ class CreateOrderDto {
   @Trim() @IsString() @IsNotEmpty({ message: 'City is required' }) @MaxLength(80) city: string;
   @Trim() @IsString() @IsNotEmpty({ message: 'Address is required' }) @MaxLength(200) addressLine1: string;
   @IsOptional() @Trim() @IsString() @MaxLength(200) addressLine2?: string;
+  /** The map pin (Georgia and around), so the courier finds the door. */
+  @IsOptional() @IsNumber() @Min(35) @Max(48) latitude?: number;
+  @IsOptional() @IsNumber() @Min(36) @Max(52) longitude?: number;
   /**
    * The customer's auto-renewal choice. The checkout page has always sent
    * this; because it was missing here, forbidNonWhitelisted rejected every

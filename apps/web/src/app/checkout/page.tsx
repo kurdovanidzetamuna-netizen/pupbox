@@ -1,4 +1,5 @@
 'use client';
+import MapPicker, { type Pin } from '@/components/MapPicker';
 import { formatDate } from '@/lib/dates';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -66,6 +67,8 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(false);
   // Keep the card with the bank for renewals and next orders (the customer can untick).
   const [saveCard, setSaveCard] = useState(true);
+  // Where on the map the box goes (optional; helps the courier).
+  const [pin, setPin] = useState<Pin | null>(null);
   const [error, setError] = useState('');
   const [errs, setErrs] = useState<Record<string, string>>({});
 
@@ -288,6 +291,7 @@ export default function CheckoutPage() {
           city: form.city,
           addressLine1: form.addressLine1,
           addressLine2: form.addressLine2 || undefined,
+          ...(pin ? { latitude: pin.lat, longitude: pin.lng } : {}),
           // A gift never auto-renews — the buyer must not be billed
           // indefinitely for someone else's dog.
           autoRenewal: offersRenewal && autoRenewal === true,
@@ -538,6 +542,11 @@ export default function CheckoutPage() {
                     <PhoneInput id="phone" label={t('co.f.phone')} value={form.phone}
                       onChange={(v, ok) => { setForm(f => ({ ...f, phone: v })); setDeliveryPhoneOk(ok || !v); setErrs(er => ({ ...er, phone: '' })); }} />
                   </Field>
+                  <MapPicker value={pin} onPick={p => {
+                    setPin({ lat: p.lat, lng: p.lng });
+                    setForm(f => ({ ...f, ...(p.city !== undefined ? { city: p.city, addressLine1: p.street ?? '' } : {}) }));
+                    setErrs(er => ({ ...er, ...(p.city ? { city: '' } : {}), ...(p.street ? { addressLine1: '' } : {}) }));
+                  }} />
                   {input('city', t('co.f.city'), { placeholder: 'თბილისი', autoComplete: 'address-level2' })}
                   {input('addressLine1', t('co.f.address'), { placeholder: t('co.f.addressPh'), autoComplete: 'address-line1' })}
                   {input('addressLine2', t('co.f.address2'), { autoComplete: 'address-line2' })}

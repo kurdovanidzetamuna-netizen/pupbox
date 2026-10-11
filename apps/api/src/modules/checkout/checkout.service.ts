@@ -83,6 +83,8 @@ export class CheckoutService {
     city: string;
     addressLine1: string;
     addressLine2?: string;
+    latitude?: number;
+    longitude?: number;
     autoRenewal?: boolean;
     gift?: GiftDetails;
   }) {
@@ -137,7 +139,7 @@ export class CheckoutService {
     let address = data.addressId ? await this.prisma.address.findFirst({ where: { id: data.addressId, userId, deletedAt: null } }) : null;
     if (!address) {
       address = await this.prisma.address.create({
-        data: { userId, firstName: data.firstName, lastName: data.lastName, phone: data.phone, city: data.city, addressLine1: data.addressLine1, addressLine2: data.addressLine2 },
+        data: { userId, firstName: data.firstName, lastName: data.lastName, phone: data.phone, city: data.city, addressLine1: data.addressLine1, addressLine2: data.addressLine2, latitude: data.latitude ?? null, longitude: data.longitude ?? null },
       });
     }
 

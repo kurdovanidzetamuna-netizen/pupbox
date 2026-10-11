@@ -1,4 +1,5 @@
 'use client';
+import MapLink, { mapUrl } from '@/components/MapLink';
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react';
 import Link from 'next/link';
 import { ActionButton } from '../../../components/Toolbar';
@@ -87,14 +88,14 @@ export default function MonthlyBoxesPage() {
   });
 
   function exportCsv() {
-    const rows = [['Box', 'Customer', 'Phone', 'City', 'Address', 'Dog', 'Size', 'Allergies', 'Contents', 'Gift note', 'Status', 'Tracking']];
+    const rows = [['Box', 'Customer', 'Phone', 'City', 'Address', 'Dog', 'Size', 'Allergies', 'Contents', 'Gift note', 'Status', 'Tracking', 'Map']];
     for (const i of shown) {
       const a = i.address, s = i.subscription;
       rows.push([
         `${i.boxNumber}/${s.boxesTotal}`, a ? `${a.firstName} ${a.lastName}` : `${s.user.firstName} ${s.user.lastName}`, a?.phone ?? '', a?.city ?? '',
         a ? [a.addressLine1, a.addressLine2].filter(Boolean).join(', ') : '', s.dog?.name ?? '', SIZE[s.dog?.size] ?? '', (s.dog?.allergies ?? []).join('; '),
         i.campaign?.name ?? '', i.gift && i.boxNumber === 1 ? `Gift from ${s.user.firstName} ${s.user.lastName}${i.gift.message ? `: ${i.gift.message}` : ''}` : '',
-        STATUS[i.status as Status].label, i.trackingNumber ?? '',
+        STATUS[i.status as Status].label, i.trackingNumber ?? '', mapUrl(a),
       ]);
     }
     const csv = rows.map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
@@ -266,7 +267,7 @@ export default function MonthlyBoxesPage() {
                     <td style={td}>
                       {a ? <>
                         <div>{a.firstName} {a.lastName} · {a.phone}</div>
-                        <div style={{ fontSize: 12, color: 'var(--slate-500)' }}>{a.city}, {[a.addressLine1, a.addressLine2].filter(Boolean).join(', ')}</div>
+                        <div style={{ fontSize: 12, color: 'var(--slate-500)' }}>{a.city}, {[a.addressLine1, a.addressLine2].filter(Boolean).join(', ')}<MapLink address={a} /></div>
                       </> : <span style={{ color: 'var(--red-600)', fontWeight: 600 }}>No address</span>}
                     </td>
                     <td style={td}><span style={{ background: st.bg, color: st.fg, fontSize: 12, fontWeight: 700, borderRadius: 999, padding: '3px 10px', whiteSpace: 'nowrap' }}>{st.label}</span></td>

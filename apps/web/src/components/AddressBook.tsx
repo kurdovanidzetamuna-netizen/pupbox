@@ -5,6 +5,7 @@ import { authFetch, SessionExpiredError } from '@/lib/authFetch';
 import Modal from '@/components/ui/Modal';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import Field from '@/components/ui/Field';
+import MapPicker, { type Pin } from '@/components/MapPicker';
 import PhoneInput, { isValidPhone } from '@/components/ui/PhoneInput';
 import Menu from '@/components/ui/Menu';
 import { Icon } from '@/components/ui/icons';
@@ -16,7 +17,7 @@ const prettyPhone = (p: string) => parsePhoneNumberFromString(p, 'GE')?.formatIn
 
 const iconFor = (label: string | null) => /სახლ|home|ბინა/i.test(label ?? '') ? 'home' : /სამსახ|work|ოფის|office/i.test(label ?? '') ? 'work' : 'pin';
 
-type Address = { id: string; label: string | null; firstName: string; lastName: string; phone: string; city: string; addressLine1: string; addressLine2: string | null; isDefault: boolean };
+type Address = { id: string; label: string | null; firstName: string; lastName: string; phone: string; city: string; addressLine1: string; addressLine2: string | null; latitude: number | null; longitude: number | null; isDefault: boolean };
 const EMPTY = { label: '', firstName: '', lastName: '', phone: '', city: '', addressLine1: '', addressLine2: '' };
 const msg = async (res: Response, fallback: string) => {
   const d = await res.json().catch(() => ({}));
@@ -39,6 +40,7 @@ export default function AddressBook({ onExpired, addTick = 0, onCount }: {
   const [toRemove, setToRemove] = useState<Address | null>(null);
   const [removeError, setRemoveError] = useState('');
   const [phoneOk, setPhoneOk] = useState(false);
+  const [pin, setPin] = useState<Pin | null>(null);
   const [phoneErr, setPhoneErr] = useState('');
 
   const load = () => authFetch('/me/addresses').then((r) => r.json()).then((d) => Array.isArray(d) && setList(d))
@@ -50,6 +52,7 @@ export default function AddressBook({ onExpired, addTick = 0, onCount }: {
   function open(a: Address | 'new') {
     setEditing(a); setError(''); setPhoneErr('');
     setPhoneOk(a !== 'new' && isValidPhone(a.phone));
+    setPin(a !== 'new' && a.latitude != null && a.longitude != null ? { lat: a.latitude, lng: a.longitude } : null);
     setForm(a === 'new' ? EMPTY : { label: a.label ?? '', firstName: a.firstName, lastName: a.lastName, phone: a.phone, city: a.city, addressLine1: a.addressLine1, addressLine2: a.addressLine2 ?? '' });
   }
 
@@ -59,7 +62,7 @@ export default function AddressBook({ onExpired, addTick = 0, onCount }: {
     setBusy(true); setError('');
     try {
       const isNew = editing === 'new';
-      const res = await authFetch(isNew ? '/me/addresses' : `/me/addresses/${(editing as Address).id}`, { method: isNew ? 'POST' : 'PATCH', body: JSON.stringify(form) });
+      const res = await authFetch(isNew ? '/me/addresses' : `/me/addresses/${(editing as Address).id}`, { method: isNew ? 'POST' : 'PATCH', body: JSON.stringify({ ...form, latitude: pin?.lat ?? null, longitude: pin?.lng ?? null }) });
       if (!res.ok) return setError(await msg(res, t('co.e.generic')));
       setEditing(null);
       load();
@@ -129,6 +132,11 @@ export default function AddressBook({ onExpired, addTick = 0, onCount }: {
           </div>
           <PhoneInput floatLabel key={editing === 'new' ? 'new' : editing?.id ?? 'none'} id="a-phone" label={t('co.f.phone')} value={form.phone} required
             onChange={(v, valid) => { set('phone')(v); setPhoneOk(valid); setPhoneErr(''); }} error={phoneErr} />
+          <MapPicker key={`map-${editing === 'new' ? 'new' : editing?.id ?? 'none'}`} value={pin}
+            onPick={(p) => {
+              setPin({ lat: p.lat, lng: p.lng });
+              setForm((f) => ({ ...f, ...(p.city !== undefined ? { city: p.city, addressLine1: p.street ?? '' } : {}) }));
+            }} />
           <Field id="a-city" label={t('co.f.city')} value={form.city} onChange={set('city')} autoComplete="address-level2" required />
           <Field id="a-line1" label={t('co.f.address')} value={form.addressLine1} onChange={set('addressLine1')} autoComplete="address-line1" required />
           <Field id="a-line2" label={t('co.f.address2')} value={form.addressLine2} onChange={set('addressLine2')} autoComplete="address-line2" />

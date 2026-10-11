@@ -1,4 +1,5 @@
 'use client';
+import MapLink from '@/components/MapLink';
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import ChoiceNote from '../../../components/ChoiceNote';
@@ -247,7 +248,7 @@ function OrderDrawer({ order, onClose, onStatusChange, onTrackingUpdate }: any) 
                   <strong>{addr.firstName} {addr.lastName}</strong><br />
                   {addr.addressLine1}{addr.addressLine2 ? `, ${addr.addressLine2}` : ''}<br />
                   {addr.city}{addr.postalCode ? ` ${addr.postalCode}` : ''}, {addr.country}<br />
-                  <span style={{ color: 'var(--slate-500)' }}>{addr.phone}</span>
+                  <span style={{ color: 'var(--slate-500)' }}>{addr.phone}</span><MapLink address={addr} />
                 </div>
               </div>
               {order.deliveryMethod && (
