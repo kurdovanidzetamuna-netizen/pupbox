@@ -9,6 +9,15 @@ import { fill } from '@/context/strings/purchase';
 import { Heading } from '@/components/ui/Heading';
 import { Icon } from '@/components/ui/icons';
 import ProductCard from '@/components/shop/ProductCard';
+import Menu from '@/components/ui/Menu';
+
+const SORTS = [
+  { v: '', k: 'shop.sort.default' },
+  { v: 'price_asc', k: 'shop.sort.priceAsc' },
+  { v: 'price_desc', k: 'shop.sort.priceDesc' },
+  { v: 'name_asc', k: 'shop.sort.nameAsc' },
+  { v: 'name_desc', k: 'shop.sort.nameDesc' },
+];
 
 import { categoryLook } from '@/lib/shopIcons';
 
@@ -71,15 +80,17 @@ export default function ShopView({ products, total, pages, page, categories, bra
         <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-8 sm:pt-10 pb-7">
           <Heading title={c.header.heading} subtitle={c.header.description || undefined} className="!mb-5" />
           <form role="search" onSubmit={(e) => { e.preventDefault(); go({ search: query.trim() || null }); }} className="max-w-2xl">
-            <div className="flex items-center rounded-full bg-white ring-1 ring-gray-200/80 focus-within:ring-2 focus-within:ring-teal-300 pl-5 pr-1.5 py-1.5 transition">
-              <svg className="w-5 h-5 text-gray-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-hidden="true"><path d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z" /></svg>
+            <div className="flex items-center rounded-full bg-white ring-1 ring-gray-200/80 focus-within:ring-2 focus-within:ring-teal-300 pl-2 pr-1.5 py-1.5 transition">
               <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t('shop.search')} aria-label={t('shop.search')}
-                className="flex-1 min-w-0 h-10 bg-transparent px-3 text-[14px] text-gray-900 placeholder:text-gray-400 outline-none [&::-webkit-search-cancel-button]:hidden" />
+                className="flex-1 min-w-0 h-10 bg-transparent px-3.5 text-[14px] text-gray-900 placeholder:text-gray-400 outline-none [&::-webkit-search-cancel-button]:hidden" />
               {query && (
                 <button type="button" onClick={() => { setQuery(''); if (search) go({ search: null }); }} aria-label={t('shop.clear')}
                   className="w-9 h-9 rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-700 flex items-center justify-center"><Icon name="close" className="w-4 h-4" /></button>
               )}
-              <button type="submit" className="h-10 px-5 rounded-full bg-teal-600 text-white text-[13px] font-bold hover:bg-teal-700">{t('shop.find')}</button>
+              <button type="submit" aria-label={t('shop.find')} title={t('shop.find')}
+                className="w-10 h-10 shrink-0 rounded-full bg-teal-600 text-white flex items-center justify-center hover:bg-teal-700 transition-colors">
+                <Icon name="search" className="w-[18px] h-[18px]" strokeWidth={2.4} />
+              </button>
             </div>
           </form>
           {c.on('perks') && c.perks.items?.length > 0 && (
@@ -110,7 +121,7 @@ export default function ShopView({ products, total, pages, page, categories, bra
         </nav>
 
         {/* ── Toolbar ── */}
-        <div className="flex flex-wrap items-center gap-2 pb-5 mb-6 border-b border-gray-100">
+        <div className="flex flex-wrap items-center gap-2 pb-4 mb-6 border-b border-gray-100">
           <p className="text-[13px] text-gray-500 mr-1" aria-live="polite">{fill(t('shop.results'), { n: total })}</p>
           {active.map((f) => (
             <button key={f.key} type="button" onClick={() => go({ [f.key]: null })}
@@ -119,34 +130,22 @@ export default function ShopView({ products, total, pages, page, categories, bra
             </button>
           ))}
           {active.length > 1 && (
-            <Link href={pathname} scroll={false} className="text-[12px] font-semibold text-gray-400 hover:text-gray-700 px-1">{t('shop.clearFilters')}</Link>
+            <Link href={pathname} scroll={false} aria-label={t('shop.clearFilters')} title={t('shop.clearFilters')}
+              className="w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-800 hover:bg-gray-100">
+              <Icon name="reset" className="w-4 h-4" strokeWidth={2.2} />
+            </Link>
           )}
 
-          <div className="w-full sm:w-auto sm:ml-auto grid grid-cols-2 sm:flex items-center gap-2">
+          <div className="ml-auto flex items-center gap-1.5">
             {brands.length > 0 && (
-              <label className="relative min-w-0">
-                <span className="sr-only">{t('shop.brands')}</span>
-                <select value={brand} onChange={(e) => go({ brand: e.target.value || null })}
-                  className={`w-full truncate h-9 pl-3.5 pr-8 rounded-full text-[12.5px] font-semibold appearance-none cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-teal-300 ${brand ? 'bg-teal-50 text-teal-800' : 'bg-gray-100 text-gray-700 hover:bg-gray-200/70'}`}>
-                  <option value="">{t('shop.brands')}: {t('shop.allBrands')}</option>
-                  {brands.map((b) => <option key={b} value={b}>{t(`collection.${b}`, b)}</option>)}
-                </select>
-                <svg className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.6} strokeLinecap="round" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
-              </label>
+              <Menu icon="filter" size="md" label={brand ? `${t('shop.brands')}: ${t(`collection.${brand}`, brand)}` : t('shop.brands')} active={!!brand}
+                items={[
+                  { label: t('shop.allBrands'), checked: !brand, onClick: () => go({ brand: null }) },
+                  ...brands.map((b) => ({ label: t(`collection.${b}`, b), checked: brand === b, onClick: () => go({ brand: b }) })),
+                ]} />
             )}
-            <label className={`relative min-w-0 ${brands.length ? '' : 'col-span-2'}`}>
-              <span className="sr-only">{t('shop.sort')}</span>
-              <svg className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" aria-hidden="true"><path d="M7 4v16M7 20l-3-3M7 20l3-3M17 20V4M17 4l-3 3M17 4l3 3" /></svg>
-              <select value={sort} onChange={(e) => go({ sort: e.target.value || null })}
-                className="w-full truncate h-9 pl-8 pr-8 rounded-full bg-gray-100 text-gray-700 text-[12.5px] font-semibold appearance-none cursor-pointer hover:bg-gray-200/70 outline-none focus-visible:ring-2 focus-visible:ring-teal-300">
-                <option value="">{t('shop.sort.default')}</option>
-                <option value="price_asc">{t('shop.sort.priceAsc')}</option>
-                <option value="price_desc">{t('shop.sort.priceDesc')}</option>
-                <option value="name_asc">{t('shop.sort.nameAsc')}</option>
-                <option value="name_desc">{t('shop.sort.nameDesc')}</option>
-              </select>
-              <svg className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.6} strokeLinecap="round" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
-            </label>
+            <Menu icon="sort" size="md" label={`${t('shop.sort')}: ${t(SORTS.find((x) => x.v === sort)?.k ?? 'shop.sort.default')}`} active={!!sort}
+              items={SORTS.map((x) => ({ label: t(x.k), checked: sort === x.v, onClick: () => go({ sort: x.v || null }) }))} />
           </div>
         </div>
 
@@ -157,7 +156,10 @@ export default function ShopView({ products, total, pages, page, categories, bra
             <p className="text-[15px] font-semibold text-gray-800">{t('shop.none')}</p>
             <p className="text-[13px] text-gray-500 mt-1">{t('shop.noneSub')}</p>
             {active.length > 0 && (
-              <Link href={pathname} className="inline-flex mt-5 h-10 items-center px-5 rounded-full bg-teal-50 text-teal-700 text-[13px] font-bold hover:bg-teal-100">{t('shop.clearFilters')}</Link>
+              <Link href={pathname} aria-label={t('shop.clearFilters')} title={t('shop.clearFilters')}
+                className="mx-auto mt-5 w-11 h-11 rounded-full bg-teal-50 text-teal-700 flex items-center justify-center hover:bg-teal-100">
+                <Icon name="reset" className="w-5 h-5" strokeWidth={2.2} />
+              </Link>
             )}
           </div>
         ) : (

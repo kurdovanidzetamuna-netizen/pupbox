@@ -74,9 +74,9 @@ export default function ProductCard({ product, index = 0 }: { product: any; inde
 
         {/* Quick add, bottom-right */}
         {!soldOut && (needsChoice ? (
-          <Link href={href} tabIndex={-1} className="absolute bottom-3 right-3 inline-flex items-center gap-1 h-10 px-3.5 rounded-full bg-white/95 text-teal-700 text-[12px] font-bold opacity-100 sm:opacity-0 sm:translate-y-1 group-hover:opacity-100 group-hover:translate-y-0 transition-all">
-            {t('shop.choose')}
-            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>
+          <Link href={href} aria-label={`${t('shop.choose')}: ${name}`} title={t('shop.choose')}
+            className="absolute bottom-3 right-3 w-11 h-11 rounded-full bg-white/95 text-teal-700 flex items-center justify-center hover:bg-teal-600 hover:text-white transition-colors">
+            <Icon name="sliders" className="w-5 h-5" strokeWidth={2.2} />
           </Link>
         ) : (
           <button type="button" onClick={quickAdd} aria-label={`${t('shop.quickAdd')}: ${name}`} title={t('shop.quickAdd')}
