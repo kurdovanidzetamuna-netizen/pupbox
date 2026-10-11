@@ -7,6 +7,7 @@ import { useCart } from '@/context/CartContext';
 import { safeRedirect } from '@/lib/safeRedirect';
 import LegalNotice from '@/components/LegalNotice';
 import VerifyCodes from '@/components/VerifyCodes';
+import PhoneInput from '@/components/ui/PhoneInput';
 import { Icon } from '@/components/ui/icons';
 import DogProfileForm, { emptyDogProfile, toDogPayload, type DogProfile } from '@/components/DogProfileForm';
 import { API_URL } from '@/lib/api';
@@ -14,7 +15,6 @@ import { authFetch } from '@/lib/authFetch';
 import { forgetReferral, rememberReferral, storedReferral } from '@/lib/referral';
 
 type Step = 'details' | 'verify' | 'dog';
-const PHONE_RE = /^(\+?995)?\s*5[\d\s-]{8,11}$/;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /**
@@ -32,6 +32,7 @@ function RegisterForm() {
   const [step, setStep] = useState<Step>(params.get('step') === 'verify' ? 'verify' : 'details');
   const [form, setForm] = useState({ firstName: '', lastName: '', email: '', password: '', phone: '', referralCode: '' });
   const [fromLink, setFromLink] = useState(false);
+  const [phoneOk, setPhoneOk] = useState(false);
   const [consent, setConsent] = useState(false);
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -57,7 +58,7 @@ function RegisterForm() {
     if (!form.firstName.trim()) errs.firstName = t('reg.e.firstName');
     if (!form.lastName.trim()) errs.lastName = t('reg.e.lastName');
     if (!EMAIL_RE.test(form.email.trim())) errs.email = t('reg.e.email');
-    if (!PHONE_RE.test(form.phone.trim())) errs.phone = t('reg.e.phone');
+    if (!phoneOk) errs.phone = t('reg.e.phone');
     if (form.password.length < 8) errs.password = t('reg.e.password');
     if (Object.keys(errs).length) { setFieldErrors(errs); return; }
     setFieldErrors({});
@@ -144,8 +145,9 @@ function RegisterForm() {
               </div>
               <div>
                 <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">{t('reg.phone')} <span className="text-red-500">*</span></label>
-                <input id="phone" type="tel" autoComplete="tel" value={form.phone} onChange={e => set('phone', e.target.value)} className={field('phone')} placeholder="599 12 34 56" />
-                {fieldErrors.phone ? err('phone') : <p className="text-xs text-gray-400 mt-1">{t('reg.phoneHint')}</p>}
+                <PhoneInput id="phone" label={t('reg.phone')} value={form.phone} required error={fieldErrors.phone}
+                  onChange={(v, ok) => { set('phone', v); setPhoneOk(ok); }} />
+                {!fieldErrors.phone && <p className="text-xs text-gray-400 mt-1">{t('reg.phoneHint')}</p>}
               </div>
               <div>
                 <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">{t('login.password')} <span className="text-red-500">*</span></label>

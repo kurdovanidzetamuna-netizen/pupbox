@@ -5,6 +5,7 @@ import { authFetch, SessionExpiredError } from '@/lib/authFetch';
 import Modal from '@/components/ui/Modal';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import Field from '@/components/ui/Field';
+import PhoneInput, { isValidPhone } from '@/components/ui/PhoneInput';
 import IconButton from '@/components/ui/IconButton';
 import Menu from '@/components/ui/Menu';
 import { Icon } from '@/components/ui/icons';
@@ -29,18 +30,22 @@ export default function AddressBook({ onExpired }: { onExpired: () => void }) {
   const [busy, setBusy] = useState(false);
   const [toRemove, setToRemove] = useState<Address | null>(null);
   const [removeError, setRemoveError] = useState('');
+  const [phoneOk, setPhoneOk] = useState(false);
+  const [phoneErr, setPhoneErr] = useState('');
 
   const load = () => authFetch('/me/addresses').then((r) => r.json()).then((d) => Array.isArray(d) && setList(d))
     .catch((e) => { if (e instanceof SessionExpiredError) onExpired(); });
   useEffect(() => { load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   function open(a: Address | 'new') {
-    setEditing(a); setError('');
+    setEditing(a); setError(''); setPhoneErr('');
+    setPhoneOk(a !== 'new' && isValidPhone(a.phone));
     setForm(a === 'new' ? EMPTY : { label: a.label ?? '', firstName: a.firstName, lastName: a.lastName, phone: a.phone, city: a.city, addressLine1: a.addressLine1, addressLine2: a.addressLine2 ?? '' });
   }
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
+    if (!phoneOk) return setPhoneErr(t('reg.e.phone'));
     setBusy(true); setError('');
     try {
       const isNew = editing === 'new';
@@ -125,7 +130,8 @@ export default function AddressBook({ onExpired }: { onExpired: () => void }) {
             <Field id="a-first" label={t('co.f.firstName')} value={form.firstName} onChange={set('firstName')} autoComplete="given-name" required />
             <Field id="a-last" label={t('co.f.lastName')} value={form.lastName} onChange={set('lastName')} autoComplete="family-name" required />
           </div>
-          <Field id="a-phone" type="tel" label={t('co.f.phone')} value={form.phone} onChange={set('phone')} autoComplete="tel" required />
+          <PhoneInput floatLabel key={editing === 'new' ? 'new' : editing?.id ?? 'none'} id="a-phone" label={t('co.f.phone')} value={form.phone} required
+            onChange={(v, valid) => { set('phone')(v); setPhoneOk(valid); setPhoneErr(''); }} error={phoneErr} />
           <Field id="a-city" label={t('co.f.city')} value={form.city} onChange={set('city')} autoComplete="address-level2" required />
           <Field id="a-line1" label={t('co.f.address')} value={form.addressLine1} onChange={set('addressLine1')} autoComplete="address-line1" required />
           <Field id="a-line2" label={t('co.f.address2')} value={form.addressLine2} onChange={set('addressLine2')} autoComplete="address-line2" />

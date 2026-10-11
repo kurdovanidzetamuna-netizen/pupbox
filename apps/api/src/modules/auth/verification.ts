@@ -1,5 +1,6 @@
 import { BadRequestException, HttpException, HttpStatus } from '@nestjs/common';
 import * as crypto from 'crypto';
+import { parsePhoneNumberFromString } from 'libphonenumber-js';
 import type { PrismaService } from '../prisma/prisma.service';
 import type { EmailService } from '../email/email.service';
 import type { SmsService } from '../sms/sms.service';
@@ -12,13 +13,15 @@ const RESEND_AFTER_MS = 60_000;
 const MAX_PER_HOUR = 5;
 
 /**
- * A Georgian mobile number in one form, +9955XXXXXXXX, whatever spacing or
- * prefix was typed. Null if it isn't one (the SMS gateway is Georgian).
+ * A phone number from any country in one international form (+995599123456).
+ * Without a +country code it's read as Georgian. Null if it isn't a real
+ * number for that country.
  */
 export function normalisePhone(raw: unknown): string | null {
-  const digits = String(raw ?? '').replace(/[\s()\-.]/g, '').replace(/^\+/, '').replace(/^00/, '');
-  const local = digits.startsWith('995') ? digits.slice(3) : digits;
-  return /^5\d{8}$/.test(local) ? `+995${local}` : null;
+  const text = String(raw ?? '').trim();
+  if (!text) return null;
+  const parsed = parsePhoneNumberFromString(text.startsWith('00') ? `+${text.slice(2)}` : text, 'GE');
+  return parsed && parsed.isValid() ? parsed.number : null;
 }
 
 const hash = (userId: string, code: string) => crypto.createHash('sha256').update(`${userId}:${code}`).digest('hex');

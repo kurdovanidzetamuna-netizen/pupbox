@@ -7,6 +7,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { authFetch, loginUrl, SessionExpiredError } from '@/lib/authFetch';
 import AccountSecurity from '@/components/AccountSecurity';
 import Field from '@/components/ui/Field';
+import PhoneInput from '@/components/ui/PhoneInput';
 import AddressBook from '@/components/AddressBook';
 import Modal from '@/components/ui/Modal';
 import IconButton from '@/components/ui/IconButton';
@@ -23,6 +24,9 @@ export default function AccountPage() {
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [phoneOk, setPhoneOk] = useState(true);
+  // Bumped to put the phone field back to the saved number.
+  const [phoneKey, setPhoneKey] = useState(0);
 
   useEffect(() => {
     authFetch('/users/me')
@@ -40,6 +44,7 @@ export default function AccountPage() {
     const errs: Record<string, string> = {};
     if (!form.firstName.trim()) errs.firstName = t('co.e.firstName');
     if (!form.lastName.trim()) errs.lastName = t('co.e.lastName');
+    if (form.phone !== (user?.phone || '') && !phoneOk) errs.phone = t('reg.e.phone');
     setFieldErrors(errs);
     if (Object.keys(errs).length) return;
     setSaving(true); setError(''); setSuccess('');
@@ -49,6 +54,7 @@ export default function AccountPage() {
       if (!res.ok) throw new Error((Array.isArray(u.message) ? u.message[0] : u.message) || t('acc.saveFailed'));
       setUser(u);
       setForm(f => ({ ...f, phone: u.phone || '' }));
+      setPhoneKey(k => k + 1);
       // A new number has to be confirmed with an SMS code.
       if (!u.phoneVerified) {
         await authFetch('/auth/verify/send', { method: 'POST', body: JSON.stringify({ channel: 'PHONE' }) }).catch(() => {});
@@ -164,13 +170,14 @@ export default function AccountPage() {
                   {field('lastName', t('co.f.lastName'), true)}
                 </div>
                 <Field id="email" label={t('acc.email')} value={user?.email || ''} disabled trailing={badge(!!user?.emailVerified)} />
-                <Field id="phone" type="tel" label={t('co.f.phone')} value={form.phone} autoComplete="tel" error={fieldErrors.phone} trailing={badge(!!user?.phoneVerified)}
-                  onChange={v => { setForm({ ...form, phone: v }); setFieldErrors(f => ({ ...f, phone: '' })); setSuccess(''); }} />
+                <PhoneInput floatLabel key={phoneKey} id="phone" label={t('co.f.phone')} value={form.phone} error={fieldErrors.phone}
+                  trailing={form.phone === (user?.phone || '') ? <span className="px-2">{badge(!!user?.phoneVerified)}</span> : undefined}
+                  onChange={(v, valid) => { setForm(f => ({ ...f, phone: v })); setPhoneOk(valid); setFieldErrors(f => ({ ...f, phone: '' })); setSuccess(''); }} />
                 {/* Buttons appear only once something was changed; Cancel puts it back. */}
                 {changed ? (
                   <div className="flex items-center justify-end gap-2 pt-1 animate-[fadeUp_0.15s_ease-out]">
                     <button type="button" disabled={saving}
-                      onClick={() => { setForm({ firstName: user.firstName || '', lastName: user.lastName || '', phone: user.phone || '' }); setFieldErrors({}); setError(''); }}
+                      onClick={() => { setForm({ firstName: user.firstName || '', lastName: user.lastName || '', phone: user.phone || '' }); setPhoneKey(k => k + 1); setFieldErrors({}); setError(''); }}
                       className="px-4 py-2 rounded-full text-[13px] font-semibold text-gray-600 hover:bg-gray-100 transition">{t('ui.cancel')}</button>
                     <button type="submit" disabled={saving} className="bg-teal-600 text-white text-[13px] font-semibold px-5 py-2 hover:bg-teal-700">
                       {saving ? t('co.saving') : t('acc.save')}

@@ -29,6 +29,7 @@ const EXACT: Record<string, string> = {
   'Dog not found': 'ძაღლი ვერ მოიძებნა',
   'Email already registered': 'ეს ელფოსტა უკვე დარეგისტრირებულია. შედი ანგარიშში.',
   'Enter a Georgian mobile number, e.g. 599 12 34 56': 'შეიყვანე ქართული მობილურის ნომერი, მაგ. 599 12 34 56',
+  'Enter a valid mobile number': 'შეიყვანე სწორი მობილურის ნომერი',
   'Enter a valid email, or leave it empty': 'შეიყვანე სწორი ელფოსტა ან დატოვე ცარიელი',
   'Enter a valid phone number': 'შეიყვანე სწორი ტელეფონის ნომერი',
   'Enter the name to engrave': 'შეიყვანე გრავირების სახელი',

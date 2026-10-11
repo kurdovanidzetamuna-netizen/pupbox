@@ -51,7 +51,7 @@ export class AuthService {
     const existing = await this.findByEmail(dto.email);
     if (existing) throw new ConflictException('Email already registered');
     const phone = normalisePhone(dto.phone);
-    if (!phone) throw new BadRequestException('Enter a Georgian mobile number, e.g. 599 12 34 56');
+    if (!phone) throw new BadRequestException('Enter a valid mobile number');
     if (await this.prisma.user.findFirst({ where: { phone, phoneVerified: true, deletedAt: null }, select: { id: true } })) {
       throw new ConflictException('This phone number is already used by another account. Sign in instead.');
     }

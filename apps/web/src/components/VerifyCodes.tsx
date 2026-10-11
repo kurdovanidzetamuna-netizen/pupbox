@@ -5,6 +5,7 @@ import { fill } from '@/context/strings/purchase';
 import { authFetch } from '@/lib/authFetch';
 import Confetti from '@/components/Confetti';
 import OtpInput from '@/components/ui/OtpInput';
+import PhoneInput from '@/components/ui/PhoneInput';
 import { Icon } from '@/components/ui/icons';
 
 type Channel = 'PHONE' | 'EMAIL';
@@ -33,7 +34,7 @@ export default function VerifyCodes({ onDone }: { onDone: () => void }) {
   const [wait, setWait] = useState<Record<Channel, number>>({ PHONE: 60, EMAIL: 60 });
   const [editingPhone, setEditingPhone] = useState(false);
   const [newPhone, setNewPhone] = useState('');
-  const phoneValid = /^5\d{8}$/.test(newPhone.replace(/\D/g, ''));
+  const [phoneValid, setPhoneValid] = useState(false);
 
   useEffect(() => {
     // Not signed in (or the session ended): sign in first, then come back here.
@@ -83,7 +84,7 @@ export default function VerifyCodes({ onDone }: { onDone: () => void }) {
   async function savePhone() {
     setBusy('PHONE'); setErrors(e => ({ ...e, PHONE: '' }));
     try {
-      const res = await authFetch('/users/me', { method: 'PATCH', body: JSON.stringify({ phone: `+995${newPhone.replace(/\D/g, '')}` }) });
+      const res = await authFetch('/users/me', { method: 'PATCH', body: JSON.stringify({ phone: newPhone }) });
       if (!res.ok) throw new Error(await message(res, t('reg.e.phone')));
       const u = await res.json();
       setMe(m => (m ? { ...m, phone: u.phone, phoneVerified: u.phoneVerified } : m));
@@ -126,16 +127,14 @@ export default function VerifyCodes({ onDone }: { onDone: () => void }) {
         </div>
         {channel === 'PHONE' && editingPhone ? (
           <form onSubmit={e => { e.preventDefault(); if (phoneValid) savePhone(); }} className="animate-[fadeUp_0.15s_ease-out]">
-            <div className="flex items-center h-12 rounded-xl bg-gray-100/80 focus-within:bg-white focus-within:ring-2 focus-within:ring-teal-300 transition-colors pl-3.5 pr-1.5">
-              <span className="text-[13px] font-semibold text-gray-500 pr-2.5 mr-2.5 border-r border-gray-300/70">+995</span>
-              <input type="tel" inputMode="numeric" autoFocus value={newPhone} placeholder="5XX XX XX XX" autoComplete="tel-national" aria-label={t('reg.phone')}
-                onChange={e => setNewPhone(e.target.value.replace(/[^\d\s]/g, '').slice(0, 12))}
-                className="flex-1 min-w-0 bg-transparent outline-none text-[14px] tracking-wide text-gray-900 placeholder:text-gray-400" />
-              <button type="submit" disabled={!phoneValid || busy === 'PHONE'} aria-label={t('ver.savePhone')} title={t('ver.savePhone')}
-                className={`w-9 h-9 shrink-0 rounded-full flex items-center justify-center transition-colors ${phoneValid ? 'bg-teal-600 text-white hover:bg-teal-700' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}>
-                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
-              </button>
-            </div>
+            <PhoneInput id="new-phone" label={t('reg.phone')} value={newPhone} autoFocus
+              onChange={(v, ok) => { setNewPhone(v); setPhoneValid(ok); }}
+              trailing={
+                <button type="submit" disabled={!phoneValid || busy === 'PHONE'} aria-label={t('ver.savePhone')} title={t('ver.savePhone')}
+                  className={`w-9 h-9 shrink-0 rounded-full flex items-center justify-center transition-colors ${phoneValid ? 'bg-teal-600 text-white hover:bg-teal-700' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}>
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+                </button>
+              } />
             <div className="mt-2 flex items-center justify-between gap-3 text-[12px]">
               <span className="text-gray-400">{t('ver.newNumberHint')}</span>
               <button type="button" onClick={() => setEditingPhone(false)} aria-label={t('ui.cancel')} title={t('ui.cancel')}
@@ -154,7 +153,7 @@ export default function VerifyCodes({ onDone }: { onDone: () => void }) {
             ? <span className="text-gray-400 tabular-nums">{fill(t('ver.resendIn'), { s: wait[channel] })}</span>
             : <button type="button" onClick={() => resend(channel)} disabled={busy === channel} className="text-teal-700 font-semibold hover:underline">{t('ver.resend')}</button>}
           {channel === 'PHONE' && !editingPhone && (
-            <button type="button" onClick={() => { setEditingPhone(true); setNewPhone(''); }} className="text-gray-500 hover:text-gray-800">{t('ver.changePhone')}</button>
+            <button type="button" onClick={() => { setEditingPhone(true); setNewPhone(''); setPhoneValid(false); }} className="text-gray-500 hover:text-gray-800">{t('ver.changePhone')}</button>
           )}
         </div>}
       </div>

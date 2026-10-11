@@ -13,7 +13,7 @@ export const ACCOUNT_STRINGS: Record<string, { en: string; ka: string }> = {
   'reg.e.lastName':         { en: 'Last name is required',      ka: 'გვარი აუცილებელია' },
   'reg.e.email':            { en: 'Enter a valid email address', ka: 'შეიყვანე სწორი ელფოსტა' },
   'reg.e.password':         { en: 'At least 8 characters',      ka: 'მინიმუმ 8 სიმბოლო' },
-  'reg.e.phone':            { en: 'Enter a Georgian mobile number, e.g. 599 12 34 56', ka: 'შეიყვანე ქართული მობილურის ნომერი, მაგ. 599 12 34 56' },
+  'reg.e.phone':            { en: 'Enter a valid mobile number', ka: 'შეიყვანე სწორი მობილურის ნომერი' },
   'reg.step.details':       { en: 'Your details',               ka: 'შენი მონაცემები' },
   'reg.step.verify':        { en: 'Confirm',                    ka: 'დადასტურება' },
   'reg.step.dog':           { en: 'Your dog',                   ka: 'შენი ძაღლი' },

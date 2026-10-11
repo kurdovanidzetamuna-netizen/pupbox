@@ -98,7 +98,7 @@ export class UsersController {
     let phone: string | undefined;
     if (body.phone !== undefined) {
       const p = normalisePhone(body.phone);
-      if (!p) throw new BadRequestException('Enter a Georgian mobile number, e.g. 599 12 34 56');
+      if (!p) throw new BadRequestException('Enter a valid mobile number');
       phone = p;
     }
     // A new number has to be confirmed again with an SMS code.

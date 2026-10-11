@@ -19,7 +19,7 @@ export class RegisterDto {
   @MinLength(8)
   password: string;
 
-  /** A Georgian mobile; confirmed with an SMS code straight after sign-up. */
+  /** A mobile number (any country; without a +code it is read as Georgian), confirmed by SMS after sign-up. */
   @ApiProperty({ example: '+995599123456' })
   @IsString()
   @MaxLength(30)

@@ -11,10 +11,10 @@ import LegalNotice from '@/components/LegalNotice';
 import DogProfileForm, { emptyDogProfile, toDogPayload, fromDog, type DogProfile } from '@/components/DogProfileForm';
 import ChoiceNote from '@/components/ChoiceNote';
 import VerifyCodes from '@/components/VerifyCodes';
+import PhoneInput from '@/components/ui/PhoneInput';
 import { forgetReferral, storedReferral } from '@/lib/referral';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
-const PHONE_RE = /^\+?[0-9\s()-]{7,20}$/;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function getToken() { return typeof window !== 'undefined' ? localStorage.getItem('pupbox_token') : null; }
@@ -71,6 +71,9 @@ export default function CheckoutPage() {
   const [needVerify, setNeedVerify] = useState(false);
   const [consent, setConsent] = useState(false);
   const [signupPhone, setSignupPhone] = useState('');
+  const [signupPhoneOk, setSignupPhoneOk] = useState(false);
+  // Delivery phone: any country; valid unless it was typed and isn't.
+  const [deliveryPhoneOk, setDeliveryPhoneOk] = useState(true);
   const [signedInEmail, setSignedInEmail] = useState('');
   const [form, setForm] = useState({
     email: '', password: '', firstName: '', lastName: '', phone: '',
@@ -193,7 +196,7 @@ export default function CheckoutPage() {
     if (!EMAIL_RE.test(form.email.trim())) e.email = t('co.e.email');
     if (!form.password) e.password = t('co.e.passwordReq');
     else if (isNewAccount && form.password.length < 8) e.password = t('co.e.passwordLen');
-    if (isNewAccount && !/^(\+?995)?\s*5[\d\s-]{8,11}$/.test(signupPhone.trim())) e.signupPhone = t('reg.e.phone');
+    if (isNewAccount && !signupPhoneOk) e.signupPhone = t('reg.e.phone');
     if (fail(e)) return;
 
     setError(''); setLoading(true);
@@ -260,7 +263,7 @@ export default function CheckoutPage() {
     const e: Record<string, string> = {};
     if (!form.firstName.trim()) e.firstName = t('co.e.firstName');
     if (!form.lastName.trim()) e.lastName = t('co.e.lastName');
-    if (!PHONE_RE.test(form.phone.trim())) e.phone = t('co.e.phone');
+    if (!form.phone.trim() || !deliveryPhoneOk) e.phone = t('co.e.phone');
     if (!form.city.trim()) e.city = t('co.e.city');
     if (!form.addressLine1.trim()) e.addressLine1 = t('co.e.address');
     if (!selectedDelivery) e.delivery = t('co.e.delivery');
@@ -413,8 +416,8 @@ export default function CheckoutPage() {
                   {input('email', t('co.f.email'), { type: 'email', placeholder: 'you@example.com', autoComplete: 'email' })}
                   {isNewAccount && (
                     <Field id="signupPhone" label={t('reg.phone')} hint={t('reg.phoneHint')} error={errs.signupPhone}>
-                      <input id="signupPhone" type="tel" value={signupPhone} autoComplete="tel" placeholder="599 12 34 56"
-                        onChange={e => { setSignupPhone(e.target.value); setErrs(er => ({ ...er, signupPhone: '' })); }} className={field('signupPhone')} />
+                      <PhoneInput id="signupPhone" label={t('reg.phone')} value={signupPhone} required
+                        onChange={(v, ok) => { setSignupPhone(v); setSignupPhoneOk(ok); setErrs(er => ({ ...er, signupPhone: '' })); }} />
                     </Field>
                   )}
                   {input('password', t('co.f.password'), { type: 'password', hint: isNewAccount ? t('co.f.passwordHint') : undefined, autoComplete: isNewAccount ? 'new-password' : 'current-password' })}
@@ -527,7 +530,11 @@ export default function CheckoutPage() {
                     {input('firstName', t('co.f.firstName'), { autoComplete: 'given-name' })}
                     {input('lastName', t('co.f.lastName'), { autoComplete: 'family-name' })}
                   </div>
-                  {input('phone', t('co.f.phone'), { type: 'tel', placeholder: '+995 599 123 456', autoComplete: 'tel' })}
+                  <Field id="phone" label={t('co.f.phone')} error={errs.phone}>
+                    {/* Mounts with the step, after any prefill, so the picker shows that number's country. */}
+                    <PhoneInput id="phone" label={t('co.f.phone')} value={form.phone}
+                      onChange={(v, ok) => { setForm(f => ({ ...f, phone: v })); setDeliveryPhoneOk(ok || !v); setErrs(er => ({ ...er, phone: '' })); }} />
+                  </Field>
                   {input('city', t('co.f.city'), { placeholder: 'თბილისი', autoComplete: 'address-level2' })}
                   {input('addressLine1', t('co.f.address'), { placeholder: t('co.f.addressPh'), autoComplete: 'address-line1' })}
                   {input('addressLine2', t('co.f.address2'), { autoComplete: 'address-line2' })}
