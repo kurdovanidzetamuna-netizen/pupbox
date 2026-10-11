@@ -4,6 +4,8 @@ import { useLanguage } from '@/context/LanguageContext';
 import { fill } from '@/context/strings/purchase';
 import { authFetch } from '@/lib/authFetch';
 import Confetti from '@/components/Confetti';
+import OtpInput from '@/components/ui/OtpInput';
+import { Icon } from '@/components/ui/icons';
 
 type Channel = 'PHONE' | 'EMAIL';
 interface Me { email: string; phone: string | null; emailVerified: boolean; phoneVerified: boolean }
@@ -50,8 +52,8 @@ export default function VerifyCodes({ onDone }: { onDone: () => void }) {
     }
   }, [me, onDone]);
 
-  async function confirm(channel: Channel) {
-    const code = codes[channel].replace(/\D/g, '');
+  async function confirm(channel: Channel, typed?: string) {
+    const code = (typed ?? codes[channel]).replace(/\D/g, '');
     if (code.length !== 6) { setErrors(e => ({ ...e, [channel]: t('ver.code') })); return; }
     setBusy(channel); setErrors(e => ({ ...e, [channel]: '' }));
     try {
@@ -61,6 +63,7 @@ export default function VerifyCodes({ onDone }: { onDone: () => void }) {
       setMe(m => (m ? { ...m, emailVerified: state.emailVerified, phoneVerified: state.phoneVerified } : m));
     } catch (e: any) {
       setErrors(er => ({ ...er, [channel]: e.message }));
+      setCodes(c => ({ ...c, [channel]: '' })); // a wrong code is cleared for another try
     } finally { setBusy(null); }
   }
 
@@ -94,51 +97,62 @@ export default function VerifyCodes({ onDone }: { onDone: () => void }) {
 
   if (!me) return <div className="flex justify-center py-10"><div className="w-7 h-7 border-4 border-teal-200 border-t-teal-600 rounded-full animate-spin" /></div>;
 
-  const box = (channel: Channel) => {
+  const row = (channel: Channel) => {
     const done = channel === 'PHONE' ? me.phoneVerified : me.emailVerified;
-    const label = channel === 'PHONE' ? fill(t('ver.phone'), { to: mask(me.phone) }) : fill(t('ver.email'), { to: me.email });
-    return (
-      <div className={`rounded-2xl border p-5 transition ${done ? 'border-teal-200 bg-teal-50' : 'border-gray-200 bg-white'}`}>
-        <div className="flex items-start justify-between gap-3">
-          <p className="text-sm font-semibold text-gray-800">{channel === 'PHONE' ? '📱' : '✉️'} {label}</p>
-          {done && <span className="text-sm font-bold text-teal-700 whitespace-nowrap animate-[pop_0.3s_ease-out]">✓ {t('ver.done')}</span>}
+    const to = channel === 'PHONE' ? mask(me.phone) : me.email;
+    const title = channel === 'PHONE' ? 'SMS' : t('acc.notifEmail');
+    if (done) {
+      return (
+        <div className="flex items-center gap-3 rounded-2xl bg-teal-50/70 px-4 py-3 animate-[fadeUp_0.2s_ease-out]">
+          <span className="w-9 h-9 rounded-xl bg-teal-500 text-white flex items-center justify-center shrink-0"><Icon name="check" className="w-[18px] h-[18px]" strokeWidth={2.4} /></span>
+          <div className="min-w-0">
+            <p className="text-[13px] font-semibold text-gray-900">{title}</p>
+            <p className="text-[12px] text-gray-500 truncate">{to}</p>
+          </div>
+          <span className="ml-auto text-[12px] font-semibold text-teal-700">{t('ver.done')}</span>
         </div>
-        {!done && (
-          <>
-            {channel === 'PHONE' && editingPhone ? (
-              <div className="mt-3 flex gap-2">
-                <input type="tel" value={newPhone} onChange={e => setNewPhone(e.target.value)} placeholder="599 12 34 56" autoComplete="tel"
-                  className="flex-1 min-w-0 border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400" />
-                <button type="button" onClick={savePhone} disabled={busy === 'PHONE'} className="shrink-0 bg-teal-600 text-white px-4 rounded-xl text-sm font-semibold hover:bg-teal-700 disabled:opacity-50">{t('ver.savePhone')}</button>
-              </div>
-            ) : (
-              <form onSubmit={e => { e.preventDefault(); confirm(channel); }} className="mt-3 flex gap-2">
-                <input inputMode="numeric" autoComplete="one-time-code" maxLength={7} value={codes[channel]} aria-label={t('ver.code')}
-                  onChange={e => { const v = e.target.value.replace(/[^\d ]/g, ''); setCodes(c => ({ ...c, [channel]: v })); setErrors(er => ({ ...er, [channel]: '' })); }}
-                  placeholder="••••••" className="flex-1 min-w-0 border border-gray-200 rounded-xl px-3 py-2.5 text-lg font-bold tracking-[0.4em] text-center focus:outline-none focus:ring-2 focus:ring-teal-400" />
-                <button type="submit" disabled={busy === channel} className="shrink-0 bg-teal-600 text-white px-5 rounded-xl text-sm font-semibold hover:bg-teal-700 disabled:opacity-50">{t('ver.confirm')}</button>
-              </form>
-            )}
-            {errors[channel] && <p className="text-red-500 text-xs mt-2" role="alert">{errors[channel]}</p>}
-            {notes[channel] && !errors[channel] && <p className="text-teal-700 text-xs mt-2">{notes[channel]}</p>}
-            <div className="mt-2 flex items-center gap-4 text-xs">
-              {wait[channel] > 0
-                ? <span className="text-gray-400">{fill(t('ver.resendIn'), { s: wait[channel] })}</span>
-                : <button type="button" onClick={() => resend(channel)} disabled={busy === channel} className="text-teal-700 font-semibold hover:underline">{t('ver.resend')}</button>}
-              {channel === 'PHONE' && !editingPhone && (
-                <button type="button" onClick={() => { setEditingPhone(true); setNewPhone(''); }} className="text-gray-500 hover:underline">{t('ver.changePhone')}</button>
-              )}
-            </div>
-          </>
+      );
+    }
+    return (
+      <div className="rounded-2xl ring-1 ring-gray-200/70 p-4">
+        <div className="flex items-center gap-3 mb-3">
+          <span className="w-9 h-9 rounded-xl bg-gray-100 text-gray-600 flex items-center justify-center shrink-0"><Icon name={channel === 'PHONE' ? 'phone' : 'mail'} className="w-[18px] h-[18px]" /></span>
+          <div className="min-w-0 flex-1">
+            <p className="text-[13px] font-semibold text-gray-900">{title}</p>
+            <p className="text-[12px] text-gray-500 truncate">{to}</p>
+          </div>
+          {busy === channel && <span className="w-5 h-5 border-2 border-teal-200 border-t-teal-600 rounded-full animate-spin" aria-hidden="true" />}
+        </div>
+        {channel === 'PHONE' && editingPhone ? (
+          <form onSubmit={e => { e.preventDefault(); savePhone(); }} className="flex gap-2">
+            <input type="tel" value={newPhone} onChange={e => setNewPhone(e.target.value)} placeholder="599 12 34 56" autoComplete="tel"
+              className="flex-1 min-w-0 h-11 rounded-xl px-3.5 text-[13px] bg-gray-100/80 outline-none focus:bg-white focus:ring-2 focus:ring-teal-300" />
+            <button type="submit" disabled={busy === 'PHONE'} aria-label={t('ver.savePhone')} title={t('ver.savePhone')}
+              className="w-11 h-11 shrink-0 rounded-xl bg-teal-600 text-white flex items-center justify-center hover:bg-teal-700"><Icon name="check" className="w-5 h-5" strokeWidth={2.4} /></button>
+          </form>
+        ) : (
+          <OtpInput label={t('ver.code')} value={codes[channel]} disabled={busy === channel} error={!!errors[channel]}
+            onChange={v => { setCodes(c => ({ ...c, [channel]: v })); setErrors(er => ({ ...er, [channel]: '' })); }}
+            onComplete={v => confirm(channel, v)} />
         )}
+        {errors[channel] && <p className="text-red-500 text-[12px] mt-2" role="alert">{errors[channel]}</p>}
+        {notes[channel] && !errors[channel] && <p className="text-teal-700 text-[12px] mt-2">{notes[channel]}</p>}
+        <div className="mt-2.5 flex items-center gap-4 text-[12px]">
+          {wait[channel] > 0
+            ? <span className="text-gray-400 tabular-nums">{fill(t('ver.resendIn'), { s: wait[channel] })}</span>
+            : <button type="button" onClick={() => resend(channel)} disabled={busy === channel} className="text-teal-700 font-semibold hover:underline">{t('ver.resend')}</button>}
+          {channel === 'PHONE' && !editingPhone && (
+            <button type="button" onClick={() => { setEditingPhone(true); setNewPhone(''); }} className="text-gray-500 hover:text-gray-800">{t('ver.changePhone')}</button>
+          )}
+        </div>
       </div>
     );
   };
 
   return (
     <div className="space-y-3">
-      {box('PHONE')}
-      {box('EMAIL')}
+      {row('PHONE')}
+      {row('EMAIL')}
       {me.emailVerified && me.phoneVerified && <><Confetti count={18} /><p className="text-center font-bold text-teal-700 pt-2 animate-[pop_0.4s_ease-out]">{t('ver.allSet')}</p></>}
     </div>
   );

@@ -7,6 +7,7 @@ import { useCart } from '@/context/CartContext';
 import { safeRedirect } from '@/lib/safeRedirect';
 import LegalNotice from '@/components/LegalNotice';
 import VerifyCodes from '@/components/VerifyCodes';
+import { Icon } from '@/components/ui/icons';
 import DogProfileForm, { emptyDogProfile, toDogPayload, type DogProfile } from '@/components/DogProfileForm';
 import { API_URL } from '@/lib/api';
 import { authFetch } from '@/lib/authFetch';
@@ -103,8 +104,7 @@ function RegisterForm() {
   const steps: Step[] = ['details', 'verify', 'dog'];
 
   return (
-    <main className="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-4 py-10">
-      <Link href="/" className="text-3xl font-bold text-teal-600 mb-6">🐾 Pupbox</Link>
+    <main className="min-h-[70vh] bg-gray-50 flex flex-col items-center px-4 pt-8 sm:pt-12 pb-16">
       <ol className="flex items-center gap-2 mb-6 text-xs" aria-label={t('aria.signupSteps')}>
         {steps.map((s, i) => {
           const at = steps.indexOf(step);
@@ -118,7 +118,7 @@ function RegisterForm() {
         })}
       </ol>
 
-      <div className="bg-white rounded-2xl border border-gray-100 p-8 w-full max-w-md shadow-sm">
+      <div className="bg-white rounded-3xl ring-1 ring-gray-200/60 p-6 sm:p-8 w-full max-w-lg">
         {step === 'details' && (
           <>
             <h1 className="text-2xl font-bold text-gray-900 mb-1">{t('register.heading')}</h1>
@@ -175,8 +175,9 @@ function RegisterForm() {
 
         {step === 'verify' && (
           <>
-            <h1 className="text-2xl font-bold text-gray-900 mb-1">{t('ver.title')}</h1>
-            <p className="text-sm text-gray-500 mb-6">{t('ver.sub')}</p>
+            <span className="w-11 h-11 rounded-2xl bg-teal-50 text-teal-600 flex items-center justify-center mb-4"><Icon name="shield" className="w-6 h-6" /></span>
+            <h1 className="text-xl font-bold text-gray-900 mb-1">{t('ver.title')}</h1>
+            <p className="text-[13px] text-gray-500 mb-5 leading-relaxed">{t('ver.sub')}</p>
             <VerifyCodes onDone={verified} />
           </>
         )}
