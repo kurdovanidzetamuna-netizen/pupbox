@@ -1,15 +1,20 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
-import { DogSize, Prisma, ProductStatus } from '@prisma/client';
+import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import { DogSize, MarginType, Prisma, ProductStatus } from '@prisma/client';
 import { parseConfig } from './personalisation';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateProductDto } from './dto/create-product.dto';
+import { PUBLIC_SELLER, finalPrice } from '../sellers/sellers';
 
 const productInclude = {
   images: { orderBy: { sortOrder: 'asc' as const } },
   category: true,
   tags: { include: { tag: true } },
   inventory: true,
+  // Only the seller's public face; their price and our margin stay in admin.
+  seller: { select: PUBLIC_SELLER },
 };
+/** Admin also sees the seller's price and our margin. */
+const adminInclude = { ...productInclude, supply: true };
 
 /** Trimmed, first letter capitalised (to match dogs' allergies), no duplicates. */
 const cleanAllergens = (list?: string[]) =>
@@ -37,9 +42,12 @@ export class ProductsService {
     brand?: string;
     /** A dog size: products for it, plus those that suit every size. */
     size?: DogSize;
+    /** A seller's slug: only their products. */
+    seller?: string;
   }) {
-    const { page = 1, limit = 20, categorySlug, search, status, adminView = false, includedInBox, sort, brand, lang, size } = params;
+    const { page = 1, limit = 20, categorySlug, search, status, adminView = false, includedInBox, sort, brand, lang, size, seller } = params;
     const skip = (page - 1) * limit;
+    const include = adminView ? adminInclude : productInclude;
 
     const where: any = { deletedAt: null };
     if (!adminView) {
@@ -72,6 +80,7 @@ export class ProductsService {
     if (brand) {
       and.push({ OR: [{ brand }, { tags: { some: { tag: { name: brand } } } }] });
     }
+    if (seller) and.push({ seller: { slug: seller } });
     if (size) and.push({ OR: [{ dogSizes: { has: size } }, { dogSizes: { isEmpty: true } }] });
     if (and.length) where.AND = and;
 
@@ -88,7 +97,7 @@ export class ProductsService {
         .map(p => ({ id: p.id, effective: Number(p.salePrice ?? p.price) }))
         .sort((a, b) => dir * (a.effective - b.effective));
       const pageIds = ordered.slice(skip, skip + limit).map(p => p.id);
-      const rows = await this.prisma.product.findMany({ where: { id: { in: pageIds } }, include: productInclude });
+      const rows = await this.prisma.product.findMany({ where: { id: { in: pageIds } }, include });
       const items = pageIds.map(id => rows.find(r => r.id === id)!).filter(Boolean);
       return { items, total: all.length, page, limit, pages: Math.ceil(all.length / limit) };
     }
@@ -101,7 +110,7 @@ export class ProductsService {
       const label = (p: { name: string; translations: any }) => String(p.translations?.ka?.name || '').trim() || p.name;
       const ordered = all.sort((a, b) => dir * label(a).localeCompare(label(b), 'ka'));
       const pageIds = ordered.slice(skip, skip + limit).map(p => p.id);
-      const rows = await this.prisma.product.findMany({ where: { id: { in: pageIds } }, include: productInclude });
+      const rows = await this.prisma.product.findMany({ where: { id: { in: pageIds } }, include });
       const items = pageIds.map(id => rows.find(r => r.id === id)!).filter(Boolean);
       return { items, total: all.length, page, limit, pages: Math.ceil(all.length / limit) };
     }
@@ -112,7 +121,7 @@ export class ProductsService {
       [{ sortOrder: 'asc' }, { createdAt: 'desc' }];
 
     const [items, total] = await Promise.all([
-      this.prisma.product.findMany({ where, include: productInclude, orderBy, skip, take: limit }),
+      this.prisma.product.findMany({ where, include, orderBy, skip, take: limit }),
       this.prisma.product.count({ where }),
     ]);
 
@@ -137,7 +146,7 @@ export class ProductsService {
     const where: any = { slug, deletedAt: null };
     if (!adminView) where.status = { in: PUBLIC_STATUSES };
 
-    const product = await this.prisma.product.findFirst({ where, include: productInclude });
+    const product = await this.prisma.product.findFirst({ where, include: adminView ? adminInclude : productInclude });
     if (!product) throw new NotFoundException('Product not found');
     return product;
   }
@@ -149,7 +158,9 @@ export class ProductsService {
     const skuExists = await this.prisma.product.findUnique({ where: { sku: dto.sku } });
     if (skuExists) throw new ConflictException('SKU already exists');
 
-    const { tagIds, stockQuantity, lowStockAlert, personalisation, ...productData } = dto;
+    const { tagIds, stockQuantity, lowStockAlert, personalisation, sellerId, sellerPrice, marginType, marginValue, ...productData } = dto;
+    const supply = await this.sellerTerms(sellerId, sellerPrice, marginType, marginValue);
+    if (supply) productData.price = supply.price;
 
     const qty = stockQuantity ?? 0;
     const product = await this.prisma.product.create({
@@ -161,6 +172,7 @@ export class ProductsService {
         personalisation: parseConfig(personalisation) ?? Prisma.DbNull,
         allergens: cleanAllergens(productData.allergens),
         tags: tagIds?.length ? { create: tagIds.map((id) => ({ tagId: id })) } : undefined,
+        ...(supply ? { sellerId: sellerId! } : {}),
         inventory: {
           create: {
             quantity: qty,
@@ -170,6 +182,10 @@ export class ProductsService {
       },
       include: productInclude,
     });
+    if (supply) {
+      await this.prisma.productSupply.create({ data: { productId: product.id, ...supply.terms } });
+      return this.findOne(product.slug, true);
+    }
 
     return product;
   }
@@ -178,7 +194,20 @@ export class ProductsService {
     const product = await this.prisma.product.findFirst({ where: { id, deletedAt: null } });
     if (!product) throw new NotFoundException('Product not found');
 
-    const { tagIds, stockQuantity, lowStockAlert, personalisation, ...productData } = dto;
+    const { tagIds, stockQuantity, lowStockAlert, personalisation, sellerId, sellerPrice, marginType, marginValue, ...productData } = dto;
+
+    // Who sells it: a seller (price worked out from their price + our margin)
+    // or ourselves (sellerId null). Left alone when the form didn't send it.
+    if (sellerId !== undefined) {
+      const supply = await this.sellerTerms(sellerId, sellerPrice, marginType, marginValue);
+      if (supply) {
+        productData.price = supply.price;
+        await this.prisma.productSupply.upsert({ where: { productId: id }, create: { productId: id, ...supply.terms }, update: supply.terms });
+      } else {
+        await this.prisma.productSupply.deleteMany({ where: { productId: id } });
+      }
+      (productData as any).sellerId = sellerId || null;
+    }
 
     if (tagIds !== undefined) {
       await this.prisma.productTagRelation.deleteMany({ where: { productId: id } });
@@ -204,8 +233,22 @@ export class ProductsService {
         ...(personalisation !== undefined ? { personalisation: parseConfig(personalisation) ?? Prisma.DbNull } : {}),
         ...(productData.allergens !== undefined ? { allergens: cleanAllergens(productData.allergens) } : {}),
       } as any,
-      include: productInclude,
+      include: adminInclude,
     });
+  }
+
+  /**
+   * A seller's terms from the form, with the shop price they give. Null for
+   * our own products. A seller's product needs the seller's price.
+   */
+  private async sellerTerms(sellerId?: string | null, sellerPrice?: number, marginType?: MarginType, marginValue?: number) {
+    if (!sellerId) return null;
+    const seller = await this.prisma.seller.findFirst({ where: { id: sellerId, deletedAt: null } });
+    if (!seller) throw new BadRequestException('Choose a seller from the list');
+    if (sellerPrice == null || !(sellerPrice > 0)) throw new BadRequestException("Enter the seller's price");
+    const type = marginType ?? 'FIXED';
+    const value = Math.max(0, Number(marginValue ?? 0));
+    return { price: finalPrice(Number(sellerPrice), type, value), terms: { sellerPrice, marginType: type, marginValue: value } };
   }
 
   async updateStatus(id: string, status: string) {

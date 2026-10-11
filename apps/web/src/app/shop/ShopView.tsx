@@ -32,6 +32,7 @@ type Props = {
   categories: any[];
   brands: string[];
   content: StoredContent | null;
+  sellers: any[];
 };
 
 /**
@@ -40,7 +41,7 @@ type Props = {
  * grid with quick add, and paging. Filters live in the address, so every
  * view can be shared and Back works.
  */
-export default function ShopView({ products, total, pages, page, categories, brands, content }: Props) {
+export default function ShopView({ products, total, pages, page, categories, brands, content, sellers }: Props) {
   const { t, lang } = useLanguage();
   const c = usePage(shopPage, content);
   const router = useRouter();
@@ -51,6 +52,8 @@ export default function ShopView({ products, total, pages, page, categories, bra
   const sort = params.get('sort') || '';
   const search = params.get('search') || '';
   const size = params.get('size') || '';
+  const seller = params.get('seller') || '';
+  const sellerName = (x: any) => x ? x.name : '';
   const [query, setQuery] = useState(search);
   useEffect(() => setQuery(search), [search]);
 
@@ -71,6 +74,7 @@ export default function ShopView({ products, total, pages, page, categories, bra
     brand && { key: 'brand', label: t(`collection.${brand}`, brand) },
     search && { key: 'search', label: `„${search}“` },
     size && { key: 'size', label: `🐕 ${t(`dog.size.${size}`)}` },
+    seller && { key: 'seller', label: sellerName(sellers.find((x) => x.slug === seller)) || seller },
   ].filter(Boolean) as { key: string; label: string }[];
 
   const chip = (on: boolean) =>
@@ -136,6 +140,14 @@ export default function ShopView({ products, total, pages, page, categories, bra
           )}
 
           <div className="ml-auto flex items-center gap-1.5">
+            {sellers.length > 0 && (
+              <Menu icon="store" size="md" tone="mint" title={t('shop.sellers')} onReset={() => go({ seller: null })} resetDisabled={!seller} resetLabel={t('shop.reset')}
+                label={seller ? `${t('shop.sellers')}: ${sellerName(sellers.find((x) => x.slug === seller))}` : t('shop.sellers')} active={!!seller}
+                items={[
+                  { label: t('shop.allSellers'), checked: !seller, onClick: () => go({ seller: null }) },
+                  ...sellers.map((x) => ({ label: x.name, checked: seller === x.slug, onClick: () => go({ seller: x.slug }) })),
+                ]} />
+            )}
             <Menu icon="paw" size="md" tone="mint" title={t('shop.dogSize')} onReset={() => go({ size: null })} resetDisabled={!size} resetLabel={t('shop.reset')}
               label={size ? `${t('shop.dogSize')}: ${t(`dog.size.${size}`)}` : t('shop.dogSize')} active={!!size}
               items={[
@@ -170,7 +182,7 @@ export default function ShopView({ products, total, pages, page, categories, bra
             )}
           </div>
         ) : (
-          <div key={`${category}|${brand}|${sort}|${search}|${size}|${page}`} className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
+          <div key={`${category}|${brand}|${sort}|${search}|${size}|${seller}|${page}`} className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
             {products.map((p, i) => <ProductCard key={p.id} product={p} index={i} />)}
           </div>
         )}

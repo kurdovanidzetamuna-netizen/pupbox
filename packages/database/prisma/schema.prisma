@@ -374,8 +374,15 @@ model Product {
   shortDescription String?
   categoryId       String?
   category         ProductCategory? @relation(fields: [categoryId], references: [id])
+  /// What the shop charges. For a seller's product it's worked out from the
+  /// seller's price plus our margin (see ProductSupply) whenever it's saved.
   price            Decimal        @db.Decimal(10, 2)
   salePrice        Decimal?       @db.Decimal(10, 2)
+  /// Empty: our own product. Otherwise sold on behalf of this seller.
+  sellerId         String?
+  seller           Seller?        @relation(fields: [sellerId], references: [id])
+  /// Admin-only money details for a seller's product. Never sent to the site.
+  supply           ProductSupply?
   /// What a dog could react to, from the same list dogs' allergies use
   /// (Chicken, Beef, …). Monthly Boxes warns when a box clashes with its dog.
   allergens       String[]   @default([])
@@ -668,6 +675,10 @@ model OrderItem {
   total            Decimal           @db.Decimal(10, 2)
   /// Copied from the cart: { engraving?, size? }. Fulfilment reads it.
   personalisation  Json?
+  /// Who it was sold for, and what we owe them per unit, at the time of sale.
+  sellerId         String?
+  seller           Seller?           @relation(fields: [sellerId], references: [id])
+  sellerPrice      Decimal?          @db.Decimal(10, 2)
   createdAt        DateTime          @default(now())
 
   // Channel attribution reads items by order, and the top-products /
@@ -1047,4 +1058,44 @@ model SavedCard {
   updatedAt DateTime  @updatedAt
 
   @@index([userId])
+}
+
+/// How our margin on a seller's product is set: a fixed amount or a percent.
+enum MarginType {
+  FIXED
+  PERCENT
+}
+
+/// A business whose products we sell alongside our own.
+model Seller {
+  id           String      @id @default(cuid())
+  name         String
+  slug         String      @unique
+  logoUrl      String?
+  /// A short public line about them (English; Georgian in translations.ka.description).
+  description  String?
+  translations Json?
+  // Internal: how to reach them, and anything to remember. Never shown on the site.
+  contactName  String?
+  email        String?
+  phone        String?
+  notes        String?
+  isActive     Boolean     @default(true)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  deletedAt    DateTime?
+
+  products     Product[]
+  orderItems   OrderItem[]
+}
+
+/// A seller's product: what they charge us and the margin we add. The shop
+/// price (Product.price) = seller price + margin. Admin only.
+model ProductSupply {
+  productId   String     @id
+  product     Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
+  sellerPrice Decimal    @db.Decimal(10, 2)
+  marginType  MarginType @default(FIXED)
+  marginValue Decimal    @default(0) @db.Decimal(10, 2)
+  updatedAt   DateTime   @updatedAt
 }

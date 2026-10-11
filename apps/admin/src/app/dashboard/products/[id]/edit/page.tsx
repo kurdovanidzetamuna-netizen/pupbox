@@ -8,6 +8,7 @@ import ErrorPopup from '@/components/ErrorPopup';
 import PersonalisationCard, { EMPTY_PERSONALISATION, personalisationFromProduct, personalisationPayload, type PersonalisationForm } from '@/components/PersonalisationCard';
 import AllergensCard from '@/components/AllergensCard';
 import SuitsCard, { EMPTY_SUITS, suitsFromProduct, type Suits } from '@/components/SuitsCard';
+import SellerCard, { OURS, shopPrice, termsFromProduct, termsPayload, type SellerTerms } from '@/components/SellerCard';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 
@@ -40,6 +41,13 @@ export default function EditProductPage() {
   const [personalisation, setPersonalisation] = useState<PersonalisationForm>(EMPTY_PERSONALISATION);
   const [allergens, setAllergens] = useState<string[]>([]);
   const [suits, setSuits] = useState<Suits>(EMPTY_SUITS);
+  const [seller, setSeller] = useState<SellerTerms>(OURS);
+  // A seller's product: the shop price follows their price + our margin.
+  useEffect(() => {
+    const f = shopPrice(seller);
+    if (f != null) setForm(x => ({ ...x, price: f.toFixed(2) }));
+  }, [seller]);
+
 
   useEffect(() => {
     const token = localStorage.getItem('admin_token');
@@ -74,6 +82,7 @@ export default function EditProductPage() {
       setPersonalisation(personalisationFromProduct(product));
       setAllergens(product.allergens ?? []);
       setSuits(suitsFromProduct(product));
+      setSeller(termsFromProduct(product));
       if (kaData) setKa({ name: kaData.name || '', shortDescription: kaData.shortDescription || '', description: kaData.description || '', seoTitle: kaData.seoTitle || '', seoDesc: kaData.seoDesc || '' });
     }).catch(() => {}).finally(() => setLoading(false));
   }, [id]);
@@ -159,7 +168,8 @@ export default function EditProductPage() {
     if (!form.name.trim()) errs.name = 'Product name (English) is required';
     if (!form.slug.trim()) errs.slug = 'Slug is required';
     if (!form.sku.trim()) errs.sku = 'SKU is required';
-    if (!form.price || Number(form.price) <= 0) errs.price = 'Price must be greater than 0';
+    if (seller.sellerId && !(parseFloat(seller.sellerPrice) > 0)) errs.sellerPrice = "Enter the seller's price";
+    else if (!form.price || Number(form.price) <= 0) errs.price = 'Price must be greater than 0';
     if (!ka.name.trim()) errs.kaName = 'Product name (Georgian) is required';
     return errs;
   }
@@ -195,6 +205,7 @@ export default function EditProductPage() {
     if (hasKa || suits.goodForKa.trim()) body.translations = { ka: { ...ka, goodFor: suits.goodForKa.trim() } };
     body.personalisation = personalisationPayload(personalisation);
     body.allergens = allergens;
+    Object.assign(body, termsPayload(seller));
     body.dogSizes = suits.dogSizes;
     body.lifeStages = suits.lifeStages;
     body.goodFor = suits.goodFor.trim();
@@ -383,12 +394,14 @@ export default function EditProductPage() {
           </p>
           {isKa && <p style={{ fontSize: 11, color: 'var(--slate-400)', margin: '0 0 14px' }}>Switch to English to edit pricing.</p>}
           <div style={isKa ? disabledSection : {}}>
+            <SellerCard value={seller} onChange={setSeller} salePrice={form.salePrice} error={fieldErrors.sellerPrice} style={{ marginBottom: 18, paddingBottom: 18, borderBottom: '1px solid var(--slate-100)' }} />
             <PricingSection
               price={form.price}
               salePrice={form.salePrice}
               onChange={(p, s) => setForm(f => ({ ...f, price: p, salePrice: s }))}
               priceError={fieldErrors.price}
               salePriceError={fieldErrors.salePrice}
+              priceLocked={!!seller.sellerId}
             />
             <div style={{ marginTop: 14 }}>
               <FormField label="Category">

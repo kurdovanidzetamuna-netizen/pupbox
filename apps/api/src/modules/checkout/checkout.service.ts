@@ -165,6 +165,12 @@ export class CheckoutService {
     const dogId = giftDog?.id ?? (data.dogId ? (await this.prisma.dog.findFirst({ where: { id: data.dogId, userId, deletedAt: null }, select: { id: true } }))?.id ?? null : null);
 
     // Create order — and hand the held stock back if that fails.
+    // Sellers' prices for their products in this basket (admin-only figures).
+    const productIds = cart.items.map((i: any) => i.productId).filter(Boolean) as string[];
+    const supplies = new Map(
+      (productIds.length ? await this.prisma.productSupply.findMany({ where: { productId: { in: productIds } }, select: { productId: true, sellerPrice: true } }) : [])
+        .map((x) => [x.productId, x.sellerPrice] as const),
+    );
     let order: Prisma.OrderGetPayload<{ include: { items: true; address: true; deliveryMethod: true } }>;
     try {
       order = await this.prisma.order.create({
@@ -195,6 +201,9 @@ export class CheckoutService {
               quantity: item.quantity,
               total: +(Number(item.price) * item.quantity).toFixed(2),
               personalisation: item.personalisation ?? Prisma.DbNull,
+              // What we owe the seller for it, as agreed at the time of sale.
+              sellerId: item.product?.sellerId ?? null,
+              sellerPrice: item.productId ? supplies.get(item.productId) ?? null : null,
             })),
           },
         },

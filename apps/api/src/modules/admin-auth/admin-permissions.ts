@@ -42,6 +42,8 @@ export const PERMISSION_CATALOGUE: { key: string; group: string; name: string; d
   { key: 'products.create', group: 'Products', name: 'Add products', description: 'Add products and upload pictures.' },
   { key: 'products.edit', group: 'Products', name: 'Edit products', description: 'Prices, stock, descriptions, categories, tags.' },
   { key: 'products.delete', group: 'Products', name: 'Delete products', description: 'Remove products and categories.' },
+  { key: 'sellers.view', group: 'Products', name: 'See sellers', description: 'Sellers, their contacts, and what each seller charges us and our margin.' },
+  { key: 'sellers.manage', group: 'Products', name: 'Manage sellers', description: 'Add, edit and switch off sellers.' },
   { key: 'subscriptions.view', group: 'Subscriptions & boxes', name: 'See subscriptions', description: 'Plans, subscribers, monthly boxes, box campaigns.' },
   { key: 'subscriptions.manage', group: 'Subscriptions & boxes', name: 'Manage subscriptions', description: 'Cancel or resume plans, edit plans, pack and send monthly boxes.' },
   { key: 'users.view', group: 'Customers', name: 'See customers', description: 'Customer list, details and referrals.' },

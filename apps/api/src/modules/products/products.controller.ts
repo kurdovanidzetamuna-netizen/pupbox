@@ -25,6 +25,7 @@ export class ProductsController {
     @Query('brand') brand?: string,
     @Query('lang') lang?: string,
     @Query('size') size?: string,
+    @Query('seller') seller?: string,
   ) {
     return this.service.findAll({
       page: page ? Math.max(1, +page || 1) : 1,
@@ -36,6 +37,7 @@ export class ProductsController {
       brand,
       lang,
       // Only real sizes; anything else is ignored rather than erroring.
+      seller: seller || undefined,
       size: ['EXTRA_SMALL', 'SMALL', 'MEDIUM', 'LARGE', 'EXTRA_LARGE'].includes(size ?? '') ? (size as any) : undefined,
     });
   }

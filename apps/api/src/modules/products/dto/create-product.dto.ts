@@ -1,5 +1,5 @@
-import { IsString, IsOptional, IsBoolean, IsNumber, IsArray, IsEnum, Min, MaxLength } from 'class-validator';
-import { DogSize, LifeStage } from '@prisma/client';
+import { IsString, IsOptional, IsBoolean, IsNumber, IsArray, IsEnum, Min, Max, MaxLength, ValidateIf } from 'class-validator';
+import { DogSize, LifeStage, MarginType } from '@prisma/client';
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 
@@ -31,4 +31,10 @@ export class CreateProductDto {
   @IsOptional() @IsArray() @IsEnum(LifeStage, { each: true }) lifeStages?: LifeStage[];
   /** A short "good for" line, e.g. "Strong chewers". Georgian goes in translations.ka.goodFor. */
   @IsOptional() @IsString() @MaxLength(160) goodFor?: string;
+  /** Sold for a seller (their id), or null for our own product. */
+  @IsOptional() @ValidateIf((_, v) => v !== null) @IsString() sellerId?: string | null;
+  /** What the seller charges us per unit, and the margin we add on top. */
+  @IsOptional() @Type(() => Number) @IsNumber() @Min(0) sellerPrice?: number;
+  @IsOptional() @IsEnum(MarginType) marginType?: MarginType;
+  @IsOptional() @Type(() => Number) @IsNumber() @Min(0) @Max(100000) marginValue?: number;
 }

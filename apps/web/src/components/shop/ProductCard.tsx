@@ -72,6 +72,11 @@ export default function ProductCard({ product, index = 0 }: { product: any; inde
         {category && <span className={`text-[10.5px] font-bold uppercase tracking-wider truncate ${soldOut ? 'text-gray-400' : 'text-teal-700/70'}`}>{category}</span>}
         <h3 className={`mt-0.5 text-[13.5px] font-bold leading-snug line-clamp-2 transition-colors ${soldOut ? 'text-gray-500' : 'text-gray-900 group-hover:text-teal-700'}`}>{name}</h3>
         {short && <p className={`mt-1 text-[12px] leading-snug line-clamp-2 ${soldOut ? 'text-gray-400' : 'text-gray-500'}`}>{short}</p>}
+        {product.seller && (
+          <p className="mt-1.5 inline-flex items-center gap-1 text-[11px] font-medium text-gray-400 truncate" title={product.seller.name}>
+            <Icon name="store" className="w-3.5 h-3.5 text-teal-600 shrink-0" strokeWidth={1.8} />{product.seller.name}
+          </p>
+        )}
       </Link>
 
       <div className="px-1 pt-2.5 pb-0.5 flex items-center justify-between gap-2">

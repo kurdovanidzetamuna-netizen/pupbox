@@ -192,12 +192,24 @@ export default function ProductView({ product, related, content }: { product: an
 
           {/* ── Details and buying ── */}
           <div>
-            {product.category && (
-              <Link href={`/shop?category=${product.category.slug}`}
-                className="inline-flex items-center gap-1.5 h-8 pl-1.5 pr-3 mb-3 rounded-full bg-teal-50 text-teal-800 text-[12px] font-semibold hover:bg-teal-100">
-                <span className="w-6 h-6 rounded-full bg-white flex items-center justify-center text-[13px]" aria-hidden="true">{look.icon}</span>{catName}
-              </Link>
-            )}
+            <div className="flex flex-wrap items-center gap-2 mb-3">
+              {product.category && (
+                <Link href={`/shop?category=${product.category.slug}`}
+                  className="inline-flex items-center gap-1.5 h-8 pl-1.5 pr-3 rounded-full bg-teal-50 text-teal-800 text-[12px] font-semibold hover:bg-teal-100">
+                  <span className="w-6 h-6 rounded-full bg-white flex items-center justify-center text-[13px]" aria-hidden="true">{look.icon}</span>{catName}
+                </Link>
+              )}
+              {/* Sold for a seller: who, and a way to see the rest of theirs */}
+              {product.seller && (
+                <Link href={`/shop?seller=${product.seller.slug}`} title={fill(t('pdp.sellerMore'), { name: product.seller.name })}
+                  className="inline-flex items-center gap-1.5 h-8 pl-1.5 pr-3 rounded-full bg-white ring-1 ring-gray-200/80 text-gray-700 text-[12px] font-semibold hover:ring-teal-200 hover:text-teal-800">
+                  <span className="w-6 h-6 rounded-full bg-gray-50 overflow-hidden flex items-center justify-center text-teal-600">
+                    {product.seller.logoUrl ? <img src={product.seller.logoUrl} alt="" className="w-full h-full object-cover" /> : <Icon name="store" className="w-3.5 h-3.5" strokeWidth={1.8} />}
+                  </span>
+                  <span className="text-gray-400 font-medium">{t('pdp.seller')}:</span>{product.seller.name}
+                </Link>
+              )}
+            </div>
             <Heading title={name} subtitle={short || undefined} className="!mb-4" />
 
             <div className="flex items-end gap-3 flex-wrap">

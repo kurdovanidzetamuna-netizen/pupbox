@@ -8,9 +8,11 @@ interface Props {
   onChange: (price: string, salePrice: string) => void;
   priceError?: string;
   salePriceError?: string;
+  /** A seller's product: the price is worked out from their price + our margin. */
+  priceLocked?: boolean;
 }
 
-export default function PricingSection({ price, salePrice, onChange, priceError, salePriceError }: Props) {
+export default function PricingSection({ price, salePrice, onChange, priceError, salePriceError, priceLocked = false }: Props) {
   const [discountPct, setDiscountPct] = useState('');
   const [discountAmt, setDiscountAmt] = useState('');
   // Prevents useEffect from overwriting discount fields while the user is typing in them
@@ -106,8 +108,9 @@ export default function PricingSection({ price, salePrice, onChange, priceError,
   return (
     <div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
-        <FormField label="RRP / Original Price (₾)" required error={priceError}>
-          <input style={inp(priceError)} type="number" step="0.01" min="0" value={price} onChange={e => handlePrice(e.target.value)} placeholder="0.00" />
+        <FormField label={priceLocked ? 'Shop price (₾) · from the seller’s price + our margin' : 'RRP / Original Price (₾)'} required error={priceError}>
+          <input style={{ ...inp(priceError), ...(priceLocked ? { background: 'var(--slate-50)', color: 'var(--slate-600)', fontWeight: 700 } : {}) }} type="number" step="0.01" min="0" value={price}
+            readOnly={priceLocked} onChange={e => !priceLocked && handlePrice(e.target.value)} placeholder="0.00" />
         </FormField>
         <FormField label="Customer Price (₾)" error={salePriceError}>
           <input style={inp(salePriceError)} type="number" step="0.01" min="0" value={salePrice} onChange={e => handleSalePrice(e.target.value)} placeholder="Leave empty = no discount" />

@@ -163,6 +163,9 @@ export default function AdminProductsPage() {
   const [category, setCategory] = useState('');
   const [sort, setSort] = useState('');
   const [tab, setTab] = useState<'all' | 'box' | 'standalone'>('all');
+  // ?seller=<id> (from the Sellers page) shows only that seller's products.
+  const [sellerFilter, setSellerFilter] = useState('');
+  useEffect(() => { setSellerFilter(new URLSearchParams(window.location.search).get('seller') || ''); }, []);
   const [viewing, setViewing] = useState<any | null>(null);
   const [showBoxItemModal, setShowBoxItemModal] = useState(false);
 
@@ -198,6 +201,7 @@ export default function AdminProductsPage() {
       if (tab === 'box' && !p.includedInBox) return false;
       if (tab === 'standalone' && !p.standaloneSale) return false;
       if (category && p.category?.id !== category) return false;
+      if (sellerFilter && p.sellerId !== sellerFilter) return false;
       if (search) {
         const q = search.toLowerCase();
         return (
@@ -251,6 +255,12 @@ export default function AdminProductsPage() {
       <div style={{ marginBottom: 28 }}>
         <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--slate-900)', margin: 0 }}>Products</h1>
         <p style={{ fontSize: 13, color: 'var(--slate-400)', marginTop: 4 }}>{total} products</p>
+        {sellerFilter && (
+          <button type="button" onClick={() => { setSellerFilter(''); window.history.replaceState(null, '', '/dashboard/products'); }}
+            style={{ marginTop: 8, fontSize: 12, fontWeight: 600, padding: '4px 10px', borderRadius: 999, border: 'none', cursor: 'pointer', background: 'var(--teal-50b, #effaf6)', color: 'var(--teal-700, #0f766e)' }}>
+            🏪 {products.find((p) => p.sellerId === sellerFilter)?.seller?.name || 'One seller'} · show all ✕
+          </button>
+        )}
       </div>
 
       {/* Tabs */}
@@ -349,7 +359,7 @@ export default function AdminProductsPage() {
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
               <tr>
-                {['Product', 'SKU', 'Category', 'Price', 'Stock', 'Status', 'Actions'].map(h => (
+                {['Product', 'SKU', 'Category', 'Sold by', 'Price', 'Stock', 'Status', 'Actions'].map(h => (
                   <th key={h} style={{ padding: '10px 18px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: 'var(--slate-400)', textTransform: 'uppercase', letterSpacing: '0.06em', borderBottom: '1px solid var(--slate-200b)', background: 'var(--slate-50)', whiteSpace: 'nowrap' }}>{h}</th>
                 ))}
               </tr>
@@ -382,6 +392,11 @@ export default function AdminProductsPage() {
                       <span style={{ fontFamily: 'monospace', fontSize: 11, color: 'var(--slate-500)', background: 'var(--slate-100)', padding: '4px 8px', borderRadius: 6 }}>{p.sku || '—'}</span>
                     </td>
                     <td style={{ padding: '14px 18px', color: 'var(--slate-500)' }}>{p.category?.name || '—'}</td>
+                    <td style={{ padding: '14px 18px', whiteSpace: 'nowrap' }}>
+                      {p.seller
+                        ? <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--slate-700)' }}>🏪 {p.seller.name}</span>
+                        : <span style={{ fontSize: 12, color: 'var(--slate-400)' }}>Pupbox</span>}
+                    </td>
                     <td style={{ padding: '14px 18px' }}>
                       {p.salePrice ? (
                         <div>
@@ -389,6 +404,11 @@ export default function AdminProductsPage() {
                           <span style={{ fontSize: 11, color: 'var(--slate-400)', textDecoration: 'line-through', display: 'block' }}>₾{Number(p.price).toFixed(2)}</span>
                         </div>
                       ) : <span style={{ fontWeight: 700, color: 'var(--slate-900)' }}>₾{Number(p.price).toFixed(2)}</span>}
+                      {p.supply && (
+                        <span title="Seller's price + our margin" style={{ display: 'block', fontSize: 10.5, color: 'var(--slate-400)', marginTop: 2, whiteSpace: 'nowrap' }}>
+                          ₾{Number(p.supply.sellerPrice).toFixed(2)} + {p.supply.marginType === 'PERCENT' ? `${Number(p.supply.marginValue)}%` : `₾${Number(p.supply.marginValue).toFixed(2)}`}
+                        </span>
+                      )}
                     </td>
                     <td style={{ padding: '14px 18px' }}>
                       <span style={{ fontWeight: 700, color: stockColor }}>{stockQty}</span>

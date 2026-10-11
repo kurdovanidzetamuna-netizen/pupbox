@@ -36,6 +36,10 @@ export const api = {
     get: (slug: string) => fetchAPI<any>(`/products/${slug}`, { cache: 'no-store' }),
     brands: () => fetchAPI<string[]>('/products/brands'),
   },
+  /** Sellers with something on sale (public face only). */
+  sellers: {
+    list: () => fetchAPI<any[]>('/sellers', { cache: 'no-store' }),
+  },
   categories: {
     list: () => fetchAPI<any[]>('/categories'),
   },
