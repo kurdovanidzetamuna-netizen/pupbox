@@ -140,4 +140,18 @@ export const ACCOUNT_STRINGS: Record<string, { en: string; ka: string }> = {
   'acc.signOutInfo':        { en: 'Your cart and account stay saved; sign in any time.', ka: 'კალათა და ანგარიში შენახული რჩება; შეგიძლია ნებისმიერ დროს შეხვიდე.' },
   'dogs.removeTitle':       { en: 'Remove {name}?',              ka: 'წავშალოთ {name}?' },
   'dogs.removeInfo':        { en: 'Their profile and photo are removed from your account.', ka: 'მისი პროფილი და ფოტო წაიშლება შენი ანგარიშიდან.' },
+
+  // ── Addresses & cards ──
+  'addr.book':              { en: 'Addresses',                   ka: 'მისამართები' },
+  'addr.add':               { en: 'Add address',                 ka: 'მისამართის დამატება' },
+  'addr.edit':              { en: 'Edit address',                ka: 'მისამართის რედაქტირება' },
+  'addr.none':              { en: 'No saved addresses yet — add one for faster checkout.', ka: 'შენახული მისამართი ჯერ არ გაქვს — დაამატე სწრაფი შეკვეთისთვის.' },
+  'addr.default':           { en: 'Default',                     ka: 'ძირითადი' },
+  'addr.makeDefault':       { en: 'Make default',                ka: 'ძირითადად დაყენება' },
+  'addr.label':             { en: 'Name (optional)',             ka: 'სახელწოდება (არასავალდებულო)' },
+  'addr.labelHint':         { en: 'e.g. Home, Work, Mum’s',      ka: 'მაგ. სახლი, სამსახური, დედასთან' },
+  'addr.removeTitle':       { en: 'Remove this address?',        ka: 'წავშალოთ ეს მისამართი?' },
+  'cards.title':            { en: 'Payment cards',               ka: 'საბანკო ბარათები' },
+  'cards.none':             { en: 'No saved cards. Cards are kept securely by the bank, never by Pupbox — you can save one when you pay.', ka: 'შენახული ბარათი არ გაქვს. ბარათებს ბანკი ინახავს უსაფრთხოდ, არა Pupbox — შენახვა გადახდისას შეგეძლება.' },
+  'acc.verifiedIcon':       { en: 'Confirmed',                   ka: 'დადასტურებულია' },
 };

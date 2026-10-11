@@ -7,6 +7,8 @@
 const EXACT: Record<string, string> = {
   'A gift can start up to a year ahead': 'საჩუქარი შეიძლება დაიწყოს მაქსიმუმ ერთი წლის შემდეგ',
   'A referral code can only be added before your first order.': 'მოწვევის კოდის დამატება მხოლოდ პირველ შეკვეთამდეა შესაძლებელი.',
+  'A plan delivers to this address. Change the plan’s address first.': 'ამ მისამართზე გეგმის კოლოფები მიდის. ჯერ გეგმის მისამართი შეცვალე.',
+  'Address not found': 'მისამართი ვერ მოიძებნა',
   'Access denied': 'წვდომა შეზღუდულია',
   'Account is blocked': 'ანგარიში დაბლოკილია',
   'Account not found': 'ანგარიში ვერ მოიძებნა',

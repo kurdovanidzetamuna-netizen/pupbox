@@ -76,17 +76,17 @@ export default function AccountSecurity() {
   const row = 'flex items-center justify-between gap-4 py-4';
   return (
     <section className="bg-white rounded-3xl ring-1 ring-gray-200/60 px-5 sm:px-6 py-2">
-      <h2 className="text-base font-bold text-gray-900 pt-4 pb-1">{t('acc.security')}</h2>
+      <h2 className="text-[15px] font-bold text-gray-900 pt-4 pb-1">{t('acc.security')}</h2>
       <div className={`${row} border-b border-gray-100`}>
         <div>
-          <p className="text-sm font-medium text-gray-800">{t('acc.password')}</p>
+          <p className="text-[13px] font-medium text-gray-800">{t('acc.password')}</p>
           <p className="text-sm text-gray-400 tracking-widest">••••••••</p>
         </div>
-        <button type="button" onClick={openPw} className="px-4 py-2 rounded-full text-sm font-semibold text-teal-700 bg-teal-50 hover:bg-teal-100 transition">{t('acc.passwordChange')}</button>
+        <button type="button" onClick={openPw} className="px-3.5 py-1.5 rounded-full text-[13px] font-semibold text-teal-700 bg-teal-50 hover:bg-teal-100 transition">{t('acc.passwordChange')}</button>
       </div>
       <div className="py-3">
         <button type="button" onClick={() => { setDelPassword(''); setDelError(''); setDelOpen(true); }}
-          className="-ml-3 px-3 py-2 rounded-full text-sm font-semibold text-red-600 hover:bg-red-50 transition">{t('acc.delete')}</button>
+          className="-ml-3 px-3 py-1.5 rounded-full text-[13px] font-semibold text-red-600 hover:bg-red-50 transition">{t('acc.delete')}</button>
       </div>
 
       <Modal open={pwOpen} onClose={() => !pwSaving && setPwOpen(false)} title={step === 3 ? t('acc.pwDone') : t('acc.password')}>

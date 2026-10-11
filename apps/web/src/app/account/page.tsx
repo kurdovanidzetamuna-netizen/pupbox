@@ -7,6 +7,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { authFetch, loginUrl, SessionExpiredError } from '@/lib/authFetch';
 import AccountSecurity from '@/components/AccountSecurity';
 import Field from '@/components/ui/Field';
+import AddressBook from '@/components/AddressBook';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 
 export default function AccountPage() {
@@ -95,8 +96,13 @@ export default function AccountPage() {
     { href: '/account/referrals', icon: '🎁', k: 'acc.referrals', tint: 'bg-peach-50' },
     { href: '/shop', icon: '🛍️', k: 'acc.shop', tint: 'bg-lilac-50' },
   ];
-  const badge = (ok: boolean) => (
-    <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${ok ? 'bg-teal-50 text-teal-700' : 'bg-amber-50 text-amber-700'}`}>{ok ? `✓ ${t('acc.verified')}` : t('acc.notVerified')}</span>
+  // Confirmed: just a small check; not yet confirmed: a small amber dot (both with a tooltip).
+  const badge = (ok: boolean) => ok ? (
+    <span title={t('acc.verifiedIcon')} aria-label={t('acc.verifiedIcon')} className="flex w-5 h-5 rounded-full bg-teal-100 text-teal-700 items-center justify-center">
+      <svg className="w-3 h-3" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M2.5 6.2l2.2 2.2 4.8-4.9" /></svg>
+    </span>
+  ) : (
+    <span title={t('acc.notVerified')} aria-label={t('acc.notVerified')} className="block w-2.5 h-2.5 rounded-full bg-amber-400" />
   );
   const toggle = (on: boolean, onClick: () => void, label: string) => (
     <button type="button" onClick={onClick} role="switch" aria-checked={on} aria-label={label}
@@ -136,7 +142,7 @@ export default function AccountPage() {
             {quick.map(l => (
               <Link key={l.href} href={l.href} className="group flex items-center gap-3 bg-white ring-1 ring-gray-200/60 rounded-2xl px-4 py-3 hover:ring-teal-200 transition-colors">
                 <span className={`w-9 h-9 rounded-xl flex items-center justify-center text-lg shrink-0 ${l.tint}`} aria-hidden="true">{l.icon}</span>
-                <span className="flex-1 min-w-0 text-sm font-medium text-gray-800 leading-tight">{t(l.k)}</span>
+                <span className="flex-1 min-w-0 text-[13px] font-medium text-gray-800 leading-tight">{t(l.k)}</span>
                 {l.count ? <span className="text-xs font-bold text-gray-500 bg-gray-100 rounded-full px-2 py-0.5">{l.count}</span> : null}
               </Link>
             ))}
@@ -144,21 +150,16 @@ export default function AccountPage() {
 
           <div className="grid lg:grid-cols-5 gap-5 items-start">
             <section className="lg:col-span-3 bg-white rounded-3xl ring-1 ring-gray-200/60 p-5 sm:p-6">
-              <h2 className="text-base font-bold text-gray-900 mb-4">{t('acc.details')}</h2>
+              <h2 className="text-[15px] font-bold text-gray-900 mb-4">{t('acc.details')}</h2>
               {error && <p className="text-red-600 text-sm mb-4 bg-red-50 px-4 py-2.5 rounded-xl" role="alert">{error}</p>}
               <form onSubmit={save} className="space-y-3" noValidate>
                 <div className="grid sm:grid-cols-2 gap-3">
                   {field('firstName', t('co.f.firstName'), true)}
                   {field('lastName', t('co.f.lastName'), true)}
                 </div>
-                <div className="relative">
-                  <Field id="email" label={t('acc.email')} value={user?.email || ''} disabled />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2">{badge(!!user?.emailVerified)}</span>
-                </div>
-                <div className="relative">
-                  {field('phone', t('co.f.phone'))}
-                  <span className="absolute right-3 top-[28px] -translate-y-1/2">{badge(!!user?.phoneVerified)}</span>
-                </div>
+                <Field id="email" label={t('acc.email')} value={user?.email || ''} disabled trailing={badge(!!user?.emailVerified)} />
+                <Field id="phone" type="tel" label={t('co.f.phone')} value={form.phone} autoComplete="tel" error={fieldErrors.phone} trailing={badge(!!user?.phoneVerified)}
+                  onChange={v => { setForm({ ...form, phone: v }); setFieldErrors(f => ({ ...f, phone: '' })); setSuccess(''); }} />
                 <div className="flex items-center justify-end gap-3 pt-1">
                   {success && <span className="text-sm text-teal-700" role="status">{success}</span>}
                   <button type="submit" disabled={saving || !changed} className="bg-teal-600 text-white text-sm font-semibold px-5 py-2 hover:bg-teal-700 disabled:opacity-40">
@@ -170,20 +171,27 @@ export default function AccountPage() {
 
             <div className="lg:col-span-2 space-y-5">
               <section className="bg-white rounded-3xl ring-1 ring-gray-200/60 px-5 sm:px-6 py-2">
-                <h2 className="text-base font-bold text-gray-900 pt-4">{t('acc.notifs')}</h2>
+                <h2 className="text-[15px] font-bold text-gray-900 pt-4">{t('acc.notifs')}</h2>
                 <p className="text-xs text-gray-500 mt-1 mb-1 leading-relaxed">{t('acc.notifsSub')}</p>
                 <div className="flex items-center justify-between gap-4 py-3.5 border-b border-gray-100">
-                  <span className="text-sm font-medium text-gray-800">✉️ {t('acc.notifEmail')}</span>
+                  <span className="text-[13px] font-medium text-gray-800">✉️ {t('acc.notifEmail')}</span>
                   {toggle(!!user?.marketingEmail, () => toggleChannel('marketingEmail'), t('acc.notifEmail'))}
                 </div>
                 <div className="flex items-center justify-between gap-4 py-3.5">
-                  <span className="text-sm font-medium text-gray-800">💬 {t('acc.notifSms')}</span>
+                  <span className="text-[13px] font-medium text-gray-800">💬 {t('acc.notifSms')}</span>
                   {toggle(!!user?.marketingSms, () => toggleChannel('marketingSms'), t('acc.notifSms'))}
                 </div>
               </section>
               <AccountSecurity />
             </div>
           </div>
+
+          <AddressBook onExpired={() => router.replace(loginUrl('/account'))} />
+
+          <section className="bg-white rounded-3xl ring-1 ring-gray-200/60 p-5 sm:p-6">
+            <h2 className="text-[15px] font-bold text-gray-900 mb-2">💳 {t('cards.title')}</h2>
+            <p className="text-[13px] text-gray-500 leading-relaxed">{t('cards.none')}</p>
+          </section>
         </>
       )}
 

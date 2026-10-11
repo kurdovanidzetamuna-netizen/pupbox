@@ -40,9 +40,9 @@ export default function AccountLayout({ children }: { children: React.ReactNode 
               {LINKS.map((l) => (
                 <li key={l.href} className="shrink-0">
                   <Link href={l.href} aria-current={active(l.href) ? 'page' : undefined}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-semibold whitespace-nowrap transition-colors ${
+                    className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-[13px] font-medium whitespace-nowrap transition-colors ${
                       active(l.href) ? 'bg-white text-teal-700 ring-1 ring-teal-100' : 'text-gray-500 hover:bg-white/70 hover:text-gray-800'}`}>
-                    <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={l.icon} /></svg>
+                    <svg className="w-[18px] h-[18px] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={l.icon} /></svg>
                     {t(l.k)}
                   </Link>
                 </li>
