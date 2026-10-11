@@ -6,7 +6,7 @@ import { PrismaService } from '../prisma/prisma.service';
  * and text that starts like a formula (=, +, -, @) prefixed with ' so a
  * customer named "=HYPERLINK(...)" can't run anything when the file is opened.
  */
-function toCsv(rows: Record<string, any>[]): string {
+export function toCsv(rows: Record<string, any>[]): string {
   if (!rows.length) return '\uFEFF';
   const headers = Object.keys(rows[0]);
   const cell = (v: unknown) => {
@@ -19,7 +19,7 @@ function toCsv(rows: Record<string, any>[]): string {
 }
 
 /** "2026-10-01".."2026-10-31" → that whole span, the last day included. */
-function dateRange(from?: string, to?: string) {
+export function dateRange(from?: string, to?: string) {
   if (!from && !to) return undefined;
   const parse = (v: string, label: string) => {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(v) || isNaN(Date.parse(v))) throw new BadRequestException(`"${label}" must be a date like 2026-10-01`);

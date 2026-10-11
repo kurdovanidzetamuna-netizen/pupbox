@@ -102,7 +102,10 @@ export default function SellersPage() {
           <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--slate-900)', margin: 0 }}>Sellers</h1>
           <p style={{ fontSize: 13, color: 'var(--slate-400)', marginTop: 4 }}>Businesses we sell for. Link a product to a seller on the product’s page; its shop price is the seller’s price plus our margin.</p>
         </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+        <a href="/dashboard/seller-payouts" style={{ background: 'var(--slate-100)', color: 'var(--slate-700)', borderRadius: 10, padding: '9px 16px', fontSize: 13, fontWeight: 600, textDecoration: 'none', whiteSpace: 'nowrap' }}>₾ Payouts</a>
         <button onClick={() => open()} style={{ background: 'var(--teal-600)', color: 'var(--white)', borderRadius: 10, padding: '9px 16px', fontSize: 13, fontWeight: 600, border: 'none', cursor: 'pointer', whiteSpace: 'nowrap' }}>+ Add seller</button>
+        </div>
       </div>
 
       <ErrorPopup errors={popupErrors} onClose={() => setPopupErrors([])} />

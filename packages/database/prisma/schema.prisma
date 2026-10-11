@@ -679,6 +679,9 @@ model OrderItem {
   sellerId         String?
   seller           Seller?           @relation(fields: [sellerId], references: [id])
   sellerPrice      Decimal?          @db.Decimal(10, 2)
+  /// The payout that settled this line with the seller (none = not paid yet).
+  payoutId         String?
+  payout           SellerPayout?     @relation(fields: [payoutId], references: [id])
   createdAt        DateTime          @default(now())
 
   // Channel attribution reads items by order, and the top-products /
@@ -686,6 +689,7 @@ model OrderItem {
   @@index([orderId])
   @@index([productId])
   @@index([subscriptionPlanId])
+  @@index([sellerId, payoutId])
 }
 
 // ─── PAYMENTS ────────────────────────────────────────────────────────────────
@@ -1087,6 +1091,27 @@ model Seller {
 
   products     Product[]
   orderItems   OrderItem[]
+  payouts      SellerPayout[]
+}
+
+/// Money we paid a seller: the sum of the order lines it settled, so a line
+/// is never paid twice or forgotten.
+model SellerPayout {
+  id         String      @id @default(cuid())
+  sellerId   String
+  seller     Seller      @relation(fields: [sellerId], references: [id])
+  amount     Decimal     @db.Decimal(10, 2)
+  /// The order dates it covered (empty = everything up to the payout).
+  periodFrom DateTime?
+  periodTo   DateTime?
+  /// Bank reference, transfer note…
+  note       String?
+  /// The admin who recorded it.
+  paidById   String?
+  paidAt     DateTime    @default(now())
+  items      OrderItem[]
+
+  @@index([sellerId, paidAt])
 }
 
 /// A seller's product: what they charge us and the margin we add. The shop

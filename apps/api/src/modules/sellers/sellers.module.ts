@@ -6,6 +6,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AdminPerms } from '../admin-auth/admin-permissions';
 import { AdminJwtGuard } from '../admin-auth/admin-jwt.guard';
 import { PUBLIC_SELLER } from './sellers';
+import { SellerPayoutsController } from './payouts';
 
 const Trim = () => Transform(({ value }) => (typeof value === 'string' ? value.trim() : value));
 const orNull = (v?: string | null) => (v && v.trim() ? v.trim() : null);
@@ -89,5 +90,5 @@ class AdminSellersController {
   }
 }
 
-@Module({ controllers: [SellersController, AdminSellersController] })
+@Module({ controllers: [SellersController, AdminSellersController, SellerPayoutsController] })
 export class SellersModule {}
