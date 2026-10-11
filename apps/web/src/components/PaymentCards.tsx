@@ -43,7 +43,12 @@ function expiry(c: Card) {
 const rank = (c: Card) => (c.isDefault ? 0 : expiry(c) === 'expired' ? 2 : 1);
 
 /** The saved-card wallet: card tiles with a ⋯ menu, swipeable on phones. */
-export default function PaymentCards({ onExpired }: { onExpired: () => void }) {
+export default function PaymentCards({ onExpired, addTick = 0, onCount }: {
+  onExpired: () => void;
+  /** Bumped by the tab's ＋ button to show how to add a card. */
+  addTick?: number;
+  onCount?: (n: number) => void;
+}) {
   const { t } = useLanguage();
   const [cards, setCards] = useState<Card[] | null>(null);
   const [how, setHow] = useState(false);
@@ -55,100 +60,57 @@ export default function PaymentCards({ onExpired }: { onExpired: () => void }) {
     .catch((e) => { if (e instanceof SessionExpiredError) onExpired(); else setCards((c) => c ?? []); });
 
   useEffect(() => { call('/me/cards'); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (addTick) setHow(true); }, [addTick]);
+  useEffect(() => { if (cards) onCount?.(cards.length); }, [cards?.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const label = (c: Card) => `${NAMES[c.brand] ?? c.brand} •••• ${c.last4}`;
   const mmyy = (c: Card) => `${String(c.expMonth).padStart(2, '0')}/${String(c.expYear).slice(-2)}`;
 
   return (
-    <section className="bg-white rounded-3xl ring-1 ring-gray-200/60 p-5 sm:p-6">
-      <div className="flex items-center justify-between gap-3 mb-4">
-        <h2 className="text-[15px] font-bold text-gray-900 flex items-center gap-2">
-          {t('cards.title')}
-          {!!cards?.length && <span className="text-[11px] font-semibold text-gray-500 bg-gray-100 rounded-full px-2 py-0.5">{cards.length}</span>}
-        </h2>
-        <span title={t('cards.secure')} className="inline-flex items-center gap-1 text-[11px] font-semibold text-teal-700 bg-teal-50 rounded-full px-2.5 py-1">
-          <Icon name="lock" className="w-3.5 h-3.5" /><span className="hidden sm:inline">{t('cards.secure')}</span>
-        </span>
-      </div>
-
-      {/* Phones: a row you swipe through; wider screens: a grid. */}
-      <ul className="flex sm:grid sm:grid-cols-2 xl:grid-cols-3 gap-3 overflow-x-auto sm:overflow-visible snap-x snap-mandatory -mx-5 px-5 sm:mx-0 sm:px-0 pb-1 [scrollbar-width:none]">
-        {cards === null && <li className="shrink-0 w-[78%] sm:w-auto aspect-[1.586/1] rounded-2xl bg-gray-100 animate-pulse" aria-hidden="true" />}
-
-        {cards?.map((c) => {
-          const state = expiry(c);
-          return (
-            <li key={c.id} className="snap-start shrink-0 w-[78%] sm:w-auto">
-              <div className={`relative aspect-[1.586/1] rounded-2xl bg-gradient-to-br p-4 flex flex-col justify-between ring-1 transition-transform hover:-translate-y-0.5
-                ${THEME[c.brand] ?? THEME.CARD} ${c.isDefault ? 'ring-teal-300' : 'ring-black/5'} ${state === 'expired' ? 'grayscale opacity-70' : ''}`}>
-                {/* Clipped on its own layer, so the ⋯ menu can open past the card's edge. */}
-                <span className="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none" aria-hidden="true">
-                  <span className="absolute -right-10 -top-12 w-40 h-40 rounded-full bg-white/40" />
-                  <span className="absolute -left-6 -bottom-16 w-36 h-36 rounded-full bg-white/30" />
+    <>
+      {cards === null ? (
+        <div className="h-12 rounded-xl bg-gray-100 animate-pulse" aria-hidden="true" />
+      ) : (
+        <ul className="divide-y divide-gray-100">
+          {cards.map((c) => {
+            const state = expiry(c);
+            return (
+              <li key={c.id} className={`flex items-center gap-3 py-2.5 first:pt-0 ${state === 'expired' ? 'opacity-60' : ''}`}>
+                {/* A tiny card in the network's colour. */}
+                <span className={`relative w-12 h-8 shrink-0 rounded-lg bg-gradient-to-br ring-1 ring-black/5 flex items-end justify-end p-1 overflow-hidden ${THEME[c.brand] ?? THEME.CARD} ${state === 'expired' ? 'grayscale' : ''}`}>
+                  <span className="absolute left-1.5 top-1.5 w-3 h-2 rounded-[2px] bg-amber-300/90" aria-hidden="true" />
+                  <span className="scale-[0.55] origin-bottom-right"><BrandMark brand={c.brand} /></span>
                 </span>
-
-                <div className="relative flex items-start justify-between">
-                  <span className="w-9 h-7 rounded-md bg-gradient-to-br from-amber-200 to-amber-300/80 ring-1 ring-amber-400/30" aria-hidden="true">
-                    <span className="block mt-[9px] mx-1.5 h-px bg-amber-500/40" /><span className="block mt-[6px] mx-1.5 h-px bg-amber-500/40" />
-                  </span>
-                  <div className="flex items-center gap-1 -mr-2 -mt-2">
-                    {c.isDefault && (
-                      <span className="inline-flex items-center gap-1 h-6 px-2 rounded-full bg-white/80 text-teal-700 text-[10.5px] font-bold">
-                        <Icon name="star" className="w-3 h-3" strokeWidth={2.6} />{t('cards.default')}
+                <div className="flex-1 min-w-0">
+                  <p className="text-[13px] font-semibold text-gray-900 truncate flex items-center gap-1.5">
+                    {NAMES[c.brand] ?? c.brand} <span className="tabular-nums tracking-wider text-gray-700">•••• {c.last4}</span>
+                    {c.isDefault && <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-teal-700 bg-teal-50 rounded-full px-1.5 py-0.5"><Icon name="star" className="w-2.5 h-2.5" strokeWidth={2.8} />{t('cards.default')}</span>}
+                  </p>
+                  <p className="text-[12px] text-gray-500 flex items-center gap-1.5">
+                    {t('cards.expires')} <span className="tabular-nums">{mmyy(c)}</span>
+                    {state && (
+                      <span className={`text-[10px] font-bold rounded-full px-1.5 py-0.5 ${state === 'expired' ? 'bg-red-50 text-red-600' : 'bg-amber-50 text-amber-700'}`}>
+                        {t(state === 'expired' ? 'cards.expired' : 'cards.expiring')}
                       </span>
                     )}
-                    <Menu label={t('cards.actions')} items={[
-                      ...(!c.isDefault && state !== 'expired' ? [{ icon: 'star', label: t('cards.makeDefault'), onClick: () => call(`/me/cards/${c.id}/default`, { method: 'PATCH' }) }] : []),
-                      { icon: 'trash', label: t('cards.remove'), tone: 'danger' as const, onClick: () => setToRemove(c) },
-                    ]} />
-                  </div>
+                  </p>
                 </div>
-
-                <p className="relative text-[17px] sm:text-[18px] font-semibold tracking-[0.18em] tabular-nums" aria-label={label(c)}>
-                  <span className="opacity-40">••••</span> {c.last4}
-                </p>
-
-                <div className="relative flex items-end justify-between">
-                  <div>
-                    <p className="text-[9.5px] uppercase tracking-wider opacity-50">{t('cards.expires')}</p>
-                    <p className="text-[13px] font-semibold tabular-nums flex items-center gap-1.5">
-                      {mmyy(c)}
-                      {state && (
-                        <span className={`text-[10px] font-bold rounded-full px-1.5 py-0.5 tracking-normal ${state === 'expired' ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-700'}`}>
-                          {t(state === 'expired' ? 'cards.expired' : 'cards.expiring')}
-                        </span>
-                      )}
-                    </p>
-                  </div>
-                  <BrandMark brand={c.brand} />
-                </div>
-              </div>
-            </li>
-          );
-        })}
-
-        {cards?.length === 0 && (
-          <li className="snap-start shrink-0 w-[78%] sm:w-auto">
-            {/* Where a card will sit: no made-up numbers. */}
-            <div className="relative aspect-[1.586/1] rounded-2xl bg-gradient-to-br from-lilac-50 via-white to-teal-50 ring-1 ring-gray-200/70 p-4 flex flex-col justify-between overflow-hidden">
-              <span className="absolute -right-10 -top-12 w-40 h-40 rounded-full bg-teal-100/30" aria-hidden="true" />
-              <span className="w-9 h-7 rounded-md bg-gray-200/70" aria-hidden="true" />
-              <p className="relative text-[17px] font-semibold tracking-[0.18em] text-gray-300" aria-hidden="true">•••• ••••</p>
-              <p className="relative text-[12px] font-medium text-gray-500">{t('cards.empty')}</p>
-            </div>
-          </li>
-        )}
-
-        {cards !== null && (
-          <li className="snap-start shrink-0 w-[40%] sm:w-auto">
-            <button type="button" onClick={() => setHow(true)} aria-label={t('cards.add')}
-              className="w-full aspect-[1.586/1] sm:aspect-auto sm:h-full sm:min-h-[120px] rounded-2xl border-2 border-dashed border-gray-200 text-gray-400 hover:border-teal-300 hover:text-teal-600 hover:bg-teal-50/40 transition-colors flex flex-col items-center justify-center gap-1.5">
-              <span className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center"><Icon name="plus" className="w-5 h-5" strokeWidth={2.2} /></span>
-              <span className="text-[12px] font-medium">{t('cards.add')}</span>
-            </button>
-          </li>
-        )}
-      </ul>
+                <Menu label={t('cards.actions')} items={[
+                  ...(!c.isDefault && state !== 'expired' ? [{ icon: 'star', label: t('cards.makeDefault'), onClick: () => call(`/me/cards/${c.id}/default`, { method: 'PATCH' }) }] : []),
+                  { icon: 'trash', label: t('cards.remove'), tone: 'danger' as const, onClick: () => setToRemove(c) },
+                ]} />
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      {cards?.length === 0 && (
+        <button type="button" onClick={() => setHow(true)}
+          className="w-full flex items-center gap-3 rounded-2xl border-2 border-dashed border-gray-200 px-4 py-3 text-gray-400 hover:border-teal-300 hover:text-teal-600 hover:bg-teal-50/40 transition-colors">
+          <Icon name="card" className="w-5 h-5" /><span className="text-[12.5px] font-medium">{t('cards.empty')} · {t('cards.add')}</span>
+        </button>
+      )}
+      <p className="mt-3 flex items-center gap-1.5 text-[11px] text-gray-400"><Icon name="lock" className="w-3.5 h-3.5" />{t('cards.secure')}</p>
 
       <Modal open={how} onClose={() => setHow(false)} title={t('cards.howTitle')}>
         <div className="space-y-4">
@@ -173,6 +135,6 @@ export default function PaymentCards({ onExpired }: { onExpired: () => void }) {
       <ConfirmDialog open={!!toRemove} onClose={() => setToRemove(null)} busy={busy} tone="danger"
         title={t('cards.removeTitle')} message={toRemove ? fill(t('cards.removeMsg'), { card: label(toRemove) }) : ''} confirmLabel={t('cards.remove')}
         onConfirm={async () => { if (!toRemove) return; setBusy(true); await call(`/me/cards/${toRemove.id}`, { method: 'DELETE' }); setBusy(false); setToRemove(null); }} />
-    </section>
+    </>
   );
 }

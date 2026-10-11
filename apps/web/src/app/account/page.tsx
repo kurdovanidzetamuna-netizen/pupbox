@@ -8,8 +8,7 @@ import { authFetch, loginUrl, SessionExpiredError } from '@/lib/authFetch';
 import AccountSecurity from '@/components/AccountSecurity';
 import Field from '@/components/ui/Field';
 import PhoneInput from '@/components/ui/PhoneInput';
-import AddressBook from '@/components/AddressBook';
-import PaymentCards from '@/components/PaymentCards';
+import AddressesAndCards from '@/components/AddressesAndCards';
 import Modal from '@/components/ui/Modal';
 import IconButton from '@/components/ui/IconButton';
 import { Icon } from '@/components/ui/icons';
@@ -198,9 +197,8 @@ export default function AccountPage() {
             </div>
           </div>
 
-          <AddressBook onExpired={() => router.replace(loginUrl('/account'))} />
+          <AddressesAndCards onExpired={() => router.replace(loginUrl('/account'))} />
 
-          <PaymentCards onExpired={() => router.replace(loginUrl('/account'))} />
         </>
       )}
 

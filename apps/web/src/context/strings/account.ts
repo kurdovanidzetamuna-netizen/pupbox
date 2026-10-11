@@ -231,4 +231,10 @@ export const ACCOUNT_STRINGS: Record<string, { en: string; ka: string }> = {
   'cards.howCta':           { en: 'See plans',                   ka: 'გეგმების ნახვა' },
   'co.saveCard':            { en: 'Save this card for next time', ka: 'ბარათის შენახვა შემდეგი გადახდებისთვის' },
   'co.saveCardHint':        { en: 'The bank keeps it — we never see the number.', ka: 'ბარათს ბანკი ინახავს — ნომერს ჩვენ ვერ ვხედავთ.' },
+
+  // ── Addresses & cards block ──
+  'wallet.title':           { en: 'Addresses & cards',           ka: 'მისამართები და ბარათები' },
+  'wallet.addresses':       { en: 'Addresses',                   ka: 'მისამართები' },
+  'wallet.cards':           { en: 'Cards',                       ka: 'ბარათები' },
+  'wallet.summary':         { en: '{a} addresses · {c} cards',   ka: '{a} მისამართი · {c} ბარათი' },
 };
