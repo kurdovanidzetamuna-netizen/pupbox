@@ -125,10 +125,13 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   // CMS overrides: key → { en, ka }
   const [cms, setCms] = useState<Record<string, { en: string; ka: string }>>({});
 
-  // Restore saved language preference
+  // Georgian is the site's language: every page load starts in Georgian.
+  // English is a switch for the current visit only, so a refresh or a new
+  // visit never lands someone in English by surprise. (An older saved choice
+  // is cleared.)
   useEffect(() => {
-    const saved = localStorage.getItem('pupbox_lang') as Lang | null;
-    if (saved === 'en' || saved === 'ka') { setLangState(saved); rememberForServer(saved); }
+    try { localStorage.removeItem('pupbox_lang'); } catch {}
+    rememberForServer('ka');
   }, []);
 
   // Fetch translations from CMS once on mount
@@ -176,7 +179,6 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
   function setLang(l: Lang) {
     setLangState(l);
-    localStorage.setItem('pupbox_lang', l);
     rememberForServer(l);
     saveForEmails(l);
   }
