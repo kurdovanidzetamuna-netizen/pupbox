@@ -2,6 +2,10 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
+import IconButton from '@/components/ui/IconButton';
+import Menu from '@/components/ui/Menu';
+import { Icon } from '@/components/ui/icons';
+import { ALLERGENS } from '@pupbox/content';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/context/LanguageContext';
 import DogProfileForm, { emptyDogProfile, fromDog, toDogPayload, type DogProfile } from '@/components/DogProfileForm';
@@ -15,7 +19,7 @@ const SIZE_KEY: Record<string, string> = { EXTRA_SMALL: 'XS', SMALL: 'S', MEDIUM
  */
 export default function MyDogsPage() {
   const router = useRouter();
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const [dogs, setDogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<string | 'new' | null>(null);
@@ -119,13 +123,19 @@ export default function MyDogsPage() {
   const primary = 'bg-teal-600 text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-teal-700 disabled:opacity-50';
   const secondary = 'border border-gray-200 text-gray-600 px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-50';
 
+  // Allergens are stored by key ("Chicken"); show them in the visitor's language.
+  const allergyName = (a: string) => {
+    const known = ALLERGENS.find((x) => x.key.toLowerCase() === a.toLowerCase());
+    return known ? (lang === 'ka' ? known.ka : known.key) : t(`dog.opt.${a}`, a);
+  };
+
   return (
     <div>
-        <div className="flex items-end justify-between gap-4 mt-4 mb-2">
-          <h1 className="text-3xl font-extrabold text-gray-900">{t('dogs.title')}</h1>
-          {editing === null && <button onClick={() => open('new')} className={primary}>+ {t('dogs.add')}</button>}
+        <div className="flex items-center justify-between gap-4 mb-1">
+          <h1 className="text-2xl font-bold text-gray-900">{t('dogs.title')}</h1>
+          {editing === null && <IconButton icon="plus" label={t('dogs.add')} tone="primary" onClick={() => open('new')} />}
         </div>
-        <p className="text-sm text-gray-500 mb-6">{t('dogs.sub')}</p>
+        <p className="text-[13px] text-gray-500 mb-5">{t('dogs.sub')}</p>
 
         {notice && <p className="mb-4 text-sm text-teal-800 bg-teal-50 border border-teal-100 rounded-xl px-4 py-3" role="status">✓ {notice}</p>}
         {error && <p className="mb-4 text-sm text-red-600 bg-red-50 rounded-xl px-4 py-3" role="alert">{error}</p>}
@@ -150,39 +160,52 @@ export default function MyDogsPage() {
             <button onClick={() => open('new')} className={primary}>+ {t('dogs.add')}</button>
           </div>
         ) : (
-          <ul className="space-y-3">
+          <ul className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
             {dogs.filter(d => d.id !== editing).map(d => (
-              <li key={d.id} className="bg-white rounded-[28px] ring-1 ring-gray-200/60 p-5 flex items-start justify-between gap-4">
-                <div className="flex items-start gap-4 min-w-0">
-                <label className="group relative shrink-0 w-20 h-20 rounded-2xl overflow-hidden bg-teal-50 border border-teal-100 cursor-pointer" title={t(d.photoUrl ? 'dog.photoChange' : 'dog.photoAdd')}>
+              <li key={d.id} className="group bg-white rounded-3xl ring-1 ring-gray-200/60 overflow-hidden hover:ring-teal-200 transition-colors">
+                <div className="relative aspect-[4/3] bg-gradient-to-br from-teal-50 to-lilac-50">
                   {d.photoUrl
                     // eslint-disable-next-line @next/next/no-img-element
                     ? <img src={d.photoUrl} alt={d.name} className="w-full h-full object-cover" />
-                    : <span className="w-full h-full flex flex-col items-center justify-center text-teal-700 text-[11px] font-semibold"><span className="text-2xl group-hover:animate-bounce" aria-hidden="true">📷</span>{t('dog.photoAdd')}</span>}
-                  {uploading === d.id && <span className="absolute inset-0 bg-white/80 flex items-center justify-center text-[11px] font-semibold text-teal-700">{t('dog.photoUploading')}</span>}
-                  <input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" aria-label={t(d.photoUrl ? 'dog.photoChange' : 'dog.photoAdd')}
-                    onChange={e => { uploadPhoto(d, e.target.files?.[0]); e.target.value = ''; }} />
-                </label>
-                <div className="min-w-0">
-                  <p className="font-semibold text-gray-900">
-                    {d.name}
-                    {d.size && <span className="ml-2 text-xs font-bold text-gray-500 bg-gray-100 rounded px-1.5 py-0.5">{SIZE_KEY[d.size] ?? d.size}</span>}
-                  </p>
-                  {d.breed && <p className="text-sm text-gray-500">{d.breed}</p>}
-                  <p className={`text-sm mt-1 ${d.allergies?.length ? 'text-red-600' : 'text-gray-400'}`}>
-                    {d.allergies?.length ? `${t('dogs.allergies')}: ${d.allergies.join(', ')}` : t('dogs.noAllergies')}
-                  </p>
-                  {d.photoUrl
-                    ? <button onClick={() => removePhoto(d)} className="text-xs text-gray-400 hover:text-red-600 mt-1">{t('dog.photoRemove')}</button>
-                    : <p className="text-xs text-gray-400 mt-1">{t('dog.photoHint')}</p>}
+                    : <span className="absolute inset-0 flex items-center justify-center text-5xl" aria-hidden="true"><span className="wag">🐶</span></span>}
+                  {uploading === d.id && <span className="absolute inset-0 bg-white/80 flex items-center justify-center text-[12px] font-semibold text-teal-700">{t('dog.photoUploading')}</span>}
+                  {/* Camera: add or change the photo straight from the card. */}
+                  <label title={t(d.photoUrl ? 'dog.photoChange' : 'dog.photoAdd')}
+                    className="absolute left-3 bottom-3 w-9 h-9 rounded-full bg-white/90 backdrop-blur text-gray-700 hover:text-teal-700 flex items-center justify-center cursor-pointer ring-1 ring-black/5">
+                    <svg className="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4zM12 17a4 4 0 100-8 4 4 0 000 8z" /></svg>
+                    <input id={`photo-${d.id}`} type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" aria-label={t(d.photoUrl ? 'dog.photoChange' : 'dog.photoAdd')}
+                      onChange={e => { uploadPhoto(d, e.target.files?.[0]); e.target.value = ''; }} />
+                  </label>
+                  <div className="absolute right-2 top-2 rounded-full bg-white/90 backdrop-blur ring-1 ring-black/5">
+                    <Menu label={d.name} items={[
+                      { icon: 'edit', label: t('dogs.edit'), onClick: () => open(d.id) },
+                      ...(d.photoUrl ? [{ icon: 'close', label: t('dog.photoRemove'), onClick: () => removePhoto(d) }] : []),
+                      { icon: 'trash', label: t('dogs.remove'), tone: 'danger' as const, onClick: () => setToRemove(d) },
+                    ]} />
+                  </div>
                 </div>
-                </div>
-                <div className="flex gap-2 shrink-0">
-                  <button onClick={() => open(d.id)} className="text-sm font-medium text-teal-700 hover:underline">{t('dogs.edit')}</button>
-                  <button onClick={() => setToRemove(d)} className="text-sm text-gray-400 hover:text-red-600">{t('dogs.remove')}</button>
+                <div className="p-4">
+                  <div className="flex items-center gap-2">
+                    <p className="font-semibold text-gray-900 truncate">{d.name}</p>
+                    {d.size && <span className="text-[11px] font-bold text-teal-700 bg-teal-50 rounded-full px-2 py-0.5">{SIZE_KEY[d.size] ?? d.size}</span>}
+                  </div>
+                  {d.breed && <p className="text-[13px] text-gray-500 truncate">{d.breed}</p>}
+                  <div className="flex flex-wrap gap-1.5 mt-2">
+                    {d.allergies?.length
+                      ? d.allergies.map((a: string) => <span key={a} className="inline-flex items-center gap-1 text-[11px] font-medium text-red-600 bg-red-50 rounded-full px-2 py-0.5"><Icon name="info" className="w-3 h-3" />{allergyName(a)}</span>)
+                      : <span className="text-[11px] text-gray-400">{t('dogs.noAllergies')}</span>}
+                  </div>
                 </div>
               </li>
             ))}
+            {editing === null && (
+              <li>
+                <button type="button" onClick={() => open('new')} aria-label={t('dogs.add')}
+                  className="w-full h-full min-h-[220px] rounded-3xl border-2 border-dashed border-gray-200 text-gray-400 hover:border-teal-300 hover:text-teal-600 hover:bg-teal-50/40 transition-colors flex items-center justify-center">
+                  <Icon name="plus" className="w-7 h-7" strokeWidth={2} />
+                </button>
+              </li>
+            )}
           </ul>
         )}
         <ConfirmDialog open={!!toRemove} onClose={() => setToRemove(null)} onConfirm={() => remove(toRemove)} busy={removing} tone="danger"

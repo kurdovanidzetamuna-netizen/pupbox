@@ -31,7 +31,7 @@ export default function ReferralsPage() {
 
   return (
     <div>
-        <h1 className="text-3xl font-extrabold text-gray-900 mt-2 mb-2">{t('ref.title')}</h1>
+        <h1 className="text-2xl font-bold text-gray-900 mb-1">{t('ref.title')}</h1>
         <p className="text-gray-500 mb-8">{t('ref.sub')}</p>
 
         {loading && (

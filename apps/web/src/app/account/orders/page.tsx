@@ -7,6 +7,7 @@ import { fill } from '@/context/strings/purchase';
 import { authFetch, loginUrl, SessionExpiredError } from '@/lib/authFetch';
 import { gel } from '@/lib/format';
 import ChoiceNote from '@/components/ChoiceNote';
+import Menu from '@/components/ui/Menu';
 import { itemName } from '@/lib/localize';
 
 /** Every OrderStatus the API can return, with a colour and a label key. */
@@ -43,7 +44,7 @@ export default function MyOrdersPage() {
 
   return (
     <div>
-        <h1 className="text-3xl font-extrabold text-gray-900 mt-2 mb-8">{t('acc.orders')}</h1>
+        <h1 className="text-2xl font-bold text-gray-900 mb-5">{t('acc.orders')}</h1>
 
         {loading && (
           <div className="flex justify-center py-20"><div className="w-8 h-8 border-4 border-teal-200 border-t-teal-600 rounded-full animate-spin" /></div>
@@ -97,12 +98,17 @@ export default function MyOrdersPage() {
 
               {order.isGift && order.giftRecipientName && <p className="text-sm text-amber-700 mt-1">🎁 {fill(t('ord.giftFor'), { name: order.giftRecipientName })}</p>}
 
-              <div className="mt-4 flex flex-wrap items-center gap-3">
-                <button type="button" onClick={() => setOpen(o => (o === order.id ? null : order.id))} aria-expanded={open === order.id}
-                  className="text-sm font-semibold text-teal-700 hover:underline">{open === order.id ? t('ord.hide') : t('ord.view')}</button>
+              <div className="mt-3 flex items-center justify-end gap-1">
                 {order.subscription && ['ACTIVE', 'PAUSED'].includes(order.subscription.status) && !order.subscription.cancelledAt && (
-                  <Link href={`/account/subscriptions?cancel=${order.subscription.id}`} className="text-sm font-medium text-gray-500 hover:text-red-600">{t('ord.managePlan')}</Link>
+                  <Menu label={t('ord.managePlan')} items={[
+                    { icon: 'edit', label: t('ord.managePlan'), onClick: () => router.push(`/account/subscriptions?cancel=${order.subscription.id}`) },
+                  ]} />
                 )}
+                <button type="button" onClick={() => setOpen(o => (o === order.id ? null : order.id))} aria-expanded={open === order.id}
+                  aria-label={open === order.id ? t('ord.hide') : t('ord.view')} title={open === order.id ? t('ord.hide') : t('ord.view')}
+                  className="w-8 h-8 rounded-full inline-flex items-center justify-center text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition">
+                  <svg className={`w-4 h-4 transition-transform duration-200 ${open === order.id ? 'rotate-180' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
+                </button>
               </div>
 
               {open === order.id && <OrderDetails order={order} />}

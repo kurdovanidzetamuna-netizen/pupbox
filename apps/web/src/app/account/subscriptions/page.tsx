@@ -1,6 +1,8 @@
 'use client';
 import { useEffect, useState } from 'react';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
+import IconButton from '@/components/ui/IconButton';
+import Menu from '@/components/ui/Menu';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useLanguage } from '@/context/LanguageContext';
@@ -167,9 +169,9 @@ export default function MySubscriptionsPage() {
 
   return (
     <div>
-        <div className="flex items-end justify-between gap-4 mt-2 mb-8">
-          <h1 className="text-3xl font-extrabold text-gray-900">{t('acc.subscriptions')}</h1>
-          {subs.length > 0 && <Link href="/prices" className="shrink-0 bg-teal-600 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-teal-700">{t('sub.addPlan')}</Link>}
+        <div className="flex items-center justify-between gap-4 mb-5">
+          <h1 className="text-2xl font-bold text-gray-900">{t('acc.subscriptions')}</h1>
+          {subs.length > 0 && <IconButton icon="plus" label={t('sub.addPlan').replace(/^\+\s*/, '')} tone="primary" onClick={() => router.push('/prices#plans')} />}
         </div>
 
         {loading ? (
@@ -186,7 +188,8 @@ export default function MySubscriptionsPage() {
             {subs.map(sub => {
               const st = STATUS_STYLE[sub.status] || STATUS_STYLE.PENDING;
               const isActive = sub.status === 'ACTIVE';
-              const canToggle = ['ACTIVE', 'PENDING'].includes(sub.status) && !sub.cancelledAt;
+              // Gifts never renew, so they get no renewal switch.
+              const canToggle = ['ACTIVE', 'PENDING'].includes(sub.status) && !sub.cancelledAt && !sub.isGift;
               return (
                 <li key={sub.id} id={`sub-${sub.id}`} className="bg-white rounded-[28px] ring-1 ring-gray-200/60 p-6">
                   <div className="flex items-start justify-between gap-3 mb-4">
@@ -195,7 +198,15 @@ export default function MySubscriptionsPage() {
                       {sub.isGift && <p className="text-sm font-semibold text-amber-700">🎁 {sub.giftFor ? fill(t('sub.giftFor'), { name: sub.giftFor }) : t('sub.gift')}</p>}
                       <p className="text-sm text-gray-500">{fill(t('sub.shape'), { months: months(Number(sub.plan?.durationValue) || 1), boxes: boxes(Number(sub.plan?.boxCount) || 1) })}</p>
                     </div>
-                    <span className="text-xs font-bold px-3 py-1 rounded-full" style={{ background: st.bg, color: st.color }}>{t(`sub.status.${sub.status}`, sub.status)}</span>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <span className="text-[11px] font-bold px-2.5 py-1 rounded-full" style={{ background: st.bg, color: st.color }}>{t(`sub.status.${sub.status}`, sub.status)}</span>
+                      {isActive && !sub.cancelledAt && (
+                        <Menu label={planText(sub.plan, 'name', lang)} items={[
+                          { icon: 'pin', label: t('addr.change'), onClick: () => openAddress(sub) },
+                          { icon: 'trash', label: t('sub.cancel'), tone: 'danger' as const, onClick: () => askCancel(sub.id) },
+                        ]} />
+                      )}
+                    </div>
                   </div>
 
                   <dl className="grid grid-cols-2 gap-3 text-sm mb-5">
@@ -229,7 +240,7 @@ export default function MySubscriptionsPage() {
                             </p>
                           ) : <p className="text-amber-700">{t('addr.missing')}</p>}
                         </div>
-                        {addrFor !== sub.id && <button onClick={() => openAddress(sub)} className="text-sm font-medium text-teal-700 hover:underline shrink-0">{t('addr.change')}</button>}
+                        {addrFor !== sub.id && <IconButton icon="edit" label={t('addr.change')} size="sm" onClick={() => openAddress(sub)} />}
                       </div>
                       {addrFor === sub.id && (
                         <div className="mt-4 grid sm:grid-cols-2 gap-3">
@@ -302,9 +313,6 @@ export default function MySubscriptionsPage() {
 
                   {isActive && sub.cancelledAt && (
                     <p className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">{t('sub.cancelledLast')}</p>
-                  )}
-                  {isActive && !sub.cancelledAt && (
-                    <button onClick={() => askCancel(sub.id)} className="text-sm text-red-600 hover:text-red-700 font-medium transition">{t('sub.cancel')}</button>
                   )}
                 </li>
               );
