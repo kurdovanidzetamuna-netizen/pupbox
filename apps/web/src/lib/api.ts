@@ -27,11 +27,13 @@ export async function fetchAPI<T>(path: string, options?: RequestInit): Promise<
 
 export const api = {
   products: {
+    // Always fresh: stock, prices and photos change, and a saved copy showed
+    // shoppers what was there before.
     list: (params?: Record<string, string>) => {
       const qs = params ? '?' + new URLSearchParams(params).toString() : '';
-      return fetchAPI<{ items: any[]; total: number; pages: number }>(`/products${qs}`);
+      return fetchAPI<{ items: any[]; total: number; pages: number }>(`/products${qs}`, { cache: 'no-store' });
     },
-    get: (slug: string) => fetchAPI<any>(`/products/${slug}`),
+    get: (slug: string) => fetchAPI<any>(`/products/${slug}`, { cache: 'no-store' }),
     brands: () => fetchAPI<string[]>('/products/brands'),
   },
   categories: {

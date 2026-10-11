@@ -7,14 +7,14 @@
  *   page     24 → 28px   h1 at the top of a page
  *   section  20 → 22px   h2 for a block within a page
  *   form     20px        sign-in, sign-up, checkout steps, small cards
- *   subtitle 14 → 15px   grey, 6px under its title
+ *   subtitle 13 → 14px   grey, 6px under its title
  */
 export const TYPE = {
   hero: 'text-[30px] sm:text-[36px] font-extrabold tracking-tight leading-[1.15] text-gray-900',
   page: 'text-2xl sm:text-[28px] font-extrabold tracking-tight leading-tight text-gray-900',
   section: 'text-xl sm:text-[22px] font-bold tracking-tight leading-snug text-gray-900',
   form: 'text-xl font-bold tracking-tight leading-snug text-gray-900',
-  subtitle: 'text-sm sm:text-[15px] leading-relaxed text-gray-500',
+  subtitle: 'text-[13px] sm:text-sm leading-relaxed text-gray-500',
   eyebrow: 'inline-flex items-center gap-1.5 rounded-full bg-teal-50 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-teal-700',
 } as const;
 

@@ -84,17 +84,17 @@ export default function ShopView({ products, total, pages, page, categories, bra
       <section className="bg-gradient-to-br from-teal-50 via-white to-peach-50/70">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-8 sm:pt-10 pb-7">
           <Heading title={c.header.heading} subtitle={c.header.description || undefined} className="!mb-5" />
-          <form role="search" onSubmit={(e) => { e.preventDefault(); go({ search: query.trim() || null }); }} className="w-full">
-            <div className="flex items-center h-14 sm:h-16 rounded-full bg-white ring-1 ring-gray-200/80 focus-within:ring-2 focus-within:ring-teal-300 pl-3 pr-2 transition">
+          <form role="search" onSubmit={(e) => { e.preventDefault(); go({ search: query.trim() || null }); }} className="w-full max-w-3xl">
+            <div className="flex items-center h-11 sm:h-12 rounded-full bg-white ring-1 ring-gray-200/80 focus-within:ring-2 focus-within:ring-teal-300 pl-2 pr-1.5 transition">
               <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t('shop.search')} aria-label={t('shop.search')}
-                className="flex-1 min-w-0 h-full bg-transparent px-3.5 text-[15px] sm:text-[16px] text-gray-900 placeholder:text-gray-400 outline-none [&::-webkit-search-cancel-button]:hidden" />
+                className="flex-1 min-w-0 h-full bg-transparent px-3 text-[13.5px] sm:text-[14px] text-gray-900 placeholder:text-gray-400 outline-none [&::-webkit-search-cancel-button]:hidden" />
               {query && (
                 <button type="button" onClick={() => { setQuery(''); if (search) go({ search: null }); }} aria-label={t('shop.clear')}
                   className="w-9 h-9 rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-700 flex items-center justify-center"><Icon name="close" className="w-4 h-4" /></button>
               )}
               <button type="submit" aria-label={t('shop.find')} title={t('shop.find')}
-                className="w-11 h-11 sm:w-12 sm:h-12 shrink-0 rounded-full bg-teal-600 text-white flex items-center justify-center hover:bg-teal-700 transition-colors">
-                <Icon name="search" className="w-5 h-5" strokeWidth={2.4} />
+                className="w-8 h-8 sm:w-9 sm:h-9 shrink-0 rounded-full bg-teal-600 text-white flex items-center justify-center hover:bg-teal-700 transition-colors">
+                <Icon name="search" className="w-4 h-4" strokeWidth={2.4} />
               </button>
             </div>
           </form>

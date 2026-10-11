@@ -30,7 +30,7 @@ export default function ProductView({ product, related, content }: { product: an
   const { t, lang } = useLanguage();
   const c = usePage(shopPage, content);
   const basket = useBasketLine(product.id);
-  const { inCart, line, busy } = basket;
+  const { inCart, busy } = basket;
 
   const ka = product.translations?.ka ?? {};
   const pick = (en?: string | null, kaText?: string | null) => (lang === 'ka' && kaText?.trim()) || en || '';
@@ -61,8 +61,8 @@ export default function ProductView({ product, related, content }: { product: an
   const [errs, setErrs] = useState<{ size?: string; engraving?: string }>({});
   const [justAdded, setJustAdded] = useState(false);
 
-  // Steppers bind to the basket when it already holds this (plain) product.
-  const bound = !!line && !needsChoice;
+  // The page always starts fresh (1, nothing chosen); what's already in the
+  // basket shows only on the 🛍 tag. Adding again adds to it.
   const room = Math.max(0, left - inCart);
 
   async function addToBasket() {
@@ -77,6 +77,14 @@ export default function ProductView({ product, related, content }: { product: an
       setJustAdded(true); setTimeout(() => setJustAdded(false), 1800);
     }
   }
+
+  // Coming back with the browser's Back button can restore the page as it
+  // was; start fresh instead.
+  useEffect(() => {
+    const onShow = (e: PageTransitionEvent) => { if (e.persisted) { setQty(1); setSize(''); setEngraving(''); setErrs({}); } };
+    window.addEventListener('pageshow', onShow);
+    return () => window.removeEventListener('pageshow', onShow);
+  }, []);
 
   // The phone buy bar steps aside once the page's content has scrolled by
   // (so it never sits on top of the footer).
@@ -100,19 +108,8 @@ export default function ProductView({ product, related, content }: { product: an
     </span>
   ) : (
     <div className="flex items-center gap-2.5">
-      {bound ? (
-        <QuantityStepper value={line!.quantity} onLess={basket.less} onMore={basket.more} max={left} busy={busy} trashAtOne
-          label={fill(t('shop.inBasket'), { n: inCart })} />
-      ) : (
-        <QuantityStepper value={qty} onLess={() => setQty((q) => Math.max(1, q - 1))} onMore={() => setQty((q) => Math.min(room || 1, q + 1))} max={room} />
-      )}
-      {bound ? (
-        <Link href="/cart" aria-label={t('pdp.viewCart')} title={t('pdp.viewCart')}
-          className={`inline-flex items-center justify-center gap-2 rounded-full bg-teal-50 text-teal-700 ring-1 ring-teal-100 font-bold hover:bg-teal-100 transition-colors h-9 px-3.5 text-[13px]`}>
-          <Icon name="bag" className="w-[18px] h-[18px]" strokeWidth={2.2} />
-          <Icon name="check" className="w-4 h-4" strokeWidth={2.6} />
-        </Link>
-      ) : (
+      <QuantityStepper value={qty} onLess={() => setQty((q) => Math.max(1, q - 1))} onMore={() => setQty((q) => Math.min(room || 1, q + 1))} max={room} />
+      {(
         <button type="button" onClick={addToBasket} disabled={busy || room === 0} aria-label={`${t('shop.quickAdd')} · ${money(Number(price) * qty)}`} title={t('shop.quickAdd')}
           className={`flex-1 sm:flex-none inline-flex items-center justify-center gap-2 rounded-full font-extrabold transition-colors disabled:opacity-50 ${
             justAdded ? 'bg-teal-100 text-teal-800' : 'bg-teal-600 text-white hover:bg-teal-700'} h-9 px-4 text-[13.5px]`}>

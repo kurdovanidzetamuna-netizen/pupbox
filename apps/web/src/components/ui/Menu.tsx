@@ -5,7 +5,8 @@ import { Icon } from './icons';
 /** Idle and on/open colours for an icon trigger. */
 const TONES = {
   gray: ['bg-gray-100 text-gray-600 hover:bg-gray-200/70 hover:text-gray-900', 'bg-teal-50 text-teal-700'],
-  mint: ['bg-teal-50 text-teal-500 hover:bg-teal-100 hover:text-teal-600', 'bg-teal-100 text-teal-600'],
+  // Same as the header's account button.
+  mint: ['bg-teal-50 text-teal-700 hover:bg-teal-100', 'bg-teal-100 text-teal-800'],
   lilac: ['bg-lilac-50 text-lilac-600 hover:bg-lilac-100', 'bg-lilac-100 text-lilac-600'],
   sky: ['bg-sky-50 text-sky-600 hover:bg-sky-100', 'bg-sky-100 text-sky-700'],
   peach: ['bg-peach-50 text-peach-600 hover:bg-peach-100', 'bg-peach-100 text-peach-600'],
@@ -63,7 +64,7 @@ export default function Menu({ items, label, icon = 'more', active = false, size
           icon === 'more'
             ? (open ? 'bg-gray-100 text-gray-900' : 'text-gray-400 hover:text-gray-800 hover:bg-gray-100')
             : (open || active ? TONES[tone][1] : TONES[tone][0])}`}>
-        <Icon name={icon} className={icon === 'more' ? 'w-5 h-5' : 'w-[18px] h-[18px]'} strokeWidth={icon === 'more' ? 3 : 1.8} />
+        <Icon name={icon} className={icon === 'more' ? 'w-5 h-5' : 'w-[18px] h-[18px]'} strokeWidth={icon === 'more' ? 3 : 2} />
         {active && <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-peach-400 ring-2 ring-white" aria-hidden="true" />}
       </button>
       {!open && icon !== 'more' && (
