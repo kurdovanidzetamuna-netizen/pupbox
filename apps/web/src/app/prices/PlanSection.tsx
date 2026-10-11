@@ -49,7 +49,7 @@ function PlanSectionInner({ plans }: { plans: any[] }) {
         <div className="max-w-2xl mx-auto mb-10 bg-amber-50 border border-amber-200 rounded-2xl px-6 py-4 flex items-start gap-4">
           <span className="text-2xl shrink-0">🎁</span>
           <div>
-            <p className="font-bold text-amber-800 text-sm mb-0.5">Gifting a Pupbox subscription</p>
+            <p className="font-bold text-amber-800 text-sm mb-0.5">{t('pricing.gift.heading')}</p>
             <p className="text-amber-700 text-xs leading-relaxed">
               {t('pricing.gift.banner')}
             </p>

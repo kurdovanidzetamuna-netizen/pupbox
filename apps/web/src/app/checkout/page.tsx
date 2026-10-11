@@ -367,7 +367,7 @@ export default function CheckoutPage() {
 
         {/* Steps */}
         {steps.length > 1 && (
-          <ol className="flex items-center justify-center gap-2 mb-8 text-sm" aria-label="Checkout steps">
+          <ol className="flex items-center justify-center gap-2 mb-8 text-sm" aria-label={t('aria.checkoutSteps')}>
             {steps.map((s, i) => (
               <li key={s} className="flex items-center gap-2" aria-current={i === stepIndex ? 'step' : undefined}>
                 <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${i < stepIndex ? 'bg-teal-600 text-white' : i === stepIndex ? 'bg-teal-600 text-white ring-4 ring-teal-100' : 'bg-gray-200 text-gray-500'}`}>

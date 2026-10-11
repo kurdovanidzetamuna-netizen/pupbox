@@ -99,4 +99,12 @@ export const ACCOUNT_STRINGS: Record<string, { en: string; ka: string }> = {
   'game.offline':           { en: "You're offline",              ka: 'ინტერნეტი გაითიშა' },
   'game.offlineSub':        { en: 'No internet right now — play while it comes back.', ka: 'ინტერნეტი ახლა არ არის — ითამაშე, სანამ დაბრუნდება.' },
   'game.close':             { en: 'Close',                       ka: 'დახურვა' },
+
+  // ── Small labels that used to be English-only ──
+  'crumb.blog':             { en: 'Blog',                        ka: 'ბლოგი' },
+  'blog.catEmpty':          { en: 'No posts in this category yet.', ka: 'ამ კატეგორიაში სტატიები ჯერ არ არის.' },
+  'pricing.gift.heading':   { en: 'Gifting a Pupbox subscription', ka: 'Pupbox-ის გამოწერა საჩუქრად' },
+  'aria.mainNav':           { en: 'Main menu',                   ka: 'მთავარი მენიუ' },
+  'aria.checkoutSteps':     { en: 'Checkout steps',              ka: 'შეკვეთის ეტაპები' },
+  'aria.signupSteps':       { en: 'Sign-up steps',               ka: 'რეგისტრაციის ეტაპები' },
 };

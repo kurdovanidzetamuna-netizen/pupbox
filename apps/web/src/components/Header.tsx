@@ -83,7 +83,7 @@ export default function Header({ site }: { site: StoredContent | null }) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-3">
         <Logo brand={c.brand} />
 
-        <nav className="hidden md:flex gap-8 text-sm font-medium text-gray-600" aria-label="Main">
+        <nav className="hidden md:flex gap-8 text-sm font-medium text-gray-600" aria-label={t('aria.mainNav')}>
           {nav.map((n, i) => (
             <SmartLink key={i} href={n.href} aria-current={isActive(n.href) ? 'page' : undefined}
               className={`transition-colors hover:text-teal-600 ${isActive(n.href) ? 'text-teal-600 font-semibold' : ''}`}>
@@ -171,7 +171,7 @@ export default function Header({ site }: { site: StoredContent | null }) {
       </div>
 
       {menuOpen && (
-        <nav id="mobile-menu" aria-label="Main" className="md:hidden border-t border-gray-100 bg-white px-4 pb-5 pt-2">
+        <nav id="mobile-menu" aria-label={t('aria.mainNav')} className="md:hidden border-t border-gray-100 bg-white px-4 pb-5 pt-2">
           <ul className="flex flex-col">
             {nav.map((n, i) => (
               <li key={i}>

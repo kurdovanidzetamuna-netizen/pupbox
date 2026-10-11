@@ -1,10 +1,13 @@
 'use client';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
+import { useLanguage } from '@/context/LanguageContext';
+import { planBenefits } from '@/lib/localize';
 import { useState } from 'react';
 
 export default function SubscribePlanCard({ plan }: { plan: any }) {
   const { addPlan } = useCart();
+  const { t, lang } = useLanguage();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
@@ -42,13 +45,13 @@ export default function SubscribePlanCard({ plan }: { plan: any }) {
         <p className="text-xs text-teal-700 font-medium mb-3">Save {Number(plan.discountPercent).toFixed(0)}% vs monthly</p>
       )}
       <ul className="space-y-1.5 mb-6 flex-1">
-        {(plan.benefits || []).map((b: string, i: number) => (
+        {(planBenefits(plan, lang) || plan.benefits || []).map((b: string, i: number) => (
           <li key={i} className="text-sm text-gray-600 flex items-start gap-2">
             <span className="text-teal-500 mt-0.5">✓</span>{b}
           </li>
         ))}
-        <li className="text-sm text-gray-600 flex items-start gap-2"><span className="text-teal-500 mt-0.5">✓</span>Free delivery</li>
-        <li className="text-sm text-gray-600 flex items-start gap-2"><span className="text-teal-500 mt-0.5">✓</span>Cancel anytime</li>
+        <li className="text-sm text-gray-600 flex items-start gap-2"><span className="text-teal-500 mt-0.5">✓</span>{t('global.freeDelivery')}</li>
+        <li className="text-sm text-gray-600 flex items-start gap-2"><span className="text-teal-500 mt-0.5">✓</span>{t('global.cancelAnytime')}</li>
       </ul>
       <button
         onClick={handleSelect}

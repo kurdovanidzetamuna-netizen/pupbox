@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import T from '@/components/T';
 import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
 import { API_URL } from '@/lib/api';
@@ -61,7 +62,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
 
       <article className="max-w-3xl mx-auto px-6 py-12">
         <nav className="text-sm text-gray-400 mb-8 flex gap-2">
-          <Link href="/blog" className="hover:text-teal-600">Blog</Link>
+          <Link href="/blog" className="hover:text-teal-600"><T k="crumb.blog" /></Link>
           {post.category && (
             <>
               <span>/</span>
