@@ -32,6 +32,15 @@ export const STORE_STRINGS: Record<string, { en: string; ka: string }> = {
   'shop.inStock':           { en: 'In stock',                   ka: 'მარაგშია' },
   'shop.lowStock':          { en: 'Low stock',                  ka: 'მარაგი იწურება' },
   'shop.outOfStock':        { en: 'Out of stock',               ka: 'არ არის მარაგში' },
+  'shop.find':              { en: 'Search',                     ka: 'ძიება' },
+  'shop.onlyLeft':          { en: 'Only {n} left',              ka: 'დარჩა {n}' },
+  'shop.choose':            { en: 'Choose',                     ka: 'არჩევა' },
+  'shop.quickAdd':          { en: 'Add to basket',              ka: 'კალათაში დამატება' },
+  'shop.added':             { en: 'Added',                      ka: 'დაემატა' },
+  'shop.noneSub':           { en: 'Try another word or category.', ka: 'სცადე სხვა სიტყვა ან კატეგორია.' },
+  'shop.pages':             { en: 'Pages',                      ka: 'გვერდები' },
+  'shop.prev':              { en: 'Previous page',              ka: 'წინა გვერდი' },
+  'shop.next':              { en: 'Next page',                  ka: 'შემდეგი გვერდი' },
   'shop.page':              { en: 'Page {n}',                   ka: 'გვერდი {n}' },
 
   // ── Product page ──

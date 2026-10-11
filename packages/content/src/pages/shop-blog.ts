@@ -1,5 +1,5 @@
 import type { PageDef } from '../types';
-import { d, tx, text, area, seo } from '../fields';
+import { d, tx, text, area, icon, list, seo } from '../fields';
 
 export const shopPage: PageDef = {
   key: 'shop',
@@ -11,7 +11,17 @@ export const shopPage: PageDef = {
       id: 'header', label: 'Top of the page', icon: '🏷️', canHide: false,
       fields: [
         text('heading', 'Heading', d('shop.title')),
-        area('description', 'Description', tx('', ''), 'Optional line under the heading.'),
+        area('description', 'Description', tx('Treats, toys and care for happy dogs — delivered across Georgia.', 'ნუგბარი, სათამაშოები და მოვლის საშუალებები ბედნიერი ძაღლებისთვის — მიწოდება მთელ საქართველოში.'), 'Line under the heading.'),
+      ],
+    },
+    {
+      id: 'perks', label: 'Small promises under the search', icon: '✨',
+      fields: [
+        list('items', 'Items', [icon('icon'), text('text', 'Text')], [
+          { icon: '🚚', text: tx('Delivery across Georgia', 'მიწოდება მთელ საქართველოში') },
+          { icon: '🔒', text: tx('Secure card payment', 'ბარათით უსაფრთხო გადახდა') },
+          { icon: '🐾', text: tx('Picked for dogs', 'შერჩეულია ძაღლებისთვის') },
+        ]),
       ],
     },
     seo(
