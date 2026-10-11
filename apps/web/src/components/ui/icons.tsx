@@ -34,6 +34,7 @@ const P: Record<string, string> = {
   reset: 'M4 12a8 8 0 1 0 2.3-5.6L4 8.7M4 4v4.7h4.7',
   bag: 'M5 8h14l-1 12H6L5 8zM9 8V6a3 3 0 016 0v2',
   minus: 'M5 12h14',
+  ban: 'M12 21a9 9 0 100-18 9 9 0 000 18zM5.6 5.6l12.8 12.8',
   logout: 'M15 4h3a2 2 0 012 2v12a2 2 0 01-2 2h-3M10 16l-4-4 4-4M6 12h11',
 };
 

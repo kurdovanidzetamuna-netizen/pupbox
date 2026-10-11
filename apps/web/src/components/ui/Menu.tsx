@@ -11,7 +11,7 @@ export type MenuItem = { icon?: string; label: string; onClick: () => void; tone
  * label shows as a tooltip. Closes on outside click or Escape; arrow keys
  * move between items.
  */
-export default function Menu({ items, label, icon = 'more', active = false, size = 'sm', align = 'right' }: {
+export default function Menu({ items, label, icon = 'more', active = false, size = 'sm', align = 'right', title, onReset, resetDisabled = false, resetLabel = '' }: {
   items: MenuItem[];
   label: string;
   /** The trigger's icon. */
@@ -20,6 +20,11 @@ export default function Menu({ items, label, icon = 'more', active = false, size
   active?: boolean;
   size?: 'sm' | 'md';
   align?: 'left' | 'right';
+  /** A small header: the menu's name and a ↺ that puts the default back (greyed while it's already the default). */
+  title?: string;
+  onReset?: () => void;
+  resetDisabled?: boolean;
+  resetLabel?: string;
 }) {
   const [open, setOpen] = useState(false);
   const box = useRef<HTMLDivElement>(null);
@@ -55,13 +60,25 @@ export default function Menu({ items, label, icon = 'more', active = false, size
       )}
       {open && (
         <div role="menu" className={`absolute ${align === 'right' ? 'right-0' : 'left-0'} top-full mt-1 z-40 min-w-[180px] rounded-2xl bg-white ring-1 ring-gray-200 shadow-[0_8px_30px_-10px_rgba(36,48,58,0.25)] p-1.5 animate-[fadeUp_0.12s_ease-out]`}>
+          {(title || onReset) && (
+            <div className="flex items-center justify-between gap-3 pl-3 pr-1 pt-1 pb-1.5 mb-1 border-b border-gray-100">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-gray-400">{title}</span>
+              {onReset && (
+                <button type="button" onClick={() => { setOpen(false); onReset(); }} disabled={resetDisabled}
+                  aria-label={resetLabel} title={resetLabel}
+                  className="w-7 h-7 rounded-full flex items-center justify-center text-teal-700 hover:bg-teal-50 disabled:text-gray-300 disabled:hover:bg-transparent disabled:cursor-default transition-colors">
+                  <Icon name="reset" className="w-4 h-4" strokeWidth={2.2} />
+                </button>
+              )}
+            </div>
+          )}
           {items.map((it) => (
             <div key={it.label}>
             {it.divider && <div className="my-1 mx-2 h-px bg-gray-100" role="separator" />}
             <button type="button" role={it.checked === undefined ? 'menuitem' : 'menuitemradio'} aria-checked={it.checked}
               onClick={() => { setOpen(false); it.onClick(); }}
               className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-[13px] font-medium text-left whitespace-nowrap outline-none transition-colors focus:bg-gray-50 ${
-                it.tone === 'danger' ? 'text-red-600 hover:bg-red-50' : it.checked ? 'text-teal-700 bg-teal-50/60' : 'text-gray-700 hover:bg-gray-50'}`}>
+                it.tone === 'danger' ? 'text-red-600 hover:bg-red-50' : it.checked ? 'text-teal-800 bg-teal-50 font-semibold' : 'text-gray-700 hover:bg-teal-50/60 hover:text-teal-800 focus:bg-teal-50/60'}`}>
               {it.icon && <Icon name={it.icon} className="w-4 h-4" />}
               <span className="flex-1">{it.label}</span>
               {it.checked && <Icon name="check" className="w-4 h-4 text-teal-600" strokeWidth={2.6} />}

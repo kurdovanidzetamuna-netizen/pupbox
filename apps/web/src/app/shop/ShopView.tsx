@@ -70,8 +70,8 @@ export default function ShopView({ products, total, pages, page, categories, bra
 
   const chip = (on: boolean) =>
     `shrink-0 inline-flex items-center gap-2 h-10 pl-2 pr-4 rounded-full text-[13px] font-semibold whitespace-nowrap transition-colors ${
-      on ? 'bg-teal-600 text-white' : 'bg-white text-gray-700 ring-1 ring-gray-200/80 hover:ring-teal-200 hover:text-teal-700'}`;
-  const chipIcon = (on: boolean) => `w-7 h-7 rounded-full flex items-center justify-center text-[15px] overflow-hidden ${on ? 'bg-white/20' : 'bg-gray-50'}`;
+      on ? 'bg-teal-50 text-teal-800 ring-1 ring-teal-200' : 'bg-white text-gray-700 ring-1 ring-gray-200/80 hover:bg-teal-50/40 hover:ring-teal-200 hover:text-teal-700'}`;
+  const chipIcon = (on: boolean) => `w-7 h-7 rounded-full flex items-center justify-center text-[15px] overflow-hidden ${on ? 'bg-white' : 'bg-gray-50'}`;
 
   return (
     <main className="min-h-screen bg-white">
@@ -138,17 +138,15 @@ export default function ShopView({ products, total, pages, page, categories, bra
 
           <div className="ml-auto flex items-center gap-1.5">
             {brands.length > 0 && (
-              <Menu icon="filter" size="md" label={brand ? `${t('shop.brands')}: ${t(`collection.${brand}`, brand)}` : t('shop.brands')} active={!!brand}
+              <Menu icon="filter" size="md" title={t('shop.brands')} onReset={() => go({ brand: null })} resetDisabled={!brand} resetLabel={t('shop.reset')} label={brand ? `${t('shop.brands')}: ${t(`collection.${brand}`, brand)}` : t('shop.brands')} active={!!brand}
                 items={[
                   { label: t('shop.allBrands'), checked: !brand, onClick: () => go({ brand: null }) },
                   ...brands.map((b) => ({ label: t(`collection.${b}`, b), checked: brand === b, onClick: () => go({ brand: b }) })),
-                  ...(brand ? [{ icon: 'reset', label: t('shop.reset'), divider: true, onClick: () => go({ brand: null }) }] : []),
                 ]} />
             )}
-            <Menu icon="sort" size="md" label={`${t('shop.sort')}: ${t(SORTS.find((x) => x.v === sort)?.k ?? 'shop.sort.default')}`} active={!!sort}
+            <Menu icon="sort" size="md" title={t('shop.sort')} onReset={() => go({ sort: null })} resetDisabled={!sort} resetLabel={t('shop.reset')} label={`${t('shop.sort')}: ${t(SORTS.find((x) => x.v === sort)?.k ?? 'shop.sort.default')}`} active={!!sort}
               items={[
                 ...SORTS.map((x) => ({ label: t(x.k), checked: sort === x.v, onClick: () => go({ sort: x.v || null }) })),
-                ...(sort ? [{ icon: 'reset', label: t('shop.reset'), divider: true, onClick: () => go({ sort: null }) }] : []),
               ]} />
           </div>
         </div>
