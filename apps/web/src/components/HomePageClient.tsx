@@ -63,7 +63,7 @@ export default function HomePageClient({ plans, content, faq }: Props) {
                       </SmartLink>
                     )}
                     {hero.cta2Text && (
-                      <SmartLink href={hero.cta2Href} className="inline-flex whitespace-nowrap items-center justify-center border-2 border-amber-300 text-amber-700 font-semibold px-6 py-2.5 rounded-full text-sm hover:bg-amber-50 transition">
+                      <SmartLink href={hero.cta2Href} className="inline-flex whitespace-nowrap items-center justify-center bg-teal-50 text-teal-700 font-semibold px-6 py-3 rounded-full text-sm hover:bg-teal-100 transition">
                         {hero.cta2Text}
                       </SmartLink>
                     )}

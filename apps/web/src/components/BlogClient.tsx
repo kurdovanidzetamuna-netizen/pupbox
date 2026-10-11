@@ -126,7 +126,7 @@ export default function BlogClient({ posts, total, pages, page, categories, cont
                 <div className="text-3xl mb-3">🐾</div>
                 <p className="font-bold text-sm mb-2">{t('blog.cta.heading')}</p>
                 <p className="text-teal-100 text-xs mb-4 leading-relaxed">{t('blog.cta.desc')}</p>
-                <Link href="/subscribe" className="block bg-white text-teal-600 text-xs font-bold py-2.5 rounded-xl hover:bg-teal-50 transition">
+                <Link href="/prices#plans" className="block bg-white text-teal-600 text-xs font-bold py-2.5 rounded-xl hover:bg-teal-50 transition">
                   {t('blog.cta.btn')}
                 </Link>
               </div>

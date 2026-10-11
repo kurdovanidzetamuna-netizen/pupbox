@@ -28,7 +28,7 @@ export const sitePage: PageDef = {
           { label: d('nav.blog'), href: '/blog' },
         ]),
         text('buttonText', 'Button text', d('nav.subscribe')),
-        link('buttonHref', 'Button goes to', '/prices'),
+        link('buttonHref', 'Button goes to', '/prices#plans'),
         note('fixed', 'The cart, sign-in and language switch are always shown. Their labels are in Translations.', '/dashboard/translations'),
       ],
     },

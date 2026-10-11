@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { signOut } from '@/lib/signOut';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { sitePage, type StoredContent } from '@pupbox/content';
 import { useLanguage } from '@/context/LanguageContext';
 import { useCart } from '@/context/CartContext';
@@ -18,9 +18,9 @@ export default function Header({ site }: { site: StoredContent | null }) {
   const { cart } = useCart();
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [accountOpen, setAccountOpen] = useState(false);
+  // The signed-in customer's initial for the avatar button.
+  const [initial, setInitial] = useState('');
   const [signedIn, setSignedIn] = useState(false);
-  const accountRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
   const count = cart?.itemCount ?? 0;
@@ -34,32 +34,24 @@ export default function Header({ site }: { site: StoredContent | null }) {
   useEffect(() => {
     setSignedIn(!!localStorage.getItem('pupbox_token'));
     setMenuOpen(false);
-    setAccountOpen(false);
   }, [pathname]);
 
   useEffect(() => {
-    if (!accountOpen) return;
-    const onDown = (e: MouseEvent) => { if (!accountRef.current?.contains(e.target as Node)) setAccountOpen(false); };
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setAccountOpen(false); };
-    document.addEventListener('mousedown', onDown);
-    document.addEventListener('keydown', onKey);
-    return () => { document.removeEventListener('mousedown', onDown); document.removeEventListener('keydown', onKey); };
-  }, [accountOpen]);
+    if (!signedIn) { setInitial(''); return; }
+    const token = localStorage.getItem('pupbox_token');
+    fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1'}/users/me`, { headers: { Authorization: `Bearer ${token}` } })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((u) => setInitial((u?.firstName?.[0] || u?.email?.[0] || '').toUpperCase()))
+      .catch(() => {});
+  }, [signedIn]);
 
   function leave() {
     signOut();
     setSignedIn(false);
-    setAccountOpen(false);
     setMenuOpen(false);
     router.push('/');
   }
 
-  const accountLinks = [
-    { href: '/account', label: t('nav.account') },
-    { href: '/account/orders', label: t('acc.orders') },
-    { href: '/account/subscriptions', label: t('acc.subscriptions') },
-    { href: '/account/dogs', label: t('acc.dogs') },
-  ];
 
 
   const chooseLang = (l: 'en' | 'ka') => setLang(l);
@@ -80,34 +72,10 @@ export default function Header({ site }: { site: StoredContent | null }) {
         </nav>
 
         <div className="flex items-center gap-2 sm:gap-3">
-          {signedIn ? (
-            <div className="relative hidden md:block" ref={accountRef}>
-              <button type="button" onClick={() => setAccountOpen(o => !o)} aria-haspopup="menu" aria-expanded={accountOpen}
-                className="flex items-center gap-1 text-sm font-bold text-gray-600 hover:text-teal-600 border border-gray-200 hover:border-teal-400 px-5 py-2 rounded-xl transition-colors">
-                {account.label}
-                <svg className={`w-3 h-3 ml-0.5 transition-transform ${accountOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} aria-hidden="true">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-              {accountOpen && (
-                <div role="menu" className="absolute right-0 top-full mt-1.5 w-52 bg-white border border-gray-100 rounded-xl shadow-lg overflow-hidden z-50">
-                  {accountLinks.map(l => (
-                    <Link key={l.href} href={l.href} role="menuitem" className="block px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50">{l.label}</Link>
-                  ))}
-                  <button type="button" role="menuitem" onClick={leave} className="w-full text-left px-4 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-50 border-t border-gray-100">
-                    {t('acc.signOut')}
-                  </button>
-                </div>
-              )}
-            </div>
-          ) : (
-            <Link href={account.href} className="hidden md:block text-sm font-bold text-gray-600 hover:text-teal-600 border border-gray-200 hover:border-teal-400 px-5 py-2 rounded-xl transition-colors">
-              {account.label}
-            </Link>
-          )}
           {c.header.buttonText && (
-            <SmartLink href={c.header.buttonHref} className="hidden sm:inline-flex items-center justify-center bg-teal-600 text-white text-sm font-bold px-5 py-2 rounded-lg hover:bg-teal-700 transition shadow-sm">
+            <SmartLink href={c.header.buttonHref} className="group hidden sm:inline-flex items-center justify-center gap-1.5 bg-teal-600 text-white text-sm font-bold h-10 pl-5 pr-4 hover:bg-teal-700">
               {c.header.buttonText}
+              <svg className="w-4 h-4 transition-transform group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
             </SmartLink>
           )}
 
@@ -138,6 +106,21 @@ export default function Header({ site }: { site: StoredContent | null }) {
               </button>
             ))}
           </div>
+
+          {/* Account: one tap straight to My account (everything else is in its menu). */}
+          {signedIn ? (
+            <Link href="/account" aria-label={t('nav.account')} title={t('nav.account')}
+              className={`hidden md:inline-flex items-center justify-center w-10 h-10 rounded-full text-sm font-extrabold transition ring-2 ${
+                pathname.startsWith('/account') ? 'ring-teal-400 bg-teal-500 text-white' : 'ring-transparent bg-gradient-to-br from-teal-300 to-teal-500 text-white hover:ring-teal-200'}`}>
+              {initial || (
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+              )}
+            </Link>
+          ) : (
+            <Link href="/login" className="hidden md:inline-flex items-center h-10 px-4 rounded-full text-sm font-bold text-teal-700 bg-teal-50 hover:bg-teal-100 transition">
+              {t('nav.signIn')}
+            </Link>
+          )}
 
           {/* Phone & tablet menu */}
           <button type="button" onClick={() => setMenuOpen(o => !o)} aria-expanded={menuOpen} aria-controls="mobile-menu" aria-label={t('nav.menu')}

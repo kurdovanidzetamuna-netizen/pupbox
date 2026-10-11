@@ -22,8 +22,18 @@ a.bg-teal-600:hover, button.bg-teal-600:not(:disabled):hover {
   filter: brightness(1.04);
 }
 button.bg-teal-600:disabled { box-shadow: none; }
-/* Outline and light buttons become pills too. */
-a.border-gray-200.rounded-xl, button.border-gray-200.rounded-xl { border-radius: 9999px; }
+/* Secondary buttons (grey outline) become soft mint pills everywhere, so a
+   page has one primary look and one secondary look, nothing else. */
+a.border-gray-200.rounded-xl, button.border-gray-200.rounded-xl,
+a.border-gray-200.rounded-lg, button.border-gray-200.rounded-lg {
+  border-radius: 9999px;
+  border-color: transparent;
+  background-color: #F0FBF8;
+  color: #1A8574;
+  font-weight: 600;
+}
+a.border-gray-200.rounded-xl:hover, button.border-gray-200.rounded-xl:hover,
+a.border-gray-200.rounded-lg:hover, button.border-gray-200.rounded-lg:hover { background-color: #DDF6EF; }
 @media (prefers-reduced-motion: reduce) {
   a.bg-teal-600, button.bg-teal-600 { transition: none; }
 }
