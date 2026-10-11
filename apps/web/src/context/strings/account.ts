@@ -158,4 +158,8 @@ export const ACCOUNT_STRINGS: Record<string, { en: string; ka: string }> = {
   'cards.add':              { en: 'Add a card',                  ka: 'ბარათის დამატება' },
   'cards.soon':             { en: 'Saved when you pay',          ka: 'შეინახება გადახდისას' },
   'cards.secure':           { en: 'Stored securely by the bank', ka: 'ინახება ბანკში, უსაფრთხოდ' },
+  'acc.offTitle':           { en: 'Turn these off?',             ka: 'გამოვრთოთ?' },
+  'acc.offInfo':            { en: 'You’d miss birthday treats for your dog, restock reminders and members-only offers.', ka: 'გამოგრჩება ძაღლის დაბადების დღის საჩუქრები, შეხსენებები და მხოლოდ წევრებისთვის შეთავაზებები.' },
+  'acc.offKeep':            { en: 'Keep them',                   ka: 'დავტოვოთ' },
+  'acc.offConfirm':         { en: 'Turn off',                    ka: 'გამორთვა' },
 };

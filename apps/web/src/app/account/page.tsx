@@ -8,6 +8,7 @@ import { authFetch, loginUrl, SessionExpiredError } from '@/lib/authFetch';
 import AccountSecurity from '@/components/AccountSecurity';
 import Field from '@/components/ui/Field';
 import AddressBook from '@/components/AddressBook';
+import Modal from '@/components/ui/Modal';
 import IconButton from '@/components/ui/IconButton';
 import { Icon } from '@/components/ui/icons';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
@@ -63,6 +64,9 @@ export default function AccountPage() {
   }
 
   const [askOut, setAskOut] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
+  // Turning a channel off asks once what they'd miss; both answers are one click.
+  const [askOff, setAskOff] = useState<'marketingEmail' | 'marketingSms' | null>(null);
   function logout() {
     signOut();
     router.push('/');
@@ -179,17 +183,19 @@ export default function AccountPage() {
             </section>
 
             <div className="lg:col-span-2 space-y-5">
-              <section className="bg-white rounded-3xl ring-1 ring-gray-200/60 px-5 sm:px-6 py-2">
-                <h2 className="text-[15px] font-bold text-gray-900 pt-4">{t('acc.notifs')}</h2>
-                <p className="text-xs text-gray-500 mt-1 mb-1 leading-relaxed">{t('acc.notifsSub')}</p>
-                <div className="flex items-center justify-between gap-4 py-3.5 border-b border-gray-100">
-                  <span className="text-[13px] font-medium text-gray-800">✉️ {t('acc.notifEmail')}</span>
-                  {toggle(!!user?.marketingEmail, () => toggleChannel('marketingEmail'), t('acc.notifEmail'))}
+              {/* Notifications: one quiet row; the switches live behind the gear. */}
+              <section className="bg-white rounded-3xl ring-1 ring-gray-200/60 px-5 sm:px-6 py-3.5 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <span className="w-9 h-9 rounded-xl bg-gray-100 text-gray-500 flex items-center justify-center shrink-0"><Icon name="bell" className="w-[18px] h-[18px]" /></span>
+                  <div className="min-w-0">
+                    <p className="text-[13px] font-medium text-gray-800">{t('acc.notifs')}</p>
+                    <p className="flex items-center gap-2 text-[12px] text-gray-400">
+                      <span className={user?.marketingEmail ? 'text-teal-600' : ''} title={t('acc.notifEmail')}>✉️ {user?.marketingEmail ? '✓' : '–'}</span>
+                      <span className={user?.marketingSms ? 'text-teal-600' : ''} title={t('acc.notifSms')}>💬 {user?.marketingSms ? '✓' : '–'}</span>
+                    </p>
+                  </div>
                 </div>
-                <div className="flex items-center justify-between gap-4 py-3.5">
-                  <span className="text-[13px] font-medium text-gray-800">💬 {t('acc.notifSms')}</span>
-                  {toggle(!!user?.marketingSms, () => toggleChannel('marketingSms'), t('acc.notifSms'))}
-                </div>
+                <IconButton icon="settings" label={t('acc.notifs')} onClick={() => setNotifOpen(true)} />
               </section>
               <AccountSecurity />
             </div>
@@ -223,6 +229,20 @@ export default function AccountPage() {
           </section>
         </>
       )}
+
+      <Modal open={notifOpen} onClose={() => setNotifOpen(false)} title={t('acc.notifs')}>
+        <div className="divide-y divide-gray-100">
+          {([['marketingEmail', '✉️', 'acc.notifEmail'], ['marketingSms', '💬', 'acc.notifSms']] as const).map(([k, icon, label]) => (
+            <div key={k} className="flex items-center justify-between gap-4 py-3">
+              <span className="text-[13px] font-medium text-gray-800">{icon} {t(label)}</span>
+              {toggle(!!user?.[k], () => (user?.[k] ? setAskOff(k) : toggleChannel(k)), t(label))}
+            </div>
+          ))}
+        </div>
+      </Modal>
+
+      <ConfirmDialog open={!!askOff} onClose={() => setAskOff(null)} onConfirm={() => { const k = askOff!; setAskOff(null); toggleChannel(k); }}
+        title={t('acc.offTitle')} message={t('acc.offInfo')} confirmLabel={t('acc.offConfirm')} cancelLabel={t('acc.offKeep')} cancelPrimary />
 
       <ConfirmDialog open={askOut} onClose={() => setAskOut(false)} onConfirm={logout}
         title={t('acc.signOutQ')} message={t('acc.signOutInfo')} confirmLabel={t('acc.signOut')} />
