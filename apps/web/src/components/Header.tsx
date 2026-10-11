@@ -5,18 +5,17 @@ import { signOut } from '@/lib/signOut';
 import { useEffect, useState } from 'react';
 import { sitePage, type StoredContent } from '@pupbox/content';
 import { useLanguage } from '@/context/LanguageContext';
-import { useCart } from '@/context/CartContext';
 import { usePage } from '@/lib/usePage';
 import Logo from '@/components/Logo';
 import SmartLink from '@/components/SmartLink';
 import NotificationBell from '@/components/NotificationBell';
+import MiniCart from '@/components/shop/MiniCart';
 
 /** Logo, menu and button come from admin → Page Builder → Header & Footer. */
 export default function Header({ site }: { site: StoredContent | null }) {
   const { lang, setLang, t } = useLanguage();
   const c = usePage(sitePage, site);
   const nav: { label: string; href: string }[] = c.header.links.filter((n: any) => n.label);
-  const { cart } = useCart();
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
   // The signed-in customer's initial for the avatar button.
@@ -24,7 +23,6 @@ export default function Header({ site }: { site: StoredContent | null }) {
   const [signedIn, setSignedIn] = useState(false);
   const router = useRouter();
 
-  const count = cart?.itemCount ?? 0;
   // Compare paths only: a menu link may carry a query (/prices?gift=true).
   const isActive = (href: string) => {
     const path = href.split(/[?#]/)[0];
@@ -109,18 +107,8 @@ export default function Header({ site }: { site: StoredContent | null }) {
             </Link>
           )}
 
-          {/* Cart — the only way back to the basket from any page. */}
-          <Link href="/cart" aria-label={`${t('nav.cart')}${count ? ` (${count})` : ''}`} title={t('nav.cart')}
-            className="relative inline-flex items-center justify-center w-9 h-9 rounded-full text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition">
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.3 2.3c-.6.6-.2 1.7.7 1.7H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-            </svg>
-            {count > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 bg-teal-600 text-white text-[10px] font-bold min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center ring-2 ring-white">
-                {count > 9 ? '9+' : count}
-              </span>
-            )}
-          </Link>
+          {/* Basket: opens a small panel with what's in it and a way to the basket page. */}
+          <MiniCart />
 
           {c.header.buttonText && (
             <SmartLink href={c.header.buttonHref} className="group hidden sm:inline-flex items-center justify-center gap-1.5 ml-1.5 bg-teal-600 text-white text-[13px] font-semibold h-9 pl-4 pr-3 hover:bg-teal-700">

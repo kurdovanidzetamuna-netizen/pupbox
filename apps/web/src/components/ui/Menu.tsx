@@ -67,7 +67,7 @@ export default function Menu({ items, label, icon = 'more', active = false, size
         {active && <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-peach-400 ring-2 ring-white" aria-hidden="true" />}
       </button>
       {!open && icon !== 'more' && (
-        <span role="tooltip" className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 whitespace-nowrap rounded-lg bg-gray-800 text-white text-[11px] font-medium px-2 py-1 opacity-0 translate-y-1 transition-all duration-150 group-hover/tip:opacity-100 group-hover/tip:translate-y-0 z-30">{label}</span>
+        <span role="tooltip" className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 whitespace-nowrap rounded-lg bg-gray-800 text-white text-[11px] font-medium px-2 py-1 z-30 hidden group-hover/tip:block group-focus-within/tip:block animate-[fadeIn_0.12s_ease-out]">{label}</span>
       )}
       {open && (
         <div role="menu" className={`absolute ${align === 'right' ? 'right-0' : 'left-0'} top-full mt-1 z-40 min-w-[180px] rounded-2xl bg-white ring-1 ring-gray-200 shadow-[0_8px_30px_-10px_rgba(36,48,58,0.25)] p-1.5 animate-[fadeUp_0.12s_ease-out]`}>

@@ -117,7 +117,12 @@ export default function ProductView({ product, related, content }: { product: an
           className={`flex-1 sm:flex-none inline-flex items-center justify-center gap-2 rounded-full font-extrabold transition-colors disabled:opacity-50 ${
             justAdded ? 'bg-teal-100 text-teal-800' : 'bg-teal-600 text-white hover:bg-teal-700'} h-9 px-4 text-[13.5px]`}>
           {busy ? <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-            : <><Icon name={justAdded ? 'check' : 'bag'} className="w-[18px] h-[18px]" strokeWidth={2.2} /><span className="tabular-nums">{money(Number(price) * qty)}</span></>}
+            : <><span className="relative">
+                <Icon name={justAdded ? 'check' : 'bag'} className="w-[18px] h-[18px]" strokeWidth={2.2} />
+                {qty > 1 && !justAdded && (
+                  <span key={qty} className="absolute -top-2 -right-2.5 min-w-[16px] h-4 px-1 rounded-full bg-white text-teal-700 text-[10px] font-extrabold leading-4 text-center animate-[pop_0.25s_ease-out]">{qty}</span>
+                )}
+              </span><span className="tabular-nums">{money(Number(price) * qty)}</span></>}
         </button>
       )}
     </div>
