@@ -17,67 +17,69 @@ function PlanSectionInner({ plans, content }: { plans: any[]; content: StoredCon
   // A plan switched off for gifting in admin is refused at checkout, so don't offer it.
   const shown = mode === 'gift' ? plans.filter((p: any) => p.giftable !== false) : plans;
 
+  function choose(next: 'self' | 'gift') {
+    if (next === mode) return;
+    setMode(next);
+    // Keep the link shareable (and Back-friendly) without a page reload.
+    const url = new URL(window.location.href);
+    if (next === 'gift') url.searchParams.set('gift', 'true'); else url.searchParams.delete('gift');
+    window.history.replaceState(null, '', url);
+  }
+
+  const gift = mode === 'gift';
+
   return (
     <div>
-      {/* Toggle */}
-      <div className="flex justify-center mb-12">
-        <div className="inline-flex bg-gray-100 rounded-full p-1 gap-1">
-          <button
-            onClick={() => setMode('self')}
-            className={`flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-bold transition-all duration-200 ${
-              mode === 'self'
-                ? 'bg-white text-teal-700 shadow-sm'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            {L.toggleMine}
-          </button>
-          <button
-            onClick={() => setMode('gift')}
-            className={`flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-bold transition-all duration-200 ${
-              mode === 'gift'
-                ? 'bg-white text-amber-600 shadow-sm'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            {L.toggleGift}
-          </button>
+      {/* Two options: a pill slides under the chosen one. */}
+      <div className="flex justify-center mb-8">
+        <div role="radiogroup" aria-label={`${L.toggleMine} / ${L.toggleGift}`}
+          className="relative grid grid-cols-2 p-1 rounded-full bg-gray-100 ring-1 ring-gray-200/60">
+          <span aria-hidden="true"
+            className={`absolute top-1 bottom-1 left-1 w-[calc(50%-4px)] rounded-full ring-1 transition-all duration-300 ease-[cubic-bezier(.4,0,.2,1)] ${
+              gift ? 'translate-x-full bg-peach-50 ring-peach-400/40' : 'translate-x-0 bg-white ring-teal-100'}`} />
+          {([['self', L.toggleMine], ['gift', L.toggleGift]] as const).map(([m, label]) => (
+            <button key={m} type="button" role="radio" aria-checked={mode === m} onClick={() => choose(m)}
+              className={`relative z-10 px-5 sm:px-7 py-2.5 rounded-full text-sm font-bold whitespace-nowrap transition-colors duration-300 ${
+                mode === m ? (m === 'gift' ? 'text-peach-600' : 'text-teal-700') : 'text-gray-500 hover:text-gray-800'}`}>
+              {label}
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Gift banner */}
-      {mode === 'gift' && (
-        <div className="max-w-2xl mx-auto mb-10 bg-amber-50 border border-amber-200 rounded-2xl px-6 py-4 flex items-start gap-4">
-          <span className="text-2xl shrink-0">🎁</span>
-          <div>
-            <p className="font-bold text-amber-800 text-sm mb-0.5">{L.giftHeading}</p>
-            <p className="text-amber-700 text-xs leading-relaxed">
-              {L.giftBanner}
-            </p>
+      {/* Gift note: grows open and closed instead of popping in. */}
+      <div className={`grid transition-all duration-300 ease-out ${gift ? 'grid-rows-[1fr] opacity-100 mb-8' : 'grid-rows-[0fr] opacity-0 mb-0'}`} aria-hidden={!gift}>
+        <div className="overflow-hidden">
+          <div className="max-w-2xl mx-auto bg-peach-50 ring-1 ring-peach-100 rounded-2xl px-5 py-4 flex items-start gap-3.5 text-left">
+            <span className="text-2xl shrink-0" aria-hidden="true">🎁</span>
+            <div>
+              <p className="font-bold text-peach-600 text-sm mb-0.5">{L.giftHeading}</p>
+              <p className="text-gray-600 text-xs leading-relaxed">{L.giftBanner}</p>
+            </div>
           </div>
         </div>
-      )}
+      </div>
 
-      {/* Plans grid */}
+      {/* Plans: the new set fades in gently, one after another. */}
       {shown.length === 0 ? (
         <p className="text-gray-400">{L.empty}</p>
       ) : (
-        <div
-          key={mode}
-          className="grid sm:grid-cols-2 xl:grid-cols-4 gap-5 items-stretch pt-5 max-w-6xl mx-auto"
-          style={{ animation: 'fadeSlideIn 0.3s ease both' }}
-        >
-          {shown.map((plan: any) => (
-            <PlanCard key={plan.id} plan={plan} isGift={mode === 'gift'} labels={L} />
+        <div key={mode} className="grid sm:grid-cols-2 xl:grid-cols-4 gap-5 items-stretch pt-5 max-w-6xl mx-auto">
+          {shown.map((plan: any, i: number) => (
+            <div key={plan.id} className="plan-in flex" style={{ animationDelay: `${i * 50}ms` }}>
+              <PlanCard plan={plan} isGift={gift} labels={L} />
+            </div>
           ))}
         </div>
       )}
 
       <style>{`
-        @keyframes fadeSlideIn {
-          from { opacity: 0; transform: translateY(10px); }
-          to   { opacity: 1; transform: translateY(0); }
+        @keyframes planIn {
+          from { opacity: 0; transform: translateY(8px) scale(0.985); }
+          to   { opacity: 1; transform: none; }
         }
+        .plan-in { opacity: 0; animation: planIn 0.4s cubic-bezier(.2,.8,.2,1) forwards; }
+        @media (prefers-reduced-motion: reduce) { .plan-in { animation: none; opacity: 1; } }
       `}</style>
     </div>
   );

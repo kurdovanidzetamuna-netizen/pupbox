@@ -101,7 +101,7 @@ export default function PlanCard({ plan, isGift = false, labels: L }: Props) {
     <div
       onClick={handleChoose}
       aria-busy={loading}
-      className={`group relative flex flex-col text-left rounded-3xl p-5 cursor-pointer transition-all duration-300 hover:-translate-y-1.5 focus:outline-none focus-visible:ring-4 focus-visible:ring-teal-200 ${
+      className={`group relative w-full flex flex-col text-left rounded-3xl p-5 cursor-pointer transition-all duration-300 hover:-translate-y-1.5 focus:outline-none focus-visible:ring-4 focus-visible:ring-teal-200 ${
         featured
           ? isGift
             ? 'bg-gradient-to-b from-peach-50 to-white ring-2 ring-peach-400/60'
