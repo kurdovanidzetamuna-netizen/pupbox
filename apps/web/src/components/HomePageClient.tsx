@@ -58,7 +58,7 @@ export default function HomePageClient({ plans, content, faq }: Props) {
                       button only competed with the two that matter. */}
                   <div className="flex flex-col sm:flex-row gap-3 mb-7">
                     {hero.cta1Text && (
-                      <SmartLink href={hero.cta1Href} className="inline-flex whitespace-nowrap items-center justify-center bg-teal-600 text-white font-semibold px-6 py-3 rounded-full text-sm hover:bg-teal-700 transition shadow-md shadow-teal-100">
+                      <SmartLink href={hero.cta1Href} className="inline-flex whitespace-nowrap items-center justify-center bg-teal-600 text-white font-semibold px-6 py-3 rounded-full text-sm hover:bg-teal-700 transition">
                         {hero.cta1Text}
                       </SmartLink>
                     )}

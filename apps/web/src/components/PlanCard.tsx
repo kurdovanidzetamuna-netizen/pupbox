@@ -94,9 +94,9 @@ export default function PlanCard({ plan, isGift = false }: Props) {
       className={`group relative flex flex-col text-left rounded-3xl p-5 cursor-pointer transition-all duration-300 hover:-translate-y-1.5 focus:outline-none focus-visible:ring-4 focus-visible:ring-teal-200 ${
         featured
           ? isGift
-            ? 'bg-gradient-to-b from-peach-50 to-white ring-2 ring-peach-400/60 shadow-soft'
-            : 'bg-gradient-to-b from-teal-50 via-white to-white ring-2 ring-teal-300 shadow-glow'
-          : 'bg-white ring-1 ring-gray-200/70 shadow-soft hover:ring-teal-200'
+            ? 'bg-gradient-to-b from-peach-50 to-white ring-2 ring-peach-400/60'
+            : 'bg-gradient-to-b from-teal-50 via-white to-white ring-2 ring-teal-300'
+          : 'bg-white ring-1 ring-gray-200/70 hover:ring-teal-200'
       }`}
     >
       {featured && (
@@ -145,8 +145,8 @@ export default function PlanCard({ plan, isGift = false }: Props) {
         className={`w-full flex items-center justify-center gap-2 py-3 rounded-full font-bold text-sm transition-all duration-200 ${
           featured
             ? isGift
-              ? 'bg-peach-400 text-white shadow-[0_10px_24px_-10px_rgba(233,120,74,0.6)] group-hover:bg-peach-600'
-              : 'bg-gradient-to-r from-teal-400 to-teal-600 text-white shadow-glow'
+              ? 'bg-peach-400 text-white group-hover:bg-peach-600'
+              : 'bg-teal-500 text-white group-hover:bg-teal-600'
             : isGift
               ? 'bg-peach-50 text-peach-600 group-hover:bg-peach-100'
               : 'bg-teal-50 text-teal-700 group-hover:bg-teal-100'

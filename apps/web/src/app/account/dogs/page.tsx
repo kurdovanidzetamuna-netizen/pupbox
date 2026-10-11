@@ -127,7 +127,7 @@ export default function MyDogsPage() {
         {error && <p className="mb-4 text-sm text-red-600 bg-red-50 rounded-xl px-4 py-3" role="alert">{error}</p>}
 
         {editing !== null && (
-          <section className="bg-white rounded-[28px] ring-1 ring-gray-200/60 shadow-soft p-6 mb-6">
+          <section className="bg-white rounded-[28px] ring-1 ring-gray-200/60 p-6 mb-6">
             <h2 className="font-semibold text-gray-900 mb-4">{editing === 'new' ? t('dogs.add') : draft.name || t('dogs.title')}</h2>
             <DogProfileForm value={draft} onChange={d => { setDraft(d); setNameError(''); }} nameError={nameError} />
             <div className="flex gap-3 mt-6">
@@ -140,7 +140,7 @@ export default function MyDogsPage() {
         {loading ? (
           <div className="flex justify-center py-20"><div className="w-8 h-8 border-4 border-teal-200 border-t-teal-600 rounded-full animate-spin" /></div>
         ) : dogs.length === 0 && editing === null ? (
-          <div className="bg-white rounded-[28px] ring-1 ring-gray-200/60 shadow-soft p-10 text-center">
+          <div className="bg-white rounded-[28px] ring-1 ring-gray-200/60 p-10 text-center">
             <div className="text-4xl mb-3" aria-hidden="true"><span className="wag">🐶</span></div>
             <p className="text-gray-600 mb-5">{t('dogs.empty')}</p>
             <button onClick={() => open('new')} className={primary}>+ {t('dogs.add')}</button>
@@ -148,7 +148,7 @@ export default function MyDogsPage() {
         ) : (
           <ul className="space-y-3">
             {dogs.filter(d => d.id !== editing).map(d => (
-              <li key={d.id} className="bg-white rounded-[28px] ring-1 ring-gray-200/60 shadow-soft p-5 flex items-start justify-between gap-4">
+              <li key={d.id} className="bg-white rounded-[28px] ring-1 ring-gray-200/60 p-5 flex items-start justify-between gap-4">
                 <div className="flex items-start gap-4 min-w-0">
                 <label className="group relative shrink-0 w-20 h-20 rounded-2xl overflow-hidden bg-teal-50 border border-teal-100 cursor-pointer" title={t(d.photoUrl ? 'dog.photoChange' : 'dog.photoAdd')}>
                   {d.photoUrl
