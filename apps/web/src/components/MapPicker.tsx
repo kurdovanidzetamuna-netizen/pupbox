@@ -20,7 +20,8 @@ type Suggestion = { id: string; text: string; sub?: string };
  * before the key exists.
  */
 interface Engine {
-  mount(el: HTMLElement, at: Pin, onMoved: (p: Pin) => void): Promise<void>;
+  /** onMoved fires only when the customer moved the map (drag), never for a resize. */
+  mount(el: HTMLElement, at: Pin, onStart: () => void, onMoved: (p: Pin) => void): Promise<void>;
   moveTo(p: Pin): void;
   search(q: string): Promise<Suggestion[]>;
   resolve(s: Suggestion): Promise<Picked | null>;
@@ -56,13 +57,15 @@ function googleEngine(lang: string): Engine {
   // Closed before the script arrived (React may mount twice): build nothing.
   let dead = false;
   return {
-    async mount(el, at, onMoved) {
+    async mount(el, at, onStart, onMoved) {
       g = await loadGoogle(lang);
       if (dead) return;
       map = new g.maps.Map(el, { center: at, zoom: 16, disableDefaultUI: true, zoomControl: true, gestureHandling: 'greedy', clickableIcons: false });
       geocoder = new g.maps.Geocoder();
       places = new g.maps.places.AutocompleteService();
-      map.addListener('idle', () => { const c = map.getCenter(); onMoved({ lat: c.lat(), lng: c.lng() }); });
+      let dragged = false;
+      map.addListener('dragstart', () => { dragged = true; onStart(); });
+      map.addListener('idle', () => { if (!dragged) return; dragged = false; const c = map.getCenter(); onMoved({ lat: c.lat(), lng: c.lng() }); });
     },
     moveTo(p) { map?.panTo(p); },
     async search(q) {
@@ -95,14 +98,22 @@ function fromOsm(a: any, at: Pin): Picked {
 function osmEngine(lang: string): Engine {
   let map: any;
   let dead = false;
+  let resize: ResizeObserver | undefined;
   const q = (path: string) => fetch(`${NOMINATIM}${path}&format=jsonv2&addressdetails=1&accept-language=${lang}`).then((r) => r.json());
   return {
-    async mount(el, at, onMoved) {
+    async mount(el, at, onStart, onMoved) {
       const L = (await import('leaflet')).default;
       if (dead) return;
       map = L.map(el, { zoomControl: true, attributionControl: true }).setView([at.lat, at.lng], 16);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(map);
-      map.on('moveend', () => { const c = map.getCenter(); onMoved({ lat: c.lat, lng: c.lng }); });
+      let dragged = false;
+      map.on('dragstart', () => { dragged = true; onStart(); });
+      // After the glide that follows a drag, not at the drag's end.
+      map.on('moveend', () => { if (!dragged) return; dragged = false; const c = map.getCenter(); onMoved({ lat: c.lat, lng: c.lng }); });
+      // Leaflet doesn't notice its box changing size (rotating a tablet, a
+      // wider window): tell it, keeping the pin's spot in the middle.
+      resize = new ResizeObserver(() => map?.invalidateSize({ pan: false }));
+      resize.observe(el);
     },
     moveTo(p) { map?.setView([p.lat, p.lng], Math.max(map.getZoom(), 16)); },
     async search(text) {
@@ -114,7 +125,7 @@ function osmEngine(lang: string): Engine {
       return this.reverse({ lat, lng });
     },
     async reverse(p) { return fromOsm(await q(`/reverse?lat=${p.lat}&lon=${p.lng}`), p); },
-    destroy() { dead = true; map?.remove(); map = null; },
+    destroy() { dead = true; resize?.disconnect(); map?.remove(); map = null; },
   };
 }
 
@@ -123,7 +134,12 @@ function osmEngine(lang: string): Engine {
  * location". Each stop reports the pin with the city and street found
  * there, which the form fills in (and the customer can still edit).
  */
-export default function MapPicker({ value, onPick }: { value: Pin | null; onPick: (p: Picked) => void }) {
+export default function MapPicker({ value, onPick, mapClassName = 'h-52 sm:h-56' }: {
+  value: Pin | null;
+  onPick: (p: Picked) => void;
+  /** Height of the map, e.g. taller beside a form on wide screens. */
+  mapClassName?: string;
+}) {
   const { t, lang } = useLanguage();
   const box = useRef<HTMLDivElement>(null);
   const engine = useRef<Engine | null>(null);
@@ -134,27 +150,26 @@ export default function MapPicker({ value, onPick }: { value: Pin | null; onPick
   const [hits, setHits] = useState<Suggestion[]>([]);
   const [found, setFound] = useState('');
   const [locating, setLocating] = useState(false);
-  // A move we caused ourselves (search, my location) already has its address;
-  // the map settling when it opens must not overwrite what's in the form.
-  const skipNext = useRef(true);
   const pickRef = useRef(onPick);
   pickRef.current = onPick;
+
+  /** The address at a spot, into the form. */
+  async function lookUp(p: Pin) {
+    try {
+      const r = await engine.current!.reverse(p);
+      setFound([r.street, r.city].filter(Boolean).join(', '));
+      pickRef.current(r);
+    } catch { pickRef.current(p); }
+  }
 
   useEffect(() => {
     const e = GOOGLE_KEY ? googleEngine(lang) : osmEngine(lang);
     engine.current = e;
     let timer: ReturnType<typeof setTimeout>;
-    e.mount(box.current!, value ?? TBILISI, (p) => {
+    e.mount(box.current!, value ?? TBILISI, () => setMoving(true), (p) => {
       setMoving(false);
-      if (skipNext.current) { skipNext.current = false; return; }
       clearTimeout(timer);
-      timer = setTimeout(async () => {
-        try {
-          const r = await e.reverse(p);
-          setFound([r.street, r.city].filter(Boolean).join(', '));
-          pickRef.current(r);
-        } catch { pickRef.current(p); }
-      }, 350);
+      timer = setTimeout(() => lookUp(p), 350);
     }).then(() => setReady(true)).catch((err) => { console.error('Map failed to load', err); setFailed(true); });
     return () => { clearTimeout(timer); e.destroy(); };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -171,7 +186,6 @@ export default function MapPicker({ value, onPick }: { value: Pin | null; onPick
     setHits([]); setQuery('');
     const r = await engine.current?.resolve(s).catch(() => null);
     if (!r) return;
-    skipNext.current = true;
     engine.current?.moveTo(r);
     setFound([r.street || s.text, r.city].filter(Boolean).join(', '));
     onPick({ ...r, street: r.street || s.text });
@@ -181,7 +195,12 @@ export default function MapPicker({ value, onPick }: { value: Pin | null; onPick
     if (!navigator.geolocation) return;
     setLocating(true);
     navigator.geolocation.getCurrentPosition(
-      (pos) => { setLocating(false); engine.current?.moveTo({ lat: pos.coords.latitude, lng: pos.coords.longitude }); },
+      (pos) => {
+        setLocating(false);
+        const p = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        engine.current?.moveTo(p);
+        lookUp(p);
+      },
       () => setLocating(false),
       { enableHighAccuracy: true, timeout: 10_000 },
     );
@@ -213,8 +232,8 @@ export default function MapPicker({ value, onPick }: { value: Pin | null; onPick
         )}
       </div>
 
-      <div className="relative h-52 sm:h-56 rounded-2xl overflow-hidden ring-1 ring-gray-200 bg-gray-100 isolate">
-        <div ref={box} className="absolute inset-0" onPointerDown={() => setMoving(true)} />
+      <div className={`relative ${mapClassName} rounded-2xl overflow-hidden ring-1 ring-gray-200 bg-gray-100 isolate`}>
+        <div ref={box} className="absolute inset-0" />
         {!ready && <div className="absolute inset-0 animate-pulse bg-gray-100" aria-hidden="true" />}
         {/* The pin stays in the middle; the map moves under it. */}
         <div className="pointer-events-none absolute left-1/2 top-1/2 z-[500] -translate-x-1/2 -translate-y-full flex flex-col items-center">

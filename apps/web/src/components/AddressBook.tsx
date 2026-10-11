@@ -123,27 +123,32 @@ export default function AddressBook({ onExpired, addTick = 0, onCount }: {
         </button>
       )}
 
-      <Modal open={editing !== null} onClose={() => !busy && setEditing(null)} title={editing === 'new' ? t('addr.add') : t('addr.edit')} size="md">
-        <form onSubmit={save} className="space-y-3" noValidate>
-          <Field id="a-label" label={t('addr.label')} value={form.label} onChange={set('label')} maxLength={40} hint={t('addr.labelHint')} />
-          <div className="grid grid-cols-2 gap-3">
-            <Field id="a-first" label={t('co.f.firstName')} value={form.firstName} onChange={set('firstName')} autoComplete="given-name" required />
-            <Field id="a-last" label={t('co.f.lastName')} value={form.lastName} onChange={set('lastName')} autoComplete="family-name" required />
+      <Modal open={editing !== null} onClose={() => !busy && setEditing(null)} title={editing === 'new' ? t('addr.add') : t('addr.edit')} size="lg"
+        footer={<>
+          {error && <p className="mr-auto text-[12.5px] text-red-600" role="alert">{error}</p>}
+          <button type="button" onClick={() => setEditing(null)} className="px-4 sm:px-5 py-2.5 rounded-full text-[13px] font-semibold text-gray-600 hover:bg-gray-100">{t('ui.cancel')}</button>
+          <button type="submit" form="address-form" disabled={busy} className="bg-teal-600 text-white text-[13px] font-semibold px-5 sm:px-6 py-2.5 hover:bg-teal-700">{busy ? t('ui.wait') : t('acc.save')}</button>
+        </>}>
+        {/* Phones: one column, map first. Tablets and up: where (map) | who. */}
+        <form id="address-form" onSubmit={save} noValidate className="grid md:grid-cols-2 gap-x-6 gap-y-3">
+          <div className="space-y-3 min-w-0">
+            <MapPicker key={`map-${editing === 'new' ? 'new' : editing?.id ?? 'none'}`} value={pin} mapClassName="h-48 sm:h-56 md:h-64"
+              onPick={(p) => {
+                setPin({ lat: p.lat, lng: p.lng });
+                setForm((f) => ({ ...f, ...(p.city !== undefined ? { city: p.city, addressLine1: p.street ?? '' } : {}) }));
+              }} />
+            <Field id="a-city" label={t('co.f.city')} value={form.city} onChange={set('city')} autoComplete="address-level2" required />
+            <Field id="a-line1" label={t('co.f.address')} value={form.addressLine1} onChange={set('addressLine1')} autoComplete="address-line1" required />
+            <Field id="a-line2" label={t('co.f.address2')} value={form.addressLine2} onChange={set('addressLine2')} autoComplete="address-line2" />
           </div>
-          <PhoneInput floatLabel key={editing === 'new' ? 'new' : editing?.id ?? 'none'} id="a-phone" label={t('co.f.phone')} value={form.phone} required
-            onChange={(v, valid) => { set('phone')(v); setPhoneOk(valid); setPhoneErr(''); }} error={phoneErr} />
-          <MapPicker key={`map-${editing === 'new' ? 'new' : editing?.id ?? 'none'}`} value={pin}
-            onPick={(p) => {
-              setPin({ lat: p.lat, lng: p.lng });
-              setForm((f) => ({ ...f, ...(p.city !== undefined ? { city: p.city, addressLine1: p.street ?? '' } : {}) }));
-            }} />
-          <Field id="a-city" label={t('co.f.city')} value={form.city} onChange={set('city')} autoComplete="address-level2" required />
-          <Field id="a-line1" label={t('co.f.address')} value={form.addressLine1} onChange={set('addressLine1')} autoComplete="address-line1" required />
-          <Field id="a-line2" label={t('co.f.address2')} value={form.addressLine2} onChange={set('addressLine2')} autoComplete="address-line2" />
-          {error && <p className="text-sm text-red-600" role="alert">{error}</p>}
-          <div className="flex justify-end gap-2 pt-2">
-            <button type="button" onClick={() => setEditing(null)} className="px-5 py-2.5 rounded-full text-sm font-semibold text-gray-600 hover:bg-gray-100">{t('ui.cancel')}</button>
-            <button type="submit" disabled={busy} className="bg-teal-600 text-white text-sm font-semibold px-6 py-2.5 hover:bg-teal-700">{busy ? t('ui.wait') : t('acc.save')}</button>
+          <div className="space-y-3 min-w-0">
+            <Field id="a-label" label={t('addr.label')} value={form.label} onChange={set('label')} maxLength={40} hint={t('addr.labelHint')} />
+            <div className="grid grid-cols-2 gap-3">
+              <Field id="a-first" label={t('co.f.firstName')} value={form.firstName} onChange={set('firstName')} autoComplete="given-name" required />
+              <Field id="a-last" label={t('co.f.lastName')} value={form.lastName} onChange={set('lastName')} autoComplete="family-name" required />
+            </div>
+            <PhoneInput floatLabel key={editing === 'new' ? 'new' : editing?.id ?? 'none'} id="a-phone" label={t('co.f.phone')} value={form.phone} required
+              onChange={(v, valid) => { set('phone')(v); setPhoneOk(valid); setPhoneErr(''); }} error={phoneErr} />
           </div>
         </form>
       </Modal>

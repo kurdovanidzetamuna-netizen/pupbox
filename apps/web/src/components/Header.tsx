@@ -63,7 +63,7 @@ export default function Header({ site }: { site: StoredContent | null }) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-3">
         <Logo brand={c.brand} />
 
-        <nav className="hidden md:flex gap-8 text-sm font-medium text-gray-600" aria-label={t('aria.mainNav')}>
+        <nav className="hidden lg:flex gap-6 xl:gap-8 text-sm font-medium text-gray-600" aria-label={t('aria.mainNav')}>
           {nav.map((n, i) => (
             <SmartLink key={i} href={n.href} aria-current={isActive(n.href) ? 'page' : undefined}
               className={`transition-colors hover:text-teal-600 ${isActive(n.href) ? 'text-teal-600 font-semibold' : ''}`}>
@@ -79,7 +79,7 @@ export default function Header({ site }: { site: StoredContent | null }) {
         */}
         <div className="flex items-center gap-1 sm:gap-1.5">
           <div role="radiogroup" aria-label={t('nav.language')}
-            className="relative hidden md:grid grid-cols-2 items-center h-7 p-0.5 mr-1.5 rounded-full bg-gray-100">
+            className="relative hidden lg:grid grid-cols-2 items-center h-7 p-0.5 mr-1.5 rounded-full bg-gray-100">
             <span aria-hidden="true"
               className={`absolute top-0.5 bottom-0.5 w-[calc(50%-2px)] rounded-full bg-white ring-1 ring-gray-200/80 transition-transform duration-300 ease-out ${lang === 'en' ? 'translate-x-full' : 'translate-x-0'}`}
               style={{ left: 2 }} />
@@ -97,14 +97,14 @@ export default function Header({ site }: { site: StoredContent | null }) {
           {/* Account: one tap straight to My account. */}
           {signedIn ? (
             <Link href="/account" aria-label={t('nav.account')} title={t('nav.account')}
-              className={`hidden md:inline-flex items-center justify-center w-9 h-9 rounded-full text-[13px] font-bold transition-colors ${
+              className={`hidden lg:inline-flex items-center justify-center w-9 h-9 rounded-full text-[13px] font-bold transition-colors ${
                 pathname.startsWith('/account') ? 'bg-teal-100 text-teal-800' : 'bg-teal-50 text-teal-700 hover:bg-teal-100'}`}>
               {initial || (
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
               )}
             </Link>
           ) : (
-            <Link href="/login" className="hidden md:inline-flex items-center h-9 px-3.5 rounded-full text-[13px] font-semibold text-gray-700 hover:text-teal-700 hover:bg-teal-50 transition">
+            <Link href="/login" className="hidden lg:inline-flex items-center h-9 px-3.5 rounded-full text-[13px] font-semibold text-gray-700 hover:text-teal-700 hover:bg-teal-50 transition">
               {t('nav.signIn')}
             </Link>
           )}
@@ -131,7 +131,7 @@ export default function Header({ site }: { site: StoredContent | null }) {
 
           {/* Phone & tablet menu */}
           <button type="button" onClick={() => setMenuOpen(o => !o)} aria-expanded={menuOpen} aria-controls="mobile-menu" aria-label={t('nav.menu')}
-            className="md:hidden inline-flex items-center justify-center w-10 h-10 rounded-lg text-gray-700 hover:bg-gray-100">
+            className="lg:hidden inline-flex items-center justify-center w-10 h-10 rounded-lg text-gray-700 hover:bg-gray-100">
             <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
               {menuOpen
                 ? <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -142,7 +142,7 @@ export default function Header({ site }: { site: StoredContent | null }) {
       </div>
 
       {menuOpen && (
-        <nav id="mobile-menu" aria-label={t('aria.mainNav')} className="md:hidden border-t border-gray-100 bg-white px-4 pb-5 pt-2">
+        <nav id="mobile-menu" aria-label={t('aria.mainNav')} className="lg:hidden border-t border-gray-100 bg-white px-4 pb-5 pt-2">
           <ul className="flex flex-col">
             {nav.map((n, i) => (
               <li key={i}>
