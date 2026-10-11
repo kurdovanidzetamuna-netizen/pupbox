@@ -19,7 +19,6 @@ import PerksStrip from '@/components/shop/PerksStrip';
 const money = (n: unknown) => `₾${Number(n).toFixed(2)}`;
 const DOG_SIZES = ['EXTRA_SMALL', 'SMALL', 'MEDIUM', 'LARGE', 'EXTRA_LARGE'];
 const SIZE_SHORT = ['XS', 'S', 'M', 'L', 'XL'];
-const STAGE_ICON: Record<string, string> = { PUPPY: '🍼', ADULT: '🐕', SENIOR: '🦴', ALL: '✨' };
 
 /**
  * A product, built from the shop's own pieces: gallery, the shared title,
@@ -144,7 +143,7 @@ export default function ProductView({ product, related, content }: { product: an
         <div className="grid grid-cols-1 md:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:grid-cols-[minmax(0,440px)_minmax(0,1fr)] gap-6 md:gap-10 lg:gap-14 items-start [&>*]:min-w-0">
           {/* ── Gallery ── */}
           <div className="md:sticky md:top-24">
-            <div className={`relative aspect-square rounded-3xl overflow-hidden touch-pan-y select-none ${soldOut ? 'bg-gray-100' : `bg-gradient-to-br ${look.tint}`}`}
+            <div className={`relative aspect-[4/3] md:aspect-square rounded-3xl overflow-hidden touch-pan-y select-none ${soldOut ? 'bg-gray-100' : `bg-gradient-to-br ${look.tint}`}`}
               onPointerDown={(e) => { swipeX.current = e.clientX; }}
               onPointerUp={(e) => { const dx = e.clientX - (swipeX.current ?? e.clientX); swipeX.current = null; if (Math.abs(dx) > 40) step(dx < 0 ? 1 : -1); }}>
               {images[shown] ? (
@@ -208,35 +207,29 @@ export default function ProductView({ product, related, content }: { product: an
               {soldOut ? t('shop.outOfStock') : low ? fill(t('shop.onlyLeft'), { n: left }) : t('shop.inStock')}
             </p>
 
-            {/* Who it's for */}
-            <div className="mt-5 rounded-2xl bg-gray-50/80 p-3.5 sm:p-4">
-              <p className="text-[11px] font-bold uppercase tracking-wider text-gray-400 mb-2.5">{t('pdp.suits')}</p>
-              <div className="flex flex-wrap items-end gap-1.5" role="list" aria-label={t('pdp.size')}>
-                {DOG_SIZES.map((sz, i) => {
-                  const on = !product.dogSizes?.length || product.dogSizes.includes(sz);
-                  return (
-                    <span key={sz} role="listitem" title={`${t(`dog.size.${sz}`)} · ${t(`dog.sizeHint.${sz}`)}`}
-                      className={`flex flex-col items-center justify-end gap-0.5 w-[54px] rounded-xl py-1.5 ${on ? 'bg-white ring-1 ring-teal-200 text-teal-800' : 'text-gray-300'}`}>
-                      <span aria-hidden="true" style={{ fontSize: 14 + i * 3 }} className={on ? '' : 'grayscale opacity-40'}>🐕</span>
-                      <span className="text-[10px] font-bold leading-none">{SIZE_SHORT[i]}</span>
-                    </span>
-                  );
-                })}
-                <span className="ml-1 mb-1 text-[11.5px] text-gray-500">
-                  {product.dogSizes?.length ? product.dogSizes.map((sz: string) => t(`dog.sizeHint.${sz}`)).join(' · ') : t('pdp.allSizes')}
-                </span>
+            {/* Who it's for: two short lines */}
+            <dl className="mt-5 space-y-2 text-[12px]">
+              <div className="flex items-center gap-2.5">
+                <dt className="w-14 shrink-0 font-semibold text-gray-400">{t('pdp.size')}</dt>
+                <dd className="flex gap-1">
+                  {DOG_SIZES.map((sz, i) => {
+                    const on = !product.dogSizes?.length || product.dogSizes.includes(sz);
+                    return (
+                      <span key={sz} title={`${t(`dog.size.${sz}`)} · ${t(`dog.sizeHint.${sz}`)}`} aria-label={`${t(`dog.size.${sz}`)}${on ? '' : ' —'}`}
+                        className={`w-8 h-7 rounded-lg inline-flex items-center justify-center text-[11px] font-bold ${on ? 'bg-teal-50 text-teal-700 ring-1 ring-teal-100' : 'text-gray-300 line-through decoration-gray-200'}`}>
+                        {SIZE_SHORT[i]}
+                      </span>
+                    );
+                  })}
+                </dd>
               </div>
-              <div className="mt-3 flex flex-wrap gap-1.5">
-                {(product.lifeStages?.length ? product.lifeStages : ['ALL']).map((st: string) => (
-                  <span key={st} className="inline-flex items-center gap-1 h-7 px-2.5 rounded-full bg-white ring-1 ring-gray-200/70 text-[12px] font-semibold text-gray-700">
-                    <span aria-hidden="true">{STAGE_ICON[st]}</span>{t(`pdp.stage.${st}`)}
-                  </span>
-                ))}
+              <div className="flex items-center gap-2.5">
+                <dt className="w-14 shrink-0 font-semibold text-gray-400">{t('pdp.age')}</dt>
+                <dd className="text-gray-700 font-medium">
+                  {product.lifeStages?.length ? product.lifeStages.map((st: string) => t(`pdp.stage.${st}`)).join(' · ') : t('pdp.stage.ALL')}
+                </dd>
               </div>
-              {goodFor && (
-                <p className="mt-3 flex items-start gap-2 text-[12.5px] text-gray-700"><span aria-hidden="true">💡</span><span><b className="font-semibold">{t('pdp.goodFor')}:</b> {goodFor}</span></p>
-              )}
-            </div>
+            </dl>
 
             {/* Choices the product needs */}
             {!soldOut && sizes.length > 0 && (
@@ -265,38 +258,47 @@ export default function ProductView({ product, related, content }: { product: an
             <div className="mt-6 hidden sm:block">{buy(false)}</div>
             {basket.error && <FieldError message={basket.error} />}
 
-            {c.on('perks') && <PerksStrip items={c.perks.items} className="mt-7" />}
+            {c.on('perks') && <PerksStrip items={c.perks.items} className="mt-5" />}
 
-            {/* Details */}
-            {(allergens.length > 0 || product.tags?.length > 0) && (
-              <dl className="mt-7 space-y-3">
-                {allergens.length > 0 && (
-                  <div>
-                    <dt className="text-[12px] font-bold uppercase tracking-wider text-gray-400 mb-1.5">{t('pdp.allergens')}</dt>
-                    <dd className="flex flex-wrap gap-1.5">
-                      {allergens.map((a) => <span key={a} className="inline-flex items-center gap-1 h-7 px-2.5 rounded-full bg-peach-50 text-peach-600 text-[12px] font-semibold"><Icon name="info" className="w-3.5 h-3.5" />{allergenName(a)}</span>)}
-                    </dd>
-                  </div>
-                )}
-                {product.tags?.length > 0 && (
-                  <div>
-                    <dt className="text-[12px] font-bold uppercase tracking-wider text-gray-400 mb-1.5">{t('pdp.tags')}</dt>
-                    <dd className="flex flex-wrap gap-1.5">
-                      {product.tags.map((x: any) => <span key={x.tag.id} className="h-7 px-2.5 inline-flex items-center rounded-full bg-gray-100 text-gray-600 text-[12px] font-medium">{t(`collection.${x.tag.name}`, x.tag.name)}</span>)}
-                    </dd>
-                  </div>
-                )}
-              </dl>
-            )}
-            <p className="mt-5 text-[11.5px] text-gray-400">{t('pdp.sku')}: {product.sku}</p>
           </div>
         </div>
 
-        {/* Description */}
-        {description && (
-          <section className="mt-12 sm:mt-14 max-w-3xl">
-            <Heading kind="section" title={t('pdp.description')} />
-            <p className="text-[14px] sm:text-[15px] leading-relaxed text-gray-600 whitespace-pre-line">{description}</p>
+        {/* About: the description with what to know at a glance */}
+        {(description || goodFor || allergens.length > 0 || product.tags?.length > 0) && (
+          <section className="mt-12 sm:mt-14 rounded-3xl bg-gradient-to-br from-teal-50/70 via-white to-peach-50/50 ring-1 ring-teal-100/60 p-5 sm:p-8">
+            <div className="grid lg:grid-cols-[minmax(0,1fr)_280px] gap-6 lg:gap-10">
+              <div className="min-w-0">
+                <Heading kind="section" title={t('pdp.description')} className="!mb-3" />
+                {goodFor && (
+                  <p className="mb-4 inline-flex items-start gap-2 rounded-2xl bg-white/80 ring-1 ring-teal-100 px-3.5 py-2.5 text-[13px] text-gray-700">
+                    <Icon name="sparkle" className="w-4 h-4 mt-0.5 text-teal-600 shrink-0" strokeWidth={1.8} />
+                    <span><b className="font-semibold text-teal-800">{t('pdp.goodFor')}:</b> {goodFor}</span>
+                  </p>
+                )}
+                {description && <p className="text-[14px] sm:text-[15px] leading-relaxed text-gray-600 whitespace-pre-line max-w-2xl">{description}</p>}
+              </div>
+              {(allergens.length > 0 || product.tags?.length > 0) && (
+                <dl className="space-y-4 lg:border-l lg:border-teal-100/70 lg:pl-8">
+                  {allergens.length > 0 && (
+                    <div>
+                      <dt className="text-[11px] font-bold uppercase tracking-wider text-gray-400 mb-2">{t('pdp.allergens')}</dt>
+                      <dd className="flex flex-wrap gap-1.5">
+                        {allergens.map((a) => <span key={a} className="inline-flex items-center gap-1 h-7 px-2.5 rounded-full bg-white ring-1 ring-peach-100 text-peach-600 text-[12px] font-semibold"><Icon name="info" className="w-3.5 h-3.5" />{allergenName(a)}</span>)}
+                      </dd>
+                    </div>
+                  )}
+                  {product.tags?.length > 0 && (
+                    <div>
+                      <dt className="text-[11px] font-bold uppercase tracking-wider text-gray-400 mb-2">{t('pdp.tags')}</dt>
+                      <dd className="flex flex-wrap gap-1.5">
+                        {product.tags.map((x: any) => <span key={x.tag.id} className="h-7 px-2.5 inline-flex items-center rounded-full bg-white ring-1 ring-gray-200/70 text-gray-600 text-[12px] font-medium">{t(`collection.${x.tag.name}`, x.tag.name)}</span>)}
+                      </dd>
+                    </div>
+                  )}
+                  <p className="text-[11px] text-gray-400">{t('pdp.sku')}: {product.sku}</p>
+                </dl>
+              )}
+            </div>
           </section>
         )}
 

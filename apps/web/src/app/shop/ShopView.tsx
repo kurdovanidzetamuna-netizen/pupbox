@@ -136,8 +136,8 @@ export default function ShopView({ products, total, pages, page, categories, bra
           )}
 
           <div className="ml-auto flex items-center gap-1.5">
-            <Menu icon="paw" size="md" tone="mint" title={t('pdp.size')} onReset={() => go({ size: null })} resetDisabled={!size} resetLabel={t('shop.reset')}
-              label={size ? `${t('pdp.size')}: ${t(`dog.size.${size}`)}` : t('pdp.size')} active={!!size}
+            <Menu icon="paw" size="md" tone="mint" title={t('shop.dogSize')} onReset={() => go({ size: null })} resetDisabled={!size} resetLabel={t('shop.reset')}
+              label={size ? `${t('shop.dogSize')}: ${t(`dog.size.${size}`)}` : t('shop.dogSize')} active={!!size}
               items={[
                 { label: t('shop.allSizes'), checked: !size, onClick: () => go({ size: null }) },
                 ...DOG_SIZES.map((s) => ({ label: `${t(`dog.size.${s}`)} · ${t(`dog.sizeHint.${s}`)}`, checked: size === s, onClick: () => go({ size: s }) })),

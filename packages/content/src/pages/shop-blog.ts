@@ -17,10 +17,10 @@ export const shopPage: PageDef = {
     {
       id: 'perks', label: 'Small promises under the search', icon: '✨',
       fields: [
-        list('items', 'Items', [icon('icon'), text('text', 'Text'), text('sub', 'Small line under it')], [
-          { icon: '🚚', text: tx('Delivery across Georgia', 'მიწოდება მთელ საქართველოში'), sub: tx('Courier to your door', 'კურიერით, კარამდე') },
-          { icon: '🔒', text: tx('Secure card payment', 'ბარათით უსაფრთხო გადახდა'), sub: tx('Visa · Mastercard', 'Visa · Mastercard') },
-          { icon: '🐾', text: tx('Picked for dogs', 'შერჩეულია ძაღლებისთვის'), sub: tx('By size and breed', 'ზომისა და ჯიშის მიხედვით') },
+        list('items', 'Items', [icon('icon'), text('text', 'Text (a few words)')], [
+          { icon: '🚚', text: tx('Delivery across Georgia', 'მიწოდება საქართველოში') },
+          { icon: '🔒', text: tx('Secure payment', 'უსაფრთხო გადახდა') },
+          { icon: '🐾', text: tx('Picked for dogs', 'შერჩეული ძაღლებისთვის') },
         ]),
       ],
     },

@@ -1,21 +1,22 @@
+import { Icon } from '@/components/ui/icons';
+
+/** The admin picks an emoji; the site shows a matching mint line icon. */
+const LINE_ICON: Record<string, string> = { '🚚': 'truck', '📦': 'box', '🔒': 'lock', '💳': 'card', '🐾': 'paw', '🐕': 'paw', '🎁': 'gift', '↩️': 'undo', '⭐': 'star', '✨': 'sparkle', '🛡️': 'shield', '📍': 'pin' };
+
 /**
- * The shop's promises (Page Builder → Shop) as one light "trust bar": a
- * soft panel split into equal parts, each with an icon tile, a bold line and
- * a small one. On phones the parts stand icon-over-text, side by side.
+ * The shop's promises (Page Builder → Shop) as one slim line: a small mint
+ * line icon and a few words each, separated by thin dots. Swipes on phones.
  */
-export default function PerksStrip({ items, className = '' }: { items: { icon: string; text: string; sub?: string }[]; className?: string }) {
+export default function PerksStrip({ items, className = '' }: { items: { icon: string; text: string }[]; className?: string }) {
   if (!items?.length) return null;
-  const tiles = ['from-teal-100 to-teal-50', 'from-peach-100 to-peach-50'];
   return (
-    <ul className={`grid rounded-3xl bg-white/80 ring-1 ring-teal-100/70 backdrop-blur divide-x divide-teal-100/70 ${className}`}
-      style={{ gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` }}>
+    <ul className={`flex items-center gap-x-4 gap-y-1.5 overflow-x-auto sm:flex-wrap -mx-4 px-4 sm:mx-0 sm:px-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${className}`}>
       {items.map((p, i) => (
-        <li key={i} className="flex flex-col sm:flex-row items-center sm:items-center gap-2 sm:gap-3 px-2 sm:px-4 py-3 text-center sm:text-left min-w-0">
-          <span className={`w-10 h-10 sm:w-11 sm:h-11 shrink-0 rounded-2xl bg-gradient-to-br ${tiles[i % 2]} flex items-center justify-center text-[19px]`} aria-hidden="true">{p.icon}</span>
-          <span className="min-w-0">
-            <span className="block text-[12px] sm:text-[13px] font-bold text-gray-800 leading-tight">{p.text}</span>
-            {p.sub && <span className="block mt-0.5 text-[11px] sm:text-[11.5px] text-gray-500 leading-tight">{p.sub}</span>}
-          </span>
+        <li key={i} className="shrink-0 inline-flex items-center gap-1.5 text-[12px] font-medium text-gray-600">
+          {LINE_ICON[p.icon]
+            ? <Icon name={LINE_ICON[p.icon]} className="w-4 h-4 text-teal-600" strokeWidth={1.8} />
+            : <span className="grayscale opacity-70 text-[13px]" aria-hidden="true">{p.icon}</span>}
+          {p.text}
         </li>
       ))}
     </ul>
