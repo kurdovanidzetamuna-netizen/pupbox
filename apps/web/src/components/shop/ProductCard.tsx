@@ -98,7 +98,7 @@ export default function ProductCard({ product, index = 0 }: { product: any; inde
 
         {soldOut ? null : needsChoice ? (
           <Link href={href} aria-label={`${t('shop.choose')}: ${name}`} title={t('shop.choose')}
-            className="w-9 h-9 shrink-0 rounded-full bg-teal-50 text-teal-700 flex items-center justify-center hover:bg-teal-600 hover:text-white transition-colors">
+            className="w-9 h-9 shrink-0 rounded-full bg-teal-50 text-teal-700 flex items-center justify-center hover:bg-teal-100 hover:text-teal-800 transition-colors">
             <Icon name="sliders" className="w-[18px] h-[18px]" strokeWidth={2.2} />
           </Link>
         ) : line ? (
@@ -116,7 +116,7 @@ export default function ProductCard({ product, index = 0 }: { product: any; inde
         ) : (
           <button type="button" onClick={add} disabled={busy} aria-label={`${t('shop.quickAdd')}: ${name}`} title={t('shop.quickAdd')}
             className={`w-9 h-9 shrink-0 rounded-full flex items-center justify-center transition-colors active:scale-90 ${
-              error ? 'bg-red-500 text-white' : 'bg-teal-50 text-teal-700 hover:bg-teal-600 hover:text-white'}`}>
+              error ? 'bg-red-50 text-red-500' : 'bg-teal-50 text-teal-700 hover:bg-teal-100 hover:text-teal-800'}`}>
             {busy ? <span className="w-4 h-4 border-2 border-teal-200 border-t-teal-600 rounded-full animate-spin" />
               : <Icon name={error ? 'alert' : 'plus'} className="w-[18px] h-[18px]" strokeWidth={2.4} />}
           </button>

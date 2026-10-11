@@ -39,6 +39,7 @@ export const STORE_STRINGS: Record<string, { en: string; ka: string }> = {
   'shop.added':             { en: 'Added',                      ka: 'დაემატა' },
   'shop.noneSub':           { en: 'Try another word or category.', ka: 'სცადე სხვა სიტყვა ან კატეგორია.' },
   'shop.inBasket':          { en: 'In your basket: {n}',        ka: 'კალათაშია: {n}' },
+  'shop.reset':             { en: 'Reset',                      ka: 'გადატვირთვა' },
   'shop.uncheck':           { en: 'Remove from basket',         ka: 'კალათიდან ამოღება' },
   'shop.less':              { en: 'One less',                   ka: 'ერთით ნაკლები' },
   'shop.more':              { en: 'One more',                   ka: 'ერთით მეტი' },

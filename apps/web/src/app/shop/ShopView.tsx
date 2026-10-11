@@ -142,10 +142,14 @@ export default function ShopView({ products, total, pages, page, categories, bra
                 items={[
                   { label: t('shop.allBrands'), checked: !brand, onClick: () => go({ brand: null }) },
                   ...brands.map((b) => ({ label: t(`collection.${b}`, b), checked: brand === b, onClick: () => go({ brand: b }) })),
+                  ...(brand ? [{ icon: 'reset', label: t('shop.reset'), divider: true, onClick: () => go({ brand: null }) }] : []),
                 ]} />
             )}
             <Menu icon="sort" size="md" label={`${t('shop.sort')}: ${t(SORTS.find((x) => x.v === sort)?.k ?? 'shop.sort.default')}`} active={!!sort}
-              items={SORTS.map((x) => ({ label: t(x.k), checked: sort === x.v, onClick: () => go({ sort: x.v || null }) }))} />
+              items={[
+                ...SORTS.map((x) => ({ label: t(x.k), checked: sort === x.v, onClick: () => go({ sort: x.v || null }) })),
+                ...(sort ? [{ icon: 'reset', label: t('shop.reset'), divider: true, onClick: () => go({ sort: null }) }] : []),
+              ]} />
           </div>
         </div>
 
