@@ -258,7 +258,7 @@ export default function ProductView({ product, related, content }: { product: an
 
         {/* About: the description with what to know at a glance */}
         {(description || goodFor || allergens.length > 0 || product.tags?.length > 0) && (
-          <section className="mt-12 sm:mt-14 rounded-3xl bg-gradient-to-br from-teal-50/70 via-white to-peach-50/50 ring-1 ring-teal-100/60 p-5 sm:p-8">
+          <section className="mt-12 sm:mt-14 rounded-3xl bg-gray-50 p-5 sm:p-8">
             <div className="grid lg:grid-cols-[minmax(0,1fr)_280px] gap-6 lg:gap-10">
               <div className="min-w-0">
                 <Heading kind="section" title={t('pdp.description')} className="!mb-3" />
@@ -271,7 +271,7 @@ export default function ProductView({ product, related, content }: { product: an
                 {description && <p className="text-[14px] sm:text-[15px] leading-relaxed text-gray-600 whitespace-pre-line max-w-2xl">{description}</p>}
               </div>
               {(allergens.length > 0 || product.tags?.length > 0) && (
-                <dl className="space-y-4 lg:border-l lg:border-teal-100/70 lg:pl-8">
+                <dl className="space-y-4 lg:border-l lg:border-gray-200/70 lg:pl-8">
                   {allergens.length > 0 && (
                     <div>
                       <dt className="text-[11px] font-bold uppercase tracking-wider text-gray-400 mb-2">{t('pdp.allergens')}</dt>
