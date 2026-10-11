@@ -63,7 +63,7 @@ export default function ProductView({ product, related, content }: { product: an
 
   // The page always starts fresh (1, nothing chosen); what's already in the
   // basket shows only on the 🛍 tag. Adding again adds to it.
-  const room = Math.max(0, left - inCart);
+  const room = Math.max(0, left - basket.totalInCart);
 
   async function addToBasket() {
     const e: typeof errs = {};
