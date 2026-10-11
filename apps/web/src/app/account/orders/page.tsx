@@ -59,7 +59,7 @@ export default function MyOrdersPage() {
 
         <ul className="space-y-4">
           {orders.map((order: any) => (
-            <li key={order.id} className="bg-white rounded-2xl border border-gray-100 p-6">
+            <li key={order.id} className="bg-white rounded-[28px] ring-1 ring-gray-200/60 shadow-soft p-6">
               <div className="flex items-start justify-between gap-3 mb-4">
                 <div>
                   <p className="text-sm text-gray-500 mb-1">{fill(t('ord.number'), { n: order.id.slice(-8).toUpperCase() })}</p>

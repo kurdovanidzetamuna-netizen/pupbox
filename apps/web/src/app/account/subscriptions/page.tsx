@@ -174,7 +174,7 @@ export default function MySubscriptionsPage() {
         {loading ? (
           <div className="flex justify-center py-20"><div className="w-8 h-8 border-4 border-teal-200 border-t-teal-600 rounded-full animate-spin" /></div>
         ) : subs.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center">
+          <div className="bg-white rounded-[28px] ring-1 ring-gray-200/60 shadow-soft p-10 text-center">
             <p className="text-4xl mb-3" aria-hidden="true">📦</p>
             <p className="text-gray-700 font-semibold mb-1">{t('sub.none')}</p>
             <p className="text-gray-500 text-sm mb-6">{t('sub.noneSub')}</p>
@@ -187,7 +187,7 @@ export default function MySubscriptionsPage() {
               const isActive = sub.status === 'ACTIVE';
               const canToggle = ['ACTIVE', 'PENDING'].includes(sub.status) && !sub.cancelledAt;
               return (
-                <li key={sub.id} id={`sub-${sub.id}`} className="bg-white rounded-2xl border border-gray-100 p-6">
+                <li key={sub.id} id={`sub-${sub.id}`} className="bg-white rounded-[28px] ring-1 ring-gray-200/60 shadow-soft p-6">
                   <div className="flex items-start justify-between gap-3 mb-4">
                     <div>
                       <h2 className="font-bold text-gray-900 text-lg">{planText(sub.plan, 'name', lang)}</h2>

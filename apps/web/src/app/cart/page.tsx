@@ -108,7 +108,7 @@ export default function CartPage() {
                 <form className="flex gap-2" onSubmit={e => { e.preventDefault(); handleApplyCoupon(); }}>
                   <input type="text" placeholder={t('cart.promoPh')} value={couponInput} onChange={e => setCouponInput(e.target.value)} aria-label={t('cart.promo')}
                     className="flex-1 min-w-0 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400" />
-                  <button type="submit" disabled={couponLoading} className="bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-700 disabled:opacity-50">
+                  <button type="submit" disabled={couponLoading} className="bg-teal-50 text-teal-700 hover:bg-teal-100 px-4 py-2 rounded-full text-sm font-semibold disabled:opacity-50">
                     {t('cart.apply')}
                   </button>
                 </form>

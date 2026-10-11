@@ -46,14 +46,14 @@ export default function ReferralsPage() {
                 { k: 'ref.registered', value: data.stats.registered, color: 'text-blue-700' },
                 { k: 'ref.rewards', value: data.stats.rewarded, color: 'text-teal-700' },
               ].map(s => (
-                <div key={s.k} className="bg-white rounded-2xl border border-gray-100 p-5 text-center">
+                <div key={s.k} className="bg-white rounded-[28px] ring-1 ring-gray-200/60 shadow-soft p-5 text-center">
                   <dd className={`text-3xl font-bold ${s.color}`}>{s.value}</dd>
                   <dt className="text-sm text-gray-500 mt-1">{t(s.k)}</dt>
                 </div>
               ))}
             </dl>
 
-            <section className="bg-white rounded-2xl border border-gray-100 p-6 mb-8">
+            <section className="bg-white rounded-[28px] ring-1 ring-gray-200/60 shadow-soft p-6 mb-8">
               <h2 className="font-semibold text-gray-800 mb-4">{t('ref.yourLink')}</h2>
               <div className="flex items-center gap-3">
                 <input readOnly value={referralLink} aria-label={t('ref.yourLink')}
@@ -66,7 +66,7 @@ export default function ReferralsPage() {
             </section>
 
             {data.referrals?.length > 0 && (
-              <section className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+              <section className="bg-white rounded-[28px] ring-1 ring-gray-200/60 shadow-soft overflow-hidden">
                 <h2 className="px-6 py-4 border-b border-gray-50 font-semibold text-gray-800">{t('ref.history')}</h2>
                 <table className="w-full text-sm">
                   <thead className="bg-gray-50">

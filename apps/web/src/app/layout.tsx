@@ -1,6 +1,10 @@
 import RefCapture from '@/components/RefCapture';
 import type { Metadata } from 'next';
 import './globals.css';
+import { Noto_Sans_Georgian } from 'next/font/google';
+
+// Georgian-first type: renders every Georgian letter properly, clean Latin too.
+const sans = Noto_Sans_Georgian({ subsets: ['georgian', 'latin'], weight: ['400', '500', '600', '700', '800'], variable: '--font-sans', display: 'swap' });
 import { CartProvider } from '@/context/CartContext';
 import { LanguageProvider } from '@/context/LanguageContext';
 import Header from '@/components/Header';
@@ -39,8 +43,8 @@ export const metadata: Metadata = {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const site = await getStoredContent(sitePage);
   return (
-    <html lang="ka">
-      <body>
+    <html lang="ka" className={sans.variable}>
+      <body className="font-sans bg-gray-50 text-gray-800">
         <LanguageProvider>
           <CartProvider>
             <RefCapture />

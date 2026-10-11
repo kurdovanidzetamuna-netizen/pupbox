@@ -63,7 +63,7 @@ function PlanSectionInner({ plans }: { plans: any[] }) {
       ) : (
         <div
           key={mode}
-          className="grid sm:grid-cols-2 xl:grid-cols-4 gap-6 lg:gap-7 items-stretch pt-4"
+          className="grid sm:grid-cols-2 xl:grid-cols-4 gap-6 lg:gap-7 items-stretch pt-5"
           style={{ animation: 'fadeSlideIn 0.3s ease both' }}
         >
           {shown.map((plan: any) => (
