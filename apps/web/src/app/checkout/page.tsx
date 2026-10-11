@@ -16,6 +16,7 @@ import VerifyCodes from '@/components/VerifyCodes';
 import PhoneInput from '@/components/ui/PhoneInput';
 import { forgetReferral, storedReferral } from '@/lib/referral';
 import { FieldError, FormAlert, countErrors, revealFirstError } from '@/components/ui/FormError';
+import { Heading } from '@/components/ui/Heading';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -359,8 +360,7 @@ export default function CheckoutPage() {
       <main className="min-h-screen bg-gray-50 flex items-center justify-center px-6">
         <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center max-w-md">
           <div className="text-5xl mb-4">🛒</div>
-          <h1 className="text-xl font-bold text-gray-900 mb-2">{t('co.empty.title')}</h1>
-          <p className="text-sm text-gray-500 mb-6">{t('co.empty.sub')}</p>
+          <Heading kind="form" as="h1" title={t('co.empty.title')} subtitle={t('co.empty.sub')} />
           <div className="flex gap-3 justify-center">
             <Link href="/prices" className="bg-teal-600 text-white px-5 py-2.5 rounded-xl font-bold hover:bg-teal-700">{t('co.empty.plans')}</Link>
             <Link href="/shop" className="border border-gray-200 text-gray-700 px-5 py-2.5 rounded-xl font-medium hover:bg-gray-50">{t('co.empty.shop')}</Link>
@@ -375,7 +375,7 @@ export default function CheckoutPage() {
 
   return (
     <main className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-8 sm:pt-10 pb-14">
         <div className="flex items-center justify-between mb-6">
           <Link href="/cart" className="text-sm text-gray-500 hover:text-teal-600">{t('co.backToCart')}</Link>
         </div>
@@ -400,15 +400,13 @@ export default function CheckoutPage() {
             {/* ── Account ── */}
             {step === 'account' && needVerify && (
               <section className="bg-white rounded-2xl border border-gray-100 p-6 sm:p-8">
-                <h1 className="text-xl font-bold text-gray-900 mb-1">{t('ver.title')}</h1>
-                <p className="text-sm text-gray-500 mb-6">{t('ver.sub')}</p>
+                <Heading kind="form" as="h1" title={t('ver.title')} subtitle={t('ver.sub')} />
                 <VerifyCodes onDone={() => { setNeedVerify(false); next(); }} />
               </section>
             )}
             {step === 'account' && !needVerify && (
               <section className="bg-white rounded-2xl border border-gray-100 p-6 sm:p-8">
-                <h1 className="text-xl font-bold text-gray-900 mb-1">{t('co.account.title')}</h1>
-                <p className="text-sm text-gray-500 mb-6">{t('co.account.sub')}</p>
+                <Heading kind="form" as="h1" title={t('co.account.title')} subtitle={t('co.account.sub')} />
                 <div className="grid grid-cols-2 gap-2 mb-6 bg-gray-100 p-1 rounded-xl" role="tablist">
                   {[{ v: true, k: 'co.account.new' }, { v: false, k: 'co.account.existing' }].map(o => (
                     <button key={String(o.v)} type="button" role="tab" aria-selected={isNewAccount === o.v}
@@ -449,12 +447,11 @@ export default function CheckoutPage() {
             {/* ── Gift recipient ── */}
             {step === 'gift' && (
               <section className="bg-white rounded-2xl border border-gray-100 p-6 sm:p-8">
-                <h1 className="text-xl font-bold text-gray-900 mb-1">{t('co.gift.title')}</h1>
-                <p className="text-sm text-gray-500 mb-6">{t('co.gift.sub')}</p>
+                <Heading kind="form" as="h1" title={t('co.gift.title')} subtitle={t('co.gift.sub')} />
                 <div className="space-y-4">
                   {input('giftRecipientName', t('co.gift.name'), { placeholder: 'Nino Beridze' })}
                   <div className="pt-2">
-                    <h2 className="font-semibold text-gray-900">{t('co.gift.dogTitle')}</h2>
+                    <h2 className="text-[15px] font-bold text-gray-900">{t('co.gift.dogTitle')}</h2>
                     <p className="text-xs text-gray-500 mb-3">{t('co.gift.dogSub')}</p>
                     <DogProfileForm value={giftDog} onChange={d => { setGiftDog(d); setErrs(e => ({ ...e, dogName: '', dogSize: d.size ? '' : e.dogSize })); }} compact nameError={errs.dogName} sizeError={errs.dogSize} />
                   </div>
@@ -493,8 +490,7 @@ export default function CheckoutPage() {
             {/* ── Dog ── */}
             {step === 'dog' && (
               <section className="bg-white rounded-2xl border border-gray-100 p-6 sm:p-8">
-                <h1 className="text-xl font-bold text-gray-900 mb-1">{t('co.dog.title')}</h1>
-                <p className="text-sm text-gray-500 mb-6">{t('co.dog.sub')}</p>
+                <Heading kind="form" as="h1" title={t('co.dog.title')} subtitle={t('co.dog.sub')} />
                 {myDogs.length > 0 && (
                   <div className="mb-7">
                     <p className="text-sm font-semibold text-gray-900 mb-2.5">{t('co.dog.which')}</p>
@@ -534,9 +530,9 @@ export default function CheckoutPage() {
                     <p className="text-xs text-amber-700 mt-2 pt-2 border-t border-amber-200">{fill(t('co.gift.billingNote'), { name: form.giftRecipientName })}</p>
                   </div>
                 )}
-                <h1 className="text-xl font-bold text-gray-900 mb-1">{isGift ? t('co.delivery.giftTitle') : t('co.delivery.title')}</h1>
-                {signedInEmail && <p className="text-xs text-gray-400 mb-5">{fill(t('co.signedInAs'), { email: signedInEmail })}</p>}
-                <div className="space-y-4 mt-4">
+                <Heading kind="form" as="h1" title={isGift ? t('co.delivery.giftTitle') : t('co.delivery.title')}
+                  subtitle={signedInEmail ? fill(t('co.signedInAs'), { email: signedInEmail }) : undefined} />
+                <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     {input('firstName', t('co.f.firstName'), { autoComplete: 'given-name' })}
                     {input('lastName', t('co.f.lastName'), { autoComplete: 'family-name' })}
@@ -556,7 +552,7 @@ export default function CheckoutPage() {
                   {input('addressLine2', t('co.f.address2'), { autoComplete: 'address-line2' })}
                 </div>
 
-                <h2 className="font-semibold text-gray-900 mt-8 mb-3">{t('co.delivery.method')}</h2>
+                <h2 className="text-[15px] font-bold text-gray-900 mt-8 mb-3">{t('co.delivery.method')}</h2>
                 <div className="space-y-3" role="radiogroup" aria-label={t('co.delivery.method')} aria-invalid={!!errs.delivery} tabIndex={errs.delivery ? -1 : undefined}>
                   {deliveryMethods.map(m => {
                     const days = String(m.estimatedDays ?? '');
@@ -634,7 +630,7 @@ export default function CheckoutPage() {
 
           {/* ── Summary ── */}
           <aside className="bg-white rounded-2xl border border-gray-100 p-5 h-fit md:sticky md:top-24" aria-label={t('co.sum.title')}>
-            <h2 className="font-semibold text-gray-900 mb-4">{t('co.sum.title')}</h2>
+            <h2 className="text-[15px] font-bold text-gray-900 mb-4">{t('co.sum.title')}</h2>
             <ul className="space-y-3 text-sm mb-4">
               {cart?.items?.map((item: any) => (
                 <li key={item.id} className="flex justify-between gap-3 text-gray-700">

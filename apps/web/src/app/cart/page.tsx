@@ -8,6 +8,7 @@ import { gel } from '@/lib/format';
 import { itemName } from '@/lib/localize';
 import ChoiceNote from '@/components/ChoiceNote';
 import { FieldError } from '@/components/ui/FormError';
+import { Heading } from '@/components/ui/Heading';
 
 export default function CartPage() {
   const { t, lang } = useLanguage();
@@ -31,10 +32,9 @@ export default function CartPage() {
   if (!cart || !(cart.itemCount > 0)) {
     return (
       <main className="min-h-screen bg-white">
-        <div className="max-w-2xl mx-auto px-6 py-24 text-center">
+        <div className="max-w-2xl mx-auto px-6 py-16 text-center">
           <div className="text-6xl mb-6">🛒</div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-3">{t('co.empty.title')}</h1>
-          <p className="text-gray-500 mb-8">{t('co.empty.sub')}</p>
+          <Heading align="center" title={t('co.empty.title')} subtitle={t('co.empty.sub')} />
           <div className="flex gap-4 justify-center">
             <Link href="/prices" className="inline-flex items-center justify-center bg-teal-600 text-white px-6 py-3 rounded-full font-medium hover:bg-teal-700 transition">{t('co.empty.plans')}</Link>
             <Link href="/shop" className="border border-teal-600 text-teal-600 px-6 py-3 rounded-full font-medium hover:bg-teal-50 transition">{t('cart.browse')}</Link>
@@ -46,8 +46,8 @@ export default function CartPage() {
 
   return (
     <main className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10">
-        <h1 className="text-2xl font-bold text-gray-900 mb-8">{t('cart.title')} <span className="text-gray-400 font-medium">({cart.itemCount})</span></h1>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-8 sm:pt-10 pb-14">
+        <Heading title={<>{t('cart.title')} <span className="text-gray-400 font-semibold">({cart.itemCount})</span></>} />
         {cart.pricesUpdated && <p className="-mt-5 mb-6 text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3" role="status">{t('cart.updated')}</p>}
 
         <div className="grid md:grid-cols-3 gap-8">
@@ -92,7 +92,7 @@ export default function CartPage() {
           {/* Summary */}
           <div className="space-y-4">
             <div className="bg-white rounded-xl border border-gray-100 p-5">
-              <h2 className="font-semibold text-gray-900 mb-3">{t('cart.promo')}</h2>
+              <h2 className="text-[15px] font-bold text-gray-900 mb-3">{t('cart.promo')}</h2>
               {cart.coupon ? (
                 <div className="flex items-center justify-between bg-teal-50 rounded-lg px-3 py-2">
                   <div>
@@ -118,7 +118,7 @@ export default function CartPage() {
             </div>
 
             <div className="bg-white rounded-xl border border-gray-100 p-5">
-              <h2 className="font-semibold text-gray-900 mb-4">{t('co.sum.title')}</h2>
+              <h2 className="text-[15px] font-bold text-gray-900 mb-4">{t('co.sum.title')}</h2>
               <dl className="space-y-2 text-sm">
                 <div className="flex justify-between text-gray-600"><dt>{t('co.sum.subtotal')}</dt><dd>{gel(cart.subtotal)}</dd></div>
                 {cart.discountAmount > 0 && <div className="flex justify-between text-teal-700"><dt>{t('co.sum.discount')}</dt><dd>−{gel(cart.discountAmount)}</dd></div>}

@@ -1,5 +1,6 @@
 'use client';
 import { useLanguage } from '@/context/LanguageContext';
+import { Heading } from '@/components/ui/Heading';
 
 /**
  * A CMS page's title and body in the visitor's language. The Georgian
@@ -15,7 +16,7 @@ export default function CmsContent({ title, html, text, kaTitle, kaHtml }: {
 
   return (
     <>
-      <h1 className="text-2xl sm:text-4xl font-extrabold text-gray-900 mb-8 [overflow-wrap:anywhere]">{useKa && kaTitle ? kaTitle : title}</h1>
+      <Heading title={useKa && kaTitle ? kaTitle : title} />
       {body ? (
         // Admin-authored HTML from our own CMS, not user input.
         <div className="cms-prose" dangerouslySetInnerHTML={{ __html: body }} />

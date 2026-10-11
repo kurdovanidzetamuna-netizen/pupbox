@@ -5,6 +5,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { usePage } from '@/lib/usePage';
 import SmartLink from '@/components/SmartLink';
 import Accent from '@/components/Accent';
+import { Heading } from '@/components/ui/Heading';
 
 function useInView(threshold = 0.15) {
   const ref = useRef<HTMLDivElement>(null);
@@ -92,16 +93,13 @@ export default function HowItWorksClient({ content, faq }: { content: StoredCont
   return (
     <main className="min-h-screen bg-white overflow-hidden">
       {/* Hero */}
-      <section className="max-w-3xl mx-auto px-6 pt-16 pb-10 text-center">
+      <section className="max-w-3xl mx-auto px-6 pt-8 sm:pt-10 pb-8 text-center">
         {hero.badge && (
           <div className="inline-flex items-center gap-2 bg-teal-50 text-teal-700 text-xs font-bold px-4 py-2 rounded-full mb-6 tracking-wide uppercase">
             {hero.badge}
           </div>
         )}
-        <h1 className="text-5xl font-extrabold text-gray-900 mb-4 leading-tight">
-          <Accent text={hero.heading} accent={hero.headingAccent} />
-        </h1>
-        {hero.description && <p className="text-lg text-gray-500">{hero.description}</p>}
+        <Heading align="center" title={<Accent text={hero.heading} accent={hero.headingAccent} />} subtitle={hero.description || undefined} className="!mb-0" />
       </section>
 
       {/* Roadmap */}
@@ -117,7 +115,7 @@ export default function HowItWorksClient({ content, faq }: { content: StoredCont
 
       {/* CTA */}
       {c.on('cta') && (
-      <section className="relative overflow-hidden bg-gradient-to-br from-teal-50 via-white to-amber-50 py-16">
+      <section className="relative overflow-hidden bg-gradient-to-br from-teal-50 via-white to-amber-50 py-12 sm:py-14">
         <span className="absolute top-8 left-12 text-3xl opacity-10 animate-bounce" style={{ animationDuration: '3s' }}>🐾</span>
         <span className="absolute top-16 right-20 text-2xl opacity-10 animate-bounce" style={{ animationDuration: '4s', animationDelay: '0.5s' }}>🐾</span>
         <span className="absolute bottom-10 left-1/4 text-xl opacity-10 animate-bounce" style={{ animationDuration: '3.5s', animationDelay: '1s' }}>🐾</span>
@@ -126,16 +124,11 @@ export default function HowItWorksClient({ content, faq }: { content: StoredCont
         <div className="absolute -bottom-20 -right-20 w-72 h-72 bg-amber-200 rounded-full opacity-20 blur-3xl" />
 
         <div className="relative max-w-2xl mx-auto px-6 text-center">
-          <div className="inline-flex items-center gap-2 bg-white border border-teal-100 text-teal-700 text-xs font-bold px-4 py-2 rounded-full mb-8 shadow-sm tracking-wide">
+          <div className="inline-flex items-center gap-2 bg-white border border-teal-100 text-teal-700 text-xs font-bold px-4 py-2 rounded-full mb-4 tracking-wide">
             <span className="w-2 h-2 rounded-full bg-teal-500 animate-pulse" />
             {cta.badge}
           </div>
-          <h2 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-4 leading-tight">
-            {cta.heading}
-          </h2>
-          <p className="text-gray-500 text-lg mb-10 max-w-md mx-auto">
-            {cta.description}
-          </p>
+          <Heading kind="section" align="center" title={cta.heading} subtitle={cta.description || undefined} className="!mb-7" />
           <div className="flex justify-center gap-3 flex-wrap mb-10">
             {cta.chips.filter((s: any) => s.label).map((s: any, i: number) => (
               <div key={i} className="flex items-center gap-2 bg-white border border-gray-100 text-gray-600 text-xs font-medium px-4 py-2 rounded-full shadow-sm">
@@ -161,11 +154,8 @@ export default function HowItWorksClient({ content, faq }: { content: StoredCont
 
       {/* FAQ */}
       {c.on('faq') && faqs.length > 0 && (
-      <section className="max-w-3xl mx-auto px-6 py-16">
-        <div className="text-center mb-10">
-          <h2 className="text-3xl font-extrabold text-gray-900 mb-2">{c.faq.heading}</h2>
-          {c.faq.description && <p className="text-gray-500">{c.faq.description}</p>}
-        </div>
+      <section className="max-w-3xl mx-auto px-6 py-12 sm:py-14">
+        <Heading kind="section" align="center" title={c.faq.heading} subtitle={c.faq.description || undefined} />
         <div className="space-y-3">
           {faqs.map((faq, i) => <FaqRow key={i} q={faq.q} a={faq.a} index={i} />)}
         </div>

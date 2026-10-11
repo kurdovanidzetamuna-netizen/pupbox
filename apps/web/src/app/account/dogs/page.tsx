@@ -11,6 +11,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import DogProfileForm, { emptyDogProfile, fromDog, toDogPayload, type DogProfile } from '@/components/DogProfileForm';
 import { authFetch, loginUrl, SessionExpiredError } from '@/lib/authFetch';
 import { FormAlert, revealFirstError } from '@/components/ui/FormError';
+import { Heading } from '@/components/ui/Heading';
 
 const SIZE_KEY: Record<string, string> = { EXTRA_SMALL: 'XS', SMALL: 'S', MEDIUM: 'M', LARGE: 'L', EXTRA_LARGE: 'XL' };
 
@@ -132,18 +133,15 @@ export default function MyDogsPage() {
 
   return (
     <div>
-        <div className="flex items-center justify-between gap-4 mb-1">
-          <h1 className="text-2xl font-bold text-gray-900">{t('dogs.title')}</h1>
-          {editing === null && <IconButton icon="plus" label={t('dogs.add')} tone="primary" onClick={() => open('new')} />}
-        </div>
-        <p className="text-[13px] text-gray-500 mb-5">{t('dogs.sub')}</p>
+        <Heading kind="section" as="h1" title={t('dogs.title')} subtitle={t('dogs.sub')}
+          actions={editing === null && <IconButton icon="plus" label={t('dogs.add')} tone="primary" onClick={() => open('new')} />} />
 
         {notice && <p className="mb-4 text-sm text-teal-800 bg-teal-50 border border-teal-100 rounded-xl px-4 py-3" role="status">✓ {notice}</p>}
         <FormAlert message={error} className="mb-4" />
 
         {editing !== null && (
           <section className="bg-white rounded-[28px] ring-1 ring-gray-200/60 p-6 mb-6">
-            <h2 className="font-semibold text-gray-900 mb-4">{editing === 'new' ? t('dogs.add') : draft.name || t('dogs.title')}</h2>
+            <h2 className="text-[15px] font-bold text-gray-900 mb-4">{editing === 'new' ? t('dogs.add') : draft.name || t('dogs.title')}</h2>
             <DogProfileForm value={draft} onChange={d => { setDraft(d); setNameError(''); }} nameError={nameError} />
             <div className="flex gap-3 mt-6">
               <button onClick={save} disabled={saving} className={primary}>{saving ? t('co.saving') : t('acc.save')}</button>

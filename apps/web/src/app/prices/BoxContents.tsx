@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { pricingPage, type StoredContent } from '@pupbox/content';
 import { usePage } from '@/lib/usePage';
+import { Heading } from '@/components/ui/Heading';
 
 /** Tabs and items are edited in admin → Page Builder → Pricing Page. */
 export default function BoxContents({ content }: { content: StoredContent | null }) {
@@ -21,21 +22,14 @@ export default function BoxContents({ content }: { content: StoredContent | null
   const items = tabs[Math.min(active, tabs.length - 1)]?.items ?? [];
 
   return (
-    <section className="py-16 bg-white">
+    <section className="py-12 sm:py-14 bg-white">
       <div className="max-w-7xl mx-auto px-6">
 
         {/* header */}
-        <div className="text-center mb-12">
-          <span className="inline-flex items-center gap-2 bg-teal-50 text-teal-700 text-xs font-bold px-4 py-2 rounded-full mb-4 tracking-wide uppercase">
-            {box.badge}
-          </span>
-          <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-3">
-            {box.heading}
-          </h2>
-        </div>
+        <Heading kind="section" align="center" eyebrow={box.badge || undefined} title={box.heading} />
 
         {/* category tabs */}
-        <div className="flex flex-wrap justify-center gap-2 mb-10">
+        <div className="flex flex-wrap justify-center gap-2 mb-8">
           {tabs.map((cat, i) => (
             <button
               key={i}

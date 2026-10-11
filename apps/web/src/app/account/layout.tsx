@@ -32,7 +32,7 @@ export default function AccountLayout({ children }: { children: React.ReactNode 
 
   return (
     <main className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12 flex flex-col lg:flex-row gap-6 lg:gap-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-10 pb-14 flex flex-col lg:flex-row gap-6 lg:gap-10">
         <aside className="lg:w-64 shrink-0">
           <nav aria-label={t('acc.title')} className="lg:sticky lg:top-24">
             <p className="hidden lg:block text-xs font-bold text-gray-400 uppercase tracking-wider px-3 mb-3">{t('acc.title')}</p>

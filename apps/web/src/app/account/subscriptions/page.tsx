@@ -14,6 +14,7 @@ import { gel } from '@/lib/format';
 import Field from '@/components/ui/Field';
 import PhoneInput, { isValidPhone } from '@/components/ui/PhoneInput';
 import { FormAlert, countErrors, revealFirstError } from '@/components/ui/FormError';
+import { Heading } from '@/components/ui/Heading';
 
 const STATUS_STYLE: Record<string, { bg: string; color: string }> = {
   ACTIVE:         { bg: '#f0fdf4', color: '#166534' },
@@ -182,10 +183,8 @@ export default function MySubscriptionsPage() {
 
   return (
     <div>
-        <div className="flex items-center justify-between gap-4 mb-5">
-          <h1 className="text-2xl font-bold text-gray-900">{t('acc.subscriptions')}</h1>
-          {subs.length > 0 && <IconButton icon="plus" label={t('sub.addPlan').replace(/^\+\s*/, '')} tone="primary" onClick={() => router.push('/prices#plans')} />}
-        </div>
+        <Heading kind="section" as="h1" title={t('acc.subscriptions')}
+          actions={subs.length > 0 && <IconButton icon="plus" label={t('sub.addPlan').replace(/^\+\s*/, '')} tone="primary" onClick={() => router.push('/prices#plans')} />} />
 
         {loading ? (
           <div className="flex justify-center py-20"><div className="w-8 h-8 border-4 border-teal-200 border-t-teal-600 rounded-full animate-spin" /></div>

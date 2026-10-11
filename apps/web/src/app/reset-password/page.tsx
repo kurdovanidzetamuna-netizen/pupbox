@@ -6,6 +6,7 @@ import { saveForEmails, useLanguage } from '@/context/LanguageContext';
 import { useCart } from '@/context/CartContext';
 import { API_URL } from '@/lib/api';
 import { FieldError, FormAlert, countErrors, revealFirstError } from '@/components/ui/FormError';
+import { Heading } from '@/components/ui/Heading';
 
 /** Opened from the reset email: choose a new password, then you're signed in. */
 function ResetForm() {
@@ -60,9 +61,9 @@ function ResetForm() {
   const field = (bad?: string) => `w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 ${bad ? 'border-red-400 bg-red-50' : 'border-gray-200'}`;
 
   return (
-    <main className="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-4 py-16">
-      <div className="bg-white rounded-2xl border border-gray-100 p-8 w-full max-w-md shadow-sm">
-        <h1 className="text-2xl font-bold text-gray-900 mb-6">{t('rp.heading')}</h1>
+    <main className="min-h-[70vh] bg-gray-50 flex flex-col items-center px-4 pt-8 sm:pt-10 pb-14">
+      <div className="bg-white rounded-3xl ring-1 ring-gray-200/60 p-6 sm:p-8 w-full max-w-md">
+        <Heading kind="form" as="h1" title={t('rp.heading')} />
         {done ? (
           <p className="text-sm text-gray-700 bg-teal-50 border border-teal-100 rounded-xl px-4 py-3" role="status">✓ {t('rp.done')}</p>
         ) : linkBroken ? (

@@ -8,6 +8,7 @@ import { shopPage } from '@pupbox/content';
 import { getStoredContent, pageMetadata } from '@/lib/content';
 import { cookies } from 'next/headers';
 import { LANG_COOKIE } from '@/lib/lang';
+import { Heading } from '@/components/ui/Heading';
 
 export const generateMetadata = () => pageMetadata(shopPage);
 
@@ -58,14 +59,11 @@ export default async function ShopPage({
 
   return (
     <main className="min-h-screen bg-white">
-      <div className="max-w-7xl mx-auto px-6 py-12">
+      <div className="max-w-7xl mx-auto px-6 pt-8 sm:pt-10 pb-14">
 
         {/* Page header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-extrabold text-gray-900 mb-1"><ContentText page={shopPage} content={content} at="header.heading" /></h1>
-          <div className="text-sm text-gray-500 max-w-2xl mb-1"><ContentText page={shopPage} content={content} at="header.description" as="p" /></div>
-          <p className="text-sm text-gray-400"><T k="shop.count" vars={{ n: total }} /></p>
-        </div>
+        <Heading title={<ContentText page={shopPage} content={content} at="header.heading" />}
+          subtitle={<><ContentText page={shopPage} content={content} at="header.description" /> <span className="text-gray-400">· <T k="shop.count" vars={{ n: total }} /></span></>} />
 
         <div className="flex gap-8">
 

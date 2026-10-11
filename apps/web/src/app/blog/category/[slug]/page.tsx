@@ -3,6 +3,7 @@ import T from '@/components/T';
 import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
 import { API_URL } from '@/lib/api';
+import { Heading } from '@/components/ui/Heading';
 
 async function getCategory(slug: string) {
   const res = await fetch(`${API_URL}/blog/categories`, { next: { revalidate: 600 } });
@@ -37,15 +38,14 @@ export default async function BlogCategoryPage({ params, searchParams }: { param
   return (
     <main className="min-h-screen bg-gray-50">
 
-      <div className="max-w-7xl mx-auto px-6 py-12">
+      <div className="max-w-7xl mx-auto px-6 pt-8 sm:pt-10 pb-14">
         <nav className="text-sm text-gray-400 mb-8 flex gap-2">
           <Link href="/blog" className="hover:text-teal-600"><T k="crumb.blog" /></Link>
           <span>/</span>
           <span className="text-gray-700">{cat.name}</span>
         </nav>
 
-        <h1 className="text-3xl font-extrabold text-gray-900 mb-2">{cat.name}</h1>
-        {cat.description && <p className="text-gray-500 mb-10">{cat.description}</p>}
+        <Heading title={cat.name} subtitle={cat.description || undefined} />
 
         {posts.length === 0 ? (
           <div className="text-center py-20 text-gray-400"><T k="blog.catEmpty" /></div>

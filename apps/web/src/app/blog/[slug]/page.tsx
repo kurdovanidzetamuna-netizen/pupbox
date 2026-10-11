@@ -3,6 +3,7 @@ import T from '@/components/T';
 import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
 import { API_URL } from '@/lib/api';
+import { Heading } from '@/components/ui/Heading';
 
 async function getPost(slug: string) {
   const res = await fetch(`${API_URL}/blog/posts/${slug}`, { next: { revalidate: 300 } });
@@ -60,7 +61,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
 
-      <article className="max-w-3xl mx-auto px-6 py-12">
+      <article className="max-w-3xl mx-auto px-6 pt-8 sm:pt-10 pb-14">
         <nav className="text-sm text-gray-400 mb-8 flex gap-2">
           <Link href="/blog" className="hover:text-teal-600"><T k="crumb.blog" /></Link>
           {post.category && (
@@ -78,7 +79,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
             {post.category.name}
           </Link>
         )}
-        <h1 className="text-4xl font-extrabold text-gray-900 mt-2 mb-4 leading-tight">{post.title}</h1>
+        <Heading title={post.title} className="mt-2 !mb-3" />
 
         <div className="flex items-center gap-4 text-sm text-gray-400 mb-8">
           {post.authorName && <span>By <span className="text-gray-600 font-medium">{post.authorName}</span></span>}

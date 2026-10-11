@@ -7,6 +7,7 @@ import { Icon } from '@/components/ui/icons';
 import IconButton from '@/components/ui/IconButton';
 import NotificationItem from '@/components/NotificationItem';
 import { markRead, setUnread, useUnread, type Notice } from '@/lib/notifications';
+import { TYPE } from '@/components/ui/Heading';
 
 /** Every notification, newest first: All / Unread, grouped Today and Earlier. */
 export default function NotificationsPage() {
@@ -45,7 +46,7 @@ export default function NotificationsPage() {
   return (
     <section className="bg-white rounded-3xl ring-1 ring-gray-200/60 p-4 sm:p-6">
       <div className="flex items-center justify-between gap-3 mb-4">
-        <h1 className="text-[17px] font-bold text-gray-900">{t('ntf.title')}</h1>
+        <h1 className={TYPE.section}>{t('ntf.title')}</h1>
         <div className="flex items-center gap-1.5">
           <div role="tablist" className="grid grid-cols-2 p-1 rounded-full bg-gray-100 text-[12px] font-semibold">
             {(['all', 'unread'] as const).map((f) => (

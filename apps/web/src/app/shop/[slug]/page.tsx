@@ -4,6 +4,7 @@ import { api } from '@/lib/api';
 import AddToCartButton from '@/components/AddToCartButton';
 import T, { L } from '@/components/T';
 import { gel } from '@/lib/format';
+import { Heading } from '@/components/ui/Heading';
 
 export async function generateMetadata({ params }: { params: { slug: string } }) {
   try {
@@ -34,7 +35,7 @@ export default async function ProductDetailPage({ params }: { params: { slug: st
 
   return (
     <main className="min-h-screen bg-white">
-      <div className="max-w-7xl mx-auto px-6 py-10">
+      <div className="max-w-7xl mx-auto px-6 pt-8 sm:pt-10 pb-14">
         {/* Breadcrumb */}
         <nav className="text-sm text-gray-400 mb-8 flex gap-2">
           <Link href="/shop" className="hover:text-teal-600"><T k="shop.title" /></Link>
@@ -86,8 +87,7 @@ export default async function ProductDetailPage({ params }: { params: { slug: st
                 </Link>
               )}
             </div>
-            <h1 className="text-3xl font-bold text-gray-900 mt-1 mb-3"><L en={product.name} ka={ka.name} /></h1>
-            <p className="text-gray-500 mb-4"><L en={product.shortDescription || ''} ka={ka.shortDescription} /></p>
+            <Heading title={<L en={product.name} ka={ka.name} />} subtitle={<L en={product.shortDescription || ''} ka={ka.shortDescription} />} className="mt-1 !mb-5" />
 
             {/* Price */}
             <div className="flex items-center gap-3 mb-2">
@@ -138,7 +138,7 @@ export default async function ProductDetailPage({ params }: { params: { slug: st
         {/* Description */}
         {product.description && (
           <div className="mt-12 border-t border-gray-100 pt-10">
-            <h2 className="text-xl font-bold text-gray-900 mb-4"><T k="pdp.description" /></h2>
+            <Heading kind="section" title={<T k="pdp.description" />} className="!mb-4" />
             <p className="text-gray-600 leading-relaxed"><L en={product.description} ka={ka.description} /></p>
           </div>
         )}

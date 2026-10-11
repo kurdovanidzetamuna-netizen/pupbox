@@ -5,6 +5,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { fill } from '@/context/strings/purchase';
 import { API_URL } from '@/lib/api';
 import { FieldError, FormAlert, countErrors, revealFirstError } from '@/components/ui/FormError';
+import { Heading } from '@/components/ui/Heading';
 
 /** Asks for a reset link. Says the same thing whether or not the account exists. */
 export default function ForgotPasswordPage() {
@@ -33,9 +34,9 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-4 py-16">
-      <div className="bg-white rounded-2xl border border-gray-100 p-8 w-full max-w-md shadow-sm">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">{t('fp.heading')}</h1>
+    <main className="min-h-[70vh] bg-gray-50 flex flex-col items-center px-4 pt-8 sm:pt-10 pb-14">
+      <div className="bg-white rounded-3xl ring-1 ring-gray-200/60 p-6 sm:p-8 w-full max-w-md">
+        <Heading kind="form" as="h1" title={t('fp.heading')} className="!mb-2" />
         {sentTo ? (
           <p className="text-sm text-gray-600 bg-teal-50 border border-teal-100 rounded-xl px-4 py-3 mt-4" role="status">{fill(t('fp.sent'), { email: sentTo })}</p>
         ) : (

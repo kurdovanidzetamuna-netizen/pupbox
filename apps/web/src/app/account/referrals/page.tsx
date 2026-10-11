@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/context/LanguageContext';
 import { authFetch, loginUrl, SessionExpiredError } from '@/lib/authFetch';
+import { Heading } from '@/components/ui/Heading';
 
 export default function ReferralsPage() {
   const router = useRouter();
@@ -32,8 +33,7 @@ export default function ReferralsPage() {
 
   return (
     <div>
-        <h1 className="text-2xl font-bold text-gray-900 mb-1">{t('ref.title')}</h1>
-        <p className="text-gray-500 mb-8">{t('ref.sub')}</p>
+        <Heading kind="section" as="h1" title={t('ref.title')} subtitle={t('ref.sub')} />
 
         {loading && (
           <div className="flex justify-center py-20"><div className="w-8 h-8 border-4 border-teal-200 border-t-teal-600 rounded-full animate-spin" /></div>
@@ -55,7 +55,7 @@ export default function ReferralsPage() {
             </dl>
 
             <section className="bg-white rounded-[28px] ring-1 ring-gray-200/60 p-6 mb-8">
-              <h2 className="font-semibold text-gray-800 mb-4">{t('ref.yourLink')}</h2>
+              <h2 className="text-[15px] font-bold text-gray-900 mb-4">{t('ref.yourLink')}</h2>
               <div className="flex items-center gap-3">
                 <input readOnly value={referralLink} aria-label={t('ref.yourLink')}
                   className="flex-1 min-w-0 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-600 bg-gray-50 focus:outline-none" />

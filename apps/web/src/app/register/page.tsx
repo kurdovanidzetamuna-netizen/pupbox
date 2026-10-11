@@ -14,6 +14,7 @@ import { API_URL } from '@/lib/api';
 import { authFetch } from '@/lib/authFetch';
 import { forgetReferral, rememberReferral, storedReferral } from '@/lib/referral';
 import { FieldError, FormAlert, countErrors, revealFirstError } from '@/components/ui/FormError';
+import { Heading } from '@/components/ui/Heading';
 
 type Step = 'details' | 'verify' | 'dog';
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -107,7 +108,7 @@ function RegisterForm() {
   const steps: Step[] = ['details', 'verify', 'dog'];
 
   return (
-    <main className="min-h-[70vh] bg-gray-50 flex flex-col items-center px-4 pt-8 sm:pt-12 pb-16">
+    <main className="min-h-[70vh] bg-gray-50 flex flex-col items-center px-4 pt-8 sm:pt-10 pb-14">
       <ol className="flex items-center gap-2 mb-6 text-xs" aria-label={t('aria.signupSteps')}>
         {steps.map((s, i) => {
           const at = steps.indexOf(step);
@@ -124,8 +125,7 @@ function RegisterForm() {
       <div className="bg-white rounded-3xl ring-1 ring-gray-200/60 p-6 sm:p-8 w-full max-w-lg">
         {step === 'details' && (
           <>
-            <h1 className="text-2xl font-bold text-gray-900 mb-1">{t('register.heading')}</h1>
-            <p className="text-sm text-gray-500 mb-6">{t('register.subheading')}</p>
+            <Heading kind="form" as="h1" title={t('register.heading')} subtitle={t('register.subheading')} />
             <FormAlert message={error} missing={countErrors(fieldErrors)} className="mb-4" />
             <form onSubmit={handleSubmit} className="space-y-4" noValidate>
               <div className="grid grid-cols-2 gap-3">
@@ -180,16 +180,14 @@ function RegisterForm() {
         {step === 'verify' && (
           <>
             <span className="w-11 h-11 rounded-2xl bg-teal-50 text-teal-600 flex items-center justify-center mb-4"><Icon name="shield" className="w-6 h-6" /></span>
-            <h1 className="text-xl font-bold text-gray-900 mb-1">{t('ver.title')}</h1>
-            <p className="text-[13px] text-gray-500 mb-5 leading-relaxed">{t('ver.sub')}</p>
+            <Heading kind="form" as="h1" title={t('ver.title')} subtitle={t('ver.sub')} />
             <VerifyCodes onDone={verified} />
           </>
         )}
 
         {step === 'dog' && (
           <>
-            <h1 className="text-2xl font-bold text-gray-900 mb-1">{t('wel.title')}</h1>
-            <p className="text-sm text-gray-500 mb-6">{t('wel.sub')}</p>
+            <Heading kind="form" as="h1" title={t('wel.title')} subtitle={t('wel.sub')} />
             <DogProfileForm value={dog} onChange={d => { setDog(d); setFieldErrors({}); }} compact nameError={fieldErrors.dogName} />
             <FormAlert message={error} className="mt-4" />
             <div className="flex gap-3 mt-6">

@@ -40,7 +40,7 @@ export default async function CmsPage({ params }: { params: { slug: string } }) 
   // draw a second header (and footer) of its own underneath it.
   return (
     <main className="min-h-screen bg-white">
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-12">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-8 sm:pt-10 pb-14">
         <CmsContent title={page.title} html={content?.html} text={content?.text} kaTitle={ka?.title} kaHtml={ka?.html} />
       </div>
     </main>

@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { Suspense, useState } from 'react';
 import { useLanguage } from '@/context/LanguageContext';
 import { FormAlert } from '@/components/ui/FormError';
+import { Heading } from '@/components/ui/Heading';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 
@@ -12,8 +13,7 @@ function Screen({ icon, title, sub, children }: { icon: string; title: string; s
   return (
     <main className="min-h-screen bg-white flex flex-col items-center justify-center px-6 text-center">
       <div className="text-6xl mb-6 animate-[pop_0.5s_ease-out]" aria-hidden="true">{icon}</div>
-      <h1 className="text-3xl font-extrabold text-gray-900 mb-3">{title}</h1>
-      <p className="text-lg text-gray-500 mb-8 max-w-md">{sub}</p>
+      <Heading align="center" title={title} subtitle={sub} />
       {children}
     </main>
   );

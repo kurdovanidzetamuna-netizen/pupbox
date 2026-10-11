@@ -11,6 +11,7 @@ import ChoiceNote from '@/components/ChoiceNote';
 import Menu from '@/components/ui/Menu';
 import { itemName } from '@/lib/localize';
 import { FieldError, FormAlert } from '@/components/ui/FormError';
+import { Heading } from '@/components/ui/Heading';
 
 /** Every OrderStatus the API can return, with a colour and a label key. */
 const STATUS_STYLE: Record<string, string> = {
@@ -46,7 +47,7 @@ export default function MyOrdersPage() {
 
   return (
     <div>
-        <h1 className="text-2xl font-bold text-gray-900 mb-5">{t('acc.orders')}</h1>
+        <Heading kind="section" as="h1" title={t('acc.orders')} />
 
         {loading && (
           <div className="flex justify-center py-20"><div className="w-8 h-8 border-4 border-teal-200 border-t-teal-600 rounded-full animate-spin" /></div>

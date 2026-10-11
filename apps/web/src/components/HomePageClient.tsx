@@ -9,6 +9,7 @@ import Accent from '@/components/Accent';
 import { useLanguage } from '@/context/LanguageContext';
 import { usePage } from '@/lib/usePage';
 import { mdCols } from '@/lib/grid';
+import { Heading, TYPE } from '@/components/ui/Heading';
 
 interface Props {
   plans: any[];
@@ -39,19 +40,19 @@ export default function HomePageClient({ plans, content, faq, pricing }: Props) 
               <div>
                 {hero.badge && (
                   <HeroAnimate delay={0}>
-                    <span className="inline-flex items-center gap-2 bg-teal-100 text-teal-700 text-xs font-bold px-4 py-1.5 rounded-full mb-6 uppercase tracking-wide">
+                    <span className={`${TYPE.eyebrow} mb-4`}>
                       {hero.badge}
                     </span>
                   </HeroAnimate>
                 )}
                 <HeroAnimate delay={100}>
-                  <h1 className="text-3xl md:text-[2.6rem] font-extrabold text-gray-900 leading-tight mb-4">
+                  <h1 className={`${TYPE.hero} mb-3`}>
                     <Accent text={hero.heading} accent={hero.headingAccent} />
                   </h1>
                 </HeroAnimate>
                 {hero.description && (
                   <HeroAnimate delay={200}>
-                    <p className="text-base text-gray-500 mb-7 leading-relaxed max-w-md line-clamp-3">{hero.description}</p>
+                    <p className={`${TYPE.subtitle} mb-6 max-w-md line-clamp-3`}>{hero.description}</p>
                   </HeroAnimate>
                 )}
                 <HeroAnimate delay={300}>
@@ -135,12 +136,9 @@ export default function HomePageClient({ plans, content, faq, pricing }: Props) 
 
       {/* ── WHAT'S IN THE BOX ── */}
       {c.on('whatsInBox') && (
-        <section className="py-12 bg-white">
+        <section className="py-12 sm:py-14 bg-white">
           <div className="max-w-7xl mx-auto px-6">
-            <div className="text-center mb-8">
-              <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900 mb-2">{box.heading}</h2>
-              {box.description && <p className="text-base text-gray-500 max-w-xl mx-auto">{box.description}</p>}
-            </div>
+            <Heading kind="section" align="center" title={box.heading} subtitle={box.description || undefined} />
             <div className="grid md:grid-cols-3 gap-6">
               {box.items.map((item: any, i: number) => (
                 <FadeIn key={i} delay={i * 80} direction="up">
@@ -158,12 +156,9 @@ export default function HomePageClient({ plans, content, faq, pricing }: Props) 
 
       {/* ── HOW IT WORKS ── */}
       {c.on('howItWorks') && (
-        <section className="bg-teal-50 py-12">
+        <section className="bg-teal-50 py-12 sm:py-14">
           <div className="max-w-7xl mx-auto px-6">
-            <div className="text-center mb-8">
-              <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900 mb-2">{hiw.heading}</h2>
-              {hiw.description && <p className="text-gray-500 text-base">{hiw.description}</p>}
-            </div>
+            <Heading kind="section" align="center" title={hiw.heading} subtitle={hiw.description || undefined} />
             <div className={`grid ${mdCols(hiw.steps.length)} gap-8`}>
               {hiw.steps.map((step: any, i: number) => (
                 <FadeIn key={i} delay={i * 100} direction="up">
@@ -182,36 +177,27 @@ export default function HomePageClient({ plans, content, faq, pricing }: Props) 
 
       {/* ── PLANS ── */}
       {c.on('plans') && plans.length > 0 && (
-        <section className="py-12 bg-white" id="pricing">
+        <section className="py-12 sm:py-14 bg-white" id="pricing">
           <div className="max-w-7xl mx-auto px-6">
-            <div className="text-center mb-8">
-              <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900 mb-2">{c.plans.heading}</h2>
-              {c.plans.description && <p className="text-base text-gray-500">{c.plans.description}</p>}
-            </div>
+            <Heading kind="section" align="center" title={c.plans.heading} subtitle={c.plans.description || undefined} />
             <PlanSection plans={plans} content={pricing} />
           </div>
         </section>
       )}
 
       {/* ── BREAK TIME ── a small game: Pupbox isn't a standard shop */}
-      <section className="py-10 bg-white">
+      <section className="py-12 sm:py-14 bg-white">
         <div className="max-w-3xl mx-auto px-6">
-          <div className="text-center mb-5">
-            <h2 className="text-xl md:text-2xl font-extrabold text-gray-900">{t('game.break')}</h2>
-            <p className="text-sm text-gray-500 mt-1">{t('game.breakSub')}</p>
-          </div>
+          <Heading kind="section" align="center" title={t('game.break')} subtitle={t('game.breakSub')} />
           <DogRunner />
         </div>
       </section>
 
       {/* ── TESTIMONIALS ── placeholder reviews until launch, by decision */}
       {c.on('testimonials') && testimonials.items.length > 0 && (
-        <section className="bg-teal-50 py-12">
+        <section className="bg-teal-50 py-12 sm:py-14">
           <div className="max-w-7xl mx-auto px-6">
-            <div className="text-center mb-8">
-              <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900 mb-2">{testimonials.heading}</h2>
-              {testimonials.description && <p className="text-base text-gray-500">{testimonials.description}</p>}
-            </div>
+            <Heading kind="section" align="center" title={testimonials.heading} subtitle={testimonials.description || undefined} />
             <div className="grid md:grid-cols-3 gap-6">
               {testimonials.items.map((item: any, i: number) => (
                 <FadeIn key={i} delay={i * 120} direction="up">
@@ -235,11 +221,9 @@ export default function HomePageClient({ plans, content, faq, pricing }: Props) 
 
       {/* ── FAQ ── */}
       {c.on('faq') && faqItems.length > 0 && (
-        <section className="py-12 bg-white">
+        <section className="py-12 sm:py-14 bg-white">
           <div className="max-w-3xl mx-auto px-6">
-            <div className="text-center mb-12">
-              <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900 mb-2">{c.faq.heading}</h2>
-            </div>
+            <Heading kind="section" align="center" title={c.faq.heading} />
             <div className="space-y-4">
               {faqItems.map((item, i) => (
                 <details key={i} className="group border border-gray-100 rounded-xl">
