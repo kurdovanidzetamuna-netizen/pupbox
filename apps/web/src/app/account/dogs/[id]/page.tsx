@@ -229,7 +229,7 @@ export default function DogProfilePage() {
           <ul className="space-y-2">
             {plans.map((s) => (
               <li key={s.id}>
-                <Link href="/account/subscriptions" className="flex items-center gap-3 rounded-2xl bg-gray-50 hover:bg-teal-50 px-3 py-2.5 transition-colors">
+                <Link href="/account/orders?tab=plans" className="flex items-center gap-3 rounded-2xl bg-gray-50 hover:bg-teal-50 px-3 py-2.5 transition-colors">
                   <span className="flex-1 min-w-0">
                     <span className="block text-[13px] font-bold text-gray-900 truncate">{planText(s.plan, 'name', lang)}</span>
                     <span className="block text-[11.5px] text-gray-500">{fill(t('dogs.boxes'), { sent: s.boxesDelivered, total: s.boxesTotal })}{s.endDate && <> · {fill(t('dogs.until'), { date: formatDate(s.endDate, lang) })}</>}</span>

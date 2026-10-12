@@ -8,8 +8,7 @@ import ConfirmDialog from '@/components/ui/ConfirmDialog';
 
 const LINKS = [
   { href: '/account', k: 'acc.profile', icon: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z' },
-  { href: '/account/orders', k: 'acc.orders', icon: 'M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z' },
-  { href: '/account/subscriptions', k: 'acc.subscriptions', icon: 'M4 4v5h.6m15.4 2A8 8 0 004.6 9M4.6 9H9m11 11v-5h-.6m0 0a8 8 0 01-15.4-2m15.4 2H15' },
+  { href: '/account/orders', k: 'acc.ordersPlans', icon: 'M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z' },
   { href: '/account/dogs', k: 'acc.dogs', icon: 'M4.3 6.3a4.5 4.5 0 000 6.4L12 20.4l7.7-7.7a4.5 4.5 0 00-6.4-6.4L12 7.6l-1.3-1.3a4.5 4.5 0 00-6.4 0z' },
   { href: '/account/referrals', k: 'acc.referrals', icon: 'M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7' },
 ];
@@ -22,7 +21,7 @@ export default function AccountLayout({ children }: { children: React.ReactNode 
   const { t } = useLanguage();
   const pathname = usePathname();
   const router = useRouter();
-  const active = (href: string) => (href === '/account' ? pathname === '/account' : pathname.startsWith(href));
+  const active = (href: string) => (href === '/account' ? pathname === '/account' : pathname.startsWith(href) || (href === '/account/orders' && pathname.startsWith('/account/subscriptions')));
 
   const [askOut, setAskOut] = useState(false);
   function leave() {

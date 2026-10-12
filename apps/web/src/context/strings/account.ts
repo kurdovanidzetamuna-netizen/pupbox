@@ -296,4 +296,12 @@ export const ACCOUNT_STRINGS: Record<string, { en: string; ka: string }> = {
   'dogs.pack':              { en: 'Your pack',                  ka: 'შენი ხროვა' },
   'dogs.packCount':         { en: '{n} dogs we pack boxes for', ka: '{n} ძაღლი, ვისთვისაც ყუთებს ვაწყობთ' },
   'dogs.packOne':           { en: 'One good dog',               ka: 'ერთი საუკეთესო ძაღლი' },
+  'acc.ordersPlans':        { en: 'Orders & plans',             ka: 'შეკვეთები და გეგმები' },
+  'op.sub':                 { en: 'Your box plans and every order, in one place.', ka: 'შენი გეგმები და ყველა შეკვეთა ერთ ადგილას.' },
+  'op.tabPlans':            { en: 'Plans',                      ka: 'გეგმები' },
+  'op.tabOrders':           { en: 'Orders',                     ka: 'შეკვეთები' },
+  'op.active':              { en: 'Active plans',               ka: 'აქტიური გეგმა' },
+  'op.planOrder':           { en: 'Box plan',                   ka: 'ყუთის გეგმა' },
+  'op.address':             { en: 'Delivery address',           ka: 'მიწოდების მისამართი' },
+  'op.itemsN':              { en: '{n} items',                  ka: '{n} ნივთი' },
 };
