@@ -7,21 +7,24 @@ import { fill } from '@/context/strings/purchase';
 import DogProfileForm, { emptyDogProfile, toDogPayload, type DogProfile } from '@/components/DogProfileForm';
 import { authFetch, loginUrl, SessionExpiredError } from '@/lib/authFetch';
 import { FormAlert, revealFirstError } from '@/components/ui/FormError';
+import { Heading } from '@/components/ui/Heading';
+import IconButton from '@/components/ui/IconButton';
+import Modal from '@/components/ui/Modal';
 import { Icon } from '@/components/ui/icons';
-import { birthdayLine, dogAge, dogOption, SIZE_SHORT } from '@/lib/dog';
 import PawTrail from '@/components/PawTrail';
+import { birthdayLine, dogAge, SIZE_SHORT } from '@/lib/dog';
 
 const TINTS = ['bg-teal-50', 'bg-lilac-50', 'bg-amber-50', 'bg-sky-50'];
 
 /**
- * The customer's dogs — and the friends' dogs they gave a plan to — as
- * cards to open: a big photo (or a wagging pup), whose dog it is, age and
- * breed, size, a birthday countdown, allergies and whether boxes are coming.
- * Each card opens the dog's full profile.
+ * My dogs: small cards, each opening the dog's profile — a photo (or a
+ * wagging pup) with the name, breed and age, and tiny marks for size,
+ * allergies, a box and a birthday soon. A friend's dog (from a gift plan)
+ * is marked 🎁. Adding a dog opens a pop-up.
  */
 export default function MyDogsPage() {
   const router = useRouter();
-  const { t, lang } = useLanguage();
+  const { t } = useLanguage();
   const [dogs, setDogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<'all' | 'mine' | 'gift'>('all');
@@ -33,17 +36,14 @@ export default function MyDogsPage() {
 
   const expired = () => router.replace(loginUrl('/account/dogs'));
 
-  async function load() {
-    try {
-      const res = await authFetch('/me/dogs?all=1');
-      setDogs(res.ok ? await res.json() : []);
-    } catch (e) {
-      if (e instanceof SessionExpiredError) expired();
-    } finally {
-      setLoading(false);
-    }
-  }
-  useEffect(() => { load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    authFetch('/me/dogs?all=1')
+      .then(async (res) => setDogs(res.ok ? await res.json() : []))
+      .catch((e) => { if (e instanceof SessionExpiredError) expired(); })
+      .finally(() => setLoading(false));
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const openAdd = () => { setDraft(emptyDogProfile); setError(''); setNameError(''); setAdding(true); };
 
   async function add() {
     if (!draft.name.trim()) { setNameError(t('co.e.dogName')); return revealFirstError(); }
@@ -52,7 +52,6 @@ export default function MyDogsPage() {
       const res = await authFetch('/me/dogs', { method: 'POST', body: JSON.stringify(toDogPayload(draft)) });
       if (!res.ok) throw new Error();
       const dog = await res.json();
-      // Straight to the new dog's profile, where a photo can go in.
       router.push(`/account/dogs/${dog.id}?new=1`);
     } catch (e) {
       if (e instanceof SessionExpiredError) return expired();
@@ -67,42 +66,9 @@ export default function MyDogsPage() {
 
   return (
     <div>
-      {/* Your pack: who's in it, and a clear way to add one more */}
-      <div className="relative overflow-hidden rounded-[28px] bg-teal-50 px-5 sm:px-7 py-6 mb-6 flex flex-col sm:flex-row sm:items-center gap-5">
-        <PawTrail className="opacity-60" />
-        <div className="relative flex -space-x-3 shrink-0">
-          {(dogs.length ? dogs.slice(0, 4) : [null]).map((d: any, i: number) => (
-            <span key={d?.id ?? i} className={`w-14 h-14 rounded-full ring-4 ring-teal-50 overflow-hidden flex items-center justify-center text-2xl animate-[bob_2.4s_ease-in-out_infinite] ${d?.forGift ? 'bg-peach-100' : 'bg-white'}`} style={{ animationDelay: `${i * 0.25}s` }}>
-              {d?.photoUrl ? <img src={d.photoUrl} alt="" className="w-full h-full object-cover" /> : <span aria-hidden="true">{d?.forGift ? '🐕' : '🐶'}</span>}
-            </span>
-          ))}
-        </div>
-        <div className="relative flex-1 min-w-0">
-          <h1 className="text-[24px] sm:text-[26px] font-extrabold text-gray-900 leading-tight">{t('dogs.pack')} 🐾</h1>
-          <p className="text-[13.5px] text-gray-600 mt-1">{dogs.length === 1 ? t('dogs.packOne') : dogs.length ? fill(t('dogs.packCount'), { n: dogs.length }) : t('dogs.sub')}</p>
-        </div>
-        {!adding && (
-          <button type="button" onClick={() => { setAdding(true); setDraft(emptyDogProfile); setError(''); setNameError(''); }}
-            className="relative shrink-0 inline-flex items-center justify-center gap-2 h-11 px-5 rounded-full bg-teal-600 text-white text-[14px] font-bold hover:bg-teal-700 transition-colors">
-            <Icon name="plus" className="w-4 h-4" strokeWidth={2.6} />{t('dogs.add')}
-          </button>
-        )}
-      </div>
+      <Heading kind="section" as="h1" title={t('dogs.title')} subtitle={t('dogs.sub')}
+        actions={<IconButton icon="plus" label={t('dogs.add')} tone="primary" onClick={openAdd} />} />
 
-      <FormAlert message={error} className="mb-4" />
-
-      {adding && (
-        <section className="bg-white rounded-[28px] ring-1 ring-gray-200/60 p-6 mb-6 animate-[fadeUp_0.25s_ease-out]">
-          <h2 className="text-[15px] font-bold text-gray-900 mb-4 flex items-center gap-2"><span className="inline-block animate-[wag_1.2s_ease-in-out_infinite]" aria-hidden="true">🐶</span>{t('dogs.add')}</h2>
-          <DogProfileForm value={draft} onChange={(d) => { setDraft(d); setNameError(''); }} nameError={nameError} />
-          <div className="flex gap-3 mt-6">
-            <button onClick={add} disabled={saving} className="bg-teal-600 text-white px-5 py-2.5 rounded-full text-sm font-semibold hover:bg-teal-700 disabled:opacity-50">{saving ? t('co.saving') : t('acc.save')}</button>
-            <button onClick={() => setAdding(false)} className="px-5 py-2.5 rounded-full text-sm font-medium text-gray-600 hover:bg-gray-100">{t('dogs.cancel')}</button>
-          </div>
-        </section>
-      )}
-
-      {/* Whose dogs: only when there are friends' dogs too */}
       {gifts.length > 0 && (
         <div role="tablist" className="inline-flex max-w-full overflow-x-auto [scrollbar-width:none] gap-1 p-1 rounded-full bg-gray-100 mb-5">
           {([['all', t('dogs.tabAll'), dogs.length], ['mine', t('dogs.tabMine'), mine.length], ['gift', t('dogs.tabGift'), gifts.length]] as const).map(([k, label, n]) => (
@@ -116,93 +82,73 @@ export default function MyDogsPage() {
 
       {loading ? (
         <div className="flex justify-center py-20"><span className="text-4xl animate-[bob_1s_ease-in-out_infinite]" aria-hidden="true">🐶</span></div>
-      ) : dogs.length === 0 && !adding ? (
-        <div className="relative overflow-hidden bg-teal-50/60 rounded-[28px] p-10 sm:p-14 text-center">
+      ) : dogs.length === 0 ? (
+        <button type="button" onClick={openAdd} className="group relative w-full overflow-hidden rounded-[28px] bg-teal-50/70 py-14 text-center">
           <PawTrail />
-          <div className="relative text-6xl mb-4 inline-block animate-[bob_2s_ease-in-out_infinite]" aria-hidden="true"><span className="inline-block animate-[wag_1.4s_ease-in-out_infinite]">🐶</span></div>
-          <p className="relative text-[15px] font-semibold text-gray-800 mb-1">{t('dogs.empty')}</p>
-          <p className="relative text-[13px] text-gray-500 mb-6">{t('dogs.sub')}</p>
-          <button onClick={() => setAdding(true)} className="relative inline-flex items-center gap-2 bg-teal-600 text-white px-6 py-3 rounded-full text-sm font-bold hover:bg-teal-700">
-            <Icon name="plus" className="w-4 h-4" strokeWidth={2.4} />{t('dogs.add')}
-          </button>
-        </div>
+          <span className="relative inline-block text-6xl animate-[bob_2s_ease-in-out_infinite]" aria-hidden="true"><span className="inline-block animate-[wag_1.4s_ease-in-out_infinite]">🐶</span></span>
+          <span className="relative block mt-3 text-[14px] font-semibold text-gray-700">{t('dogs.empty')}</span>
+          <span className="relative mt-4 mx-auto w-11 h-11 rounded-full bg-teal-600 text-white flex items-center justify-center group-hover:scale-110 transition-transform"><Icon name="plus" className="w-5 h-5" strokeWidth={2.6} /></span>
+        </button>
       ) : (
-        <ul className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5">
+        <ul className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
           {shown.map((d, i) => {
             const gift = d.forGift;
             const age = dogAge(d.birthday, t);
             const bday = birthdayLine(d.birthday, t);
-            const plan = d.subscriptions?.find((s: any) => s.status === 'ACTIVE');
+            const plan = d.subscriptions?.some((s: any) => s.status === 'ACTIVE');
             return (
-              <li key={d.id} className="animate-[fadeUp_0.4s_ease-out_both]" style={{ animationDelay: `${Math.min(i, 8) * 60}ms` }}>
+              <li key={d.id} className="animate-[fadeUp_0.4s_ease-out_both]" style={{ animationDelay: `${Math.min(i, 8) * 50}ms` }}>
                 <Link href={`/account/dogs/${d.id}`} aria-label={`${d.name} — ${t('dogs.open')}`}
-                  className={`group block h-full bg-white rounded-[28px] ring-1 overflow-hidden transition-all duration-300 hover:-translate-y-1 ${gift ? 'ring-peach-100 hover:ring-peach-300' : 'ring-gray-200/60 hover:ring-teal-200'}`}>
-                  {/* Photo, or a wagging pup on soft colour */}
-                  <div className={`relative aspect-[4/3] overflow-hidden ${gift ? 'bg-peach-50' : TINTS[i % TINTS.length]}`}>
+                  className="group block bg-white rounded-3xl p-2 ring-1 ring-gray-200/60 hover:ring-teal-200 hover:-translate-y-0.5 transition-all">
+                  <div className={`relative aspect-square rounded-[20px] overflow-hidden ${gift ? 'bg-peach-50' : TINTS[i % TINTS.length]}`}>
                     {d.photoUrl
                       // eslint-disable-next-line @next/next/no-img-element
                       ? <img src={d.photoUrl} alt={d.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
-                      : (<>
-                          <PawTrail />
-                          <span className="absolute inset-0 flex items-center justify-center" aria-hidden="true">
-                            <span className="text-[64px] animate-[bob_2.4s_ease-in-out_infinite]"><span className="inline-block group-hover:animate-[wag_0.5s_ease-in-out_infinite]">{gift ? '🐕' : '🐶'}</span></span>
-                          </span>
-                        </>)}
-                    {/* Hearts float up on hover */}
-                    <span className="absolute left-1/2 bottom-6 pointer-events-none" aria-hidden="true">
-                      {[0, 1, 2].map((k) => (
-                        <span key={k} className="absolute opacity-0 text-[18px] group-hover:animate-[heartUp_1.4s_ease-out_infinite]" style={{ left: `${(k - 1) * 22}px`, animationDelay: `${k * 0.3}s` }}>{gift ? '🧡' : '💚'}</span>
-                      ))}
+                      : <span className="absolute inset-0 flex items-center justify-center text-[52px]" aria-hidden="true"><span className="inline-block animate-[bob_2.6s_ease-in-out_infinite]"><span className="inline-block group-hover:animate-[wag_0.5s_ease-in-out_infinite]">{gift ? '🐕' : '🐶'}</span></span></span>}
+                    <span className="absolute left-1/2 bottom-5 pointer-events-none" aria-hidden="true">
+                      {[0, 1].map((k) => <span key={k} className="absolute opacity-0 text-[15px] group-hover:animate-[heartUp_1.3s_ease-out_infinite]" style={{ left: `${(k ? 1 : -1) * 12}px`, animationDelay: `${k * 0.35}s` }}>{gift ? '🧡' : '💚'}</span>)}
                     </span>
-                    {/* Whose dog */}
-                    <span className={`absolute top-3 left-3 inline-flex items-center gap-1.5 h-7 px-2.5 rounded-full text-[11.5px] font-bold backdrop-blur ${gift ? 'bg-white/90 text-peach-600' : 'bg-white/90 text-teal-700'}`}>
-                      <span aria-hidden="true">{gift ? '🎁' : '🐾'}</span>
-                      {gift ? (d.giftFor ? fill(t('dogs.giftFor'), { name: d.giftFor }) : t('dogs.giftDog')) : t('dogs.mine')}
-                    </span>
-                    {/* Name on the photo */}
-                    <span className="absolute right-3 bottom-3 inline-flex items-center gap-1.5 h-9 pl-3.5 pr-3 rounded-full bg-white/95 backdrop-blur text-[16px] font-extrabold text-gray-900 shadow-[0_6px_20px_-10px_rgba(0,0,0,0.25)]">
-                      {d.name}{d.gender && <span className={d.gender === 'MALE' ? 'text-teal-600' : 'text-peach-500'}>{d.gender === 'MALE' ? '♂' : '♀'}</span>}
-                    </span>
+                    {gift && <span className="absolute top-2 left-2 max-w-[80%] truncate h-6 px-2 rounded-full bg-white/90 text-[11px] font-bold text-peach-600 inline-flex items-center gap-1" title={d.giftFor ? fill(t('dogs.giftFor'), { name: d.giftFor }) : t('dogs.giftDog')}>🎁 {d.giftFor || t('dogs.giftDog')}</span>}
+                    {bday && <span className="absolute top-2 right-2 w-7 h-7 rounded-full bg-white/90 flex items-center justify-center text-[14px] animate-[wiggle_2.4s_ease-in-out_infinite]" title={bday} aria-label={bday}>🎂</span>}
                   </div>
-
-                  <div className="p-4 sm:p-5">
-                    <p className="text-[13px] text-gray-500 truncate">{d.breed || t('dogs.notSet')}</p>
-                    {bday && <p className="mt-2 inline-flex items-center gap-1.5 h-7 px-2.5 rounded-full bg-peach-50 text-[11.5px] font-bold text-peach-600"><span className="inline-block animate-[wiggle_2.4s_ease-in-out_infinite]">🎂</span>{bday}</p>}
-                    {/* At a glance */}
-                    <div className="grid grid-cols-3 gap-2 mt-3">
-                      {[['🎈', age], ['📏', d.size ? `${SIZE_SHORT[d.size]}` : null], ['⚖️', d.weightKg != null ? `${d.weightKg} ${t('dog.kg')}` : null]].map(([icon, v], k) => (
-                        <span key={k} className="rounded-2xl bg-gray-50 px-2 py-2 text-center">
-                          <span className="block text-[15px]" aria-hidden="true">{icon}</span>
-                          <span className={`block text-[11px] font-bold mt-0.5 leading-tight ${v ? 'text-gray-800' : 'text-gray-300'}`}>{v || '—'}</span>
-                        </span>
-                      ))}
+                  <div className="px-2 pt-2.5 pb-1.5">
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-[15px] font-extrabold text-gray-900 truncate">{d.name}</p>
+                      {d.gender && <span className={`text-[13px] font-bold ${d.gender === 'MALE' ? 'text-teal-600' : 'text-peach-500'}`}>{d.gender === 'MALE' ? '♂' : '♀'}</span>}
+                      <svg className="ml-auto w-4 h-4 text-gray-300 group-hover:text-teal-600 transition-all group-hover:translate-x-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>
                     </div>
-                    <div className="flex flex-wrap gap-1.5 mt-3">
-                      {d.allergies?.length
-                        ? <span className="text-[11.5px] font-semibold text-red-600 bg-red-50 rounded-full px-2.5 py-1 truncate max-w-full">⚠ {d.allergies.map((a: string) => dogOption(a, lang, t)).join(', ')}</span>
-                        : <span className="text-[11.5px] font-semibold text-teal-700 bg-teal-50 rounded-full px-2.5 py-1">✓ {t('dogs.noAllergies')}</span>}
-                      <span className={`text-[11.5px] font-semibold rounded-full px-2.5 py-1 ${plan ? 'text-teal-700 bg-teal-50' : 'text-gray-500 bg-gray-50'}`}>📦 {plan ? t('dogs.planOn') : t('dogs.planOff')}</span>
+                    <p className="text-[12px] text-gray-500 truncate">{[d.breed, age].filter(Boolean).join(' · ') || ' '}</p>
+                    <div className="flex items-center gap-1 mt-2">
+                      {d.size && <span className="h-6 min-w-[1.5rem] px-1.5 rounded-full bg-gray-50 text-[11px] font-bold text-gray-600 flex items-center justify-center" title={t(`dog.size.${d.size}`)}>{SIZE_SHORT[d.size]}</span>}
+                      {d.weightKg != null && <span className="h-6 px-2 rounded-full bg-gray-50 text-[11px] font-bold text-gray-600 flex items-center">{d.weightKg} {t('dog.kg')}</span>}
+                      {d.allergies?.length > 0 && <span className="h-6 px-2 rounded-full bg-red-50 text-[11px] font-bold text-red-500 flex items-center" title={t('dogs.allergies')}>⚠ {d.allergies.length}</span>}
+                      {plan && <span className="ml-auto w-6 h-6 rounded-full bg-teal-50 text-teal-600 flex items-center justify-center" title={t('dogs.planOn')}><Icon name="box" className="w-3.5 h-3.5" /></span>}
                     </div>
-                    <span className={`mt-4 flex items-center justify-center gap-2 h-10 rounded-full text-[13px] font-bold transition-colors ${gift ? 'bg-peach-50 text-peach-600 group-hover:bg-peach-400 group-hover:text-white' : 'bg-teal-50 text-teal-700 group-hover:bg-teal-600 group-hover:text-white'}`}>
-                      {t('dogs.open')}
-                      <svg className="w-4 h-4 transition-transform group-hover:translate-x-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
-                    </span>
                   </div>
                 </Link>
               </li>
             );
           })}
-          {!adding && tab !== 'gift' && (
+          {tab !== 'gift' && (
             <li>
-              <button type="button" onClick={() => { setAdding(true); setDraft(emptyDogProfile); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                className="group w-full h-full min-h-[300px] rounded-[28px] border-2 border-dashed border-gray-200 text-gray-400 hover:border-teal-300 hover:text-teal-600 hover:bg-teal-50/40 transition-colors flex flex-col items-center justify-center gap-3">
-                <span className="w-14 h-14 rounded-full bg-gray-50 group-hover:bg-white flex items-center justify-center text-2xl group-hover:animate-[bob_1s_ease-in-out_infinite]" aria-hidden="true">🐾</span>
-                <span className="text-[13.5px] font-bold">{t('dogs.add')}</span>
+              <button type="button" onClick={openAdd} aria-label={t('dogs.add')} title={t('dogs.add')}
+                className="group w-full h-full min-h-[220px] rounded-3xl border-2 border-dashed border-gray-200 text-gray-400 hover:border-teal-300 hover:text-teal-600 hover:bg-teal-50/40 transition-colors flex items-center justify-center">
+                <span className="w-12 h-12 rounded-full bg-gray-50 group-hover:bg-white flex items-center justify-center group-hover:animate-[bob_1s_ease-in-out_infinite]"><Icon name="plus" className="w-6 h-6" strokeWidth={2.2} /></span>
               </button>
             </li>
           )}
         </ul>
       )}
+
+      {/* Adding a dog: a pop-up, then straight to the new dog's profile */}
+      <Modal open={adding} onClose={() => setAdding(false)} title={t('dogs.add')} size="lg"
+        footer={<>
+          <IconButton icon="close" label={t('dogs.cancel')} onClick={() => setAdding(false)} />
+          <IconButton icon="check" label={t('acc.save')} tone="primary" onClick={add} disabled={saving} />
+        </>}>
+        <FormAlert message={error} className="mb-4" />
+        <DogProfileForm value={draft} onChange={(d) => { setDraft(d); setNameError(''); }} nameError={nameError} />
+      </Modal>
     </div>
   );
 }

@@ -6,8 +6,9 @@ import { useLanguage } from '@/context/LanguageContext';
 import { fill } from '@/context/strings/purchase';
 import DogProfileForm, { fromDog, toDogPayload, type DogProfile } from '@/components/DogProfileForm';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
+import IconButton from '@/components/ui/IconButton';
+import Modal from '@/components/ui/Modal';
 import { FormAlert, revealFirstError } from '@/components/ui/FormError';
-import { TYPE } from '@/components/ui/Heading';
 import { Icon } from '@/components/ui/icons';
 import PawTrail from '@/components/PawTrail';
 import { authFetch, loginUrl, SessionExpiredError } from '@/lib/authFetch';
@@ -17,11 +18,13 @@ import { formatDate } from '@/lib/dates';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 const CHEW_LEVEL: Record<string, number> = { GENTLE: 1, AVERAGE: 2, POWER: 3 };
+const round = 'w-9 h-9 rounded-full inline-flex items-center justify-center transition-colors';
 
 /**
- * One dog, everything we know: photo, whose dog it is, age, size, weight
- * and birthday at a glance; health, what they love, notes, and their boxes.
- * Edit, change the photo or remove — all from here.
+ * One dog's profile: a header card (photo, name, whose dog, breed and age,
+ * birthday), four quick facts, then health, favourites, notes and boxes in
+ * tidy cards. Actions are icons with tooltips: photo, edit (a pop-up),
+ * get a box, remove.
  */
 export default function DogProfilePage() {
   const { id } = useParams<{ id: string }>();
@@ -30,15 +33,14 @@ export default function DogProfilePage() {
   const { t, lang } = useLanguage();
   const [dog, setDog] = useState<any>(null);
   const [missing, setMissing] = useState(false);
-  const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<DogProfile | null>(null);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
-  const [notice, setNotice] = useState(params.get('new') ? '🎉' : '');
   const [nameError, setNameError] = useState('');
   const [confirm, setConfirm] = useState(false);
   const [removing, setRemoving] = useState(false);
+  const [hello, setHello] = useState(!!params.get('new'));
 
   const expired = () => router.replace(loginUrl(`/account/dogs/${id}`));
 
@@ -47,9 +49,7 @@ export default function DogProfilePage() {
       const res = await authFetch(`/me/dogs/${id}`);
       if (!res.ok) { setMissing(true); return; }
       setDog(await res.json());
-    } catch (e) {
-      if (e instanceof SessionExpiredError) expired();
-    }
+    } catch (e) { if (e instanceof SessionExpiredError) expired(); }
   }
   useEffect(() => { load(); }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -60,8 +60,7 @@ export default function DogProfilePage() {
     try {
       const res = await authFetch(`/me/dogs/${id}`, { method: 'PUT', body: JSON.stringify(toDogPayload(draft)) });
       if (!res.ok) throw new Error();
-      setEditing(false);
-      setNotice(t('dogs.saved'));
+      setDraft(null);
       await load();
     } catch (e) {
       if (e instanceof SessionExpiredError) return expired();
@@ -69,7 +68,6 @@ export default function DogProfilePage() {
     } finally { setSaving(false); }
   }
 
-  /** Uploads straight from the file picker; the API checks it really is a photo. */
   async function upload(file?: File) {
     if (!file) return;
     setError('');
@@ -110,7 +108,7 @@ export default function DogProfilePage() {
       <div className="text-center py-16">
         <p className="text-5xl mb-3" aria-hidden="true">🐾</p>
         <p className="text-gray-600 mb-5">{t('dogs.notFound')}</p>
-        <Link href="/account/dogs" className="text-teal-700 font-bold hover:underline">← {t('dogs.back')}</Link>
+        <Link href="/account/dogs" aria-label={t('dogs.back')} className={`${round} bg-teal-50 text-teal-700 hover:bg-teal-100`}><Icon name="paw" className="w-4 h-4" /></Link>
       </div>
     );
   }
@@ -120,187 +118,140 @@ export default function DogProfilePage() {
   const age = dogAge(dog.birthday, t);
   const bday = birthdayLine(dog.birthday, t);
   const plans: any[] = dog.subscriptions ?? [];
-  const date = (d: string) => formatDate(d, lang);
-  const chips = (list: string[], tone: string) => list.map((x) => <span key={x} className={`text-[12.5px] font-semibold rounded-full px-3 py-1.5 ${tone}`}>{dogOption(x, lang, t)}</span>);
-  const empty = <span className="text-[13px] text-gray-400">{t('dogs.notSet')}</span>;
-  const unfilled = !dog.birthday || !dog.weightKg || !dog.foodPreferences?.length || !dog.toyPreferences?.length || !dog.chewingStrength;
-  const accent = gift ? 'text-peach-600' : 'text-teal-700';
+  const tone = gift ? { soft: 'bg-peach-50', text: 'text-peach-600' } : { soft: 'bg-teal-50', text: 'text-teal-700' };
+  const chips = (list: string[], cls: string) => list.map((x) => <span key={x} className={`text-[12px] font-semibold rounded-full px-2.5 py-1 ${cls}`}>{dogOption(x, lang, t)}</span>);
+  const none = <span className="text-[12.5px] text-gray-400">{t('dogs.notSet')}</span>;
+  const edit = () => { setDraft(fromDog(dog)); setNameError(''); setError(''); };
 
-  const card = (icon: string, title: string, children: React.ReactNode, i: number) => (
-    <section className="bg-white rounded-[24px] ring-1 ring-gray-200/60 p-5 animate-[fadeUp_0.4s_ease-out_both]" style={{ animationDelay: `${120 + i * 70}ms` }}>
-      <h2 className="text-[13px] font-bold uppercase tracking-wider text-gray-400 mb-3 flex items-center gap-2"><span aria-hidden="true" className="text-[16px]">{icon}</span>{title}</h2>
-      {children}
+  const section = (icon: string, title: string, body: React.ReactNode, i: number) => (
+    <section className="bg-white rounded-3xl ring-1 ring-gray-200/60 p-4 sm:p-5 animate-[fadeUp_0.4s_ease-out_both]" style={{ animationDelay: `${150 + i * 60}ms` }}>
+      <h2 className="flex items-center gap-2.5 mb-3">
+        <span className={`w-8 h-8 rounded-xl flex items-center justify-center ${tone.soft} ${tone.text}`}><Icon name={icon} className="w-4 h-4" /></span>
+        <span className="text-[14px] font-bold text-gray-900">{title}</span>
+      </h2>
+      {body}
     </section>
   );
 
   return (
-    <div>
-      <Link href="/account/dogs" className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-gray-500 hover:text-teal-700 mb-4">
-        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" aria-hidden="true"><path d="M15 6l-6 6 6 6" /></svg>
-        {t('dogs.back')}
-      </Link>
-
-      {notice && (
-        <p className="mb-4 text-sm text-teal-800 bg-teal-50 rounded-2xl px-4 py-3 animate-[fadeUp_0.3s_ease-out]" role="status">
-          {notice === '🎉' ? <><span className="inline-block animate-[wiggle_1s_ease-in-out_3]">🎉</span> {dog.name}! {t('dogs.fillMore')}</> : <>✓ {notice}</>}
-        </p>
-      )}
-      <FormAlert message={error} className="mb-4" />
-
-      {/* ── Hero: photo and the essentials ── */}
-      <div className="grid md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] gap-5 sm:gap-7 items-center mb-6 animate-[fadeUp_0.35s_ease-out]">
-        <div className={`group relative aspect-square rounded-[32px] overflow-hidden ${gift ? 'bg-peach-50' : 'bg-teal-50'}`}>
-          {dog.photoUrl
-            // eslint-disable-next-line @next/next/no-img-element
-            ? <img src={dog.photoUrl} alt={dog.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
-            : (<>
-                <PawTrail />
-                <span className="absolute inset-0 flex items-center justify-center" aria-hidden="true">
-                  <span className="text-[96px] animate-[bob_2.4s_ease-in-out_infinite]"><span className="inline-block animate-[wag_1.6s_ease-in-out_infinite]">{gift ? '🐕' : '🐶'}</span></span>
-                </span>
-              </>)}
-          <span className="absolute left-1/2 bottom-10 pointer-events-none" aria-hidden="true">
-            {[0, 1, 2].map((k) => <span key={k} className="absolute opacity-0 text-[22px] group-hover:animate-[heartUp_1.5s_ease-out_infinite]" style={{ left: `${(k - 1) * 28}px`, animationDelay: `${k * 0.3}s` }}>{gift ? '🧡' : '💚'}</span>)}
-          </span>
-          {uploading && <span className="absolute inset-0 bg-white/80 flex items-center justify-center text-[13px] font-semibold text-teal-700">{t('dog.photoUploading')}</span>}
-          <span className="absolute left-3 bottom-3 flex gap-2">
-            <label title={t(dog.photoUrl ? 'dog.photoChange' : 'dog.photoAdd')}
-              className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full bg-white/90 backdrop-blur text-[12.5px] font-bold text-gray-700 hover:text-teal-700 cursor-pointer ring-1 ring-black/5">
-              <svg className="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4zM12 17a4 4 0 100-8 4 4 0 000 8z" /></svg>
-              {t(dog.photoUrl ? 'dog.photoChange' : 'dog.photoAdd')}
-              <input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={(e) => { upload(e.target.files?.[0]); e.target.value = ''; }} />
-            </label>
-            {dog.photoUrl && (
-              <button type="button" onClick={removePhoto} aria-label={t('dog.photoRemove')} title={t('dog.photoRemove')}
-                className="w-9 h-9 rounded-full bg-white/90 backdrop-blur text-gray-500 hover:text-red-500 flex items-center justify-center ring-1 ring-black/5"><Icon name="trash" className="w-4 h-4" /></button>
-            )}
-          </span>
-        </div>
-
-        <div className="min-w-0">
-          <span className={`inline-flex items-center gap-1.5 h-7 px-3 rounded-full text-[12px] font-bold ${gift ? 'bg-peach-50 text-peach-600' : 'bg-teal-50 text-teal-700'}`}>
-            <span aria-hidden="true">{gift ? '🎁' : '🐾'}</span>{gift ? (dog.giftFor ? fill(t('dogs.giftFor'), { name: dog.giftFor }) : t('dogs.giftDog')) : t('dogs.mine')}
-          </span>
-          <h1 className={`${TYPE.page} mt-3 flex items-center gap-2.5`}>
-            <span className="truncate">{dog.name}</span>
-            {dog.gender && <span className={`text-[26px] ${dog.gender === 'MALE' ? 'text-teal-600' : 'text-peach-500'}`} aria-label={t(dog.gender === 'MALE' ? 'dog.male' : 'dog.female')}>{dog.gender === 'MALE' ? '♂' : '♀'}</span>}
-          </h1>
-          {(age || dog.breed) && <p className="text-[15px] text-gray-500 mt-1">{[age, dog.breed].filter(Boolean).join(' · ')}</p>}
-          {bday && <p className="mt-3 inline-flex items-center gap-2 h-8 px-3.5 rounded-full bg-peach-50 text-peach-600 text-[13px] font-bold"><span className="inline-block animate-[wiggle_2s_ease-in-out_infinite]">🎂</span>{bday}</p>}
-
-          {/* At a glance */}
-          <div className="grid grid-cols-2 gap-2.5 mt-5 max-w-md">
-            {[
-              ['🎈', t('dogs.age'), age],
-              ['📏', t('dogs.size'), dog.size ? `${SIZE_SHORT[dog.size]} · ${t(`dog.size.${dog.size}`)}` : null],
-              ['⚖️', t('dog.weight'), dog.weightKg != null ? `${dog.weightKg} ${t('dog.kg')}` : null],
-              ['🎂', t('dog.birthday'), dog.birthday ? date(dog.birthday) : null],
-            ].map(([icon, label, value], i) => (
-              <div key={label as string} className="rounded-2xl bg-gray-50 px-3.5 py-3 animate-[fadeUp_0.4s_ease-out_both]" style={{ animationDelay: `${i * 60}ms` }}>
-                <p className="text-[11.5px] text-gray-400 flex items-center gap-1.5"><span aria-hidden="true">{icon}</span>{label}</p>
-                <p className={`text-[14px] font-bold mt-0.5 ${value ? 'text-gray-900' : 'text-gray-300'}`}>{value || '—'}</p>
-              </div>
-            ))}
-          </div>
-
-          {!editing && (
-            <div className="flex flex-wrap gap-2 mt-5">
-              <button type="button" onClick={() => { setDraft(fromDog(dog)); setEditing(true); setNotice(''); setNameError(''); }}
-                className={`inline-flex items-center gap-2 h-10 px-5 rounded-full text-[13.5px] font-bold text-white ${gift ? 'bg-peach-400 hover:bg-peach-500' : 'bg-teal-600 hover:bg-teal-700'}`}>
-                <Icon name="edit" className="w-4 h-4" />{t('dogs.edit')}
-              </button>
-              <label className="inline-flex items-center gap-2 h-10 px-4 rounded-full bg-gray-100 text-gray-700 text-[13px] font-bold hover:bg-gray-200 cursor-pointer">
-                <span aria-hidden="true">📷</span>{t(dog.photoUrl ? 'dog.photoChange' : 'dog.photoAdd')}
-                <input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={(e) => { upload(e.target.files?.[0]); e.target.value = ''; }} />
-              </label>
-              {!plans.length && (
-                <Link href="/prices#plans" className="inline-flex items-center gap-2 h-10 px-4 rounded-full bg-peach-50 text-peach-600 text-[13px] font-bold hover:bg-peach-100">
-                  <span aria-hidden="true">📦</span>{t('dogs.getBox')}
-                </Link>
-              )}
-              {!gift && (
-                <button type="button" onClick={() => setConfirm(true)} aria-label={t('dogs.remove')} title={t('dogs.remove')}
-                  className="w-10 h-10 rounded-full bg-gray-100 text-gray-500 hover:bg-red-50 hover:text-red-500 flex items-center justify-center"><Icon name="trash" className="w-4 h-4" /></button>
-              )}
-            </div>
+    <div className="space-y-4">
+      {/* Back, and what you can do — icons with tooltips */}
+      <div className="flex items-center justify-between gap-2">
+        <Link href="/account/dogs" aria-label={t('dogs.back')} title={t('dogs.back')} className={`${round} bg-white ring-1 ring-gray-200/70 text-gray-600 hover:text-teal-700`}>
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" aria-hidden="true"><path d="M15 6l-6 6 6 6" /></svg>
+        </Link>
+        <div className="flex items-center gap-1.5">
+          <label title={t(dog.photoUrl ? 'dog.photoChange' : 'dog.photoAdd')} aria-label={t(dog.photoUrl ? 'dog.photoChange' : 'dog.photoAdd')} className={`${round} bg-white ring-1 ring-gray-200/70 text-gray-600 hover:text-teal-700 cursor-pointer`}>
+            <Icon name="camera" className="w-[18px] h-[18px]" />
+            <input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={(e) => { upload(e.target.files?.[0]); e.target.value = ''; }} />
+          </label>
+          {!plans.length && (
+            <Link href="/prices#plans" aria-label={t('dogs.getBox')} title={t('dogs.getBox')} className={`${round} bg-white ring-1 ring-gray-200/70 text-gray-600 hover:text-teal-700`}><Icon name="box" className="w-[18px] h-[18px]" /></Link>
           )}
+          {!gift && <IconButton icon="trash" label={t('dogs.remove')} tone="danger" onClick={() => setConfirm(true)} />}
+          <IconButton icon="edit" label={t('dogs.edit')} tone="primary" onClick={edit} />
         </div>
       </div>
 
-      {gift && <p className="mb-5 text-[13px] text-peach-600 bg-peach-50 rounded-2xl px-4 py-3">🎁 {t('dogs.giftNote')}</p>}
+      {hello && (
+        <button type="button" onClick={() => setHello(false)} className="w-full text-left text-[13.5px] text-teal-800 bg-teal-50 rounded-2xl px-4 py-3 animate-[fadeUp_0.3s_ease-out]">
+          <span className="inline-block animate-[wiggle_1s_ease-in-out_3]">🎉</span> {dog.name}! {t('dogs.fillMore')}
+        </button>
+      )}
+      <FormAlert message={error} />
 
-      {editing && draft ? (
-        <section className="bg-white rounded-[28px] ring-1 ring-gray-200/60 p-6 mb-6 animate-[fadeUp_0.25s_ease-out]">
-          <DogProfileForm value={draft} onChange={(d) => { setDraft(d); setNameError(''); }} nameError={nameError} />
-          <div className="flex gap-3 mt-6">
-            <button onClick={save} disabled={saving} className="bg-teal-600 text-white px-5 py-2.5 rounded-full text-sm font-semibold hover:bg-teal-700 disabled:opacity-50">{saving ? t('co.saving') : t('acc.save')}</button>
-            <button onClick={() => setEditing(false)} className="px-5 py-2.5 rounded-full text-sm font-medium text-gray-600 hover:bg-gray-100">{t('dogs.cancel')}</button>
-          </div>
-        </section>
-      ) : (
-        <div className="grid md:grid-cols-2 gap-4 items-start">
-          {card('🩺', t('dogs.secHealth'), (
-            <div className="flex flex-wrap gap-1.5">
-              {dog.allergies?.length ? chips(dog.allergies, 'bg-red-50 text-red-600') : <span className="text-[13px] font-semibold text-teal-700">✓ {t('dogs.noAllergies')}</span>}
-            </div>
-          ), 0)}
-
-          {card('🦴', t('dogs.secLikes'), (
-            <div className="space-y-3.5">
-              <div>
-                <p className="text-[12px] text-gray-400 mb-1.5">{t('dogs.food')}</p>
-                <div className="flex flex-wrap gap-1.5">{dog.foodPreferences?.length ? chips(dog.foodPreferences, 'bg-teal-50 text-teal-800') : empty}</div>
-              </div>
-              <div>
-                <p className="text-[12px] text-gray-400 mb-1.5">{t('dogs.toys')}</p>
-                <div className="flex flex-wrap gap-1.5">{dog.toyPreferences?.length ? chips(dog.toyPreferences, 'bg-peach-50 text-peach-600') : empty}</div>
-              </div>
-              <div>
-                <p className="text-[12px] text-gray-400 mb-1.5">{t('dogs.chew')}</p>
-                {dog.chewingStrength ? (
-                  <p className="flex items-center gap-2 text-[13px] font-semibold text-gray-800">
-                    <span className="flex gap-0.5" aria-hidden="true">{[1, 2, 3].map((n) => <span key={n} className={`text-[16px] ${n <= (CHEW_LEVEL[dog.chewingStrength] ?? 0) ? '' : 'grayscale opacity-25'}`}>🦴</span>)}</span>
-                    {t(`dog.chew.${dog.chewingStrength}`, dog.chewingStrength)}
-                  </p>
-                ) : empty}
-              </div>
-            </div>
-          ), 1)}
-
-          {card('📝', t('dogs.secNotes'), dog.specialNotes ? <p className="text-[14px] text-gray-700 leading-relaxed whitespace-pre-line">{dog.specialNotes}</p> : empty, 2)}
-
-          {card('📦', t('dogs.secPlans'), plans.length ? (
-            <ul className="space-y-2">
-              {plans.map((s) => (
-                <li key={s.id}>
-                  <Link href="/account/subscriptions" className="flex items-center gap-3 rounded-2xl bg-gray-50 hover:bg-teal-50 px-3.5 py-3 transition-colors">
-                    <span className="w-9 h-9 rounded-xl bg-white text-teal-600 flex items-center justify-center"><Icon name="box" className="w-[18px] h-[18px]" /></span>
-                    <span className="flex-1 min-w-0">
-                      <span className="block text-[13.5px] font-bold text-gray-900 truncate">{planText(s.plan, 'name', lang)}</span>
-                      <span className="block text-[12px] text-gray-500">{fill(t('dogs.boxes'), { sent: s.boxesDelivered, total: s.boxesTotal })}{s.endDate && <> · {fill(t('dogs.until'), { date: date(s.endDate) })}</>}</span>
-                    </span>
-                    <svg className="w-4 h-4 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-[13px] text-gray-500">{t('dogs.planOff')}</p>
-              <Link href="/prices#plans" className="inline-flex items-center gap-1.5 h-9 px-4 rounded-full bg-teal-50 text-teal-700 text-[12.5px] font-bold hover:bg-teal-100">{t('dogs.getBox')} →</Link>
-            </div>
-          ), 3)}
-
-          {unfilled && (
-            <button type="button" onClick={() => { setDraft(fromDog(dog)); setEditing(true); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-              className="group md:col-span-2 flex items-center gap-4 rounded-[24px] border-2 border-dashed border-teal-200 px-5 py-4 text-left hover:bg-teal-50/50 transition-colors">
-              <span className="text-2xl group-hover:animate-[bob_1s_ease-in-out_infinite]" aria-hidden="true">✨</span>
-              <span className="flex-1 text-[13.5px] font-semibold text-gray-700">{t('dogs.fillMore')}</span>
-              <span className={`text-[13px] font-bold ${accent}`}>{t('dogs.addMore')} →</span>
-            </button>
+      {/* Header card */}
+      <section className={`relative overflow-hidden rounded-[28px] ${tone.soft} p-4 sm:p-5 flex items-center gap-4 sm:gap-6 animate-[fadeUp_0.35s_ease-out]`}>
+        <PawTrail className="opacity-50" />
+        <div className="group relative w-28 h-28 sm:w-36 sm:h-36 shrink-0 rounded-[26px] overflow-hidden bg-white">
+          {dog.photoUrl
+            // eslint-disable-next-line @next/next/no-img-element
+            ? <img src={dog.photoUrl} alt={dog.name} className="w-full h-full object-cover" />
+            : <span className="absolute inset-0 flex items-center justify-center text-[56px]" aria-hidden="true"><span className="inline-block animate-[bob_2.4s_ease-in-out_infinite]"><span className="inline-block animate-[wag_1.6s_ease-in-out_infinite]">{gift ? '🐕' : '🐶'}</span></span></span>}
+          {uploading && <span className="absolute inset-0 bg-white/80 flex items-center justify-center"><span className="w-6 h-6 border-2 border-teal-200 border-t-teal-600 rounded-full animate-spin" /></span>}
+          {dog.photoUrl && (
+            <button type="button" onClick={removePhoto} aria-label={t('dog.photoRemove')} title={t('dog.photoRemove')}
+              className="absolute top-1.5 right-1.5 w-7 h-7 rounded-full bg-white/90 text-gray-500 hover:text-red-500 items-center justify-center hidden group-hover:flex"><Icon name="close" className="w-3.5 h-3.5" /></button>
           )}
         </div>
-      )}
+        <div className="relative min-w-0">
+          <span className={`inline-flex items-center gap-1 h-6 px-2.5 rounded-full bg-white/80 text-[11.5px] font-bold ${tone.text}`}>
+            {gift ? '🎁' : '🐾'} {gift ? (dog.giftFor ? fill(t('dogs.giftFor'), { name: dog.giftFor }) : t('dogs.giftDog')) : t('dogs.mine')}
+          </span>
+          <h1 className="mt-2 flex items-center gap-2 text-[26px] sm:text-[30px] font-extrabold text-gray-900 leading-tight">
+            <span className="truncate">{dog.name}</span>
+            {dog.gender && <span className={dog.gender === 'MALE' ? 'text-teal-600' : 'text-peach-500'}>{dog.gender === 'MALE' ? '♂' : '♀'}</span>}
+          </h1>
+          <p className="text-[14px] text-gray-600 truncate">{[dog.breed, age].filter(Boolean).join(' · ') || t('dogs.notSet')}</p>
+          {bday && <p className="mt-2 inline-flex items-center gap-1.5 h-7 px-3 rounded-full bg-white text-peach-600 text-[12px] font-bold"><span className="inline-block animate-[wiggle_2s_ease-in-out_infinite]">🎂</span>{bday}</p>}
+        </div>
+      </section>
+
+      {/* Quick facts */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+        {[
+          ['🎈', t('dogs.age'), age],
+          ['📏', t('dogs.size'), dog.size ? `${SIZE_SHORT[dog.size]} · ${t(`dog.size.${dog.size}`)}` : null],
+          ['⚖️', t('dog.weight'), dog.weightKg != null ? `${dog.weightKg} ${t('dog.kg')}` : null],
+          ['🎂', t('dog.birthday'), dog.birthday ? formatDate(dog.birthday, lang) : null],
+        ].map(([icon, label, value], i) => (
+          <div key={label as string} className="bg-white rounded-2xl ring-1 ring-gray-200/60 px-3.5 py-3 animate-[fadeUp_0.4s_ease-out_both]" style={{ animationDelay: `${60 + i * 50}ms` }}>
+            <p className="text-[11.5px] text-gray-400 flex items-center gap-1.5"><span aria-hidden="true">{icon}</span>{label}</p>
+            <p className={`text-[13.5px] font-bold mt-1 leading-snug ${value ? 'text-gray-900' : 'text-gray-300'}`}>{value || '—'}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Details */}
+      <div className="grid md:grid-cols-2 gap-3 items-start">
+        {section('shield', t('dogs.secHealth'), (
+          <div className="flex flex-wrap gap-1.5">{dog.allergies?.length ? chips(dog.allergies, 'bg-red-50 text-red-600') : <span className="text-[12.5px] font-semibold text-teal-700">✓ {t('dogs.noAllergies')}</span>}</div>
+        ), 0)}
+
+        {section('heart', t('dogs.secLikes'), (
+          <dl className="space-y-2.5">
+            <div className="flex gap-3"><dt className="w-24 shrink-0 text-[12px] text-gray-400 pt-1">{t('dogs.food')}</dt><dd className="flex flex-wrap gap-1.5">{dog.foodPreferences?.length ? chips(dog.foodPreferences, 'bg-teal-50 text-teal-800') : none}</dd></div>
+            <div className="flex gap-3"><dt className="w-24 shrink-0 text-[12px] text-gray-400 pt-1">{t('dogs.toys')}</dt><dd className="flex flex-wrap gap-1.5">{dog.toyPreferences?.length ? chips(dog.toyPreferences, 'bg-peach-50 text-peach-600') : none}</dd></div>
+            <div className="flex gap-3 items-center"><dt className="w-24 shrink-0 text-[12px] text-gray-400">{t('dogs.chew')}</dt><dd>
+              {dog.chewingStrength ? (
+                <span className="flex items-center gap-2 text-[12.5px] font-semibold text-gray-800" title={t(`dog.chew.${dog.chewingStrength}`)}>
+                  <span className="flex gap-0.5" aria-hidden="true">{[1, 2, 3].map((n) => <span key={n} className={n <= (CHEW_LEVEL[dog.chewingStrength] ?? 0) ? '' : 'grayscale opacity-25'}>🦴</span>)}</span>
+                  {t(`dog.chew.${dog.chewingStrength}`, dog.chewingStrength)}
+                </span>
+              ) : none}
+            </dd></div>
+          </dl>
+        ), 1)}
+
+        {section('info', t('dogs.secNotes'), dog.specialNotes ? <p className="text-[13.5px] text-gray-700 leading-relaxed whitespace-pre-line">{dog.specialNotes}</p> : none, 2)}
+
+        {section('box', t('dogs.secPlans'), plans.length ? (
+          <ul className="space-y-2">
+            {plans.map((s) => (
+              <li key={s.id}>
+                <Link href="/account/subscriptions" className="flex items-center gap-3 rounded-2xl bg-gray-50 hover:bg-teal-50 px-3 py-2.5 transition-colors">
+                  <span className="flex-1 min-w-0">
+                    <span className="block text-[13px] font-bold text-gray-900 truncate">{planText(s.plan, 'name', lang)}</span>
+                    <span className="block text-[11.5px] text-gray-500">{fill(t('dogs.boxes'), { sent: s.boxesDelivered, total: s.boxesTotal })}{s.endDate && <> · {fill(t('dogs.until'), { date: formatDate(s.endDate, lang) })}</>}</span>
+                  </span>
+                  <svg className="w-4 h-4 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        ) : <span className="text-[12.5px] text-gray-400">{t('dogs.planOff')}</span>, 3)}
+      </div>
+
+      {gift && <p className="text-[12.5px] text-peach-600 bg-peach-50 rounded-2xl px-4 py-3">🎁 {t('dogs.giftNote')}</p>}
+
+      {/* Edit in a pop-up */}
+      <Modal open={!!draft} onClose={() => setDraft(null)} title={dog.name} size="lg"
+        footer={<>
+          <IconButton icon="close" label={t('dogs.cancel')} onClick={() => setDraft(null)} />
+          <IconButton icon="check" label={t('acc.save')} tone="primary" onClick={save} disabled={saving} />
+        </>}>
+        {draft && <DogProfileForm value={draft} onChange={(d) => { setDraft(d); setNameError(''); }} nameError={nameError} />}
+      </Modal>
 
       <ConfirmDialog open={confirm} onClose={() => setConfirm(false)} onConfirm={remove} busy={removing} tone="danger"
         title={t('dogs.removeTitle').replace('{name}', dog.name)} message={t('dogs.removeInfo')} confirmLabel={t('dogs.remove')} />
