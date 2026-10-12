@@ -209,6 +209,15 @@ export default function DogProfilePage() {
                 className={`inline-flex items-center gap-2 h-10 px-5 rounded-full text-[13.5px] font-bold text-white ${gift ? 'bg-peach-400 hover:bg-peach-500' : 'bg-teal-600 hover:bg-teal-700'}`}>
                 <Icon name="edit" className="w-4 h-4" />{t('dogs.edit')}
               </button>
+              <label className="inline-flex items-center gap-2 h-10 px-4 rounded-full bg-gray-100 text-gray-700 text-[13px] font-bold hover:bg-gray-200 cursor-pointer">
+                <span aria-hidden="true">📷</span>{t(dog.photoUrl ? 'dog.photoChange' : 'dog.photoAdd')}
+                <input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={(e) => { upload(e.target.files?.[0]); e.target.value = ''; }} />
+              </label>
+              {!plans.length && (
+                <Link href="/prices#plans" className="inline-flex items-center gap-2 h-10 px-4 rounded-full bg-peach-50 text-peach-600 text-[13px] font-bold hover:bg-peach-100">
+                  <span aria-hidden="true">📦</span>{t('dogs.getBox')}
+                </Link>
+              )}
               {!gift && (
                 <button type="button" onClick={() => setConfirm(true)} aria-label={t('dogs.remove')} title={t('dogs.remove')}
                   className="w-10 h-10 rounded-full bg-gray-100 text-gray-500 hover:bg-red-50 hover:text-red-500 flex items-center justify-center"><Icon name="trash" className="w-4 h-4" /></button>

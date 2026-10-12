@@ -293,4 +293,7 @@ export const ACCOUNT_STRINGS: Record<string, { en: string; ka: string }> = {
   'dogs.getBox':            { en: 'Get a box',                  ka: 'ყუთის შეკვეთა' },
   'dogs.notFound':          { en: 'We couldn’t find this dog.', ka: 'ეს ძაღლი ვერ მოიძებნა.' },
   'dogs.fillMore':          { en: 'Tell us more — we’ll pick even better things.', ka: 'მოგვიყევი მეტი — კიდევ უკეთესს შევურჩევთ.' },
+  'dogs.pack':              { en: 'Your pack',                  ka: 'შენი ხროვა' },
+  'dogs.packCount':         { en: '{n} dogs we pack boxes for', ka: '{n} ძაღლი, ვისთვისაც ყუთებს ვაწყობთ' },
+  'dogs.packOne':           { en: 'One good dog',               ka: 'ერთი საუკეთესო ძაღლი' },
 };

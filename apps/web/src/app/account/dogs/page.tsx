@@ -7,11 +7,11 @@ import { fill } from '@/context/strings/purchase';
 import DogProfileForm, { emptyDogProfile, toDogPayload, type DogProfile } from '@/components/DogProfileForm';
 import { authFetch, loginUrl, SessionExpiredError } from '@/lib/authFetch';
 import { FormAlert, revealFirstError } from '@/components/ui/FormError';
-import { Heading } from '@/components/ui/Heading';
-import IconButton from '@/components/ui/IconButton';
 import { Icon } from '@/components/ui/icons';
 import { birthdayLine, dogAge, dogOption, SIZE_SHORT } from '@/lib/dog';
 import PawTrail from '@/components/PawTrail';
+
+const TINTS = ['bg-teal-50', 'bg-lilac-50', 'bg-amber-50', 'bg-sky-50'];
 
 /**
  * The customer's dogs — and the friends' dogs they gave a plan to — as
@@ -67,8 +67,27 @@ export default function MyDogsPage() {
 
   return (
     <div>
-      <Heading kind="section" as="h1" title={t('dogs.title')} subtitle={t('dogs.sub')}
-        actions={!adding && <IconButton icon="plus" label={t('dogs.add')} tone="primary" onClick={() => { setAdding(true); setDraft(emptyDogProfile); setError(''); setNameError(''); }} />} />
+      {/* Your pack: who's in it, and a clear way to add one more */}
+      <div className="relative overflow-hidden rounded-[28px] bg-teal-50 px-5 sm:px-7 py-6 mb-6 flex flex-col sm:flex-row sm:items-center gap-5">
+        <PawTrail className="opacity-60" />
+        <div className="relative flex -space-x-3 shrink-0">
+          {(dogs.length ? dogs.slice(0, 4) : [null]).map((d: any, i: number) => (
+            <span key={d?.id ?? i} className={`w-14 h-14 rounded-full ring-4 ring-teal-50 overflow-hidden flex items-center justify-center text-2xl animate-[bob_2.4s_ease-in-out_infinite] ${d?.forGift ? 'bg-peach-100' : 'bg-white'}`} style={{ animationDelay: `${i * 0.25}s` }}>
+              {d?.photoUrl ? <img src={d.photoUrl} alt="" className="w-full h-full object-cover" /> : <span aria-hidden="true">{d?.forGift ? '🐕' : '🐶'}</span>}
+            </span>
+          ))}
+        </div>
+        <div className="relative flex-1 min-w-0">
+          <h1 className="text-[24px] sm:text-[26px] font-extrabold text-gray-900 leading-tight">{t('dogs.pack')} 🐾</h1>
+          <p className="text-[13.5px] text-gray-600 mt-1">{dogs.length === 1 ? t('dogs.packOne') : dogs.length ? fill(t('dogs.packCount'), { n: dogs.length }) : t('dogs.sub')}</p>
+        </div>
+        {!adding && (
+          <button type="button" onClick={() => { setAdding(true); setDraft(emptyDogProfile); setError(''); setNameError(''); }}
+            className="relative shrink-0 inline-flex items-center justify-center gap-2 h-11 px-5 rounded-full bg-teal-600 text-white text-[14px] font-bold hover:bg-teal-700 transition-colors">
+            <Icon name="plus" className="w-4 h-4" strokeWidth={2.6} />{t('dogs.add')}
+          </button>
+        )}
+      </div>
 
       <FormAlert message={error} className="mb-4" />
 
@@ -119,7 +138,7 @@ export default function MyDogsPage() {
                 <Link href={`/account/dogs/${d.id}`} aria-label={`${d.name} — ${t('dogs.open')}`}
                   className={`group block h-full bg-white rounded-[28px] ring-1 overflow-hidden transition-all duration-300 hover:-translate-y-1 ${gift ? 'ring-peach-100 hover:ring-peach-300' : 'ring-gray-200/60 hover:ring-teal-200'}`}>
                   {/* Photo, or a wagging pup on soft colour */}
-                  <div className={`relative aspect-[5/4] overflow-hidden ${gift ? 'bg-peach-50' : 'bg-teal-50'}`}>
+                  <div className={`relative aspect-[4/3] overflow-hidden ${gift ? 'bg-peach-50' : TINTS[i % TINTS.length]}`}>
                     {d.photoUrl
                       // eslint-disable-next-line @next/next/no-img-element
                       ? <img src={d.photoUrl} alt={d.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
@@ -140,30 +159,34 @@ export default function MyDogsPage() {
                       <span aria-hidden="true">{gift ? '🎁' : '🐾'}</span>
                       {gift ? (d.giftFor ? fill(t('dogs.giftFor'), { name: d.giftFor }) : t('dogs.giftDog')) : t('dogs.mine')}
                     </span>
-                    {bday && <span className="absolute bottom-3 left-3 h-7 px-2.5 rounded-full bg-white/90 text-[11.5px] font-bold text-peach-600 inline-flex items-center gap-1.5"><span className="inline-block animate-[wiggle_2.4s_ease-in-out_infinite]">🎂</span>{bday}</span>}
+                    {/* Name on the photo */}
+                    <span className="absolute right-3 bottom-3 inline-flex items-center gap-1.5 h-9 pl-3.5 pr-3 rounded-full bg-white/95 backdrop-blur text-[16px] font-extrabold text-gray-900 shadow-[0_6px_20px_-10px_rgba(0,0,0,0.25)]">
+                      {d.name}{d.gender && <span className={d.gender === 'MALE' ? 'text-teal-600' : 'text-peach-500'}>{d.gender === 'MALE' ? '♂' : '♀'}</span>}
+                    </span>
                   </div>
 
                   <div className="p-4 sm:p-5">
-                    <div className="flex items-center gap-2">
-                      <p className="text-[17px] font-extrabold text-gray-900 truncate">{d.name}</p>
-                      {d.gender && <span className={`text-[15px] font-bold ${d.gender === 'MALE' ? 'text-teal-600' : 'text-peach-500'}`} aria-label={t(d.gender === 'MALE' ? 'dog.male' : 'dog.female')}>{d.gender === 'MALE' ? '♂' : '♀'}</span>}
-                      <span className={`ml-auto w-8 h-8 rounded-full flex items-center justify-center transition-colors ${gift ? 'bg-peach-50 text-peach-600 group-hover:bg-peach-400 group-hover:text-white' : 'bg-teal-50 text-teal-700 group-hover:bg-teal-600 group-hover:text-white'}`}>
-                        <svg className="w-4 h-4 transition-transform group-hover:translate-x-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
-                      </span>
+                    <p className="text-[13px] text-gray-500 truncate">{d.breed || t('dogs.notSet')}</p>
+                    {bday && <p className="mt-2 inline-flex items-center gap-1.5 h-7 px-2.5 rounded-full bg-peach-50 text-[11.5px] font-bold text-peach-600"><span className="inline-block animate-[wiggle_2.4s_ease-in-out_infinite]">🎂</span>{bday}</p>}
+                    {/* At a glance */}
+                    <div className="grid grid-cols-3 gap-2 mt-3">
+                      {[['🎈', age], ['📏', d.size ? `${SIZE_SHORT[d.size]}` : null], ['⚖️', d.weightKg != null ? `${d.weightKg} ${t('dog.kg')}` : null]].map(([icon, v], k) => (
+                        <span key={k} className="rounded-2xl bg-gray-50 px-2 py-2 text-center">
+                          <span className="block text-[15px]" aria-hidden="true">{icon}</span>
+                          <span className={`block text-[11px] font-bold mt-0.5 leading-tight ${v ? 'text-gray-800' : 'text-gray-300'}`}>{v || '—'}</span>
+                        </span>
+                      ))}
                     </div>
-                    <p className="text-[13px] text-gray-500 truncate -mt-0.5">{[age, d.breed].filter(Boolean).join(' · ') || ' '}</p>
-
                     <div className="flex flex-wrap gap-1.5 mt-3">
-                      {d.size && <span className="text-[11.5px] font-semibold text-teal-800 bg-teal-50 rounded-full px-2.5 py-1">{SIZE_SHORT[d.size]} · {t(`dog.size.${d.size}`)}</span>}
-                      {d.weightKg != null && <span className="text-[11.5px] font-semibold text-gray-600 bg-gray-50 rounded-full px-2.5 py-1">⚖️ {d.weightKg} {t('dog.kg')}</span>}
                       {d.allergies?.length
                         ? <span className="text-[11.5px] font-semibold text-red-600 bg-red-50 rounded-full px-2.5 py-1 truncate max-w-full">⚠ {d.allergies.map((a: string) => dogOption(a, lang, t)).join(', ')}</span>
-                        : <span className="text-[11.5px] font-semibold text-gray-500 bg-gray-50 rounded-full px-2.5 py-1">✓ {t('dogs.noAllergies')}</span>}
+                        : <span className="text-[11.5px] font-semibold text-teal-700 bg-teal-50 rounded-full px-2.5 py-1">✓ {t('dogs.noAllergies')}</span>}
+                      <span className={`text-[11.5px] font-semibold rounded-full px-2.5 py-1 ${plan ? 'text-teal-700 bg-teal-50' : 'text-gray-500 bg-gray-50'}`}>📦 {plan ? t('dogs.planOn') : t('dogs.planOff')}</span>
                     </div>
-
-                    <p className={`mt-3 pt-3 border-t border-gray-100 text-[12px] font-semibold flex items-center gap-1.5 ${plan ? 'text-teal-700' : 'text-gray-400'}`}>
-                      <Icon name="box" className="w-4 h-4" />{plan ? t('dogs.planOn') : t('dogs.planOff')}
-                    </p>
+                    <span className={`mt-4 flex items-center justify-center gap-2 h-10 rounded-full text-[13px] font-bold transition-colors ${gift ? 'bg-peach-50 text-peach-600 group-hover:bg-peach-400 group-hover:text-white' : 'bg-teal-50 text-teal-700 group-hover:bg-teal-600 group-hover:text-white'}`}>
+                      {t('dogs.open')}
+                      <svg className="w-4 h-4 transition-transform group-hover:translate-x-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+                    </span>
                   </div>
                 </Link>
               </li>
