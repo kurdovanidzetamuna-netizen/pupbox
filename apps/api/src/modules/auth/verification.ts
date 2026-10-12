@@ -13,12 +13,15 @@ const RESEND_AFTER_MS = 60_000;
 const MAX_PER_HOUR = 5;
 
 /**
- * On a developer's computer every code is 111111, so testing sign-up needs
- * no SMS or email service. Only when NODE_ENV is exactly "development": the
- * live site (production) always sends a random code. Read when a code is
- * made, not at start-up: the .env file is loaded after this file.
+ * A fixed code instead of a random one, so sign-up can be tested without an
+ * SMS or email service: 111111 on a developer's computer (NODE_ENV exactly
+ * "development"), or TEST_LOGIN_CODE (six digits) on a test server before
+ * launch. With TEST_LOGIN_CODE nothing is sent — anyone who knows it can
+ * verify any account, so it must be removed before real customers arrive.
+ * Read when a code is made, not at start-up: .env is loaded after this file.
  */
-const devCode = () => (process.env.NODE_ENV === 'development' ? '111111' : null);
+const testCode = () => (/^\d{6}$/.test(process.env.TEST_LOGIN_CODE ?? '') ? process.env.TEST_LOGIN_CODE! : null);
+const devCode = () => testCode() ?? (process.env.NODE_ENV === 'development' ? '111111' : null);
 
 /**
  * A phone number from any country in one international form (+995599123456).
@@ -58,7 +61,9 @@ export async function sendCode(prisma: PrismaService, email: EmailService, sms: 
   await prisma.verificationCode.updateMany({ where: { userId, channel, usedAt: null }, data: { usedAt: new Date() } });
   await prisma.verificationCode.create({ data: { userId, channel, target, codeHash: hash(userId, code), expiresAt: new Date(Date.now() + CODE_TTL_MS) } });
 
-  if (channel === 'EMAIL') {
+  if (testCode()) {
+    // Test server: the code is known, so there's nothing to deliver.
+  } else if (channel === 'EMAIL') {
     await email.sendVerificationCode({ email: target, firstName: user.firstName, language: user.language, code });
   } else {
     const text = user.language === 'en' ? `Pupbox code: ${code}. Valid for 10 minutes.` : `Pupbox-ის კოდი: ${code}. მოქმედებს 10 წუთი.`;
