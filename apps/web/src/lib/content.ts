@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { cmsSlug, FAQ_SLUG, localizePage, type FaqItem, type PageDef, type StoredContent } from '@pupbox/content';
 import { fetchAPI } from './api';
+import { asLang, seo } from './seo';
 
 /**
  * How long the site keeps a page's admin content before asking again. Short,
@@ -30,21 +31,14 @@ export async function getFaq(): Promise<FaqItem[] | null> {
 
 /**
  * A page's title, description and share picture from its "Google & sharing"
- * section in admin. Georgian — the site's default language — is what search
- * engines and link previews get. `fullTitle` skips the " | Pupbox" suffix.
+ * section in admin, in the page's language (/ka or /en). `fullTitle` skips
+ * the " | Pupbox" suffix.
  */
-/** A page's address in a language: ('/shop', 'en') → /en/shop. */
-const atLang = (path: string, lang: 'ka' | 'en') => `/${lang}${path === '/' ? '' : path}`;
-
-export async function pageMetadata(page: PageDef, { fullTitle = false } = {}): Promise<Metadata> {
-  const seo = localizePage(page, await getStoredContent(page), 'ka').seo ?? {};
-  const images = seo.shareImage ? [{ url: seo.shareImage }] : undefined;
-  return {
-    title: fullTitle ? { absolute: seo.title } : seo.title,
-    description: seo.description,
-    // Georgian is the main address; the English one is listed beside it.
-    alternates: { canonical: atLang(page.path, 'ka'), languages: { ka: atLang(page.path, 'ka'), en: atLang(page.path, 'en') } },
-    openGraph: { title: seo.title, description: seo.description, url: atLang(page.path, 'ka'), ...(images ? { images } : {}) },
-    twitter: { title: seo.title, description: seo.description, ...(images ? { images } : {}) },
-  };
+export async function pageMetadata(page: PageDef, { fullTitle = false, lang = 'ka' }: { fullTitle?: boolean; lang?: string } = {}): Promise<Metadata> {
+  const l = asLang(lang);
+  const content = localizePage(page, await getStoredContent(page), l);
+  const s = content.seo ?? {};
+  // No share picture set in admin: the page's own top photo, if it has one.
+  const photo = s.shareImage || content.hero?.imageUrl;
+  return seo({ lang: l, path: page.path, title: s.title || 'Pupbox', description: s.description, photo, absoluteTitle: fullTitle });
 }

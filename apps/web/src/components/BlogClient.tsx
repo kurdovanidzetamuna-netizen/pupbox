@@ -42,7 +42,7 @@ export default function BlogClient({ posts, total, pages, page, categories, cont
               <>
                 <p className="text-sm text-gray-400 mb-6">{total} article{total !== 1 ? 's' : ''}</p>
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {posts.map((post: any) => (
+                  {posts.map((raw: any) => { const tr = raw.translations?.[lang] ?? {}; const post = { ...raw, title: tr.title?.trim() || raw.title, excerpt: tr.excerpt?.trim() || raw.excerpt }; return (
                     <Link
                       key={post.id}
                       href={`/blog/${post.slug}`}
@@ -71,7 +71,7 @@ export default function BlogClient({ posts, total, pages, page, categories, cont
                         </div>
                       </div>
                     </Link>
-                  ))}
+                  );})}
                 </div>
 
                 {pages > 1 && (

@@ -4,7 +4,7 @@ import { shopPage } from '@pupbox/content';
 import { getStoredContent, pageMetadata } from '@/lib/content';
 import ShopView from './ShopView';
 
-export const generateMetadata = () => pageMetadata(shopPage);
+export const generateMetadata = ({ params }: { params: { lang: string } }) => pageMetadata(shopPage, { lang: params.lang });
 
 export default async function ShopPage({
   params: route,

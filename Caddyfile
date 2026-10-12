@@ -1,13 +1,22 @@
+# pupbox.ge and www.pupbox.ge, over http or https, all end on
+# https://pupbox.ge (Caddy upgrades http by itself and keeps the
+# certificates renewed). The site then picks the language: /ka or /en.
 {$DOMAIN}, www.{$DOMAIN} {
 	@www host www.{$DOMAIN}
 	redir @www https://{$DOMAIN}{uri} permanent
+	encode zstd gzip
+	header Strict-Transport-Security "max-age=31536000"
 	reverse_proxy web:3000
 }
 
 admin.{$DOMAIN} {
+	encode zstd gzip
+	header Strict-Transport-Security "max-age=31536000"
 	reverse_proxy admin:3001
 }
 
 api.{$DOMAIN} {
+	encode zstd gzip
+	header Strict-Transport-Security "max-age=31536000"
 	reverse_proxy api:4000
 }

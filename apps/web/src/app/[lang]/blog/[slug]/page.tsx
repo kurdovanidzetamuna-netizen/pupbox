@@ -4,6 +4,9 @@ import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
 import { API_URL } from '@/lib/api';
 import { Heading } from '@/components/ui/Heading';
+import ShareButtons from '@/components/ShareButtons';
+import { JsonLd, ORG, breadcrumbs } from '@/lib/jsonld';
+import { SITE_URL, T as tx, asLang, atLang, seo, type Lang } from '@/lib/seo';
 
 async function getPost(slug: string) {
   const res = await fetch(`${API_URL}/blog/posts/${slug}`, { next: { revalidate: 300 } });
@@ -11,22 +14,26 @@ async function getPost(slug: string) {
   return res.json();
 }
 
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
+/** The post in the page's language: its translation where there is one, else the post as written. */
+function inLang(post: any, lang: Lang) {
+  const tr = post.translations?.[lang] ?? {};
+  const pick = (k: string) => (typeof tr[k] === 'string' && tr[k].trim()) || post[k];
+  return { title: pick('title'), excerpt: pick('excerpt'), content: pick('content'), seoTitle: tr.seoTitle?.trim() || post.seoTitle, seoDesc: tr.seoDesc?.trim() || post.seoDesc };
+}
+
+export async function generateMetadata({ params }: { params: { slug: string; lang: string } }): Promise<Metadata> {
+  const lang = asLang(params.lang);
   const post = await getPost(params.slug);
-  if (!post) return { title: 'გვერდი ვერ მოიძებნა' };
-  return {
-    title: post.seoTitle || `${post.title} | Pupbox Blog`,
-    description: post.seoDesc || post.excerpt,
-    openGraph: {
-      title: post.seoTitle || post.title,
-      description: post.seoDesc || post.excerpt,
-      type: 'article',
-      publishedTime: post.publishedAt,
-      authors: post.authorName ? [post.authorName] : undefined,
-      images: post.ogImage ? [{ url: post.ogImage }] : post.featuredImage ? [{ url: post.featuredImage }] : [],
-    },
-    alternates: { canonical: `/blog/${post.slug}` },
-  };
+  if (!post) return { title: tx(lang, 'გვერდი ვერ მოიძებნა', 'Page not found'), robots: { index: false } };
+  const p = inLang(post, lang);
+  return seo({
+    lang, path: `/blog/${post.slug}`, type: 'article',
+    title: (p.seoTitle || p.title).replace(/\s*\|\s*Pupbox.*$/i, ''),
+    description: p.seoDesc || p.excerpt,
+    photo: post.ogImage || post.featuredImage,
+    sub: tx(lang, 'Pupbox ბლოგი', 'Pupbox blog'),
+    publishedTime: post.publishedAt, modifiedTime: post.updatedAt,
+  });
 }
 
 export async function generateStaticParams() {
@@ -40,25 +47,39 @@ export async function generateStaticParams() {
   }
 }
 
-export default async function BlogPostPage({ params }: { params: { slug: string } }) {
+export default async function BlogPostPage({ params }: { params: { slug: string; lang: string } }) {
+  const lang = asLang(params.lang);
   const post = await getPost(params.slug);
   if (!post) notFound();
+  const p = inLang(post, lang);
+  const url = `${SITE_URL}${atLang(`/blog/${post.slug}`, lang)}`;
 
-  const jsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'BlogPosting',
-    headline: post.title,
-    description: post.excerpt,
-    image: post.featuredImage,
-    datePublished: post.publishedAt,
-    dateModified: post.updatedAt,
-    author: { '@type': 'Person', name: post.authorName || 'Pupbox-ის გუნდი' },
-    publisher: { '@type': 'Organization', name: 'Pupbox', logo: { '@type': 'ImageObject', url: `${process.env.NEXT_PUBLIC_SITE_URL}/logo.png` } },
-  };
+  const jsonLd = [
+    {
+      '@context': 'https://schema.org',
+      '@type': 'BlogPosting',
+      headline: p.title,
+      description: p.excerpt,
+      image: post.featuredImage ? [post.featuredImage] : undefined,
+      datePublished: post.publishedAt,
+      dateModified: post.updatedAt,
+      inLanguage: lang,
+      mainEntityOfPage: url,
+      url,
+      author: { '@type': 'Organization', name: post.authorName || 'Pupbox' },
+      publisher: ORG,
+    },
+    breadcrumbs(lang, [
+      { name: 'Pupbox', path: '/' },
+      { name: tx(lang, 'ბლოგი', 'Blog'), path: '/blog' },
+      ...(post.category ? [{ name: post.category.name, path: `/blog/category/${post.category.slug}` }] : []),
+      { name: p.title, path: `/blog/${post.slug}` },
+    ]),
+  ];
 
   return (
     <main className="min-h-screen bg-white">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <JsonLd data={jsonLd} />
 
 
       <article className="max-w-3xl mx-auto px-6 pt-8 sm:pt-10 pb-14">
@@ -71,7 +92,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
             </>
           )}
           <span>/</span>
-          <span className="text-gray-700 truncate">{post.title}</span>
+          <span className="text-gray-700 truncate">{p.title}</span>
         </nav>
 
         {post.category && (
@@ -79,26 +100,26 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
             {post.category.name}
           </Link>
         )}
-        <Heading title={post.title} className="mt-2 !mb-3" />
+        <Heading title={p.title} as="h1" className="mt-2 !mb-3" />
 
         <div className="flex items-center gap-4 text-sm text-gray-400 mb-8">
-          {post.authorName && <span>By <span className="text-gray-600 font-medium">{post.authorName}</span></span>}
+          {post.authorName && <span className="text-gray-600 font-medium">{post.authorName}</span>}
           {post.publishedAt && (
-            <span>{new Date(post.publishedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+            <time dateTime={post.publishedAt}>{new Date(post.publishedAt).toLocaleDateString(lang === 'en' ? 'en-GB' : 'ka-GE', { day: 'numeric', month: 'long', year: 'numeric' })}</time>
           )}
         </div>
 
         {post.featuredImage && (
           <div className="rounded-2xl overflow-hidden mb-10 aspect-video">
-            <img src={post.featuredImage} alt={post.title} className="w-full h-full object-cover" />
+            <img src={post.featuredImage} alt={p.title} className="w-full h-full object-cover" />
           </div>
         )}
 
-        {post.excerpt && <p className="text-lg text-gray-500 mb-8 font-medium leading-relaxed">{post.excerpt}</p>}
+        {p.excerpt && <p className="text-lg text-gray-500 mb-8 font-medium leading-relaxed">{p.excerpt}</p>}
 
-        {post.content && (
+        {p.content && (
           <div className="prose prose-gray max-w-none prose-headings:font-bold prose-a:text-teal-600">
-            <div dangerouslySetInnerHTML={{ __html: post.content }} />
+            <div dangerouslySetInnerHTML={{ __html: p.content }} />
           </div>
         )}
 
@@ -112,6 +133,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
             ))}
           </div>
         )}
+        <ShareButtons title={p.title} className="mt-10 pt-6 border-t border-gray-100" />
       </article>
 
     </main>

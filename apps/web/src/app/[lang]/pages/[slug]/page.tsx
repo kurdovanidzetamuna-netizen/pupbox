@@ -1,3 +1,4 @@
+import { T as tx, asLang, seo } from '@/lib/seo';
 import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
 import CmsContent from './CmsContent';
@@ -13,20 +14,13 @@ async function getCmsPage(slug: string) {
   }
 }
 
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
+export async function generateMetadata({ params }: { params: { slug: string; lang: string } }): Promise<Metadata> {
+  const lang = asLang(params.lang);
   const page = await getCmsPage(params.slug);
-  if (!page) return { title: 'გვერდი ვერ მოიძებნა' };
-  return {
-    // The root layout's title template already appends "| Pupbox".
-    title: (page.seoTitle || page.title).replace(/\s*\|\s*Pupbox\s*$/i, ''),
-    description: page.seoDesc,
-    openGraph: {
-      title: page.seoTitle || page.title,
-      description: page.seoDesc,
-      images: page.ogImage ? [{ url: page.ogImage }] : [],
-    },
-    alternates: { canonical: `/pages/${page.slug}` },
-  };
+  if (!page) return { title: tx(lang, 'გვერდი ვერ მოიძებნა', 'Page not found'), robots: { index: false } };
+  const tr = page.translations?.[lang] ?? {};
+  const title = (tr.seoTitle || tr.title || page.seoTitle || page.title).replace(/\s*\|\s*Pupbox\s*$/i, '');
+  return seo({ lang, path: `/pages/${page.slug}`, title, description: tr.seoDesc || page.seoDesc, photo: page.ogImage });
 }
 
 export default async function CmsPage({ params }: { params: { slug: string } }) {

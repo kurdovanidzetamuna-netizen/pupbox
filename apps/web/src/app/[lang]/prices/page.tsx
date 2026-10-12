@@ -6,7 +6,7 @@ import { PricesHeader, PricesIncludes } from './PricesHeader';
 import { pricingPage } from '@pupbox/content';
 import { getStoredContent, pageMetadata } from '@/lib/content';
 
-export const generateMetadata = () => pageMetadata(pricingPage);
+export const generateMetadata = ({ params }: { params: { lang: string } }) => pageMetadata(pricingPage, { lang: params.lang });
 
 export default async function PricesPage() {
   let plans: any[] = [];

@@ -1,3 +1,4 @@
+import { T as tx, asLang, seo } from '@/lib/seo';
 import Link from '@/components/LangLink';
 import T from '@/components/T';
 import { notFound } from 'next/navigation';
@@ -18,13 +19,17 @@ async function getPosts(categorySlug: string, page = 1) {
   return res.json();
 }
 
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
+export async function generateMetadata({ params }: { params: { slug: string; lang: string } }): Promise<Metadata> {
+  const lang = asLang(params.lang);
   const cat = await getCategory(params.slug);
-  if (!cat) return { title: 'გვერდი ვერ მოიძებნა' };
-  return {
-    title: `${cat.translations?.ka?.name || cat.name} — ძაღლის მოვლის რჩევები | Pupbox ბლოგი`,
-    description: cat.description || `${cat.translations?.ka?.name || cat.name} — ყველა სტატია Pupbox-ის ბლოგზე.`,
-  };
+  if (!cat) return { title: tx(lang, 'გვერდი ვერ მოიძებნა', 'Page not found'), robots: { index: false } };
+  const name = (lang === 'ka' && cat.translations?.ka?.name) || cat.name;
+  return seo({
+    lang, path: `/blog/category/${cat.slug}`,
+    title: tx(lang, `${name} — ძაღლის მოვლის რჩევები`, `${name} — dog care tips`),
+    description: cat.description || tx(lang, `${name} — ყველა სტატია Pupbox-ის ბლოგზე.`, `${name} — every article on the Pupbox blog.`),
+    sub: tx(lang, 'Pupbox ბლოგი', 'Pupbox blog'),
+  });
 }
 
 export default async function BlogCategoryPage({ params, searchParams }: { params: { slug: string }; searchParams: { page?: string } }) {

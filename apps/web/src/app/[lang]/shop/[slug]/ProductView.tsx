@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { shopPage, ALLERGENS, type StoredContent } from '@pupbox/content';
 import { usePage } from '@/lib/usePage';
 import { useLanguage } from '@/context/LanguageContext';
+import ShareButtons from '@/components/ShareButtons';
 import { fill } from '@/context/strings/purchase';
 import { Heading } from '@/components/ui/Heading';
 import Field from '@/components/ui/Field';
@@ -192,7 +193,7 @@ export default function ProductView({ product, related, content }: { product: an
                 </Link>
               )}
             </div>
-            <Heading title={name} subtitle={short || undefined} className="!mb-4" />
+            <Heading title={name} as="h1" subtitle={short || undefined} className="!mb-4" />
 
             <div className="flex items-end gap-3 flex-wrap">
               <span className={`text-[28px] leading-none font-black tracking-tight ${soldOut ? 'text-gray-400' : sale ? 'text-peach-600' : 'text-gray-900'}`}>{money(price)}</span>
@@ -265,6 +266,7 @@ export default function ProductView({ product, related, content }: { product: an
                   </p>
                 )}
                 {description && <p className="text-[14px] sm:text-[15px] leading-relaxed text-gray-600 whitespace-pre-line max-w-2xl">{description}</p>}
+                <ShareButtons title={name} className="mt-5" />
               </div>
               {(allergens.length > 0 || product.tags?.length > 0) && (
                 <dl className="space-y-4 lg:border-l lg:border-gray-200/70 lg:pl-8">

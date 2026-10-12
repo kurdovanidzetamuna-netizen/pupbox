@@ -59,8 +59,21 @@ That creates the admin account, plans, delivery options, starter products
 ## 4. After changing `.env` or pulling new code
 
 ```bash
+git pull
 docker compose -f docker-compose.prod.yml up -d --build
+docker compose -f docker-compose.prod.yml exec api npx prisma migrate deploy --schema packages/database/prisma/schema.prisma
 ```
+
+The last line adds any new database tables; it never deletes data.
+
+## Addresses
+
+`pupbox.ge`, `www.pupbox.ge`, `http://…` all end on `https://pupbox.ge`
+(Caddy). Pages live under their language: `/ka/…` (Georgian, the default)
+and `/en/…`; an address without one (old links, emails, the payment
+return page) goes to the visitor's language automatically. Every page has
+a share picture at `/og?…`, and `/sitemap.xml` lists every public page in
+both languages — submit it once in Google Search Console.
 
 ## Still needed before real customers
 

@@ -1,6 +1,7 @@
 import RefCapture from '@/components/RefCapture';
 import OfflineGame from '@/components/OfflineGame';
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
+import { SITE_URL, T, asLang, seo } from '@/lib/seo';
 import { notFound } from 'next/navigation';
 import '../globals.css';
 import { Noto_Sans_Georgian } from 'next/font/google';
@@ -15,41 +16,47 @@ import Footer from '@/components/Footer';
 import { sitePage } from '@pupbox/content';
 import { getStoredContent } from '@/lib/content';
 
-const BASE = process.env.NEXT_PUBLIC_SITE_URL || 'https://pupbox.ge';
 
-export const metadata: Metadata = {
-  metadataBase: new URL(BASE),
-  title: {
-    default: 'Pupbox — ყოველთვიური ყუთის გამოწერა საქართველოში',
-    template: '%s | Pupbox',
-  },
-  description: 'პრემიუმ საჭმლის, სათამაშოებისა და აქსესუარების კურირებული ყოველთვიური კოლოფი შენი ძაღლისთვის. მიწოდება მთელ საქართველოში.',
-  keywords: ['dog subscription box', 'dog treats Georgia', 'pupbox', 'monthly dog box', 'pet subscription', 'ძაღლის გამოწერა', 'pupbox საქართველო'],
-  openGraph: {
-    type: 'website',
-    locale: 'ka_GE',
-    url: BASE,
-    siteName: 'Pupbox',
-    title: 'Pupbox — ყოველთვიური ყუთის გამოწერა',
-    description: 'პრემიუმ საჭმლის, სათამაშოებისა და აქსესუარების კურირებული ყოველთვიური კოლოფი შენი ძაღლისთვის.',
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'Pupbox — ყოველთვიური ყუთის გამოწერა',
-    description: 'პრემიუმ საჭმლის, სათამაშოებისა და აქსესუარების კურირებული ყოველთვიური კოლოფი შენი ძაღლისთვის.',
-  },
-  robots: { index: true, follow: true },
-  alternates: { canonical: `${BASE}/ka`, languages: { ka: `${BASE}/ka`, en: `${BASE}/en` } },
+/**
+ * Defaults for every page, in the page's language; each page sets its own
+ * title, description, address and share picture on top (lib/seo.ts).
+ */
+type Props = { children: React.ReactNode; modal: React.ReactNode; params: { lang: string } };
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const lang = asLang(params.lang);
+  const title = T(lang, 'Pupbox — ყოველთვიური ყუთის გამოწერა საქართველოში', 'Pupbox — Monthly dog subscription boxes in Georgia');
+  const description = T(lang,
+    'პრემიუმ საჭმლის, სათამაშოებისა და აქსესუარების კურირებული ყოველთვიური კოლოფი შენი ძაღლისთვის. მიწოდება მთელ საქართველოში.',
+    'Curated monthly boxes of premium treats, toys and accessories for your dog. Delivered across Georgia.');
+  return {
+    metadataBase: new URL(SITE_URL),
+    ...seo({ lang, path: '/', title, description, absoluteTitle: true }),
+    title: { default: title, template: '%s | Pupbox' },
+    applicationName: 'Pupbox',
+    keywords: ['dog subscription box', 'dog treats Georgia', 'pupbox', 'monthly dog box', 'pet subscription', 'ძაღლის გამოწერა', 'ძაღლის საჭმელი', 'pupbox საქართველო'],
+    robots: { index: true, follow: true, googleBot: { index: true, follow: true, 'max-image-preview': 'large', 'max-snippet': -1 } },
+    formatDetection: { telephone: false, email: false, address: false },
+    appleWebApp: { title: 'Pupbox', capable: true, statusBarStyle: 'default' },
+  };
+}
+
+/** Phone browsers and in-app browsers (Instagram, Messenger…): proper width, brand colour in the bar. */
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
+  themeColor: '#22A38B',
 };
 
 export const generateStaticParams = () => [{ lang: 'ka' }, { lang: 'en' }];
 
-export default async function RootLayout({ children, modal, params }: { children: React.ReactNode; modal: React.ReactNode; params: { lang: string } }) {
+export default async function RootLayout({ children, modal, params }: Props) {
   // Only /ka and /en exist; anything else in the first place is not a page.
   if (params.lang !== 'ka' && params.lang !== 'en') notFound();
   const site = await getStoredContent(sitePage);
   return (
-    <html lang={params.lang} className={sans.variable}>
+    <html lang={params.lang === 'en' ? 'en' : 'ka'} className={sans.variable}>
       <body className="font-sans bg-gray-50 text-gray-800">
         <LanguageProvider>
           <CartProvider>

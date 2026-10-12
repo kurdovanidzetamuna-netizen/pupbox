@@ -3,7 +3,7 @@ import BlogClient from '@/components/BlogClient';
 import { blogPage } from '@pupbox/content';
 import { getStoredContent, pageMetadata } from '@/lib/content';
 
-export const generateMetadata = () => pageMetadata(blogPage);
+export const generateMetadata = ({ params }: { params: { lang: string } }) => pageMetadata(blogPage, { lang: params.lang });
 
 async function getPosts(page = 1) {
   try {
