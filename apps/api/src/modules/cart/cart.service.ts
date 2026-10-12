@@ -7,7 +7,8 @@ const cartInclude = {
   items: {
     orderBy: { createdAt: 'asc' as const },
     include: {
-      product: { include: { images: { where: { isPrimary: true }, take: 1 }, inventory: true } },
+      // The main photo (else the first), and the category for a picture when there's none.
+      product: { include: { images: { orderBy: [{ isPrimary: 'desc' as const }, { sortOrder: 'asc' as const }], take: 1 }, inventory: true, category: { select: { slug: true, name: true } } } },
       subscriptionPlan: true,
     },
   },

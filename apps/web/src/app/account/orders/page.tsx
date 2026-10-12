@@ -1,4 +1,5 @@
 'use client';
+import ProductThumb from '@/components/shop/ProductThumb';
 import { formatDate } from '@/lib/dates';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
@@ -82,9 +83,7 @@ export default function MyOrdersPage() {
               <div className="flex flex-wrap gap-3 mb-2">
                 {order.items.slice(0, 3).map((item: any) => (
                   <div key={item.id} className="flex items-center gap-2 text-sm text-gray-600">
-                    <span className="w-8 h-8 bg-gray-50 rounded-lg flex items-center justify-center text-lg overflow-hidden">
-                      {item.product?.images?.[0]?.url ? <img src={item.product.images[0].url} alt="" className="w-full h-full object-cover" /> : '🐾'}
-                    </span>
+                    <ProductThumb item={item} className="w-8 h-8 rounded-lg text-lg" />
                     <span>{itemName(item, lang) || item.name} × {item.quantity}<ChoiceNote choice={item.personalisation} /></span>
                   </div>
                 ))}

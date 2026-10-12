@@ -8,6 +8,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { fill } from '@/context/strings/purchase';
 import { Icon } from '@/components/ui/icons';
 import QuantityStepper from '@/components/shop/QuantityStepper';
+import ProductThumb from '@/components/shop/ProductThumb';
 
 const money = (n: unknown) => `₾${Number(n).toFixed(2)}`;
 
@@ -73,15 +74,12 @@ export default function MiniCart() {
           ) : (<>
             <ul className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-2 divide-y divide-gray-100">
               {items.map((i) => {
-                const img = i.product?.images?.[0]?.url;
-                const plain = i.product && !i.personalisation;
+                const plain = !!i.product;
                 const left = i.product?.inventory ? Math.max(0, i.product.inventory.quantity - (i.product.inventory.reservedQty || 0)) : Infinity;
                 const extra = [i.personalisation?.size, i.personalisation?.engraving && `„${i.personalisation.engraving}“`].filter(Boolean).join(' · ');
                 return (
                   <li key={i.id} className={`flex items-center gap-3 px-2 py-3 ${busy === i.id ? 'opacity-60' : ''}`}>
-                    <span className="w-12 h-12 shrink-0 rounded-xl overflow-hidden bg-gray-50 flex items-center justify-center text-xl">
-                      {img ? <img src={img} alt="" className="w-full h-full object-cover" /> : <span aria-hidden="true">{i.subscriptionPlan ? '📦' : '🐾'}</span>}
-                    </span>
+                    <ProductThumb item={i} />
                     <div className="flex-1 min-w-0">
                       <p className="text-[13px] font-semibold text-gray-900 leading-snug line-clamp-1">{nameOf(i)}</p>
                       {extra && <p className="text-[11.5px] text-gray-500 truncate">{extra}</p>}

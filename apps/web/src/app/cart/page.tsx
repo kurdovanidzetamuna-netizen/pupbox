@@ -1,4 +1,5 @@
 'use client';
+import ProductThumb from '@/components/shop/ProductThumb';
 import { useState } from 'react';
 import Link from 'next/link';
 import { useCart } from '@/context/CartContext';
@@ -55,13 +56,7 @@ export default function CartPage() {
           <ul className="md:col-span-2 space-y-4">
             {cart.items.map((item: any) => (
               <li key={item.id} className="bg-white rounded-xl border border-gray-100 p-5 flex gap-4">
-                <div className="w-20 h-20 bg-gray-50 rounded-lg flex items-center justify-center shrink-0 overflow-hidden">
-                  {item.product?.images?.[0] ? (
-                    <img src={item.product.images[0].url} alt={item.product.images[0].altText || item.product.name} className="w-full h-full object-cover" />
-                  ) : (
-                    <span className="text-3xl" aria-hidden="true">{item.subscriptionPlan ? '📦' : '🐾'}</span>
-                  )}
-                </div>
+                <ProductThumb item={item} className="w-20 h-20 rounded-lg text-3xl" />
                 <div className="flex-1">
                   <div className="flex items-start justify-between">
                     <div>

@@ -18,7 +18,7 @@ export class OrdersService {
         where: { userId },
         include: {
           // Product and plan for their Georgian names.
-          items: { include: { product: { include: { images: { where: { isPrimary: true }, take: 1 } } }, subscriptionPlan: { select: { name: true, translations: true } } } },
+          items: { include: { product: { include: { images: { orderBy: [{ isPrimary: 'desc' as const }, { sortOrder: 'asc' as const }], take: 1 }, category: { select: { slug: true, name: true } } } }, subscriptionPlan: { select: { name: true, translations: true } } } },
           address: true,
           deliveryMethod: true,
           payments: { orderBy: { createdAt: 'desc' }, take: 1, include: { refunds: { orderBy: { createdAt: 'desc' } } } },
@@ -47,7 +47,7 @@ export class OrdersService {
     const order = await this.prisma.order.findFirst({
       where: { id, userId },
       include: {
-        items: { include: { product: { include: { images: { where: { isPrimary: true }, take: 1 } } }, subscriptionPlan: true } },
+        items: { include: { product: { include: { images: { orderBy: [{ isPrimary: 'desc' as const }, { sortOrder: 'asc' as const }], take: 1 }, category: { select: { slug: true, name: true } } } }, subscriptionPlan: true } },
         address: true,
         deliveryMethod: true,
         payments: { orderBy: { createdAt: 'desc' } },
@@ -89,7 +89,7 @@ export class OrdersService {
           user: { select: { id: true, email: true, firstName: true, lastName: true, phone: true } },
           address: true,
           payments: { orderBy: { createdAt: 'desc' }, take: 1 },
-          items: { include: { product: { include: { images: { where: { isPrimary: true }, take: 1 } } }, subscriptionPlan: true } },
+          items: { include: { product: { include: { images: { orderBy: [{ isPrimary: 'desc' as const }, { sortOrder: 'asc' as const }], take: 1 }, category: { select: { slug: true, name: true } } } }, subscriptionPlan: true } },
           dog: true,
           subscription: { include: { plan: true } },
           deliveryMethod: true,
@@ -155,7 +155,7 @@ export class OrdersService {
         user: { include: { dogs: { where: { deletedAt: null } }, addresses: { where: { deletedAt: null } } } },
         address: true,
         payments: { orderBy: { createdAt: 'desc' }, include: { refunds: true } },
-        items: { include: { product: { include: { images: { where: { isPrimary: true }, take: 1 } } }, subscriptionPlan: true } },
+        items: { include: { product: { include: { images: { orderBy: [{ isPrimary: 'desc' as const }, { sortOrder: 'asc' as const }], take: 1 }, category: { select: { slug: true, name: true } } } }, subscriptionPlan: true } },
         dog: true,
         subscription: { include: { plan: true } },
         deliveryMethod: true,
