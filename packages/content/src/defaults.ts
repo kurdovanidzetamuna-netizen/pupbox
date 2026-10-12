@@ -134,6 +134,8 @@ export const D = {
   "plan.giftThis": { en: "Gift this plan", ka: "საჩუქრად გაგზავნა" },
   "pricing.none": { en: "No plans available yet.", ka: "გეგმები ჯერ არ არის ხელმისაწვდომი." },
   "pricing.includes.heading": { en: "Every plan includes", ka: "ყველა გეგმა მოიცავს" },
+  "pricing.includes.sub": { en: "Whichever plan you pick, all of this comes with every box.", ka: "რომელი გეგმაც არ უნდა აირჩიო, ეს ყველაფერი ყოველ კოლოფთან ერთად მოდის." },
+  "pricing.includes.cta": { en: "Choose a plan", ka: "აირჩიე გეგმა" },
   "pricing.includes.i1": { en: "Handpicked products for your dog's size and breed", ka: "ხელით შერჩეული პროდუქტები შენი ძაღლის ზომისა და ჯიშისთვის" },
   "pricing.includes.i2": { en: "Free delivery on all subscription boxes", ka: "უფასო მიწოდება ყველა გამოწერის კოლოფზე" },
   "pricing.includes.i3": { en: "Personalised to your dog's preferences", ka: "მორგებული შენი ძაღლის პრეფერენციებზე" },

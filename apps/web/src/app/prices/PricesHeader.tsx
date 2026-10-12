@@ -15,5 +15,6 @@ export function PricesHeader({ content }: { content: StoredContent | null }) {
 export function PricesIncludes({ content }: { content: StoredContent | null }) {
   const c = usePage(pricingPage, content);
   if (!c.on('includes')) return null;
-  return <FeatureGrid title={c.includes.heading} items={c.includes.items} />;
+  return <FeatureGrid title={c.includes.heading} subtitle={c.includes.description} items={c.includes.items}
+    cta={c.includes.cta ? { label: c.includes.cta, href: '#plans' } : undefined} />;
 }

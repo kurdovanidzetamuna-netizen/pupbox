@@ -97,6 +97,8 @@ export const pricingPage: PageDef = {
       id: 'includes', label: 'Every plan includes', icon: '✅',
       fields: [
         text('heading', 'Heading', d('pricing.includes.heading')),
+        text('description', 'Line under the heading', d('pricing.includes.sub')),
+        text('cta', 'Link to the plans', d('pricing.includes.cta')),
         list('items', 'Items', [icon('icon'), text('text', 'Text')], [
           { icon: '📦', text: d('pricing.includes.i1') },
           { icon: '🚚', text: d('pricing.includes.i2') },
