@@ -21,7 +21,6 @@ import PerksStrip from '@/components/shop/PerksStrip';
 
 const money = (n: unknown) => `₾${Number(n).toFixed(2)}`;
 const DOG_SIZES = ['EXTRA_SMALL', 'SMALL', 'MEDIUM', 'LARGE', 'EXTRA_LARGE'];
-const SIZE_SHORT = ['XS', 'S', 'M', 'L', 'XL'];
 
 /**
  * A product, built from the shop's own pieces: gallery, the shared title,
@@ -191,28 +190,33 @@ export default function ProductView({ product, related, content }: { product: an
               {soldOut ? t('shop.outOfStock') : low ? fill(t('shop.onlyLeft'), { n: left }) : t('shop.inStock')}
             </p>
 
-            {/* Size and age: one size row. A product you choose a size for shows
-                only the choice; otherwise the dog sizes it suits. */}
+            {/* Size and age. A size you choose is a row of chips; which dogs it
+                suits is plain text (like age), so it never looks clickable. */}
             <dl className="mt-5 space-y-2.5 text-[12px]">
-              <div className="flex items-center gap-2.5" {...(sizes.length && !soldOut ? { 'aria-invalid': !!errs.size, tabIndex: errs.size ? -1 : undefined } : {})}>
-                <dt className="w-14 shrink-0 font-semibold text-gray-400">{t('pdp.size')}{sizes.length > 0 && !soldOut && <span className="text-red-400"> *</span>}</dt>
-                <dd className="flex flex-wrap gap-1.5">
-                  {sizes.length > 0 && !soldOut ? (
-                    <SizeChips sizes={sizes} value={size} onPick={ch.setSize} counts={ch.sizeCounts} error={!!errs.size} label={t('pdp.size')} />
-                  ) : DOG_SIZES.map((sz, i) => {
-                    const on = !product.dogSizes?.length || product.dogSizes.includes(sz);
-                    return (
-                      <span key={sz} title={`${t(`dog.size.${sz}`)} · ${t(`dog.sizeHint.${sz}`)}`} aria-label={`${t(`dog.size.${sz}`)}${on ? '' : ' —'}`}
-                        className={`w-8 h-7 rounded-lg inline-flex items-center justify-center text-[11px] font-bold ${on ? 'bg-teal-50 text-teal-700 ring-1 ring-teal-100' : 'text-gray-300 line-through decoration-gray-200'}`}>
-                        {SIZE_SHORT[i]}
-                      </span>
-                    );
-                  })}
-                </dd>
-              </div>
-              {errs.size && <FieldError message={errs.size} className="!mt-0 pl-[4.125rem]" />}
+              {sizes.length > 0 && !soldOut ? (
+                <div className="flex items-center gap-2.5" aria-invalid={!!errs.size} tabIndex={errs.size ? -1 : undefined}>
+                  <dt className="w-[5.5rem] shrink-0 font-semibold text-gray-400">{t('pdp.size')}<span className="text-red-400"> *</span></dt>
+                  <dd><SizeChips sizes={sizes} value={size} onPick={ch.setSize} counts={ch.sizeCounts} error={!!errs.size} label={t('pdp.size')} /></dd>
+                </div>
+              ) : sizes.length > 0 ? (
+                <div className="flex items-center gap-2.5">
+                  <dt className="w-[5.5rem] shrink-0 font-semibold text-gray-400">{t('pdp.size')}</dt>
+                  <dd className="text-gray-700 font-medium">{sizes.join(' · ')}</dd>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2.5">
+                  <dt className="w-[5.5rem] shrink-0 font-semibold text-gray-400">{t('shop.dogSize')}</dt>
+                  <dd className="text-gray-700 font-medium">
+                    {!product.dogSizes?.length || product.dogSizes.length === DOG_SIZES.length ? t('pdp.allSizes')
+                      : DOG_SIZES.filter((sz) => product.dogSizes.includes(sz)).map((sz, i) => (
+                        <span key={sz} title={t(`dog.sizeHint.${sz}`)}>{i > 0 && ' · '}{t(`dog.size.${sz}`)}</span>
+                      ))}
+                  </dd>
+                </div>
+              )}
+              {errs.size && <FieldError message={errs.size} className="!mt-0 pl-[6.125rem]" />}
               <div className="flex items-center gap-2.5">
-                <dt className="w-14 shrink-0 font-semibold text-gray-400">{t('pdp.age')}</dt>
+                <dt className="w-[5.5rem] shrink-0 font-semibold text-gray-400">{t('pdp.age')}</dt>
                 <dd className="text-gray-700 font-medium">
                   {product.lifeStages?.length ? product.lifeStages.map((st: string) => t(`pdp.stage.${st}`)).join(' · ') : t('pdp.stage.ALL')}
                 </dd>
