@@ -1,0 +1,13 @@
+{$DOMAIN}, www.{$DOMAIN} {
+	@www host www.{$DOMAIN}
+	redir @www https://{$DOMAIN}{uri} permanent
+	reverse_proxy web:3000
+}
+
+admin.{$DOMAIN} {
+	reverse_proxy admin:3001
+}
+
+api.{$DOMAIN} {
+	reverse_proxy api:4000
+}

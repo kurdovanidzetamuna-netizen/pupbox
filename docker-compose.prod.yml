@@ -41,7 +41,7 @@ services:
     networks:
       - pupbox_net
     ports:
-      - "4000:4000"
+      - "127.0.0.1:4000:4000"
 
   web:
     build:
@@ -59,7 +59,7 @@ services:
     networks:
       - pupbox_net
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
 
   admin:
     build:
@@ -74,9 +74,32 @@ services:
     networks:
       - pupbox_net
     ports:
-      - "3001:3001"
+      - "127.0.0.1:3001:3001"
+
+  # HTTPS for pupbox.ge, admin. and api. — certificates are fetched and
+  # renewed automatically. The apps are only reachable through it.
+  caddy:
+    image: caddy:2-alpine
+    restart: always
+    environment:
+      DOMAIN: ${DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - web
+      - admin
+      - api
+    networks:
+      - pupbox_net
+    ports:
+      - "80:80"
+      - "443:443"
 
 volumes:
+  caddy_data:
+  caddy_config:
   postgres_data:
   redis_data:
   uploads:
