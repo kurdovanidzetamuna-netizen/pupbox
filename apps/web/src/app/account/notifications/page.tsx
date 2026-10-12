@@ -1,59 +1,73 @@
 'use client';
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/context/LanguageContext';
 import { fill } from '@/context/strings/purchase';
 import { authFetch, loginUrl, SessionExpiredError } from '@/lib/authFetch';
 import { Icon } from '@/components/ui/icons';
-import IconButton from '@/components/ui/IconButton';
-import Menu from '@/components/ui/Menu';
-import { Heading } from '@/components/ui/Heading';
 import PawTrail from '@/components/PawTrail';
 import NotificationItem from '@/components/NotificationItem';
 import { markRead, setUnread, useUnread, type Notice } from '@/lib/notifications';
 
-/** Which kinds of notification each filter shows. */
-const KINDS: Record<string, string[]> = {
-  orders: ['ORDER_PAID', 'PAYMENT_FAILED', 'ORDER_SHIPPED', 'ORDER_DELIVERED', 'REFUNDED'],
-  boxes: ['BOX_SHIPPED', 'BOX_DELIVERED', 'RENEWAL_DUE'],
-  gifts: ['GIFT_SENT', 'REFERRAL_REWARD', 'WELCOME'],
-};
+/** The filter chips, and which kinds of notification each one asks the API for. */
+const FILTERS: { key: string; icon: string; label: string; types?: string[] }[] = [
+  { key: 'all', icon: 'bell', label: 'ntf.all' },
+  { key: 'unread', icon: 'sparkle', label: 'ntf.unread' },
+  { key: 'orders', icon: 'bag', label: 'ntf.c.orders', types: ['ORDER_PAID', 'PAYMENT_FAILED', 'ORDER_SHIPPED', 'ORDER_DELIVERED', 'REFUNDED'] },
+  { key: 'boxes', icon: 'box', label: 'ntf.c.boxes', types: ['BOX_SHIPPED', 'BOX_DELIVERED', 'RENEWAL_DUE'] },
+  { key: 'gifts', icon: 'gift', label: 'ntf.c.gifts', types: ['GIFT_SENT', 'REFERRAL_REWARD', 'WELCOME'] },
+];
 
 /**
- * The notification centre: a small header with the unread count, an
- * All / Unread switch and a kind filter (icons only), then cards grouped
- * Today · Yesterday · This week · Earlier.
+ * The notification centre: a friendly header with the unread count and
+ * "Mark all as read", one row of filter chips, then cards grouped
+ * Today · Yesterday · This week · Earlier. Loading, empty and error each have
+ * their own state, so a failed request never looks like "no notifications".
  */
 export default function NotificationsPage() {
   const { t } = useLanguage();
   const router = useRouter();
   const unread = useUnread(false);
-  const [filter, setFilter] = useState<'all' | 'unread'>('all');
-  const [kind, setKind] = useState('all');
+  const [filter, setFilter] = useState('all');
   const [items, setItems] = useState<Notice[] | null>(null);
+  const [failed, setFailed] = useState(false);
   const [hasMore, setHasMore] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
+  const types = FILTERS.find((f) => f.key === filter)?.types;
 
   async function load(before?: string) {
     try {
-      const q = new URLSearchParams({ ...(before ? { before } : {}), ...(filter === 'unread' ? { unread: '1' } : {}) });
+      const q = new URLSearchParams({
+        ...(before ? { before } : {}),
+        ...(filter === 'unread' ? { unread: '1' } : {}),
+        ...(types ? { types: types.join(',') } : {}),
+      });
       const res = await authFetch(`/me/notifications?${q}`);
-      const d = res.ok ? await res.json() : null;
-      setItems((l) => (before ? [...(l ?? []), ...(d?.items ?? [])] : (d?.items ?? [])));
-      setHasMore(!!d?.hasMore);
-      if (typeof d?.unreadCount === 'number') setUnread(d.unreadCount);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const d = await res.json();
+      setItems((l) => (before ? [...(l ?? []), ...d.items] : d.items));
+      setHasMore(!!d.hasMore);
+      setUnread(d.unreadCount);
+      setFailed(false);
     } catch (e) {
       if (e instanceof SessionExpiredError) return router.replace(loginUrl('/account/notifications'));
-      setItems((l) => l ?? []);
+      if (!before) setItems(null);
+      setFailed(true);
     }
   }
 
-  useEffect(() => { setItems(null); load(); }, [filter]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { setItems(null); setFailed(false); load(); }, [filter]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const update = (id: string) => (next: Notice | null) =>
     setItems((l) => (l ?? []).flatMap((x) => (x.id !== id ? [x] : next && !(filter === 'unread' && next.readAt) ? [next] : [])));
 
-  const shown = (items ?? []).filter((n) => kind === 'all' || KINDS[kind]?.includes(n.type));
+  function readAll() {
+    setItems((l) => (filter === 'unread' ? [] : (l ?? []).map((n) => ({ ...n, readAt: n.readAt ?? new Date().toISOString() }))));
+    markRead().catch(() => {});
+  }
+
+  const shown = items ?? [];
   const day = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
   const today = day(new Date());
   const age = (n: Notice) => Math.round((today - day(new Date(n.createdAt))) / 86_400_000);
@@ -66,65 +80,136 @@ export default function NotificationsPage() {
 
   return (
     <div>
-      <Heading kind="section" as="h1" title={t('ntf.title')} subtitle={unread > 0 ? fill(t('ntf.newN'), { n: unread }) : t('ntf.sub')}
-        actions={unread > 0 && (
-          <IconButton icon="check" label={t('ntf.readAll')} tone="primary"
-            onClick={() => {
-              setItems((l) => (filter === 'unread' ? [] : (l ?? []).map((n) => ({ ...n, readAt: n.readAt ?? new Date().toISOString() }))));
-              markRead().catch(() => {});
-            }} />
-        )} />
-
-      <div className="flex items-center gap-2 mb-4">
-        <div role="tablist" className="inline-flex gap-1 p-1 rounded-full bg-gray-100">
-          {(['all', 'unread'] as const).map((f) => (
-            <button key={f} type="button" role="tab" aria-selected={filter === f} onClick={() => setFilter(f)}
-              className={`h-8 px-3.5 rounded-full text-[12.5px] font-bold inline-flex items-center gap-1.5 transition-colors ${filter === f ? 'bg-white text-teal-700' : 'text-gray-500 hover:text-gray-800'}`}>
-              <Icon name={f === 'all' ? 'bell' : 'sparkle'} className="w-3.5 h-3.5" />
-              {t(f === 'all' ? 'ntf.all' : 'ntf.unread')}
-              {f === 'unread' && unread > 0 && <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-teal-600 text-white text-[10px] leading-[18px] text-center tabular-nums">{unread}</span>}
+      {/* Header: what this is, how much is new, and the one action that matters. */}
+      <header className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-teal-50 via-white to-lilac-50 ring-1 ring-teal-100/70 px-5 sm:px-7 py-6 sm:py-7 mb-5">
+        <span aria-hidden="true" className="absolute -right-10 -top-12 w-44 h-44 rounded-full bg-teal-100/50 blur-2xl" />
+        <span aria-hidden="true" className="absolute right-24 -bottom-16 w-36 h-36 rounded-full bg-lilac-100/60 blur-2xl" />
+        <div className="relative flex items-center gap-4 sm:gap-5">
+          <span className="relative shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white shadow-soft ring-1 ring-teal-100 text-teal-600 flex items-center justify-center">
+            <Icon name="bell" className={`w-7 h-7 sm:w-8 sm:h-8 origin-top ${unread ? 'animate-[wag_1.2s_ease-in-out_2]' : ''}`} />
+            {unread > 0 && (
+              <span className="absolute -top-1.5 -right-1.5 min-w-[24px] h-6 px-1.5 rounded-full bg-peach-600 text-white text-[12px] font-bold leading-6 text-center ring-[3px] ring-white tabular-nums animate-[pop_0.35s_ease-out]">
+                {unread > 99 ? '99+' : unread}
+              </span>
+            )}
+          </span>
+          <div className="min-w-0 flex-1">
+            <h1 className="text-[22px] sm:text-[26px] font-extrabold tracking-tight text-gray-900 leading-tight">{t('ntf.title')}</h1>
+            <p className="text-[13.5px] sm:text-[14px] text-gray-600 mt-1 text-balance">
+              {unread > 0 ? fill(t(unread === 1 ? 'ntf.heroOne' : 'ntf.heroN'), { n: unread }) : t('ntf.heroNone')}
+            </p>
+          </div>
+          {unread > 0 && (
+            <button type="button" onClick={readAll}
+              className="hidden sm:inline-flex shrink-0 items-center gap-2 h-11 px-4 rounded-full bg-teal-600 text-white text-[13.5px] font-semibold shadow-glow hover:bg-teal-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2">
+              <Icon name="check" className="w-4 h-4" strokeWidth={2.2} />
+              {t('ntf.readAll')}
             </button>
-          ))}
+          )}
         </div>
-        <div className="ml-auto">
-          <Menu icon="filter" label={t('ntf.show')} title={t('ntf.show')} tone="mint" active={kind !== 'all'}
-            onReset={() => setKind('all')} resetDisabled={kind === 'all'} resetLabel={t('ntf.all')}
-            items={[['all', 'bell', 'ntf.all'], ['orders', 'bag', 'ntf.c.orders'], ['boxes', 'box', 'ntf.c.boxes'], ['gifts', 'gift', 'ntf.c.gifts']]
-              .map(([k, icon, label]) => ({ icon, label: t(label), checked: kind === k, onClick: () => setKind(k) }))} />
-        </div>
+        {unread > 0 && (
+          <button type="button" onClick={readAll}
+            className="sm:hidden relative mt-4 w-full inline-flex items-center justify-center gap-2 h-11 rounded-full bg-teal-600 text-white text-[13.5px] font-semibold shadow-glow active:bg-teal-700">
+            <Icon name="check" className="w-4 h-4" strokeWidth={2.2} />
+            {t('ntf.readAll')}
+          </button>
+        )}
+      </header>
+
+      {/* One row of filters; scrolls sideways on phones. */}
+      <div role="tablist" aria-label={t('ntf.show')}
+        className="flex sm:flex-wrap gap-2 overflow-x-auto sm:overflow-visible [scrollbar-width:none] [&::-webkit-scrollbar]:hidden -mx-4 px-4 sm:mx-0 sm:px-0 pb-1 mb-5">
+        {FILTERS.map((f) => {
+          const on = filter === f.key;
+          return (
+            <button key={f.key} type="button" role="tab" aria-selected={on} onClick={() => setFilter(f.key)}
+              className={`shrink-0 inline-flex items-center gap-2 h-11 px-4 rounded-full text-[13px] font-semibold whitespace-nowrap transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 ${
+                on ? 'bg-gray-900 text-white shadow-soft' : 'bg-white text-gray-600 ring-1 ring-gray-200 hover:ring-teal-200 hover:text-gray-900'}`}>
+              <Icon name={f.icon} className="w-4 h-4" />
+              {t(f.label)}
+              {f.key === 'unread' && unread > 0 && (
+                <span className={`min-w-[20px] h-5 px-1.5 rounded-full text-[11px] font-bold leading-5 text-center tabular-nums ${on ? 'bg-white text-gray-900' : 'bg-teal-600 text-white'}`}>{unread}</span>
+              )}
+            </button>
+          );
+        })}
       </div>
 
-      {items === null ? (
-        <div className="space-y-2" aria-hidden="true">
-          {[0, 1, 2, 3].map((i) => <div key={i} className="h-[76px] rounded-2xl bg-white ring-1 ring-gray-200/60 animate-pulse" />)}
+      {failed && items === null ? (
+        <div role="alert" className="rounded-3xl bg-white ring-1 ring-peach-200 px-6 py-12 text-center">
+          <span className="mx-auto mb-4 w-14 h-14 rounded-2xl bg-peach-50 text-peach-600 flex items-center justify-center"><Icon name="alert" className="w-7 h-7" /></span>
+          <p className="text-[16px] font-bold text-gray-900">{t('ntf.errTitle')}</p>
+          <p className="text-[13.5px] text-gray-500 mt-1.5 max-w-sm mx-auto">{t('ntf.errSub')}</p>
+          <button type="button" onClick={() => { setFailed(false); load(); }}
+            className="mt-5 inline-flex items-center gap-2 h-11 px-5 rounded-full bg-gray-900 text-white text-[13.5px] font-semibold hover:bg-gray-800 transition-colors">
+            <Icon name="refresh" className="w-4 h-4" />
+            {t('ntf.retry')}
+          </button>
+        </div>
+      ) : items === null ? (
+        <div className="space-y-3" aria-busy="true" aria-label={t('ui.wait')}>
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="flex gap-4 p-4 sm:p-5 rounded-3xl bg-white ring-1 ring-gray-200/60">
+              <span className="w-12 h-12 rounded-2xl bg-gray-100 animate-pulse shrink-0" />
+              <span className="flex-1 space-y-2.5 pt-1">
+                <span className="block h-3.5 w-2/5 rounded-full bg-gray-100 animate-pulse" />
+                <span className="block h-3 w-4/5 rounded-full bg-gray-100 animate-pulse" />
+                <span className="block h-2.5 w-16 rounded-full bg-gray-100 animate-pulse" />
+              </span>
+            </div>
+          ))}
         </div>
       ) : shown.length === 0 ? (
-        <div className="relative overflow-hidden rounded-[28px] bg-teal-50/60 py-14 text-center">
+        <div className="relative overflow-hidden rounded-3xl bg-white ring-1 ring-gray-200/60 px-6 py-14 sm:py-16 text-center">
           <PawTrail />
-          <span className="relative inline-block text-5xl animate-[bob_2s_ease-in-out_infinite]" aria-hidden="true">
-            <span className="inline-block animate-[wiggle_2.4s_ease-in-out_infinite]">{filter === 'unread' ? '🐶' : '🔔'}</span>
+          <span className="relative mx-auto w-20 h-20 rounded-[28px] bg-gradient-to-br from-teal-100 to-lilac-100 flex items-center justify-center text-4xl animate-[bob_2.4s_ease-in-out_infinite]" aria-hidden="true">
+            {filter === 'unread' ? '🐶' : '🔔'}
           </span>
-          <p className="relative mt-3 text-[15px] font-bold text-gray-800">{t(filter === 'unread' ? 'ntf.allRead' : 'ntf.empty')}</p>
-          {filter === 'all' && <p className="relative text-[12.5px] text-gray-500 mt-1 max-w-xs mx-auto">{t('ntf.emptySub')}</p>}
+          <p className="relative mt-5 text-[17px] font-bold text-gray-900">
+            {t(filter === 'unread' ? 'ntf.allRead' : filter === 'all' ? 'ntf.empty' : 'ntf.emptyKind')}
+          </p>
+          <p className="relative text-[13.5px] text-gray-500 mt-1.5 max-w-xs mx-auto text-balance">
+            {t(filter === 'unread' ? 'ntf.allReadSub' : 'ntf.emptySub')}
+          </p>
+          {filter === 'all' ? (
+            <Link href="/prices"
+              className="relative mt-6 inline-flex items-center gap-2 h-11 px-5 rounded-full bg-teal-600 text-white text-[13.5px] font-semibold shadow-glow hover:bg-teal-700 transition-colors">
+              {t('ntf.cta')}
+              <Icon name="arrow" className="w-4 h-4" />
+            </Link>
+          ) : (
+            <button type="button" onClick={() => setFilter('all')}
+              className="relative mt-6 inline-flex items-center gap-2 h-11 px-5 rounded-full bg-white text-gray-800 ring-1 ring-gray-200 text-[13.5px] font-semibold hover:ring-teal-200 transition">
+              {t('ntf.seeAll')}
+            </button>
+          )}
         </div>
       ) : (
-        <div className="space-y-5">
+        <div className="space-y-7">
           {groups.map((g, gi) => (
-            <section key={g.key}>
-              <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider px-1 mb-2">{t(g.key)}</p>
-              <ul className="space-y-2">
+            <section key={g.key} aria-labelledby={`ntf-${g.key}`}>
+              <h2 id={`ntf-${g.key}`} className="flex items-center gap-3 text-[12px] font-bold text-gray-400 uppercase tracking-wider px-1 mb-3">
+                {t(g.key)}
+                <span className="flex-1 h-px bg-gray-200/80" aria-hidden="true" />
+              </h2>
+              <ul className="space-y-3">
                 {g.list.map((n, i) => (
-                  <NotificationItem key={n.id} n={n} onChange={update(n.id)} className="animate-[fadeUp_0.35s_ease-out_both]" style={{ animationDelay: `${Math.min(gi * 3 + i, 10) * 40}ms` }} />
+                  <NotificationItem key={n.id} n={n} onChange={update(n.id)} className="animate-[fadeUp_0.3s_ease-out_both]" style={{ animationDelay: `${Math.min(gi * 3 + i, 10) * 40}ms` }} />
                 ))}
               </ul>
             </section>
           ))}
           {hasMore && (
-            <div className="flex justify-center">
-              <IconButton icon="plus" label={loadingMore ? t('ui.wait') : t('ntf.more')} disabled={loadingMore}
-                onClick={async () => { setLoadingMore(true); await load(items[items.length - 1].id); setLoadingMore(false); }} />
+            <div className="flex justify-center pt-1">
+              <button type="button" disabled={loadingMore}
+                onClick={async () => { setLoadingMore(true); await load(shown[shown.length - 1].id); setLoadingMore(false); }}
+                className="inline-flex items-center gap-2 h-11 px-5 rounded-full bg-white ring-1 ring-gray-200 text-[13.5px] font-semibold text-gray-700 hover:ring-teal-200 hover:text-gray-900 transition disabled:opacity-50">
+                <Icon name={loadingMore ? 'refresh' : 'plus'} className={`w-4 h-4 ${loadingMore ? 'animate-spin' : ''}`} />
+                {loadingMore ? t('ui.wait') : t('ntf.more')}
+              </button>
             </div>
           )}
+          {failed && <p role="alert" className="text-center text-[13px] text-peach-600">{t('ntf.errSub')}</p>}
         </div>
       )}
     </div>

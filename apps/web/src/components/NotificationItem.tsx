@@ -62,8 +62,9 @@ export function useAgo() {
 }
 
 /**
- * One row: coloured icon, title, text and time, with an unread dot. Tapping
- * it marks it read and opens where it points. `onChange` lets the list
+ * One notification: coloured icon, title, text and time, with an unread dot.
+ * Tapping it marks it read and opens where it points. `compact` is the small
+ * row in the header bell; without it, the full card for the notifications page. `onChange` lets the list
  * update itself.
  */
 export default function NotificationItem({ n, compact, onChange, onOpen, className = '', style }: {
@@ -88,26 +89,51 @@ export default function NotificationItem({ n, compact, onChange, onOpen, classNa
     if (n.link) router.push(n.link);
   }
 
-  return (
-    <li style={style} className={`${className} group relative flex gap-3 rounded-2xl transition-colors ${compact ? 'p-2.5' : 'p-3.5 bg-white ring-1 hover:ring-teal-200'} ${unread ? (compact ? 'bg-teal-50/50 hover:bg-teal-50' : 'ring-teal-100 bg-teal-50/30') : (compact ? 'hover:bg-gray-50' : 'ring-gray-200/60')}`}>
+  if (compact) return (
+    <li style={style} className={`${className} group relative flex gap-3 rounded-2xl transition-colors p-2.5 ${unread ? 'bg-teal-50/50 hover:bg-teal-50' : 'hover:bg-gray-50'}`}>
       <button type="button" onClick={open} className="absolute inset-0 rounded-2xl" aria-label={title} />
-      <span className={`relative shrink-0 rounded-xl flex items-center justify-center ${compact ? 'w-9 h-9' : 'w-10 h-10'} ${look.tile}`}>
+      <span className={`relative shrink-0 rounded-xl flex items-center justify-center w-9 h-9 ${look.tile}`}>
         <Icon name={look.icon} className="w-[18px] h-[18px]" />
-        {unread && !compact && <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-teal-500 ring-2 ring-white animate-pulse" />}
       </span>
       <div className="relative flex-1 min-w-0 pointer-events-none">
         <p className={`text-[13px] leading-snug ${unread ? 'font-semibold text-gray-900' : 'font-medium text-gray-700'}`}>{title}</p>
-        <p className={`text-[12px] text-gray-500 leading-snug mt-0.5 ${compact ? 'line-clamp-2' : ''}`}>{body}</p>
+        <p className="text-[12px] text-gray-500 leading-snug mt-0.5 line-clamp-2">{body}</p>
         <p className="text-[11px] text-gray-400 mt-1">{ago(n.createdAt)}</p>
       </div>
-      <div className="relative flex flex-col items-end justify-between shrink-0">
-        {unread ? <span className="w-2 h-2 mt-1.5 rounded-full bg-teal-500" aria-label={t('ntf.unread')} /> : <span />}
-        {!compact && (
-          <span className="opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity flex">
-            {unread && <IconButton icon="check" size="sm" label={t('ntf.markRead')} onClick={() => { onChange({ ...n, readAt: new Date().toISOString() }); markRead(n.id).catch(() => {}); }} />}
-            <IconButton icon="trash" size="sm" tone="danger" label={t('ntf.remove')} onClick={() => { onChange(null); removeNotice(n.id).catch(() => {}); }} />
+      {unread && <span className="relative shrink-0 w-2 h-2 mt-1.5 rounded-full bg-teal-500" aria-label={t('ntf.unread')} />}
+    </li>
+  );
+
+  // Full card on the notifications page. The row actions sit above the
+  // card-wide button; on touch screens (no hover) they are always shown.
+  return (
+    <li style={style} className={`${className} group relative flex gap-4 p-4 sm:p-5 rounded-3xl bg-white ring-1 transition-all duration-200 hover:shadow-soft motion-safe:hover:-translate-y-0.5 focus-within:ring-teal-300 ${unread ? 'ring-teal-200/80' : 'ring-gray-200/60 hover:ring-gray-300/70'}`}>
+      {unread && <span aria-hidden="true" className="absolute left-0 top-5 bottom-5 w-1 rounded-r-full bg-teal-500" />}
+      <button type="button" onClick={open} className="absolute inset-0 rounded-3xl focus-visible:outline-none" aria-label={title} />
+      <span className={`relative shrink-0 w-12 h-12 rounded-2xl flex items-center justify-center ${look.tile}`}>
+        <Icon name={look.icon} className="w-[22px] h-[22px]" />
+      </span>
+      <div className="relative flex-1 min-w-0 pointer-events-none">
+        <div className="flex items-start gap-2">
+          <p className={`flex-1 text-[14.5px] leading-snug ${unread ? 'font-bold text-gray-900' : 'font-semibold text-gray-700'}`}>{title}</p>
+          <span className="shrink-0 flex items-center gap-1.5 text-[12px] text-gray-400 pt-0.5 whitespace-nowrap">
+            {unread && <span className="w-2 h-2 rounded-full bg-teal-500" aria-label={t('ntf.unread')} />}
+            {ago(n.createdAt)}
           </span>
-        )}
+        </div>
+        <p className="text-[13.5px] text-gray-500 leading-relaxed mt-1">{body}</p>
+        <div className="flex items-center justify-between gap-2 mt-2 min-h-[36px]">
+          {n.link ? (
+            <span className="inline-flex items-center gap-1 text-[13px] font-semibold text-teal-700">
+              {t('ntf.open')}
+              <Icon name="arrow" className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
+            </span>
+          ) : <span />}
+          <span className="pointer-events-auto flex gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity">
+            {unread && <IconButton icon="check" label={t('ntf.markRead')} onClick={() => { onChange({ ...n, readAt: new Date().toISOString() }); markRead(n.id).catch(() => {}); }} />}
+            <IconButton icon="trash" tone="danger" label={t('ntf.remove')} onClick={() => { onChange(null); removeNotice(n.id).catch(() => {}); }} />
+          </span>
+        </div>
       </div>
     </li>
   );

@@ -1,6 +1,7 @@
 import { Controller, Delete, Get, HttpCode, NotFoundException, Param, Post, Query, Request, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { NotificationType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
 const PAGE = 20;
@@ -14,13 +15,18 @@ const SELECT = { id: true, type: true, data: true, link: true, readAt: true, cre
 export class NotificationsController {
   constructor(private prisma: PrismaService) {}
 
-  /** Newest first, 20 at a time; pass the last id as `before` for the next page. */
+  /**
+   * Newest first, 20 at a time; pass the last id as `before` for the next page.
+   * `types` (comma-separated) keeps only those kinds, so a filter pages
+   * through all of them rather than just the first 20 loaded.
+   */
   @Get()
-  async list(@Request() req: any, @Query('before') before?: string, @Query('unread') unread?: string) {
+  async list(@Request() req: any, @Query('before') before?: string, @Query('unread') unread?: string, @Query('types') types?: string) {
     const userId = req.user.id;
+    const only = (types ?? '').split(',').filter((x): x is NotificationType => x in NotificationType);
     const cursor = before ? await this.prisma.notification.findFirst({ where: { id: before, userId }, select: { createdAt: true } }) : null;
     const items = await this.prisma.notification.findMany({
-      where: { userId, ...(unread === '1' ? { readAt: null } : {}), ...(cursor ? { createdAt: { lt: cursor.createdAt } } : {}) },
+      where: { userId, ...(unread === '1' ? { readAt: null } : {}), ...(only.length ? { type: { in: only } } : {}), ...(cursor ? { createdAt: { lt: cursor.createdAt } } : {}) },
       orderBy: { createdAt: 'desc' },
       take: PAGE + 1,
       select: SELECT,
