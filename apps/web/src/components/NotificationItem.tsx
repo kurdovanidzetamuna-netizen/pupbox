@@ -104,37 +104,27 @@ export default function NotificationItem({ n, compact, onChange, onOpen, classNa
     </li>
   );
 
-  // Full card on the notifications page. The row actions sit above the
-  // card-wide button; on touch screens (no hover) they are always shown.
+  // Full row on the notifications page: one compact line of title + time,
+  // the text under it. The row actions sit above the row-wide button; on
+  // touch screens (no hover) they are always shown.
   return (
-    <li style={style} className={`${className} group relative flex gap-4 p-4 sm:p-5 rounded-3xl bg-white ring-1 transition-all duration-200 hover:shadow-soft motion-safe:hover:-translate-y-0.5 focus-within:ring-teal-300 ${unread ? 'ring-teal-200/80' : 'ring-gray-200/60 hover:ring-gray-300/70'}`}>
-      {unread && <span aria-hidden="true" className="absolute left-0 top-5 bottom-5 w-1 rounded-r-full bg-teal-500" />}
-      <button type="button" onClick={open} className="absolute inset-0 rounded-3xl focus-visible:outline-none" aria-label={title} />
-      <span className={`relative shrink-0 w-12 h-12 rounded-2xl flex items-center justify-center ${look.tile}`}>
-        <Icon name={look.icon} className="w-[22px] h-[22px]" />
+    <li style={style} className={`${className} group relative flex items-start gap-3 p-3 sm:p-3.5 rounded-2xl bg-white ring-1 transition-all duration-200 hover:shadow-soft focus-within:ring-teal-300 ${unread ? 'ring-teal-200/80 bg-gradient-to-r from-teal-50/70 to-white' : 'ring-gray-200/60 hover:ring-gray-300/70'}`}>
+      <button type="button" onClick={open} className="absolute inset-0 rounded-2xl focus-visible:outline-none" aria-label={title} />
+      <span className={`relative shrink-0 w-10 h-10 rounded-xl flex items-center justify-center ${look.tile}`}>
+        <Icon name={look.icon} className="w-[18px] h-[18px]" />
+        {unread && <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-teal-500 ring-2 ring-white" aria-label={t('ntf.unread')} />}
       </span>
       <div className="relative flex-1 min-w-0 pointer-events-none">
-        <div className="flex items-start gap-2">
-          <p className={`flex-1 text-[14.5px] leading-snug ${unread ? 'font-bold text-gray-900' : 'font-semibold text-gray-700'}`}>{title}</p>
-          <span className="shrink-0 flex items-center gap-1.5 text-[12px] text-gray-400 pt-0.5 whitespace-nowrap">
-            {unread && <span className="w-2 h-2 rounded-full bg-teal-500" aria-label={t('ntf.unread')} />}
-            {ago(n.createdAt)}
-          </span>
+        <div className="flex items-baseline gap-2">
+          <p className={`flex-1 min-w-0 text-[13.5px] leading-snug ${unread ? 'font-bold text-gray-900' : 'font-semibold text-gray-700'}`}>{title}</p>
+          <span className="shrink-0 text-[11.5px] text-gray-400 whitespace-nowrap">{ago(n.createdAt)}</span>
         </div>
-        <p className="text-[13.5px] text-gray-500 leading-relaxed mt-1">{body}</p>
-        <div className="flex items-center justify-between gap-2 mt-2 min-h-[36px]">
-          {n.link ? (
-            <span className="inline-flex items-center gap-1 text-[13px] font-semibold text-teal-700">
-              {t('ntf.open')}
-              <Icon name="arrow" className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
-            </span>
-          ) : <span />}
-          <span className="pointer-events-auto flex gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity">
-            {unread && <IconButton icon="check" label={t('ntf.markRead')} onClick={() => { onChange({ ...n, readAt: new Date().toISOString() }); markRead(n.id).catch(() => {}); }} />}
-            <IconButton icon="trash" tone="danger" label={t('ntf.remove')} onClick={() => { onChange(null); removeNotice(n.id).catch(() => {}); }} />
-          </span>
-        </div>
+        <p className="text-[12.5px] text-gray-500 leading-snug mt-0.5 line-clamp-2">{body}</p>
       </div>
+      <span className="relative self-center flex shrink-0 -mr-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity">
+        {unread && <IconButton icon="check" size="sm" label={t('ntf.markRead')} onClick={() => { onChange({ ...n, readAt: new Date().toISOString() }); markRead(n.id).catch(() => {}); }} />}
+        <IconButton icon="trash" size="sm" tone="danger" label={t('ntf.remove')} onClick={() => { onChange(null); removeNotice(n.id).catch(() => {}); }} />
+      </span>
     </li>
   );
 }

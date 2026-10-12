@@ -351,7 +351,6 @@ export const ACCOUNT_STRINGS: Record<string, { en: string; ka: string }> = {
   'ntf.allReadSub':         { en: 'Nothing unread. Enjoy the quiet — and give your dog a scratch.', ka: 'წაუკითხავი არაფერია. დატკბი სიმშვიდით და ძაღლს მოეფერე.' },
   'ntf.emptyKind':          { en: 'Nothing here yet',             ka: 'აქ ჯერ არაფერია' },
   'ntf.cta':                { en: 'Explore the plans',            ka: 'გეგმების ნახვა' },
-  'ntf.open':               { en: 'Open',                         ka: 'გახსნა' },
   'ntf.errTitle':           { en: 'Couldn’t load your notifications', ka: 'შეტყობინებები ვერ ჩაიტვირთა' },
   'ntf.errSub':             { en: 'Check your connection and try again.', ka: 'შეამოწმე კავშირი და სცადე თავიდან.' },
   'ntf.retry':              { en: 'Try again',                    ka: 'თავიდან ცდა' },

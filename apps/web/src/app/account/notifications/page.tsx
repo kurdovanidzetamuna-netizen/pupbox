@@ -81,12 +81,12 @@ export default function NotificationsPage() {
   return (
     <div>
       {/* Header: what this is, how much is new, and the one action that matters. */}
-      <header className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-teal-50 via-white to-lilac-50 ring-1 ring-teal-100/70 px-5 sm:px-7 py-6 sm:py-7 mb-5">
+      <header className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-teal-50 via-white to-lilac-50 ring-1 ring-teal-100/70 px-4 sm:px-6 py-4 sm:py-5 mb-4">
         <span aria-hidden="true" className="absolute -right-10 -top-12 w-44 h-44 rounded-full bg-teal-100/50 blur-2xl" />
         <span aria-hidden="true" className="absolute right-24 -bottom-16 w-36 h-36 rounded-full bg-lilac-100/60 blur-2xl" />
         <div className="relative flex items-center gap-4 sm:gap-5">
-          <span className="relative shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white shadow-soft ring-1 ring-teal-100 text-teal-600 flex items-center justify-center">
-            <Icon name="bell" className={`w-7 h-7 sm:w-8 sm:h-8 origin-top ${unread ? 'animate-[wag_1.2s_ease-in-out_2]' : ''}`} />
+          <span className="relative shrink-0 w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white shadow-soft ring-1 ring-teal-100 text-teal-600 flex items-center justify-center">
+            <Icon name="bell" className={`w-6 h-6 sm:w-7 sm:h-7 origin-top ${unread ? 'animate-[wag_1.2s_ease-in-out_2]' : ''}`} />
             {unread > 0 && (
               <span className="absolute -top-1.5 -right-1.5 min-w-[24px] h-6 px-1.5 rounded-full bg-peach-600 text-white text-[12px] font-bold leading-6 text-center ring-[3px] ring-white tabular-nums animate-[pop_0.35s_ease-out]">
                 {unread > 99 ? '99+' : unread}
@@ -94,7 +94,7 @@ export default function NotificationsPage() {
             )}
           </span>
           <div className="min-w-0 flex-1">
-            <h1 className="text-[22px] sm:text-[26px] font-extrabold tracking-tight text-gray-900 leading-tight">{t('ntf.title')}</h1>
+            <h1 className="text-[20px] sm:text-[24px] font-extrabold tracking-tight text-gray-900 leading-tight">{t('ntf.title')}</h1>
             <p className="text-[13.5px] sm:text-[14px] text-gray-600 mt-1 text-balance">
               {unread > 0 ? fill(t(unread === 1 ? 'ntf.heroOne' : 'ntf.heroN'), { n: unread }) : t('ntf.heroNone')}
             </p>
@@ -109,7 +109,7 @@ export default function NotificationsPage() {
         </div>
         {unread > 0 && (
           <button type="button" onClick={readAll}
-            className="sm:hidden relative mt-4 w-full inline-flex items-center justify-center gap-2 h-11 rounded-full bg-teal-600 text-white text-[13.5px] font-semibold shadow-glow active:bg-teal-700">
+            className="sm:hidden relative mt-3 w-full inline-flex items-center justify-center gap-2 h-10 rounded-full bg-teal-600 text-white text-[13.5px] font-semibold shadow-glow active:bg-teal-700">
             <Icon name="check" className="w-4 h-4" strokeWidth={2.2} />
             {t('ntf.readAll')}
           </button>
@@ -118,17 +118,17 @@ export default function NotificationsPage() {
 
       {/* One row of filters; scrolls sideways on phones. */}
       <div role="tablist" aria-label={t('ntf.show')}
-        className="flex sm:flex-wrap gap-2 overflow-x-auto sm:overflow-visible [scrollbar-width:none] [&::-webkit-scrollbar]:hidden -mx-4 px-4 sm:mx-0 sm:px-0 pb-1 mb-5">
+        className="flex sm:flex-wrap gap-2 overflow-x-auto sm:overflow-visible [scrollbar-width:none] [&::-webkit-scrollbar]:hidden -mx-4 px-4 sm:mx-0 sm:px-0 pb-1 mb-4">
         {FILTERS.map((f) => {
           const on = filter === f.key;
           return (
             <button key={f.key} type="button" role="tab" aria-selected={on} onClick={() => setFilter(f.key)}
-              className={`shrink-0 inline-flex items-center gap-2 h-11 px-4 rounded-full text-[13px] font-semibold whitespace-nowrap transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 ${
-                on ? 'bg-gray-900 text-white shadow-soft' : 'bg-white text-gray-600 ring-1 ring-gray-200 hover:ring-teal-200 hover:text-gray-900'}`}>
+              className={`shrink-0 inline-flex items-center gap-1.5 h-10 px-3.5 rounded-full text-[13px] font-semibold whitespace-nowrap transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 ${
+                on ? 'bg-teal-600 text-white shadow-glow' : 'bg-white text-gray-600 ring-1 ring-gray-200 hover:ring-teal-200 hover:text-teal-700'}`}>
               <Icon name={f.icon} className="w-4 h-4" />
               {t(f.label)}
               {f.key === 'unread' && unread > 0 && (
-                <span className={`min-w-[20px] h-5 px-1.5 rounded-full text-[11px] font-bold leading-5 text-center tabular-nums ${on ? 'bg-white text-gray-900' : 'bg-teal-600 text-white'}`}>{unread}</span>
+                <span className={`min-w-[20px] h-5 px-1.5 rounded-full text-[11px] font-bold leading-5 text-center tabular-nums ${on ? 'bg-white text-teal-700' : 'bg-teal-600 text-white'}`}>{unread}</span>
               )}
             </button>
           );
@@ -141,16 +141,16 @@ export default function NotificationsPage() {
           <p className="text-[16px] font-bold text-gray-900">{t('ntf.errTitle')}</p>
           <p className="text-[13.5px] text-gray-500 mt-1.5 max-w-sm mx-auto">{t('ntf.errSub')}</p>
           <button type="button" onClick={() => { setFailed(false); load(); }}
-            className="mt-5 inline-flex items-center gap-2 h-11 px-5 rounded-full bg-gray-900 text-white text-[13.5px] font-semibold hover:bg-gray-800 transition-colors">
+            className="mt-5 inline-flex items-center gap-2 h-11 px-5 rounded-full bg-teal-600 text-white text-[13.5px] font-semibold hover:bg-teal-700 transition-colors">
             <Icon name="refresh" className="w-4 h-4" />
             {t('ntf.retry')}
           </button>
         </div>
       ) : items === null ? (
-        <div className="space-y-3" aria-busy="true" aria-label={t('ui.wait')}>
+        <div className="space-y-2" aria-busy="true" aria-label={t('ui.wait')}>
           {[0, 1, 2, 3].map((i) => (
-            <div key={i} className="flex gap-4 p-4 sm:p-5 rounded-3xl bg-white ring-1 ring-gray-200/60">
-              <span className="w-12 h-12 rounded-2xl bg-gray-100 animate-pulse shrink-0" />
+            <div key={i} className="flex gap-3 p-3 sm:p-3.5 rounded-2xl bg-white ring-1 ring-gray-200/60">
+              <span className="w-10 h-10 rounded-xl bg-gray-100 animate-pulse shrink-0" />
               <span className="flex-1 space-y-2.5 pt-1">
                 <span className="block h-3.5 w-2/5 rounded-full bg-gray-100 animate-pulse" />
                 <span className="block h-3 w-4/5 rounded-full bg-gray-100 animate-pulse" />
@@ -185,14 +185,14 @@ export default function NotificationsPage() {
           )}
         </div>
       ) : (
-        <div className="space-y-7">
+        <div className="space-y-5">
           {groups.map((g, gi) => (
             <section key={g.key} aria-labelledby={`ntf-${g.key}`}>
-              <h2 id={`ntf-${g.key}`} className="flex items-center gap-3 text-[12px] font-bold text-gray-400 uppercase tracking-wider px-1 mb-3">
+              <h2 id={`ntf-${g.key}`} className="flex items-center gap-3 text-[12px] font-bold text-gray-400 uppercase tracking-wider px-1 mb-2">
                 {t(g.key)}
                 <span className="flex-1 h-px bg-gray-200/80" aria-hidden="true" />
               </h2>
-              <ul className="space-y-3">
+              <ul className="space-y-2">
                 {g.list.map((n, i) => (
                   <NotificationItem key={n.id} n={n} onChange={update(n.id)} className="animate-[fadeUp_0.3s_ease-out_both]" style={{ animationDelay: `${Math.min(gi * 3 + i, 10) * 40}ms` }} />
                 ))}

@@ -60,13 +60,14 @@ function PlanSectionInner({ plans, content }: { plans: any[]; content: StoredCon
         </div>
       </div>
 
-      {/* Plans: the new set fades in gently, one after another. */}
+      {/* Plans: the new set fades in gently, one after another. On phones they
+          sit side by side and swipe, with the next card peeking in. */}
       {shown.length === 0 ? (
         <p className="text-gray-400">{L.empty}</p>
       ) : (
-        <div key={mode} className="grid sm:grid-cols-2 xl:grid-cols-4 gap-5 items-stretch pt-5 max-w-6xl mx-auto">
+        <div key={mode} className="flex sm:grid sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-5 items-stretch pt-5 max-w-6xl sm:mx-auto overflow-x-auto sm:overflow-visible snap-x snap-mandatory -mx-4 px-4 sm:px-0 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {shown.map((plan: any, i: number) => (
-            <div key={plan.id} className="plan-in flex" style={{ animationDelay: `${i * 50}ms` }}>
+            <div key={plan.id} className="plan-in flex snap-center shrink-0 w-[82%] sm:w-auto" style={{ animationDelay: `${i * 50}ms` }}>
               <PlanCard plan={plan} isGift={gift} labels={L} />
             </div>
           ))}
