@@ -6,10 +6,11 @@ import { useCart } from '@/context/CartContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { fill } from '@/context/strings/purchase';
 import { gel } from '@/lib/format';
-import { itemName } from '@/lib/localize';
+import { itemName, boxSummary } from '@/lib/localize';
 import ChoiceNote from '@/components/ChoiceNote';
 import { FieldError } from '@/components/ui/FormError';
 import { Heading } from '@/components/ui/Heading';
+import { Icon } from '@/components/ui/icons';
 
 export default function CartPage() {
   const { t, lang } = useLanguage();
@@ -62,13 +63,19 @@ export default function CartPage() {
                     <div>
                       <p className="font-semibold text-gray-900">{itemName(item, lang)}</p>
                       <ChoiceNote choice={item.personalisation} className="text-sm text-gray-500 mt-0.5" />
-                      {item.subscriptionPlan && <p className="text-xs text-teal-600 font-medium mt-0.5">{t('cart.subscription')}</p>}
+                      {(item.subscriptionPlan || item.customBox?.monthly) && <p className="text-xs text-teal-600 font-medium mt-0.5">{t('cart.subscription')}</p>}
+                      {item.customBox && <>
+                        <p className="text-[13px] text-gray-500 mt-1 leading-snug">{boxSummary(item, lang)}</p>
+                        <Link href={`/build-box?edit=${item.id}`} className="inline-flex items-center gap-1 mt-1.5 text-[12.5px] font-semibold text-teal-700 hover:underline">
+                          <Icon name="edit" className="w-3.5 h-3.5" />{t('cb.edit')}
+                        </Link>
+                      </>}
                     </div>
                     <button onClick={() => removeItem(item.id)} aria-label={`${t('cart.remove')}: ${itemName(item, lang)}`}
                       className="text-gray-300 hover:text-red-500 transition text-xl leading-none px-1">×</button>
                   </div>
                   <div className="flex items-center justify-between mt-3">
-                    {item.subscriptionPlan ? (
+                    {item.subscriptionPlan || item.customBox ? (
                       <span className="text-sm text-gray-500">{fill(t('cart.qty'), { n: 1 })}</span>
                     ) : (
                       <div className="flex items-center border border-gray-200 rounded-lg">

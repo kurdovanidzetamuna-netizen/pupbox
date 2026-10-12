@@ -263,13 +263,13 @@ export class CheckoutService {
         });
         if (!firstSubscriptionId) firstSubscriptionId = created.id;
       }
-      // A monthly box the customer built: a box a month, renewing monthly
-      // (they chose "every month" when building it).
+      // A monthly box the customer built: a box a month, renewing monthly on
+      // their explicit yes at checkout, like any plan.
       for (const b of boxes.filter((x) => x.monthly)) {
         const created = await this.prisma.customerSubscription.create({
           data: {
             userId, planId: boxPlan!.id, customBoxId: b.line.customBoxId, dogId, addressId: address.id,
-            status: 'PENDING', boxesTotal: 1, autoRenewal: true,
+            status: 'PENDING', boxesTotal: 1, autoRenewal: data.autoRenewal === true,
           },
           select: { id: true },
         });

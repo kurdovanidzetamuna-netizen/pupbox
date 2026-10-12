@@ -19,7 +19,16 @@ export function catalogText(row: any, field: 'name' | 'shortDescription' | 'desc
   return (typeof ka === 'string' && ka.trim()) || row?.[field] || '';
 }
 
-/** Display name for a cart line: the product's or the plan's localized name. */
+/** Display name for a cart line: the product's or the plan's localized name, or "Your own box". */
 export function itemName(item: any, lang: string): string {
+  if (item?.customBox) {
+    const ka = lang === 'ka';
+    return item.customBox.monthly ? (ka ? 'შენი კოლოფი · ყოველთვიურად' : 'Your own box · every month') : (ka ? 'შენი კოლოფი' : 'Your own box');
+  }
   return item?.product ? catalogText(item.product, 'name', lang) : planText(item?.subscriptionPlan, 'name', lang);
+}
+
+/** What's in a built box, in a few words: "2× Biscuits, 1× Paw balm". */
+export function boxSummary(item: any, lang: string): string {
+  return (item?.customBox?.items ?? []).map((x: any) => `${x.quantity}× ${catalogText(x.product, 'name', lang)}`).join(', ');
 }

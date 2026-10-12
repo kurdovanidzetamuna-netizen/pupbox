@@ -9,6 +9,7 @@ import { fill } from '@/context/strings/purchase';
 import { Icon } from '@/components/ui/icons';
 import QuantityStepper from '@/components/shop/QuantityStepper';
 import ProductThumb from '@/components/shop/ProductThumb';
+import { itemName, boxSummary } from '@/lib/localize';
 
 const money = (n: unknown) => `₾${Number(n).toFixed(2)}`;
 
@@ -45,10 +46,7 @@ export default function MiniCart() {
     try { await fn(); } catch {} finally { setBusy(null); }
   }
 
-  const nameOf = (i: any) => {
-    const src = i.product ?? i.subscriptionPlan;
-    return (lang === 'ka' && src?.translations?.ka?.name?.trim()) || src?.name || '';
-  };
+  const nameOf = (i: any) => itemName(i, lang);
   const label = `${t('nav.cart')}${count ? ` (${count})` : ''}`;
 
   const body = (<>
@@ -75,8 +73,9 @@ export default function MiniCart() {
             <ul className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-2 divide-y divide-gray-100">
               {items.map((i) => {
                 const plain = !!i.product;
+                const isBox = !!i.customBox;
                 const left = i.product?.inventory ? Math.max(0, i.product.inventory.quantity - (i.product.inventory.reservedQty || 0)) : Infinity;
-                const extra = [i.personalisation?.size, i.personalisation?.engraving && `„${i.personalisation.engraving}“`].filter(Boolean).join(' · ');
+                const extra = isBox ? boxSummary(i, lang) : [i.personalisation?.size, i.personalisation?.engraving && `„${i.personalisation.engraving}“`].filter(Boolean).join(' · ');
                 return (
                   <li key={i.id} className={`flex items-center gap-3 px-2 py-3 ${busy === i.id ? 'opacity-60' : ''}`}>
                     <ProductThumb item={i} />
@@ -91,6 +90,12 @@ export default function MiniCart() {
                         onMore={() => run(i.id, () => updateItem(i.id, i.quantity + 1))} />
                     ) : (
                       <span className="flex items-center gap-1.5">
+                        {isBox && (
+                          <Link href={`/build-box?edit=${i.id}`} onClick={() => setOpen(false)} aria-label={t('cb.edit')} title={t('cb.edit')}
+                            className="w-9 h-9 rounded-full text-gray-400 hover:text-teal-700 hover:bg-teal-50 flex items-center justify-center">
+                            <Icon name="edit" className="w-4 h-4" />
+                          </Link>
+                        )}
                         {i.quantity > 1 && <span className="text-[12px] font-bold text-gray-500">×{i.quantity}</span>}
                         <button type="button" onClick={() => run(i.id, () => removeItem(i.id))} aria-label={t('shop.uncheck')} title={t('shop.uncheck')}
                           className="w-9 h-9 rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50 flex items-center justify-center">

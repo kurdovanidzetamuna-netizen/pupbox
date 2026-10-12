@@ -1,6 +1,7 @@
 import { api } from '@/lib/api';
 import PlanSection from './PlanSection';
 import BoxContents from './BoxContents';
+import BuildBoxPromo from './BuildBoxPromo';
 import { PricesHeader, PricesIncludes } from './PricesHeader';
 import { pricingPage } from '@pupbox/content';
 import { getStoredContent, pageMetadata } from '@/lib/content';
@@ -14,6 +15,7 @@ export default async function PricesPage() {
   } catch {
     plans = [];
   }
+  const boxConfig = await api.customBox.config().catch(() => null);
   const content = await getStoredContent(pricingPage);
 
   return (
@@ -22,6 +24,7 @@ export default async function PricesPage() {
         <div className="max-w-7xl mx-auto px-6 text-center">
           <PricesHeader content={content} />
           <PlanSection plans={plans} content={content} />
+          {boxConfig && <BuildBoxPromo monthlyDiscount={boxConfig.monthlyDiscount} />}
         </div>
       </section>
 

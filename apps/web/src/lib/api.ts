@@ -37,6 +37,10 @@ export const api = {
     brands: () => fetchAPI<string[]>('/products/brands'),
   },
   /** Sellers with something on sale (public face only). */
+  customBox: {
+    config: () => fetchAPI<{ minItems: number; packingFee: number; monthlyDiscount: number }>('/custom-box/config', { cache: 'no-store' }),
+    products: () => fetchAPI<any[]>('/custom-box/products', { cache: 'no-store' }),
+  },
   sellers: {
     list: () => fetchAPI<any[]>('/sellers', { cache: 'no-store' }),
   },
