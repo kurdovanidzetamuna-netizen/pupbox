@@ -125,7 +125,7 @@ export default function MiniCart() {
   return (
     <div ref={box} className="relative">
       <button type="button" onClick={() => setOpen((o) => !o)} aria-label={label} title={t('nav.cart')} aria-expanded={open} aria-haspopup="dialog"
-        className={`relative inline-flex items-center justify-center w-9 h-9 rounded-full transition ${open ? 'bg-teal-50 text-teal-700' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'}`}>
+        className={`relative inline-flex items-center justify-center w-8 h-8 rounded-full transition ${open ? 'bg-teal-50 text-teal-700' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'}`}>
         <Icon name="bag" className="w-5 h-5" strokeWidth={2} />
         {count > 0 && (
           <span key={count} className="absolute -top-0.5 -right-0.5 bg-teal-600 text-white text-[10px] font-bold min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center ring-2 ring-white animate-[pop_0.3s_ease-out]">
