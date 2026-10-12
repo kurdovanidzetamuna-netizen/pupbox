@@ -170,10 +170,10 @@ export default function BuildBoxView({ products, config: raw }: { products: any[
 
         {/* Once / every month */}
         <div className="flex justify-center mb-6">
-          <div role="radiogroup" aria-label={`${t('cb.once')} / ${t('cb.monthly')}`} className="inline-flex bg-white ring-1 ring-gray-200/70 rounded-full p-1 gap-1">
+          <div role="radiogroup" aria-label={`${t('cb.once')} / ${t('cb.monthly')}`} className="grid grid-cols-2 w-full max-w-sm sm:max-w-none sm:w-auto sm:inline-flex bg-white ring-1 ring-gray-200/70 rounded-full p-1 gap-1">
             {([[false, '📦', t('cb.once')], [true, '🔄', t('cb.monthly')]] as const).map(([m, emoji, label]) => (
               <button key={String(m)} type="button" role="radio" aria-checked={monthly === m} onClick={() => setMonthly(m)}
-                className={`flex items-center gap-2 px-5 sm:px-6 py-2.5 rounded-full text-[13.5px] font-bold transition-all ${monthly === m ? 'bg-teal-600 text-white' : 'text-gray-500 hover:text-gray-800'}`}>
+                className={`flex items-center justify-center gap-1.5 sm:gap-2 px-2.5 sm:px-6 py-2.5 rounded-full text-[12.5px] sm:text-[13.5px] font-bold whitespace-nowrap transition-all ${monthly === m ? 'bg-teal-600 text-white' : 'text-gray-500 hover:text-gray-800'}`}>
                 <span aria-hidden="true">{emoji}</span>{label}
                 {m && config.monthlyDiscount > 0 && <span className={`text-[11px] font-extrabold ${monthly ? 'text-white/90' : 'text-peach-600'}`}>−{config.monthlyDiscount}%</span>}
               </button>

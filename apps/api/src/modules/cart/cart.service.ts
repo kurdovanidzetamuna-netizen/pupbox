@@ -245,7 +245,7 @@ export class CartService {
         // out) drop out, and a box left too small leaves the basket.
         const { lines, quote: q } = await quoteSavedBox(this.prisma, item.customBoxId, !!item.customBox?.monthly, { strict: false });
         if (!q.ok) {
-          await this.prisma.cartItem.delete({ where: { id: item.id } });
+          await this.prisma.cartItem.deleteMany({ where: { id: item.id } }); // two requests at once may both try
           changed = true;
           continue;
         }
@@ -264,7 +264,7 @@ export class CartService {
         ? !!p.deletedAt || !['ACTIVE', 'OUT_OF_STOCK'].includes(p.status) || !p.standaloneSale
         : plan ? !!plan.deletedAt || !plan.isActive : true;
       if (gone) {
-        await this.prisma.cartItem.delete({ where: { id: item.id } });
+        await this.prisma.cartItem.deleteMany({ where: { id: item.id } }); // two requests at once may both try
         changed = true;
         continue;
       }

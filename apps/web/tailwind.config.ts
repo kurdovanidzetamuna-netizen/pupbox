@@ -35,7 +35,7 @@ const config: Config = {
           800: '#2E3A44',
           900: '#24303A',
         },
-        peach: { 50: '#FFF6F1', 100: '#FFE9DE', 400: '#FFA77E', 600: '#E9784A' },
+        peach: { 50: '#FFF6F1', 100: '#FFE9DE', 200: '#FFD5C0', 300: '#FFBE9F', 400: '#FFA77E', 500: '#F58F62', 600: '#E9784A' },
         lilac: { 50: '#F6F4FF', 100: '#ECE8FF', 400: '#A897F5', 600: '#7C68E0' },
       },
       fontFamily: {
