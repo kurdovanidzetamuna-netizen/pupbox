@@ -182,6 +182,8 @@ export const PURCHASE_STRINGS: Record<string, { en: string; ka: string }> = {
   'dog.male':               { en: '♂ Male',                     ka: '♂ მამრი' },
   'dog.female':             { en: '♀ Female',                   ka: '♀ მდედრი' },
   'dog.weight':             { en: 'Weight',                     ka: 'წონა' },
+  'dog.birthday':           { en: 'Birthday',                   ka: 'დაბადების დღე' },
+  'dog.birthdayHint':       { en: 'A little surprise in that month’s box', ka: 'იმ თვის ყუთში პატარა სიურპრიზი დახვდება' },
   'dog.weightHint':         { en: 'Helps us get portions right', ka: 'პორციების შესარჩევად' },
   'dog.kg':                 { en: 'kg',                         ka: 'კგ' },
   'dog.allergies':          { en: "Anything they can't eat?",   ka: 'რისი ჭამა არ შეუძლია?' },

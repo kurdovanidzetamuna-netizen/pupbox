@@ -24,6 +24,7 @@ class GiftDogDto {
   @IsOptional() @IsArray() @ArrayMaxSize(30) @IsString({ each: true }) @MaxLength(60, { each: true }) toyPreferences?: string[];
   @IsOptional() @IsString() @MaxLength(30) chewingStrength?: string;
   @IsOptional() @IsString() @MaxLength(500) specialNotes?: string;
+  @IsOptional() @IsDateString() birthday?: string | null;
 }
 
 /**

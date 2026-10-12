@@ -76,6 +76,9 @@ a.border-gray-200.rounded-lg:hover, button.border-gray-200.rounded-lg:hover { ba
 @keyframes floatUp { 0% { opacity: 1; transform: translate(-50%, 0) scale(1); } 100% { opacity: 0; transform: translate(-50%, -28px) scale(1.15); } }
 @keyframes wiggle { 0%, 100% { transform: rotate(0); } 20% { transform: rotate(-7deg); } 40% { transform: rotate(6deg); } 60% { transform: rotate(-4deg); } 80% { transform: rotate(2deg); } }
 @keyframes dropIn { 0% { opacity: 0; transform: translateY(-18px) scale(.6); } 60% { opacity: 1; transform: translateY(3px) scale(1.08); } 100% { transform: none; } }
+@keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+@keyframes pawStep { 0%, 100% { opacity: 0; transform: scale(.6) rotate(var(--r, 0deg)); } 30%, 60% { opacity: .55; transform: scale(1) rotate(var(--r, 0deg)); } }
+@keyframes heartUp { 0% { opacity: 0; transform: translateY(0) scale(.6); } 25% { opacity: 1; } 100% { opacity: 0; transform: translateY(-34px) scale(1.1); } }
 @keyframes shake { 0%, 100% { transform: none; } 25% { transform: translateX(-3px); } 75% { transform: translateX(3px); } }
 @keyframes confetti-fall {
   0% { transform: translate3d(0, -10vh, 0) rotate(0deg); opacity: 1; }

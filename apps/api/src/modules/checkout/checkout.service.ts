@@ -14,7 +14,7 @@ export interface GiftDetails {
   deliverOn?: string;
   dog: {
     name: string; size: any; allergies?: string[]; breed?: string; gender?: any; weightKg?: number;
-    foodPreferences?: string[]; toyPreferences?: string[]; chewingStrength?: string; specialNotes?: string;
+    foodPreferences?: string[]; toyPreferences?: string[]; chewingStrength?: string; specialNotes?: string; birthday?: string | null;
   };
 }
 
@@ -166,6 +166,7 @@ export class CheckoutService {
             breed: gift.dog.breed || null, gender: gift.dog.gender ?? null, weightKg: gift.dog.weightKg ?? null,
             foodPreferences: gift.dog.foodPreferences ?? [], toyPreferences: gift.dog.toyPreferences ?? [],
             chewingStrength: gift.dog.chewingStrength || null, specialNotes: gift.dog.specialNotes?.trim() || null,
+            birthday: gift.dog.birthday ? new Date(gift.dog.birthday) : null,
           },
           select: { id: true },
         });

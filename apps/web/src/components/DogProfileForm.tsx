@@ -23,6 +23,8 @@ export interface DogProfile {
   size: string;
   gender: string;
   weightKg: string;
+  /** YYYY-MM-DD, or empty. */
+  birthday: string;
   allergies: string[];
   foodPreferences: string[];
   toyPreferences: string[];
@@ -31,7 +33,7 @@ export interface DogProfile {
 }
 
 export const emptyDogProfile: DogProfile = {
-  name: '', breed: '', size: '', gender: '', weightKg: '',
+  name: '', breed: '', size: '', gender: '', weightKg: '', birthday: '',
   allergies: [], foodPreferences: [], toyPreferences: [], chewingStrength: '', specialNotes: '',
 };
 
@@ -40,6 +42,7 @@ export function fromDog(d: any): DogProfile {
   return {
     name: d?.name || '', breed: d?.breed || '', size: d?.size || '', gender: d?.gender || '',
     weightKg: d?.weightKg != null ? String(d.weightKg) : '',
+    birthday: d?.birthday ? String(d.birthday).slice(0, 10) : '',
     allergies: d?.allergies || [], foodPreferences: d?.foodPreferences || [], toyPreferences: d?.toyPreferences || [],
     chewingStrength: d?.chewingStrength || '', specialNotes: d?.specialNotes || '',
   };
@@ -53,6 +56,8 @@ export function toDogPayload(d: DogProfile) {
     size: d.size || undefined,
     gender: d.gender || undefined,
     weightKg: d.weightKg ? Number(d.weightKg) : undefined,
+    // null clears a birthday that was set before.
+    birthday: d.birthday || null,
     allergies: d.allergies,
     foodPreferences: d.foodPreferences,
     toyPreferences: d.toyPreferences,
@@ -247,6 +252,9 @@ export default function DogProfileForm({ value, onChange, showOptional = true, c
               <input type="number" min="0" step="0.1" value={value.weightKg} onChange={(e) => set('weightKg', e.target.value)} className={`${field} pr-10`} placeholder="18" />
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">{t('dog.kg')}</span>
             </div>
+          </Section>
+          <Section title={t('dog.birthday')} hint={t('dog.birthdayHint')}>
+            <input type="date" value={value.birthday} max={new Date().toISOString().slice(0, 10)} onChange={(e) => set('birthday', e.target.value)} className={`${field} max-w-[200px]`} />
           </Section>
         </div>
       )}

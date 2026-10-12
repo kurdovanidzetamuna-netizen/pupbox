@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { DogsService } from './dogs.service';
-import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, Request, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, Request, UploadedFile, UseInterceptors, Query } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { Throttle } from '@nestjs/throttler';
@@ -41,8 +41,12 @@ class UpdateDogDto extends PartialType(CreateDogDto) {}
 class DogsController {
   constructor(private service: DogsService) {}
 
+  /** `?all=1` adds friends' dogs from gift plans, and each dog's plans. */
   @Get() @ApiOperation({ summary: 'Get my dogs' })
-  findAll(@Request() req: any) { return this.service.findByUser(req.user.id); }
+  findAll(@Request() req: any, @Query('all') all?: string) { return this.service.findByUser(req.user.id, all === '1'); }
+
+  @Get(':id') @ApiOperation({ summary: 'One of my dogs, with its plans' })
+  findOne(@Request() req: any, @Param('id') id: string) { return this.service.findOneFull(id, req.user.id); }
 
   @Post() @ApiOperation({ summary: 'Add a dog' })
   create(@Request() req: any, @Body() dto: CreateDogDto) {

@@ -1,17 +1,45 @@
 import { BadRequestException, Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { removeDogPhoto, saveDogPhoto } from './dog-photo';
+
+/** A dog's plans (newest first) and the gift order that named the friend. */
+const DOG_EXTRAS = {
+  subscriptions: {
+    where: { status: { in: ['ACTIVE', 'PENDING', 'PAUSED'] } },
+    orderBy: { createdAt: 'desc' },
+    select: { id: true, status: true, isGift: true, endDate: true, boxesTotal: true, boxesDelivered: true, customBoxId: true, plan: { select: { name: true, translations: true } } },
+  },
+  orders: { where: { isGift: true }, orderBy: { createdAt: 'asc' }, take: 1, select: { giftRecipientName: true } },
+} satisfies Prisma.DogInclude;
+
+const withGiftFor = ({ orders, ...d }: any) => ({ ...d, giftFor: d.forGift ? orders?.[0]?.giftRecipientName ?? null : null });
 
 @Injectable()
 export class DogsService {
   constructor(private prisma: PrismaService) {}
 
-  findByUser(userId: string) {
-    return this.prisma.dog.findMany({
-      // A friend's dog from a gift plan lives with that plan, not in "My dogs".
-      where: { userId, deletedAt: null, forGift: false },
-      orderBy: { createdAt: 'asc' },
+  /**
+   * The customer's dogs. With `withGifts`, also the friends' dogs they bought
+   * a gift plan for (each says who it's for), and every dog's plans — for the
+   * "My dogs" page. Without, only their own (e.g. checkout's dog picker).
+   */
+  async findByUser(userId: string, withGifts = false) {
+    if (!withGifts) {
+      return this.prisma.dog.findMany({ where: { userId, deletedAt: null, forGift: false }, orderBy: { createdAt: 'asc' } });
+    }
+    const dogs = await this.prisma.dog.findMany({
+      where: { userId, deletedAt: null },
+      orderBy: [{ forGift: 'asc' }, { createdAt: 'asc' }],
+      include: DOG_EXTRAS,
     });
+    return dogs.map(withGiftFor);
+  }
+
+  /** One dog with its plans (and, for a friend's dog, who it's for). */
+  async findOneFull(id: string, userId: string) {
+    await this.findOne(id, userId);
+    return withGiftFor(await this.prisma.dog.findUniqueOrThrow({ where: { id }, include: DOG_EXTRAS }));
   }
 
   async findOne(id: string, userId: string) {
