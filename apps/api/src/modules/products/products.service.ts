@@ -26,6 +26,33 @@ const PUBLIC_STATUSES: ProductStatus[] = ['ACTIVE', 'OUT_OF_STOCK'];
 export class ProductsService {
   constructor(private prisma: PrismaService) {}
 
+  /**
+   * Products whose words match every word typed, in any order, ignoring
+   * letter case, in English or Georgian: name, SKU, descriptions, brand,
+   * "good for", category, tags and seller. Null when nothing is searchable.
+   */
+  private async searchIds(search: string): Promise<string[] | null> {
+    const words = [...new Set(search.toLowerCase().split(/\s+/).filter(Boolean))].slice(0, 8);
+    if (!words.length) return null;
+    const like = (w: string) => `%${w.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
+    // Only the text values of a translations object, not its keys.
+    const texts = (col: Prisma.Sql) => Prisma.sql`jsonb_path_query_array(coalesce(${col}, '{}'::jsonb), 'strict $.** ? (@.type() == "string")')::text`;
+    const rows = await this.prisma.$queryRaw<{ id: string }[]>`
+      WITH t AS (
+        SELECT p.id, lower(concat_ws(' ',
+          p.name, p.sku, p."shortDescription", p.description, p.brand, p."goodFor", ${texts(Prisma.raw('p.translations'))},
+          c.name, ${texts(Prisma.raw('c.translations'))}, s.name,
+          (SELECT string_agg(g.name, ' ') FROM "ProductTagRelation" r JOIN "ProductTag" g ON g.id = r."tagId" WHERE r."productId" = p.id)
+        )) AS doc
+        FROM "Product" p
+        LEFT JOIN "ProductCategory" c ON c.id = p."categoryId"
+        LEFT JOIN "Seller" s ON s.id = p."sellerId"
+        WHERE p."deletedAt" IS NULL
+      )
+      SELECT id FROM t WHERE ${Prisma.join(words.map((w) => Prisma.sql`doc LIKE ${like(w)} ESCAPE '\\'`), ' AND ')}`;
+    return rows.map((r) => r.id);
+  }
+
   async findAll(params: {
     page?: number;
     limit?: number;
@@ -67,15 +94,10 @@ export class ProductsService {
     if (includedInBox !== undefined) where.includedInBox = includedInBox;
 
     const and: any[] = [];
-    if (search) {
-      and.push({ OR: [
-        { name: { contains: search, mode: 'insensitive' } },
-        { sku: { contains: search, mode: 'insensitive' } },
-        { shortDescription: { contains: search, mode: 'insensitive' } },
-        // Georgian names live in translations.ka; Georgian has no letter case.
-        { translations: { path: ['ka', 'name'], string_contains: search } },
-        { translations: { path: ['ka', 'shortDescription'], string_contains: search } },
-      ] });
+    if (search?.trim()) {
+      const ids = await this.searchIds(search);
+      if (ids === null) and.push({ id: { in: [] } });
+      else and.push({ id: { in: ids } });
     }
     if (brand) {
       and.push({ OR: [{ brand }, { tags: { some: { tag: { name: brand } } } }] });

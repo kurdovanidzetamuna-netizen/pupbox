@@ -37,6 +37,7 @@ export const STORE_STRINGS: Record<string, { en: string; ka: string }> = {
   'shop.choose':            { en: 'Choose',                     ka: 'არჩევა' },
   'shop.quickAdd':          { en: 'Add to basket',              ka: 'კალათაში დამატება' },
   'shop.added':             { en: 'Added',                      ka: 'დაემატა' },
+  'shop.searchAll':        { en: 'Search „{q}“ in the whole shop', ka: '„{q}“ — ძიება მთელ მაღაზიაში' },
   'shop.noneSub':           { en: 'Try another word or category.', ka: 'სცადე სხვა სიტყვა ან კატეგორია.' },
   'shop.inBasket':          { en: 'In your basket: {n}',        ka: 'კალათაშია: {n}' },
   'mini.empty':             { en: 'Your basket is empty',       ka: 'კალათა ცარიელია' },

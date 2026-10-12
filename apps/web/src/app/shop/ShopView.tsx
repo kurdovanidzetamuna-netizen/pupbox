@@ -191,6 +191,13 @@ export default function ShopView({ products, total, pages, page, categories, bra
             <span className="mx-auto mb-4 w-16 h-16 rounded-3xl bg-teal-50 flex items-center justify-center text-3xl" aria-hidden="true">🔍</span>
             <p className="text-[15px] font-semibold text-gray-800">{t('shop.none')}</p>
             <p className="text-[13px] text-gray-500 mt-1">{t('shop.noneSub')}</p>
+            {/* Searched inside a filter: offer the same words across the whole shop. */}
+            {search && active.length > 1 && (
+              <Link href={`${pathname}?search=${encodeURIComponent(search)}`}
+                className="mx-auto mt-5 inline-flex items-center gap-2 h-10 px-4 rounded-full bg-teal-50 text-teal-800 text-[13px] font-semibold hover:bg-teal-100">
+                <Icon name="search" className="w-4 h-4" strokeWidth={2.2} />{fill(t('shop.searchAll'), { q: search })}
+              </Link>
+            )}
             {active.length > 0 && (
               <Link href={pathname} aria-label={t('shop.clearFilters')} title={t('shop.clearFilters')}
                 className="mx-auto mt-5 w-11 h-11 rounded-full bg-teal-50 text-teal-700 flex items-center justify-center hover:bg-teal-100">
