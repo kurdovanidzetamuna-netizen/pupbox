@@ -113,8 +113,8 @@ export default function HomePageClient({ plans, content, pricing }: Props) {
         </section>
       )}
 
-      {/* ── ROADMAP: the four ways and how it works, as one road ── */}
-      {c.on('howItWorks') && <HomeRoadmap steps={hiw.steps} />}
+      {/* ── HOW IT WORKS: four steps, the four ways to buy on the first ── */}
+      {c.on('howItWorks') && <HomeRoadmap heading={hiw.heading} steps={hiw.steps} />}
 
       {/* ── WHAT'S IN THE BOX ── */}
       {c.on('whatsInBox') && box.items.length > 0 && (

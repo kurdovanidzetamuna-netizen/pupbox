@@ -85,7 +85,7 @@ const SEED: Omit<Translation, 'id'>[] = [
   { key: 'box.item6.desc',        en: 'No sample packets — only full-size premium products worth more than your subscription price.', ka: 'არანაირი ნიმუშები — მხოლოდ სრული ზომის პრემიუმ პროდუქტები, რომელთა ღირებულება გამოწერის ფასზე მეტია.', pages: ['homepage'] },
 
   // ── Homepage · How It Works ──────────────────────────────────────────────
-  { key: 'hiw.heading',           en: 'How Pupbox works',      ka: 'Pupbox-ი როგორ მუშაობს', pages: ['homepage', 'how-it-works'] },
+  { key: 'hiw.heading',           en: 'How it works',          ka: 'როგორ მუშაობს', pages: ['homepage', 'how-it-works'] },
   { key: 'hiw.subheading',        en: 'Get started in minutes. Your first box ships within 3–5 business days.', ka: 'დაიწყე წუთებში. პირველი კოლოფი გამოიგზავნება 3–5 სამუშაო დღეში.', pages: ['homepage'] },
   { key: 'hiw.step1.title',       en: 'Choose a plan',         ka: 'აირჩიე გეგმა', pages: ['homepage'] },
   { key: 'hiw.step1.desc',        en: 'Pick monthly, 3-month, 6-month or annual. Longer plans save more.', ka: 'აირჩიე ყოველთვიური, 3-თვიანი, 6-თვიანი ან წლიური. გრძელვადიანი გეგმები უფრო ხელსაყრელია.', pages: ['homepage'] },
@@ -93,8 +93,8 @@ const SEED: Omit<Translation, 'id'>[] = [
   { key: 'hiw.step2.desc',        en: 'Size, breed, preferences — we personalise every single box.', ka: 'ზომა, ჯიში, პრეფერენციები — ჩვენ ყოველ კოლოფს პირადად მოვარგებთ.', pages: ['homepage'] },
   { key: 'hiw.step3.title',       en: 'We pack your box',      ka: 'ვაწყობთ კოლოფს', pages: ['homepage'] },
   { key: 'hiw.step3.desc',        en: 'Our team handpicks 5–8 products perfectly suited for your pup.', ka: 'ჩვენი გუნდი ხელით ირჩევს 5–8 პროდუქტს შენი ლეკვისთვის.', pages: ['homepage'] },
-  { key: 'hiw.step4.title',       en: 'Enjoy & repeat',        ka: 'ისიამოვნე და გაიმეორე', pages: ['homepage'] },
-  { key: 'hiw.step4.desc',        en: 'A fresh surprise arrives every month. Cancel or pause anytime.', ka: 'ახალი სიურპრიზი ყოველ თვე. გაუქმება ან პაუზა — ნებისმიერ დროს.', pages: ['homepage'] },
+  { key: 'hiw.step4.title',       en: 'Make your dog happy',   ka: 'გაახარე ძაღლი', pages: ['homepage'] },
+  { key: 'hiw.step4.desc',        en: 'A new surprise every month, with no commitment.', ka: 'ყოველ თვე — ახალი სიურპრიზი, ვალდებულებების გარეშე.', pages: ['homepage'] },
 
   // ── Homepage · Plans ─────────────────────────────────────────────────────
   { key: 'plans.heading',         en: 'Simple, transparent pricing', ka: 'მარტივი, გამჭვირვალე ფასები', pages: ['homepage', 'pricing'] },

@@ -30,9 +30,6 @@ export const SITE_STRINGS: Record<string, { en: string; ka: string }> = {
   'ftr.contact':            { en: 'Contact us',                  ka: 'კონტაქტი' },
 
   // Home page
-  'home.roadTitle':        { en: 'From first click to a happy tail', ka: 'პირველი კლიკიდან ბედნიერ კუდამდე' },
-  'home.roadStart':        { en: 'Start',                       ka: 'სტარტი' },
-  'home.roadEnd':          { en: 'Happy dog!',                  ka: 'ბედნიერი ძაღლი!' },
   'ways.box.short':         { en: 'Monthly',                     ka: 'ყუთი' },
   'ways.custom.short':      { en: 'Build',                       ka: 'ააწყე' },
   'ways.gift.short':        { en: 'Gift',                        ka: 'საჩუქარი' },
