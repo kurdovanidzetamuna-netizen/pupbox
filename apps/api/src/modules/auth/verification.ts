@@ -13,6 +13,13 @@ const RESEND_AFTER_MS = 60_000;
 const MAX_PER_HOUR = 5;
 
 /**
+ * On a developer's computer every code is 111111, so testing sign-up needs
+ * no SMS or email service. Only when NODE_ENV is exactly "development": the
+ * live site (production) always sends a random code.
+ */
+const DEV_CODE = process.env.NODE_ENV === 'development' ? '111111' : null;
+
+/**
  * A phone number from any country in one international form (+995599123456).
  * Without a +country code it's read as Georgian. Null if it isn't a real
  * number for that country.
@@ -45,7 +52,7 @@ export async function sendCode(prisma: PrismaService, email: EmailService, sms: 
   if (wait > 0) throw new HttpException(`Please wait ${wait} seconds before asking for a new code.`, HttpStatus.TOO_MANY_REQUESTS);
   if (recent.length >= MAX_PER_HOUR) throw new HttpException('Too many codes asked for. Try again in an hour.', HttpStatus.TOO_MANY_REQUESTS);
 
-  const code = String(crypto.randomInt(100000, 1000000));
+  const code = DEV_CODE ?? String(crypto.randomInt(100000, 1000000));
   // Older codes stop working once a new one is sent.
   await prisma.verificationCode.updateMany({ where: { userId, channel, usedAt: null }, data: { usedAt: new Date() } });
   await prisma.verificationCode.create({ data: { userId, channel, target, codeHash: hash(userId, code), expiresAt: new Date(Date.now() + CODE_TTL_MS) } });
