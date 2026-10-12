@@ -11,6 +11,26 @@ import { Icon } from '@/components/ui/icons';
 import PawTrail from '@/components/PawTrail';
 import PlansList from '@/components/account/PlansList';
 import OrdersList from '@/components/account/OrdersList';
+import Menu from '@/components/ui/Menu';
+
+type Sort = 'new' | 'old' | 'high' | 'low';
+type View = 'grid' | 'list';
+
+/** Status groups for the filter, per tab. */
+const PLAN_GROUPS: Record<string, (s: any) => boolean> = {
+  active: s => s.status === 'ACTIVE' && !s.cancelledAt,
+  waiting: s => ['PENDING', 'PAYMENT_FAILED'].includes(s.status),
+  paused: s => s.status === 'PAUSED',
+  finished: s => s.status === 'EXPIRED' || (s.status === 'ACTIVE' && !!s.cancelledAt),
+  cancelled: s => s.status === 'CANCELLED',
+};
+const ORDER_GROUPS: Record<string, (o: any) => boolean> = {
+  active: o => ['PAID', 'PROCESSING', 'PACKED', 'SHIPPED'].includes(o.status),
+  unpaid: o => o.status === 'PENDING',
+  delivered: o => o.status === 'DELIVERED',
+  cancelled: o => ['CANCELLED', 'REFUNDED', 'FAILED'].includes(o.status),
+};
+const planPrice = (s: any) => Number(s.plan?.price) || 0;
 
 type Tab = 'plans' | 'orders';
 
@@ -26,6 +46,9 @@ export default function OrdersAndPlansPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [tab, setTab] = useState<Tab | null>(null);
+  const [sort, setSort] = useState<Sort>('new');
+  const [group, setGroup] = useState('all');
+  const [view, setView] = useState<View>('list');
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
 
   useEffect(() => {
@@ -54,15 +77,30 @@ export default function OrdersAndPlansPage() {
 
   function pick(k: Tab) {
     setTab(k);
+    setGroup('all');
     window.history.replaceState(null, '', `/account/orders?tab=${k}`);
   }
+
+  const groups = tab === 'plans' ? PLAN_GROUPS : ORDER_GROUPS;
+  const by = (list: any[], price: (x: any) => number) => [...list].sort((a, b) =>
+    sort === 'high' ? price(b) - price(a) : sort === 'low' ? price(a) - price(b)
+      : (new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()) * (sort === 'old' ? -1 : 1));
+  const shownSubs = by(group === 'all' ? subs : subs.filter(PLAN_GROUPS[group] ?? (() => true)), planPrice);
+  const shownOrders = by(group === 'all' ? orders : orders.filter(ORDER_GROUPS[group] ?? (() => true)), o => Number(o.total) || 0);
+  const count = (k: string) => (tab === 'plans' ? subs : orders).filter(k === 'all' ? () => true : groups[k]).length;
+  const nothing = (
+    <div className="rounded-3xl bg-gray-50 py-12 text-center">
+      <span className="text-4xl inline-block animate-[wag_1.6s_ease-in-out_infinite]" aria-hidden="true">🐾</span>
+      <p className="mt-2 text-[13px] font-semibold text-gray-500">{t('op.nothing')}</p>
+    </div>
+  );
 
   const active = subs.filter(s => s.status === 'ACTIVE').length;
   const sent = subs.reduce((n, s) => n + (Number(s.boxesDelivered) || 0), 0);
   const stats: [string, string, number, string][] = [
     ['repeat', t('op.active'), active, 'bg-teal-50 text-teal-700'],
-    ['box', t('sub.delivered'), sent, 'bg-amber-50 text-amber-700'],
-    ['bag', t('op.tabOrders'), orders.length, 'bg-lilac-50 text-lilac-600'],
+    ['box', t('sub.delivered'), sent, 'bg-lilac-50 text-lilac-600'],
+    ['bag', t('op.tabOrders'), orders.length, 'bg-sky-50 text-sky-700'],
   ];
 
   return (
@@ -95,7 +133,8 @@ export default function OrdersAndPlansPage() {
           ))}
         </dl>
 
-        <div role="tablist" className="inline-flex gap-1 p-1 rounded-full bg-gray-100 mb-4">
+        <div className="flex items-center gap-2 mb-4 flex-wrap">
+        <div role="tablist" className="inline-flex gap-1 p-1 rounded-full bg-gray-100">
           {([['plans', t('op.tabPlans'), subs.length, 'repeat'], ['orders', t('op.tabOrders'), orders.length, 'bag']] as const).map(([k, label, n, icon]) => (
             <button key={k} role="tab" aria-selected={tab === k} onClick={() => pick(k)}
               className={`h-9 pl-3 pr-3.5 rounded-full text-[13px] font-bold inline-flex items-center gap-1.5 transition-colors ${tab === k ? 'bg-white text-teal-700' : 'text-gray-500 hover:text-gray-800'}`}>
@@ -103,9 +142,26 @@ export default function OrdersAndPlansPage() {
             </button>
           ))}
         </div>
+        <div className="ml-auto flex items-center gap-1">
+          <Menu icon="filter" label={t('op.filter')} title={t('op.filter')} active={group !== 'all'} tone="mint"
+            onReset={() => setGroup('all')} resetDisabled={group === 'all'} resetLabel={t('op.all')}
+            items={['all', ...Object.keys(groups)].map(k => ({ label: `${t(`op.g.${k}`)} · ${count(k)}`, checked: group === k, onClick: () => setGroup(k) }))} />
+          <Menu icon="sort" label={t('op.sort')} title={t('op.sort')} active={sort !== 'new'} tone="mint"
+            onReset={() => setSort('new')} resetDisabled={sort === 'new'} resetLabel={t('op.s.new')}
+            items={(['new', 'old', 'high', 'low'] as Sort[]).map(k => ({ icon: k === 'new' || k === 'old' ? 'calendar' : 'coin', label: t(`op.s.${k}`), checked: sort === k, onClick: () => setSort(k) }))} />
+          <div className="hidden sm:inline-flex p-0.5 rounded-full bg-gray-100 ml-1">
+            {(['list', 'grid'] as View[]).map(v => (
+              <button key={v} type="button" onClick={() => setView(v)} aria-pressed={view === v} aria-label={t(`op.v.${v}`)} title={t(`op.v.${v}`)}
+                className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${view === v ? 'bg-white text-teal-700' : 'text-gray-400 hover:text-gray-700'}`}>
+                <Icon name={v} className="w-4 h-4" strokeWidth={2} />
+              </button>
+            ))}
+          </div>
+        </div>
+        </div>
 
         {tab === 'plans' && (subs.length
-          ? <PlansList subs={subs} setSubs={setSubs} toast={showToast} />
+          ? (shownSubs.length ? <PlansList subs={shownSubs} setSubs={setSubs} toast={showToast} view={view} /> : nothing)
           : <Link href="/prices#plans" className="group flex items-center gap-4 rounded-3xl bg-teal-50/70 p-5 hover:bg-teal-50">
               <span className="text-4xl animate-[bob_2s_ease-in-out_infinite]" aria-hidden="true">📦</span>
               <span className="flex-1"><span className="block font-bold text-gray-900">{t('sub.none')}</span><span className="block text-[13px] text-gray-500">{t('sub.noneSub')}</span></span>
@@ -113,7 +169,7 @@ export default function OrdersAndPlansPage() {
             </Link>)}
 
         {tab === 'orders' && (orders.length
-          ? <OrdersList orders={orders} onManagePlan={id => { pick('plans'); window.history.replaceState(null, '', `/account/orders?tab=plans&cancel=${id}`); setTimeout(() => document.getElementById(`sub-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50); }} />
+          ? (shownOrders.length ? <OrdersList orders={shownOrders} view={view} onManagePlan={id => { pick('plans'); window.history.replaceState(null, '', `/account/orders?tab=plans&cancel=${id}`); setTimeout(() => document.getElementById(`sub-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50); }} /> : nothing)
           : <Link href="/shop" className="group flex items-center gap-4 rounded-3xl bg-gray-50 p-5 hover:bg-teal-50/60">
               <span className="text-4xl" aria-hidden="true">🛍️</span>
               <span className="flex-1 font-bold text-gray-900">{t('ord.none')}</span>

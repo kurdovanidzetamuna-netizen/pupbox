@@ -7,6 +7,7 @@ import IconButton from '@/components/ui/IconButton';
 import Menu from '@/components/ui/Menu';
 import Modal from '@/components/ui/Modal';
 import { Icon } from '@/components/ui/icons';
+import { GIFT } from '@/lib/gift';
 import { useLanguage } from '@/context/LanguageContext';
 import { fill } from '@/context/strings/purchase';
 import { authFetch, loginUrl, SessionExpiredError } from '@/lib/authFetch';
@@ -18,7 +19,7 @@ import { FormAlert, countErrors, revealFirstError } from '@/components/ui/FormEr
 
 const STATUS: Record<string, string> = {
   ACTIVE: 'bg-teal-50 text-teal-700',
-  PENDING: 'bg-amber-50 text-amber-700',
+  PENDING: 'bg-lilac-50 text-lilac-600',
   PAUSED: 'bg-gray-100 text-gray-600',
   CANCELLED: 'bg-red-50 text-red-600',
   EXPIRED: 'bg-gray-100 text-gray-500',
@@ -30,7 +31,8 @@ const STATUS: Record<string, string> = {
  * showing how many arrived, quick facts, then the address, renewal switch
  * and box history. Every action is an icon button.
  */
-export default function PlansList({ subs, setSubs, toast }: {
+export default function PlansList({ subs, setSubs, toast, view = 'list' }: {
+  view?: 'grid' | 'list';
   subs: any[];
   setSubs: React.Dispatch<React.SetStateAction<any[]>>;
   toast: (msg: string, ok?: boolean) => void;
@@ -173,7 +175,7 @@ export default function PlansList({ subs, setSubs, toast }: {
 
   return (
     <>
-      <ul className="grid xl:grid-cols-2 gap-4 items-start">
+      <ul className={`grid gap-4 items-start ${view === 'grid' ? 'md:grid-cols-2' : ''}`}>
         {subs.map((sub, i) => {
           const live = !['CANCELLED', 'EXPIRED'].includes(sub.status);
           const isActive = sub.status === 'ACTIVE';
@@ -182,7 +184,7 @@ export default function PlansList({ subs, setSubs, toast }: {
           const total = Number(sub.boxesTotal) || Number(sub.plan?.boxCount) || 1;
           const sent = Number(sub.boxesDelivered) || 0;
           const shipBy = new Map<number, any>((sub.shipments ?? []).map((b: any) => [b.boxNumber, b]));
-          const head = sub.isGift ? 'bg-lilac-50' : live ? 'bg-teal-50' : 'bg-gray-50';
+          const head = sub.isGift ? GIFT.soft : live ? 'bg-teal-50' : 'bg-gray-50';
           const facts: [string, string, React.ReactNode][] = [
             ...(sub.startDate && new Date(sub.startDate) > new Date() ? [['calendar', t('sub.startsOn'), date(sub.startDate)] as [string, string, string]] : []),
             ['repeat', t(sub.nextRenewalAt ? 'sub.nextRenewal' : 'sub.endsOn'), sub.nextRenewalAt ? date(sub.nextRenewalAt) : sub.endDate ? date(sub.endDate) : '—'],
@@ -200,7 +202,7 @@ export default function PlansList({ subs, setSubs, toast }: {
                   <div className="flex-1 min-w-0">
                     <h2 className="font-extrabold text-gray-900 text-[16px] leading-tight truncate">{planText(sub.plan, 'name', lang)}</h2>
                     <p className="text-[12.5px] text-gray-500 mt-0.5">{fill(t('sub.shape'), { months: months(Number(sub.plan?.durationValue) || 1), boxes: boxes(Number(sub.plan?.boxCount) || 1) })}</p>
-                    {sub.isGift && <p className="text-[12px] font-bold text-lilac-600 mt-0.5 truncate">{sub.giftFor ? fill(t('sub.giftFor'), { name: sub.giftFor }) : t('sub.gift')}</p>}
+                    {sub.isGift && <p className={`text-[12px] font-bold ${GIFT.text} mt-0.5 truncate`}>{sub.giftFor ? fill(t('sub.giftFor'), { name: sub.giftFor }) : t('sub.gift')}</p>}
                   </div>
                   <span className={`shrink-0 h-6 px-2.5 rounded-full text-[11px] font-bold inline-flex items-center gap-1.5 ${STATUS[sub.status] || STATUS.PENDING}`}>
                     {isActive && <span className="w-1.5 h-1.5 rounded-full bg-teal-500 animate-pulse" />}
@@ -246,9 +248,9 @@ export default function PlansList({ subs, setSubs, toast }: {
                 </dl>
 
                 {due && (
-                  <div className="flex items-center gap-3 rounded-2xl bg-amber-50 px-4 py-3">
-                    <Icon name="alert" className="w-5 h-5 text-amber-600 shrink-0" />
-                    <p className="flex-1 text-[12.5px] text-amber-900">{fill(t('sub.renewalDue'), { date: due.renewalFor ? date(due.renewalFor) : '', money: gel(due.total) })}</p>
+                  <div className="flex items-center gap-3 rounded-2xl bg-lilac-50 px-4 py-3">
+                    <Icon name="alert" className="w-5 h-5 text-lilac-600 shrink-0" />
+                    <p className="flex-1 text-[12.5px] text-lilac-600">{fill(t('sub.renewalDue'), { date: due.renewalFor ? date(due.renewalFor) : '', money: gel(due.total) })}</p>
                     <IconButton icon="card" tone="primary" label={paying === due.id ? t('ty.redirecting') : fill(t('sub.renewalPay'), { money: gel(due.total) })} onClick={() => payRenewal(due.id)} disabled={paying === due.id} />
                   </div>
                 )}
@@ -260,7 +262,7 @@ export default function PlansList({ subs, setSubs, toast }: {
                       {sub.address ? (<>
                         <p className="font-semibold text-gray-800 truncate">{sub.address.firstName} {sub.address.lastName} · {sub.address.phone}</p>
                         <p className="text-gray-500 truncate">{sub.address.city}, {[sub.address.addressLine1, sub.address.addressLine2].filter(Boolean).join(', ')}</p>
-                      </>) : <p className="text-amber-700 font-semibold">{t('addr.missing')}</p>}
+                      </>) : <p className="text-lilac-600 font-semibold">{t('addr.missing')}</p>}
                     </div>
                     <IconButton icon="edit" label={t('addr.change')} size="sm" onClick={() => openAddress(sub)} />
                   </div>
@@ -294,7 +296,7 @@ export default function PlansList({ subs, setSubs, toast }: {
                 )}
 
                 {isActive && sub.cancelledAt && (
-                  <p className="flex items-center gap-2 text-[12.5px] text-amber-800 bg-amber-50 rounded-2xl px-4 py-3"><Icon name="info" className="w-4 h-4 shrink-0" />{t('sub.cancelledLast')}</p>
+                  <p className="flex items-center gap-2 text-[12.5px] text-lilac-600 bg-lilac-50 rounded-2xl px-4 py-3"><Icon name="info" className="w-4 h-4 shrink-0" />{t('sub.cancelledLast')}</p>
                 )}
 
                 {sub.shipments?.length > 0 && (

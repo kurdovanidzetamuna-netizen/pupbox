@@ -11,9 +11,10 @@ import { fill } from '@/context/strings/purchase';
 import { authFetch } from '@/lib/authFetch';
 import { gel } from '@/lib/format';
 import { itemName } from '@/lib/localize';
+import { GIFT } from '@/lib/gift';
 
 const STATUS: Record<string, string> = {
-  PENDING: 'bg-amber-50 text-amber-700',
+  PENDING: 'bg-lilac-50 text-lilac-600',
   PAID: 'bg-teal-50 text-teal-700',
   PROCESSING: 'bg-teal-50 text-teal-700',
   PACKED: 'bg-teal-50 text-teal-700',
@@ -32,12 +33,12 @@ const STEPS: [string, string][] = [['PAID', 'card'], ['PROCESSING', 'sparkle'], 
  * and status, and a stepper while the order is on its way. Tapping a card
  * opens everything about it.
  */
-export default function OrdersList({ orders, onManagePlan }: { orders: any[]; onManagePlan: (subId: string) => void }) {
+export default function OrdersList({ orders, onManagePlan, view = 'list' }: { orders: any[]; onManagePlan: (subId: string) => void; view?: 'grid' | 'list' }) {
   const { t, lang } = useLanguage();
   const [open, setOpen] = useState<string | null>(null);
 
   return (
-    <ul className="space-y-3">
+    <ul className={`grid gap-3 items-start ${view === 'grid' ? 'md:grid-cols-2' : ''}`}>
       {orders.map((order, i) => {
         const isOpen = open === order.id;
         const step = STEPS.findIndex(([s]) => s === order.status);
@@ -58,7 +59,7 @@ export default function OrdersList({ orders, onManagePlan }: { orders: any[]; on
                 <span className="flex items-center gap-2 flex-wrap">
                   <span className="text-[14px] font-extrabold text-gray-900">#{order.id.slice(-8).toUpperCase()}</span>
                   {plan && <span className="h-5 px-2 rounded-full bg-teal-50 text-teal-700 text-[10.5px] font-bold inline-flex items-center gap-1"><Icon name="repeat" className="w-3 h-3" strokeWidth={2.2} />{t('op.planOrder')}</span>}
-                  {order.isGift && <span className="h-5 px-2 rounded-full bg-lilac-50 text-lilac-600 text-[10.5px] font-bold inline-flex items-center max-w-[140px] truncate">🎁 {order.giftRecipientName || t('sub.gift')}</span>}
+                  {order.isGift && <span className={`h-5 px-2 rounded-full ${GIFT.chip} text-[10.5px] font-bold inline-flex items-center max-w-[140px] truncate`}>🎁 {order.giftRecipientName || t('sub.gift')}</span>}
                 </span>
                 <span className="block text-[12px] text-gray-500 truncate mt-0.5">
                   {formatDate(new Date(order.createdAt), lang, { day: 'numeric', month: 'short', year: 'numeric' })} · {fill(t('op.itemsN'), { n: count })}
@@ -95,7 +96,7 @@ export default function OrdersList({ orders, onManagePlan }: { orders: any[]; on
               </p>
             )}
 
-            {isOpen && <OrderDetails order={order} onManagePlan={plan && ['ACTIVE', 'PAUSED'].includes(plan.status) && !plan.cancelledAt ? () => onManagePlan(plan.id) : undefined} />}
+            {isOpen && <OrderDetails order={order} wide={view === 'list'} onManagePlan={plan && ['ACTIVE', 'PAUSED'].includes(plan.status) && !plan.cancelledAt ? () => onManagePlan(plan.id) : undefined} />}
           </li>
         );
       })}
@@ -103,65 +104,54 @@ export default function OrdersList({ orders, onManagePlan }: { orders: any[]; on
   );
 }
 
-/** Everything about one order: items with prices, money, address, payment, tracking. */
-function OrderDetails({ order, onManagePlan }: { order: any; onManagePlan?: () => void }) {
+/** Everything about one order, in one tidy panel: items and money, then where it goes, payment and tracking. */
+function OrderDetails({ order, onManagePlan, wide }: { order: any; onManagePlan?: () => void; wide: boolean }) {
   const { t, lang } = useLanguage();
   const a = order.address;
   const p = order.payments?.[0];
-  const row = (label: string, value: React.ReactNode, strong = false) => (
-    <div className={`flex justify-between gap-4 ${strong ? 'font-extrabold text-gray-900 pt-2 mt-1 border-t border-gray-200/70 text-[14px]' : 'text-gray-500'}`}><span>{label}</span><span>{value}</span></div>
+  const money = (label: string, value: React.ReactNode, strong = false) => (
+    <div className={`flex justify-between gap-4 ${strong ? 'text-[14px] font-extrabold text-gray-900' : 'text-[12.5px] text-gray-500'}`}><span>{label}</span><span>{value}</span></div>
+  );
+  const info = (icon: string, label: string, value: React.ReactNode, sub?: React.ReactNode) => (
+    <div className="flex items-start gap-3 min-w-0">
+      <span className="w-8 h-8 rounded-xl bg-white text-teal-600 flex items-center justify-center shrink-0"><Icon name={icon} className="w-4 h-4" /></span>
+      <div className="min-w-0 text-[12.5px]">
+        <p className="text-[11px] text-gray-400">{label}</p>
+        <p className="font-semibold text-gray-800 break-words">{value}</p>
+        {sub && <p className="text-gray-500 break-words">{sub}</p>}
+      </div>
+    </div>
   );
   return (
-    <div className="mx-4 mb-4 grid md:grid-cols-2 gap-3 text-[13px] animate-[fadeUp_0.25s_ease-out]">
-      <div className="rounded-2xl bg-gray-50 p-4">
-        <ul className="space-y-2.5">
-          {order.items.map((item: any) => (
-            <li key={item.id} className="flex items-center gap-3">
-              <ProductThumb item={item} className="w-9 h-9 rounded-lg text-lg shrink-0" />
-              <span className="flex-1 min-w-0 text-gray-800"><span className="font-semibold">{itemName(item, lang) || item.name}</span> <span className="text-gray-400">× {item.quantity}</span><ChoiceNote choice={item.personalisation} /></span>
-              <span className="text-gray-700 font-semibold whitespace-nowrap">{gel(item.total)}</span>
-            </li>
-          ))}
-        </ul>
-        <div className="mt-3 pt-3 border-t border-gray-200/70 space-y-1">
-          {row(t('ord.subtotal'), gel(order.subtotal))}
-          {Number(order.discountAmount) > 0 && row(t('ord.discount'), `−${gel(order.discountAmount)}`)}
-          {row(t('ord.delivery'), Number(order.deliveryCost) > 0 ? gel(order.deliveryCost) : t('co.delivery.free'))}
-          {row(t('ord.total'), gel(order.total), true)}
+    <div className="border-t border-gray-100 animate-[fadeIn_0.2s_ease-out]">
+      <div className={`grid ${wide ? 'md:grid-cols-[1.4fr_1fr]' : ''}`}>
+        <div className="p-4">
+          <ul className="divide-y divide-gray-100">
+            {order.items.map((item: any) => (
+              <li key={item.id} className="flex items-center gap-3 py-2 first:pt-0">
+                <ProductThumb item={item} className="w-10 h-10 rounded-xl text-lg shrink-0" />
+                <span className="flex-1 min-w-0">
+                  <span className="block text-[13px] font-semibold text-gray-800 truncate">{itemName(item, lang) || item.name}</span>
+                  <span className="block text-[11.5px] text-gray-400">× {item.quantity}<ChoiceNote choice={item.personalisation} /></span>
+                </span>
+                <span className="text-[13px] font-bold text-gray-800 whitespace-nowrap">{gel(item.total)}</span>
+              </li>
+            ))}
+          </ul>
+          <div className="mt-2 rounded-2xl bg-gray-50 px-4 py-3 space-y-1">
+            {money(t('ord.subtotal'), gel(order.subtotal))}
+            {Number(order.discountAmount) > 0 && money(t('ord.discount'), `−${gel(order.discountAmount)}`)}
+            {money(t('ord.delivery'), Number(order.deliveryCost) > 0 ? gel(order.deliveryCost) : t('co.delivery.free'))}
+            <div className="pt-1.5 mt-1.5 border-t border-gray-200/70">{money(t('ord.total'), gel(order.total), true)}</div>
+          </div>
         </div>
-      </div>
-      <div className="space-y-3">
-        {a && (
-          <div className="rounded-2xl bg-gray-50 p-4 flex gap-3">
-            <Icon name="pin" className="w-5 h-5 text-teal-600 shrink-0" />
-            <div className="min-w-0">
-              <p className="text-[11px] text-gray-400">{t('ord.deliverTo')}</p>
-              <p className="font-semibold text-gray-800">{a.firstName} {a.lastName} · {a.phone}</p>
-              <p className="text-gray-500">{a.city}, {[a.addressLine1, a.addressLine2].filter(Boolean).join(', ')}</p>
-            </div>
-          </div>
-        )}
-        {(p || order.trackingNumber) && (
-          <div className="rounded-2xl bg-gray-50 p-4 space-y-2">
-            {p && (
-              <div className="flex items-center gap-3">
-                <Icon name="card" className="w-5 h-5 text-teal-600 shrink-0" />
-                <span className="flex-1 text-gray-500">{t('ord.payment')}</span>
-                <span className="font-semibold text-gray-800">{t(`ord.pay.${p.status}`, p.status)}{p.paidAt ? ` · ${formatDate(new Date(p.paidAt), lang, { day: 'numeric', month: 'short' })}` : ''}</span>
-              </div>
-            )}
-            {order.trackingNumber && (
-              <div className="flex items-center gap-3">
-                <Icon name="truck" className="w-5 h-5 text-teal-600 shrink-0" />
-                <span className="flex-1 text-gray-500">{t('ord.tracking')}</span>
-                <span className="font-mono font-semibold text-gray-800">{order.trackingNumber}</span>
-              </div>
-            )}
-          </div>
-        )}
-        {onManagePlan && (
-          <div className="flex justify-end"><IconButton icon="settings" label={t('ord.managePlan')} onClick={onManagePlan} /></div>
-        )}
+        <div className={`p-4 space-y-3 bg-gray-50/70 rounded-b-3xl ${wide ? 'md:rounded-bl-none' : ''}`}>
+          {a && info('pin', t('ord.deliverTo'), `${a.firstName} ${a.lastName} · ${a.phone}`, `${a.city}, ${[a.addressLine1, a.addressLine2].filter(Boolean).join(', ')}`)}
+          {p && info('card', t('ord.payment'), `${t(`ord.pay.${p.status}`, p.status)}${p.paidAt ? ` · ${formatDate(new Date(p.paidAt), lang, { day: 'numeric', month: 'short' })}` : ''}`)}
+          {order.trackingNumber && info('truck', t('ord.tracking'), <span className="font-mono">{order.trackingNumber}</span>)}
+          {order.isGift && order.giftRecipientName && info('gift', t('sub.gift'), order.giftRecipientName)}
+          {onManagePlan && <div className="flex justify-end"><IconButton icon="settings" label={t('ord.managePlan')} onClick={onManagePlan} /></div>}
+        </div>
       </div>
     </div>
   );
@@ -187,10 +177,10 @@ function PayRow({ orderId }: { orderId: string }) {
   }
 
   return (
-    <div className="mx-4 mb-4 rounded-2xl bg-amber-50 px-4 py-2.5">
+    <div className="mx-4 mb-4 rounded-2xl bg-lilac-50 px-4 py-2.5">
       <div className="flex items-center gap-3">
-        <Icon name="alert" className="w-5 h-5 text-amber-600 shrink-0" />
-        <p className="flex-1 text-[12.5px] font-semibold text-amber-900">{t('ord.status.PENDING')}</p>
+        <Icon name="alert" className="w-5 h-5 text-lilac-600 shrink-0" />
+        <p className="flex-1 text-[12.5px] font-semibold text-lilac-600">{t('ord.status.PENDING')}</p>
         <IconButton icon="card" tone="primary" label={paying ? t('ord.redirecting') : t('ord.pay')} onClick={handlePay} disabled={paying} />
       </div>
       <FieldError message={error} />

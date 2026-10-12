@@ -478,7 +478,7 @@ export default function CheckoutPage() {
                     )}
                   </fieldset>
                 </div>
-                <p className="mt-5 bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800">{t('co.gift.note')}</p>
+                <p className="mt-5 bg-lilac-50 border border-lilac-100 rounded-lg p-3 text-xs text-lilac-600">{t('co.gift.note')}</p>
                 <FormAlert message={error} missing={countErrors(errs)} className="mt-4" />
                 <div className="flex gap-3 mt-6">
                   {stepIndex > 0 && <button type="button" onClick={back} className={secondary}>{t('co.back')}</button>}
@@ -521,13 +521,13 @@ export default function CheckoutPage() {
             {step === 'delivery' && (
               <section className="bg-white rounded-2xl border border-gray-100 p-6 sm:p-8">
                 {isGift && (
-                  <div className="mb-6 bg-amber-50 border border-amber-200 rounded-xl p-4">
-                    <p className="text-sm font-bold text-amber-900">{fill(t('co.gift.for'), { name: form.giftRecipientName })}</p>
-                    {giftDog.name && <p className="text-xs text-amber-800">🐶 {giftDog.name}</p>}
-                    {form.giftRecipientEmail && <p className="text-xs text-amber-800">{form.giftRecipientEmail}</p>}
-                    {form.giftMessage && <p className="text-xs italic text-amber-800 mt-2">“{form.giftMessage}”</p>}
-                    {giftLater && form.giftSendOn && <p className="text-xs text-amber-800 mt-2">📅 {fill(t('co.gift.sendsOn'), { date: formatDate(new Date(`${form.giftSendOn}T09:00:00+04:00`), lang, { day: 'numeric', month: 'long', year: 'numeric' }) })}</p>}
-                    <p className="text-xs text-amber-700 mt-2 pt-2 border-t border-amber-200">{fill(t('co.gift.billingNote'), { name: form.giftRecipientName })}</p>
+                  <div className="mb-6 bg-lilac-50 border border-lilac-100 rounded-xl p-4">
+                    <p className="text-sm font-bold text-lilac-600">{fill(t('co.gift.for'), { name: form.giftRecipientName })}</p>
+                    {giftDog.name && <p className="text-xs text-gray-600">🐶 {giftDog.name}</p>}
+                    {form.giftRecipientEmail && <p className="text-xs text-gray-600">{form.giftRecipientEmail}</p>}
+                    {form.giftMessage && <p className="text-xs italic text-gray-600 mt-2">“{form.giftMessage}”</p>}
+                    {giftLater && form.giftSendOn && <p className="text-xs text-gray-600 mt-2">📅 {fill(t('co.gift.sendsOn'), { date: formatDate(new Date(`${form.giftSendOn}T09:00:00+04:00`), lang, { day: 'numeric', month: 'long', year: 'numeric' }) })}</p>}
+                    <p className="text-xs text-lilac-600 mt-2 pt-2 border-t border-lilac-100">{fill(t('co.gift.billingNote'), { name: form.giftRecipientName })}</p>
                   </div>
                 )}
                 <Heading kind="form" as="h1" title={isGift ? t('co.delivery.giftTitle') : t('co.delivery.title')}

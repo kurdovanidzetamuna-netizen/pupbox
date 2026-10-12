@@ -84,9 +84,9 @@ export default function PlanCard({ plan, isGift = false, labels: L }: Props) {
 
   // Soft & friendly: every card is light; the featured one gets a mint wash,
   // a gentle glow and the one filled button.
-  const tone = isGift ? 'peach' : 'teal';
+  const tone = isGift ? 'lilac' : 'teal';
   const check = (
-    <span className={`shrink-0 mt-0.5 w-5 h-5 rounded-full flex items-center justify-center ${tone === 'peach' ? 'bg-peach-100 text-peach-600' : 'bg-teal-100 text-teal-700'}`} aria-hidden="true">
+    <span className={`shrink-0 mt-0.5 w-5 h-5 rounded-full flex items-center justify-center ${tone === 'lilac' ? 'bg-lilac-100 text-lilac-600' : 'bg-teal-100 text-teal-700'}`} aria-hidden="true">
       <svg className="w-3 h-3" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round"><path d="M2.5 6.2l2.2 2.2 4.8-4.9" /></svg>
     </span>
   );
@@ -104,14 +104,14 @@ export default function PlanCard({ plan, isGift = false, labels: L }: Props) {
       className={`group relative w-full flex flex-col text-left rounded-3xl p-5 cursor-pointer transition-all duration-300 hover:-translate-y-1.5 focus:outline-none focus-visible:ring-4 focus-visible:ring-teal-200 ${
         featured
           ? isGift
-            ? 'bg-gradient-to-b from-peach-50 to-white ring-2 ring-peach-400/60'
+            ? 'bg-gradient-to-b from-lilac-50 to-white ring-2 ring-lilac-400/60'
             : 'bg-gradient-to-b from-teal-50 via-white to-white ring-2 ring-teal-300'
           : 'bg-white ring-1 ring-gray-200/70 hover:ring-teal-200'
       }`}
     >
       {featured && (
         <span className={`absolute -top-3.5 left-1/2 -translate-x-1/2 text-xs font-bold px-4 py-1.5 rounded-full whitespace-nowrap ${
-          isGift ? 'bg-peach-100 text-peach-600 ring-1 ring-peach-400/40' : isPopular ? 'bg-teal-100 text-teal-800 ring-1 ring-teal-300' : 'bg-lilac-100 text-lilac-600 ring-1 ring-lilac-400/40'}`}>
+          isGift ? 'bg-lilac-100 text-lilac-600 ring-1 ring-lilac-400/40' : isPopular ? 'bg-teal-100 text-teal-800 ring-1 ring-teal-300' : 'bg-teal-50 text-teal-700 ring-1 ring-teal-200'}`}>
           {label}
         </span>
       )}
@@ -151,7 +151,7 @@ export default function PlanCard({ plan, isGift = false, labels: L }: Props) {
         {moreBenefits > 0 && (
           <li className="pl-7">
             <button type="button" onClick={e => { e.stopPropagation(); setShowAll(true); }}
-              className={`inline-flex items-center gap-1 h-7 px-2.5 -ml-1 rounded-full text-xs font-semibold transition-colors ${tone === 'peach' ? 'text-peach-600 bg-peach-50 hover:bg-peach-100' : 'text-teal-700 bg-teal-50 hover:bg-teal-100'}`}>
+              className={`inline-flex items-center gap-1 h-7 px-2.5 -ml-1 rounded-full text-xs font-semibold transition-colors ${tone === 'lilac' ? 'text-lilac-600 bg-lilac-50 hover:bg-lilac-100' : 'text-teal-700 bg-teal-50 hover:bg-teal-100'}`}>
               {fill(L.more, { n: moreBenefits })}
               <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>
             </button>
@@ -164,10 +164,10 @@ export default function PlanCard({ plan, isGift = false, labels: L }: Props) {
         className={`w-full flex items-center justify-center gap-2 py-3 rounded-full font-bold text-sm transition-all duration-200 focus:outline-none focus-visible:ring-4 focus-visible:ring-teal-200 ${
           featured
             ? isGift
-              ? 'bg-peach-400 text-white group-hover:bg-peach-600'
+              ? 'bg-lilac-400 text-white group-hover:bg-lilac-600'
               : 'bg-teal-500 text-white group-hover:bg-teal-600'
             : isGift
-              ? 'bg-peach-50 text-peach-600 group-hover:bg-peach-100'
+              ? 'bg-lilac-50 text-lilac-600 group-hover:bg-lilac-100'
               : 'bg-teal-50 text-teal-700 group-hover:bg-teal-100'
         }`}
       >

@@ -14,7 +14,7 @@ import { Icon } from '@/components/ui/icons';
 import PawTrail from '@/components/PawTrail';
 import { birthdayLine, dogAge, SIZE_SHORT } from '@/lib/dog';
 
-const TINTS = ['bg-teal-50', 'bg-lilac-50', 'bg-amber-50', 'bg-sky-50'];
+const TINTS = ['bg-teal-50', 'bg-lilac-50', 'bg-sky-50', 'bg-teal-50/60'];
 
 /**
  * My dogs: small cards, each opening the dog's profile — a photo (or a
