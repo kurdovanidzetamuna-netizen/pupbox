@@ -198,6 +198,7 @@ model User {
   referralsReceived Referral[] @relation("ReferralInvited")
   couponUsages   CouponUsage[]
   carts          Cart[]
+  customBoxes    CustomBox[]
 
   // Registration counts per period drive the customers card and its chart.
   @@index([createdAt])
@@ -397,6 +398,8 @@ model Product {
   status           ProductStatus  @default(DRAFT)
   type             ProductType    @default(PHYSICAL)
   includedInBox    Boolean        @default(false)
+  /// Customers may put it in a box they build themselves.
+  inCustomBox      Boolean        @default(false)
   standaloneSale   Boolean        @default(true)
   seoTitle         String?
   seoDesc          String?
@@ -411,6 +414,7 @@ model Product {
   orderItems       OrderItem[]
   boxItems         BoxCampaignProduct[]
   cartItems        CartItem[]
+  customBoxItems   CustomBoxItem[]
 }
 
 model ProductImage {
@@ -473,6 +477,9 @@ model SubscriptionPlan {
   badge               String?      // "popular", "best_value", "new"
   isActive            Boolean      @default(true)
   sortOrder           Int          @default(0)
+  /// The built-in plan behind monthly custom boxes: never listed or sold on
+  /// its own; its price comes from each customer's box.
+  isCustomBox         Boolean      @default(false)
   seoTitle            String?
   seoDesc             String?
   createdAt           DateTime     @default(now())
@@ -521,6 +528,10 @@ model CustomerSubscription {
   purchasedBy        User?     @relation("GiftPurchaser", fields: [purchasedByUserId], references: [id])
   giftClaimToken     String?   @unique
   giftClaimedAt      DateTime?
+
+  /// A monthly box the customer built: its products go in every box.
+  customBoxId   String?
+  customBox     CustomBox?         @relation(fields: [customBoxId], references: [id])
 
   orders        Order[]
   shipments     BoxShipment[]
@@ -592,6 +603,9 @@ model CartItem {
   price              Decimal           @db.Decimal(10, 2)
   /// What the customer chose for a personalised product: { engraving?, size? }.
   personalisation    Json?
+  /// A box the customer built (one line for the whole box).
+  customBoxId        String?
+  customBox          CustomBox?        @relation(fields: [customBoxId], references: [id])
   createdAt          DateTime          @default(now())
   updatedAt          DateTime          @updatedAt
 }
@@ -682,6 +696,9 @@ model OrderItem {
   /// The payout that settled this line with the seller (none = not paid yet).
   payoutId         String?
   payout           SellerPayout?     @relation(fields: [payoutId], references: [id])
+  /// The built box this line belongs to (its products, its packing fee).
+  customBoxId      String?
+  customBox        CustomBox?        @relation(fields: [customBoxId], references: [id])
   createdAt        DateTime          @default(now())
 
   // Channel attribution reads items by order, and the top-products /
@@ -1123,4 +1140,33 @@ model ProductSupply {
   marginType  MarginType @default(FIXED)
   marginValue Decimal    @default(0) @db.Decimal(10, 2)
   updatedAt   DateTime   @updatedAt
+}
+
+/// A box a customer built from products admin allows ("Can go in a custom
+/// box"). Bought once (its products become order lines) or every month
+/// (a subscription whose boxes hold these products).
+model CustomBox {
+  id            String          @id @default(cuid())
+  userId        String?
+  user          User?           @relation(fields: [userId], references: [id])
+  /// Every month (a subscription) or just once.
+  monthly       Boolean         @default(false)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  items         CustomBoxItem[]
+  cartItems     CartItem[]
+  orderItems    OrderItem[]
+  subscriptions CustomerSubscription[]
+}
+
+model CustomBoxItem {
+  id        String    @id @default(cuid())
+  boxId     String
+  box       CustomBox @relation(fields: [boxId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product   @relation(fields: [productId], references: [id])
+  quantity  Int       @default(1)
+
+  @@unique([boxId, productId])
 }

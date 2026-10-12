@@ -30,6 +30,7 @@ import { EmailModule } from './modules/email/email.module';
 import { SmsModule } from './modules/sms/sms.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { SellersModule } from './modules/sellers/sellers.module';
+import { CustomBoxModule } from './modules/custom-box/custom-box.module';
 import { CrmModule } from './modules/crm/crm.module';
 import { CouponsModule } from './modules/coupons/coupons.module';
 import { AdminUsersModule } from './modules/admin-users/admin-users.module';
@@ -70,6 +71,7 @@ import { UploadModule } from './modules/upload/upload.module';
     SmsModule,
     NotificationsModule,
     SellersModule,
+    CustomBoxModule,
     CrmModule,
     AuditModule,
     BoxCampaignsModule,

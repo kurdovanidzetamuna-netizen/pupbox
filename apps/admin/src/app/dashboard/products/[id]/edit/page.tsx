@@ -28,7 +28,7 @@ export default function EditProductPage() {
 
   const [form, setForm] = useState({
     name: '', slug: '', sku: '', brand: '', shortDescription: '', description: '',
-    price: '', salePrice: '', categoryId: '', includedInBox: false, standaloneSale: true,
+    price: '', salePrice: '', categoryId: '', includedInBox: false, standaloneSale: true, inCustomBox: false,
     seoTitle: '', seoDesc: '', stockQuantity: '', lowStockAlert: '',
   });
   const [images, setImages] = useState<any[]>([]);
@@ -73,6 +73,7 @@ export default function EditProductPage() {
         categoryId: product.category?.id || product.categoryId || '',
         includedInBox: product.includedInBox ?? false,
         standaloneSale: product.standaloneSale ?? true,
+        inCustomBox: product.inCustomBox ?? false,
         seoTitle: product.seoTitle || '',
         seoDesc: product.seoDesc || '',
         stockQuantity: product.inventory?.quantity != null ? String(product.inventory.quantity) : '',
@@ -191,7 +192,7 @@ export default function EditProductPage() {
     const body: any = {
       name: form.name, slug: form.slug, sku: form.sku,
       price: Number(form.price),
-      includedInBox: form.includedInBox, standaloneSale: form.standaloneSale,
+      includedInBox: form.includedInBox, standaloneSale: form.standaloneSale, inCustomBox: form.inCustomBox,
     };
     if (form.brand) body.brand = form.brand;
     if (form.shortDescription) body.shortDescription = form.shortDescription;
@@ -411,7 +412,7 @@ export default function EditProductPage() {
                 </select>
               </FormField>
             </div>
-            <div style={{ display: 'flex', gap: 20, marginTop: 14 }}>
+            <div style={{ display: 'flex', gap: 20, marginTop: 14, flexWrap: 'wrap' }}>
               <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--slate-600)', cursor: 'pointer' }}>
                 <input type="checkbox" checked={form.includedInBox} onChange={e => set('includedInBox', e.target.checked)} />
                 Included in box
@@ -419,6 +420,10 @@ export default function EditProductPage() {
               <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--slate-600)', cursor: 'pointer' }}>
                 <input type="checkbox" checked={form.standaloneSale} onChange={e => set('standaloneSale', e.target.checked)} />
                 Standalone sale
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--slate-600)', cursor: 'pointer' }} title="Shown on the build-your-own box page. Products that need a size or a name are left out.">
+                <input type="checkbox" checked={form.inCustomBox} onChange={e => set('inCustomBox', e.target.checked)} />
+                Can go in a custom box
               </label>
             </div>
           </div>

@@ -5,6 +5,23 @@ import type { EmailService } from '../email/email.service';
 import { shopSettings } from '../settings/settings';
 import { subscriptionPeriod } from './subscription-period';
 import { cancelUnpaidOrder } from '../orders/order-lifecycle';
+import { boxLines, quoteBox } from '../custom-box/custom-box';
+
+/**
+ * What the next term costs, as an order line. A plan: its price. A monthly
+ * box the customer built: its products at today's prices (less the monthly
+ * discount) plus packing — products no longer available are left out; null
+ * when too few are left to make a box.
+ */
+async function termLine(prisma: PrismaService, s: { customBoxId: string | null; plan: { id: string; name: string; price: any } }) {
+  if (!s.customBoxId) {
+    const price = Number(s.plan.price);
+    return { price, item: { subscriptionPlanId: s.plan.id, name: s.plan.name, price, quantity: 1, total: price } };
+  }
+  const q = await quoteBox(prisma, await boxLines(prisma, s.customBoxId), true, { strict: false });
+  if (!q.ok) return null;
+  return { price: q.total, item: { subscriptionPlanId: s.plan.id, customBoxId: s.customBoxId, name: s.plan.name, price: q.total, quantity: 1, total: q.total } };
+}
 
 const logger = new Logger('Renewals');
 const DAY = 86400_000;
@@ -26,7 +43,7 @@ export async function createDueRenewals(prisma: PrismaService, email: EmailServi
       nextRenewalAt: { not: null, lte: new Date(now.getTime() + renewalNoticeDays * DAY), gt: new Date(now.getTime() - renewalGraceDays * DAY) },
     },
     select: {
-      id: true, userId: true, addressId: true, dogId: true, nextRenewalAt: true,
+      id: true, userId: true, addressId: true, dogId: true, nextRenewalAt: true, customBoxId: true,
       plan: { select: { id: true, name: true, slug: true, price: true, isActive: true, deletedAt: true, translations: true } },
       user: { select: { email: true, firstName: true, language: true, deletedAt: true } },
     },
@@ -42,13 +59,20 @@ export async function createDueRenewals(prisma: PrismaService, email: EmailServi
       await prisma.customerSubscription.update({ where: { id: s.id }, data: { autoRenewal: false, nextRenewalAt: null } });
       continue;
     }
-    const price = Number(s.plan.price);
+    const term = await termLine(prisma, s);
+    if (!term) {
+      // A built box whose products are mostly gone: it can't renew; it ends at its date.
+      await prisma.customerSubscription.update({ where: { id: s.id }, data: { autoRenewal: false, nextRenewalAt: null } });
+      logger.warn(`Box subscription ${s.id} not renewed: too few of its products are still available`);
+      continue;
+    }
+    const price = term.price;
     const order = await prisma.order.create({
       data: {
         userId: s.userId, subscriptionId: s.id, addressId: s.addressId, dogId: s.dogId,
         type: 'RENEWAL', status: 'PENDING', renewalFor: s.nextRenewalAt,
         subtotal: price, deliveryCost: 0, discountAmount: 0, total: price,
-        items: { create: [{ subscriptionPlanId: s.plan.id, name: s.plan.name, price, quantity: 1, total: price }] },
+        items: { create: [term.item] },
       },
       select: { id: true },
     });
@@ -74,7 +98,7 @@ export async function createExtension(prisma: PrismaService, subscriptionId: str
   const s = await prisma.customerSubscription.findFirst({
     where: { id: subscriptionId, userId },
     select: {
-      id: true, status: true, cancelledAt: true, addressId: true, dogId: true, endDate: true,
+      id: true, status: true, cancelledAt: true, addressId: true, dogId: true, endDate: true, customBoxId: true,
       plan: { select: { id: true, name: true, price: true, isActive: true, deletedAt: true } },
     },
   });
@@ -83,13 +107,15 @@ export async function createExtension(prisma: PrismaService, subscriptionId: str
   if (!s.plan.isActive || s.plan.deletedAt) throw new BadRequestException('This plan is no longer sold, so it can’t be extended. Choose a new plan instead.');
   const open = await prisma.order.findFirst({ where: { subscriptionId: s.id, type: 'RENEWAL', status: 'PENDING' }, select: { id: true, total: true } });
   if (open) return { orderId: open.id, total: Number(open.total) };
-  const price = Number(s.plan.price);
+  const term = await termLine(prisma, s);
+  if (!term) throw new BadRequestException('Too few of the products in your box are still available. Build a new box instead.');
+  const price = term.price;
   const order = await prisma.order.create({
     data: {
       userId, subscriptionId: s.id, addressId: s.addressId, dogId: s.dogId,
       type: 'RENEWAL', status: 'PENDING', renewalFor: s.endDate ?? new Date(),
       subtotal: price, deliveryCost: 0, discountAmount: 0, total: price,
-      items: { create: [{ subscriptionPlanId: s.plan.id, name: s.plan.name, price, quantity: 1, total: price }] },
+      items: { create: [term.item] },
     },
     select: { id: true },
   });

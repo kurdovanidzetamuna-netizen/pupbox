@@ -16,6 +16,8 @@ export class CreateProductDto {
   @IsOptional() @Type(() => Number) @IsNumber() @Min(0) salePrice?: number;
   @IsOptional() @IsBoolean() includedInBox?: boolean;
   @IsOptional() @IsBoolean() standaloneSale?: boolean;
+  /** Customers may put it in a box they build. */
+  @IsOptional() @IsBoolean() inCustomBox?: boolean;
   @IsOptional() @IsString() seoTitle?: string;
   @IsOptional() @IsString() seoDesc?: string;
   @IsOptional() @IsString() status?: string;

@@ -22,7 +22,7 @@ function Card({ title, intro, children }: { title: string; intro: ReactNode; chi
 /** Shop rules admin can change without a developer. Stored as the CMS row config-settings; they apply at once. */
 export default function SettingsPage() {
   const [content, setContent] = useState<any>({});
-  const [v, setV] = useState({ freeHours: '12', noticeDays: '7', graceDays: '3', orderEmail: '' });
+  const [v, setV] = useState({ freeHours: '12', noticeDays: '7', graceDays: '3', orderEmail: '', boxMin: '3', boxFee: '5', boxMonthly: '10' });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
@@ -36,6 +36,9 @@ export default function SettingsPage() {
         noticeDays: String(c.renewal?.noticeDays ?? 7),
         graceDays: String(c.renewal?.graceDays ?? 3),
         orderEmail: c.notifications?.orderEmail ?? '',
+        boxMin: String(c.customBox?.minItems ?? 3),
+        boxFee: String(c.customBox?.packingFee ?? 5),
+        boxMonthly: String(c.customBox?.monthlyDiscount ?? 10),
       });
     }).finally(() => setLoading(false));
   }, []);
@@ -47,6 +50,10 @@ export default function SettingsPage() {
     if (!(freeHours >= 0 && freeHours <= 720)) return setMsg({ ok: false, text: 'Free cancellation: 0 to 720 hours.' });
     if (!(noticeDays >= 1 && noticeDays <= 60)) return setMsg({ ok: false, text: 'Renewal reminder: 1 to 60 days.' });
     if (!(graceDays >= 0 && graceDays <= 60)) return setMsg({ ok: false, text: 'Time to pay a renewal: 0 to 60 days.' });
+    const minItems = Number(v.boxMin), packingFee = Number(v.boxFee), monthlyDiscount = Number(v.boxMonthly);
+    if (!(Number.isInteger(minItems) && minItems >= 1 && minItems <= 50)) return setMsg({ ok: false, text: 'Custom box: at least 1 to 50 items.' });
+    if (!(packingFee >= 0 && packingFee <= 500)) return setMsg({ ok: false, text: 'Custom box packing fee: ₾0 to ₾500.' });
+    if (!(monthlyDiscount >= 0 && monthlyDiscount <= 90)) return setMsg({ ok: false, text: 'Monthly box discount: 0 to 90%.' });
     const orderEmail = v.orderEmail.trim();
     if (orderEmail && !/^\S+@\S+\.\S+$/.test(orderEmail)) return setMsg({ ok: false, text: 'Enter a valid email address, or leave it empty.' });
     setSaving(true); setMsg(null);
@@ -55,6 +62,7 @@ export default function SettingsPage() {
       cancellation: { ...(content.cancellation ?? {}), freeHours },
       renewal: { ...(content.renewal ?? {}), noticeDays, graceDays },
       notifications: { ...(content.notifications ?? {}), orderEmail },
+      customBox: { ...(content.customBox ?? {}), minItems, packingFee, monthlyDiscount },
     };
     const res = await fetch(`${API}/cms`, {
       method: 'POST',
@@ -89,6 +97,18 @@ export default function SettingsPage() {
             </label>
             <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 14, color: 'var(--slate-700)' }}>
               End the plan if unpaid <input type="number" min={0} max={60} value={v.graceDays} onChange={set('graceDays')} style={numInput} /> days after the term ends
+            </label>
+          </Card>
+
+          <Card title="Build-your-own box" intro="Customers fill a box with products marked “Can go in a custom box” (on each product’s page), and buy it once or every month. Its price is the products’ shop prices plus the packing fee; a monthly box gets the discount on the products.">
+            <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 14, color: 'var(--slate-700)', marginBottom: 10 }}>
+              At least <input type="number" min={1} max={50} value={v.boxMin} onChange={set('boxMin')} style={numInput} /> items in a box
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 14, color: 'var(--slate-700)', marginBottom: 10 }}>
+              Packing fee ₾ <input type="number" min={0} max={500} step="0.5" value={v.boxFee} onChange={set('boxFee')} style={numInput} /> per box
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 14, color: 'var(--slate-700)' }}>
+              Monthly box: <input type="number" min={0} max={90} value={v.boxMonthly} onChange={set('boxMonthly')} style={numInput} /> % off the products
             </label>
           </Card>
 

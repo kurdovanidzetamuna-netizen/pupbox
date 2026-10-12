@@ -7,13 +7,13 @@ export class SubscriptionPlansService {
 
   findAll(adminView = false) {
     return this.prisma.subscriptionPlan.findMany({
-      where: { deletedAt: null, ...(adminView ? {} : { isActive: true }) },
+      where: { deletedAt: null, isCustomBox: false, ...(adminView ? {} : { isActive: true }) },
       orderBy: [{ sortOrder: 'asc' }, { price: 'asc' }],
     });
   }
 
   async findOne(slug: string) {
-    const plan = await this.prisma.subscriptionPlan.findFirst({ where: { slug, deletedAt: null } });
+    const plan = await this.prisma.subscriptionPlan.findFirst({ where: { slug, deletedAt: null, isCustomBox: false } });
     if (!plan) throw new NotFoundException('Plan not found');
     return plan;
   }

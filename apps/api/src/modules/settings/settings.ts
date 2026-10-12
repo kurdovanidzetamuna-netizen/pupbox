@@ -12,9 +12,14 @@ export interface ShopSettings {
   renewalGraceDays: number;
   /** Where "new order" emails go; empty = none. */
   orderNotifyEmail: string;
+  /** Building your own box: at least this many items, a packing fee, and % off the products for a monthly box. */
+  customBox: { minItems: number; packingFee: number; monthlyDiscount: number };
 }
 
-const DEFAULTS: ShopSettings = { freeCancelHours: 12, renewalNoticeDays: 7, renewalGraceDays: 3, orderNotifyEmail: '' };
+const DEFAULTS: ShopSettings = {
+  freeCancelHours: 12, renewalNoticeDays: 7, renewalGraceDays: 3, orderNotifyEmail: '',
+  customBox: { minItems: 3, packingFee: 5, monthlyDiscount: 10 },
+};
 
 const num = (v: unknown, fallback: number, max: number) => {
   const n = Number(v);
@@ -29,5 +34,10 @@ export async function shopSettings(prisma: PrismaService): Promise<ShopSettings>
     renewalNoticeDays: num(c.renewal?.noticeDays, DEFAULTS.renewalNoticeDays, 60),
     renewalGraceDays: num(c.renewal?.graceDays, DEFAULTS.renewalGraceDays, 60),
     orderNotifyEmail: typeof c.notifications?.orderEmail === 'string' ? c.notifications.orderEmail.trim() : '',
+    customBox: {
+      minItems: Math.max(1, Math.round(num(c.customBox?.minItems, DEFAULTS.customBox.minItems, 50))),
+      packingFee: num(c.customBox?.packingFee, DEFAULTS.customBox.packingFee, 500),
+      monthlyDiscount: num(c.customBox?.monthlyDiscount, DEFAULTS.customBox.monthlyDiscount, 90),
+    },
   };
 }

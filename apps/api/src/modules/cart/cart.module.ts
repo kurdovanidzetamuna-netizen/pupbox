@@ -4,7 +4,7 @@ import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, Request, Qu
 import { AuthGuard } from '@nestjs/passport';
 import { OptionalJwtGuard } from '../auth/optional-jwt.guard';
 import { ApiBearerAuth, ApiTags, ApiOperation } from '@nestjs/swagger';
-import { IsOptional, IsString, IsNumber, IsUUID, Min, MaxLength, ValidateNested } from 'class-validator';
+import { IsOptional, IsString, IsNumber, IsUUID, Min, MaxLength, ValidateNested, IsArray, ArrayMaxSize, IsBoolean } from 'class-validator';
 import { Type } from 'class-transformer';
 
 class PersonalisationDto {
@@ -17,6 +17,17 @@ class AddItemDto {
   @IsOptional() @ValidateNested() @Type(() => PersonalisationDto) personalisation?: PersonalisationDto;
   @IsOptional() @IsString() subscriptionPlanId?: string;
   @IsOptional() @Type(() => Number) @IsNumber() @Min(1) quantity?: number;
+}
+
+class BoxLineDto {
+  @IsString() productId: string;
+  @Type(() => Number) @IsNumber() @Min(1) quantity: number;
+}
+
+class AddBoxDto {
+  @IsArray() @ArrayMaxSize(60) @ValidateNested({ each: true }) @Type(() => BoxLineDto) items: BoxLineDto[];
+  @IsOptional() @IsBoolean() monthly?: boolean;
+  @IsOptional() @IsString() replaceItemId?: string;
 }
 
 class UpdateItemDto {
@@ -60,6 +71,13 @@ export class CartController {
   addItem(@Request() req: any, @Headers() headers: any, @Body() dto: AddItemDto) {
     const { userId, sessionId } = this.resolveSession(req, headers);
     return this.service.getOrCreate(userId, sessionId).then(cart => this.service.addItem(cart.id, dto));
+  }
+
+  @Post('custom-box')
+  @ApiOperation({ summary: 'Put a box the customer built in the cart (or replace the one being edited)' })
+  addBox(@Request() req: any, @Headers() headers: any, @Body() dto: AddBoxDto) {
+    const { userId, sessionId } = this.resolveSession(req, headers);
+    return this.service.getOrCreate(userId, sessionId).then(cart => this.service.addBox(cart.id, userId, { items: dto.items, monthly: !!dto.monthly, replaceItemId: dto.replaceItemId }));
   }
 
   @Put('items/:itemId')

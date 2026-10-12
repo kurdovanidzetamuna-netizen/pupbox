@@ -31,6 +31,8 @@ const shipmentInclude = {
     select: {
       id: true, boxesTotal: true, boxesDelivered: true, isGift: true, status: true, cancelledAt: true,
       plan: { select: { name: true } },
+      // A box the customer built: these products instead of the month's campaign.
+      customBox: { select: { id: true, items: { select: { quantity: true, product: { select: { id: true, name: true, sku: true, allergens: true, inventory: { select: { quantity: true, reservedQty: true } } } } } } } },
       user: { select: { id: true, email: true, firstName: true, lastName: true, language: true } },
       dog: { select: { name: true, breed: true, size: true, allergies: true, specialNotes: true } },
       // A gift's purchase carries who it's for and the buyer's message.
@@ -40,6 +42,10 @@ const shipmentInclude = {
   address: true,
   campaign: { select: { id: true, name: true, dogSize: true, products: { select: { quantity: true, product: { select: { id: true, name: true, sku: true, allergens: true, inventory: { select: { quantity: true, reservedQty: true } } } } } } } },
 } satisfies Prisma.BoxShipmentInclude;
+
+/** What goes in a box: the customer's own products, else the month's campaign. */
+const contentsOf = (s: { subscription: { customBox: { items: any[] } | null }; campaign: { products: any[] } | null }) =>
+  s.subscription.customBox ? s.subscription.customBox.items : s.campaign?.products ?? [];
 
 function monthWindow(year: number, month: number) {
   if (!Number.isInteger(year) || !Number.isInteger(month) || month < 1 || month > 12) throw new BadRequestException('Choose a valid month');
@@ -72,7 +78,7 @@ export class BoxShipmentsService {
         shipments: { none: { year, month } },
       },
       select: {
-        id: true, userId: true, isGift: true, addressId: true, boxesTotal: true, boxesDelivered: true,
+        id: true, userId: true, isGift: true, addressId: true, boxesTotal: true, boxesDelivered: true, customBoxId: true,
         dog: { select: { size: true } },
         _count: { select: { shipments: { where: { status: { in: ['TO_PACK', 'PACKED'] } } } } },
       },
@@ -119,7 +125,7 @@ export class BoxShipmentsService {
     const pick = new Map<string, { name: string; sku: string; quantity: number; inStock: number; short: boolean }>();
     for (const s of items) {
       if (s.status !== 'TO_PACK') continue;
-      for (const p of s.campaign?.products ?? []) {
+      for (const p of contentsOf(s)) {
         const inv = p.product.inventory;
         const row = pick.get(p.product.id) ?? { name: p.product.name, sku: p.product.sku, quantity: 0, inStock: Math.max(0, (inv?.quantity ?? 0) - (inv?.reservedQty ?? 0)), short: false };
         row.quantity += p.quantity;
@@ -134,9 +140,11 @@ export class BoxShipmentsService {
       gift: i.subscription.isGift
         ? { for: i.subscription.orders[0]?.giftRecipientName ?? null, message: i.subscription.orders[0]?.giftMessage ?? null }
         : null,
-      clashes: (i.campaign?.products ?? [])
-        .map((p) => ({ product: p.product.name, allergens: allergenClash(i.subscription.dog?.allergies, p.product.allergens) }))
-        .filter((c) => c.allergens.length),
+      // The customer's own box, listed so it can be packed without a campaign.
+      ownBox: i.subscription.customBox ? i.subscription.customBox.items.map((x) => ({ name: x.product.name, sku: x.product.sku, quantity: x.quantity })) : null,
+      clashes: contentsOf(i)
+        .map((p: any) => ({ product: p.product.name, allergens: allergenClash(i.subscription.dog?.allergies, p.product.allergens) }))
+        .filter((c: any) => c.allergens.length),
     }));
 
     const counts = Object.fromEntries((['TO_PACK', 'PACKED', 'SHIPPED', 'DELIVERED', 'CANCELLED'] as const).map((st) => [st, items.filter((i) => i.status === st).length]));
@@ -146,7 +154,7 @@ export class BoxShipmentsService {
       shortOfStock: [...pick.values()].filter((p) => p.short).length,
       waiting: waiting.length,
       campaigns,
-      withoutCampaign: items.filter((i) => !i.campaignId && i.status !== 'CANCELLED').length,
+      withoutCampaign: items.filter((i) => !i.campaignId && !i.subscription.customBox && i.status !== 'CANCELLED').length,
       withoutAddress: items.filter((i) => !i.addressId && i.status !== 'CANCELLED').length,
       // Listed while active, cancelled since: someone must decide whether it still goes.
       cancelledSubscriptions: items.filter((i) => (i.status === 'TO_PACK' || i.status === 'PACKED') && i.subscription.status === 'CANCELLED').length,
@@ -161,7 +169,8 @@ export class BoxShipmentsService {
 
     let added = 0;
     for (const sub of due) {
-      const campaign = campaigns.find((c) => c.dogSize && c.dogSize === sub.dog?.size) ?? campaigns.find((c) => !c.dogSize) ?? null;
+      // A box the customer built has its own products, not a campaign.
+      const campaign = sub.customBoxId ? null : campaigns.find((c) => c.dogSize && c.dogSize === sub.dog?.size) ?? campaigns.find((c) => !c.dogSize) ?? null;
       try {
         await this.prisma.boxShipment.create({
           data: {
@@ -184,7 +193,7 @@ export class BoxShipmentsService {
   async refreshCampaigns(year: number, month: number) {
     const campaigns = await this.prisma.boxCampaign.findMany({ where: { year, month, isActive: true }, select: { id: true, dogSize: true } });
     const open = await this.prisma.boxShipment.findMany({
-      where: { year, month, status: 'TO_PACK' },
+      where: { year, month, status: 'TO_PACK', subscription: { customBoxId: null } },
       select: { id: true, campaignId: true, subscription: { select: { dog: { select: { size: true } } } } },
     });
     let changed = 0;
@@ -258,8 +267,14 @@ export class BoxShipmentsService {
       data: { stockTakenAt: take ? new Date() : null },
     });
     if (!count) return;
-    const box = await this.prisma.boxShipment.findUnique({ where: { id: shipmentId }, select: { campaign: { select: { products: { select: { productId: true, quantity: true } } } } } });
-    for (const p of box?.campaign?.products ?? []) {
+    const box = await this.prisma.boxShipment.findUnique({
+      where: { id: shipmentId },
+      select: {
+        campaign: { select: { products: { select: { productId: true, quantity: true } } } },
+        subscription: { select: { customBox: { select: { items: { select: { productId: true, quantity: true } } } } } },
+      },
+    });
+    for (const p of box?.subscription.customBox?.items ?? box?.campaign?.products ?? []) {
       const n = take ? -p.quantity : p.quantity;
       await this.prisma.$executeRaw`UPDATE "Inventory" SET "quantity" = GREATEST(0, "quantity" + ${n}), "updatedAt" = now() WHERE "productId" = ${p.productId}`;
       const inv = await this.prisma.inventory.findUnique({ where: { productId: p.productId }, select: { quantity: true } });

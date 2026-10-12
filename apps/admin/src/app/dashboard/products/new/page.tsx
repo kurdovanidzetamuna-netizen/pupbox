@@ -47,7 +47,7 @@ function NewProductForm() {
 
   const [form, setForm] = useState({
     name: '', slug: '', sku: '', brand: '', shortDescription: '', description: '',
-    price: '', salePrice: '', categoryId: '', includedInBox: isBoxItem, standaloneSale: true,
+    price: '', salePrice: '', categoryId: '', includedInBox: isBoxItem, standaloneSale: true, inCustomBox: false,
     seoTitle: '', seoDesc: '', stockQuantity: '0', lowStockAlert: '5',
   });
 
@@ -146,7 +146,7 @@ function NewProductForm() {
     const body: any = {
       name: form.name, slug: form.slug, sku: form.sku,
       price: Number(form.price),
-      includedInBox: form.includedInBox, standaloneSale: form.standaloneSale,
+      includedInBox: form.includedInBox, standaloneSale: form.standaloneSale, inCustomBox: form.inCustomBox,
       stockQuantity: Number(form.stockQuantity), lowStockAlert: Number(form.lowStockAlert),
     };
     if (form.brand) body.brand = form.brand;
@@ -376,7 +376,7 @@ function NewProductForm() {
                 </select>
               </FormField>
             </div>
-            <div style={{ display: 'flex', gap: 20, marginTop: 14 }}>
+            <div style={{ display: 'flex', gap: 20, marginTop: 14, flexWrap: 'wrap' }}>
               <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--slate-600)', cursor: 'pointer' }}>
                 <input type="checkbox" checked={form.includedInBox} onChange={e => set('includedInBox', e.target.checked)} />
                 Included in subscription box
@@ -384,6 +384,10 @@ function NewProductForm() {
               <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--slate-600)', cursor: 'pointer' }}>
                 <input type="checkbox" checked={form.standaloneSale} onChange={e => set('standaloneSale', e.target.checked)} />
                 Available for standalone sale
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--slate-600)', cursor: 'pointer' }} title="Shown on the build-your-own box page. Products that need a size or a name are left out.">
+                <input type="checkbox" checked={form.inCustomBox} onChange={e => set('inCustomBox', e.target.checked)} />
+                Can go in a custom box
               </label>
             </div>
           </div>

@@ -1,0 +1,94 @@
+import { BadRequestException } from '@nestjs/common';
+import type { Prisma } from '@prisma/client';
+import type { PrismaService } from '../prisma/prisma.service';
+import { shopSettings } from '../settings/settings';
+
+/** Products a customer may put in a box they build. */
+export const BOX_PRODUCT_WHERE = {
+  deletedAt: null,
+  inCustomBox: true,
+  status: { in: ['ACTIVE', 'OUT_OF_STOCK'] },
+} satisfies Prisma.ProductWhereInput;
+
+export type BoxLine = { productId: string; quantity: number };
+
+const r2 = (n: number) => Math.round(n * 100) / 100;
+const MAX_PER_PRODUCT = 20;
+
+/** One row per product, whole numbers 1…20. */
+export function tidy(lines: BoxLine[]): BoxLine[] {
+  const by = new Map<string, number>();
+  for (const l of lines ?? []) {
+    const q = Math.floor(Number(l?.quantity));
+    if (!l?.productId || !(q > 0)) continue;
+    by.set(l.productId, Math.min(MAX_PER_PRODUCT, (by.get(l.productId) ?? 0) + q));
+  }
+  return [...by].map(([productId, quantity]) => ({ productId, quantity }));
+}
+
+/**
+ * What a built box costs today. Each product at its shop price (sale price
+ * when there is one) — less the monthly discount for a monthly box — plus the
+ * packing fee. Strict (adding to the basket, checkout): every product must
+ * still be allowed and in stock, and there must be enough items. Lenient
+ * (refreshing a basket, renewals): products no longer allowed or out of stock
+ * are left out; `ok` says whether the box still has enough items.
+ */
+export async function quoteBox(prisma: PrismaService, raw: BoxLine[], monthly: boolean, { strict = true } = {}) {
+  const { customBox: cfg } = await shopSettings(prisma);
+  const lines = tidy(raw);
+  const products = lines.length ? await prisma.product.findMany({
+    where: { id: { in: lines.map((l) => l.productId) } },
+    select: { id: true, name: true, sku: true, price: true, salePrice: true, sellerId: true, deletedAt: true, inCustomBox: true, status: true, personalisation: true, translations: true, inventory: { select: { quantity: true, reservedQty: true } } },
+  }) : [];
+
+  const items: { productId: string; name: string; sku: string | null; sellerId: string | null; quantity: number; unit: number; shopUnit: number; total: number }[] = [];
+  for (const l of lines) {
+    const p = products.find((x) => x.id === l.productId);
+    const allowed = p && !p.deletedAt && p.inCustomBox && ['ACTIVE', 'OUT_OF_STOCK'].includes(p.status) && !p.personalisation;
+    const left = p?.inventory ? Math.max(0, p.inventory.quantity - p.inventory.reservedQty) : 0;
+    if (!allowed || left < l.quantity) {
+      if (!strict) continue;
+      throw new BadRequestException(!allowed
+        ? `${p ? `"${p.name}"` : 'A product'} can no longer go in a custom box. Remove it and try again.`
+        : `Only ${left} of "${p!.name}" left. Lower the amount and try again.`);
+    }
+    const shopUnit = Number(p!.salePrice ?? p!.price);
+    const unit = monthly ? r2(shopUnit * (1 - cfg.monthlyDiscount / 100)) : shopUnit;
+    items.push({ productId: p!.id, name: p!.name, sku: p!.sku, sellerId: p!.sellerId, quantity: l.quantity, unit, shopUnit, total: r2(unit * l.quantity) });
+  }
+
+  const count = items.reduce((n, i) => n + i.quantity, 0);
+  const itemsTotal = r2(items.reduce((n, i) => n + i.total, 0));
+  const fullTotal = r2(items.reduce((n, i) => n + i.shopUnit * i.quantity, 0));
+  const ok = count >= cfg.minItems;
+  if (strict && !ok) throw new BadRequestException(`A custom box needs at least ${cfg.minItems} items.`);
+  const packingFee = count ? cfg.packingFee : 0;
+  return { items, count, itemsTotal, saving: r2(fullTotal - itemsTotal), packingFee, total: r2(itemsTotal + packingFee), minItems: cfg.minItems, ok };
+}
+export type BoxQuote = Awaited<ReturnType<typeof quoteBox>>;
+
+/** A box's saved contents, as lines. */
+export async function boxLines(prisma: PrismaService, boxId: string): Promise<BoxLine[]> {
+  return prisma.customBoxItem.findMany({ where: { boxId }, select: { productId: true, quantity: true } });
+}
+
+export const CUSTOM_PLAN_SLUG = 'custom-box-monthly';
+
+/**
+ * The built-in plan behind monthly custom boxes (a box a month, renewing
+ * monthly, delivery included). Never listed; created on first use.
+ */
+export async function customBoxPlan(prisma: PrismaService) {
+  const found = await prisma.subscriptionPlan.findUnique({ where: { slug: CUSTOM_PLAN_SLUG } });
+  if (found) return found;
+  return prisma.subscriptionPlan.create({
+    data: {
+      slug: CUSTOM_PLAN_SLUG, isCustomBox: true, name: 'My box (monthly)',
+      translations: { ka: { name: 'ჩემი კოლოფი (ყოველთვიური)' } },
+      durationValue: 1, durationUnit: 'MONTH', boxCount: 1, price: 0,
+      deliveryIncluded: true, autoRenewal: true, giftable: false, isActive: true,
+      description: 'A box the customer built, every month.', benefits: [],
+    },
+  });
+}

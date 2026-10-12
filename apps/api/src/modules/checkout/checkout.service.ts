@@ -4,6 +4,7 @@ import { CartService } from '../cart/cart.service';
 import { Prisma } from '@prisma/client';
 import { releaseStock, reserveStock } from '../products/stock';
 import { cancelUnpaidOrder } from '../orders/order-lifecycle';
+import { boxLines, customBoxPlan, quoteBox } from '../custom-box/custom-box';
 
 export interface GiftDetails {
   recipientName: string;
@@ -96,6 +97,7 @@ export class CheckoutService {
     if (!cart.items.length) throw new BadRequestException('Cart is empty');
 
     const gift = data.gift;
+    if (gift && cart.items.some((i: any) => i.customBoxId)) throw new BadRequestException('A box you built can’t be sent as a gift yet. Remove it to send a gift.');
     if (gift) {
       if (!gift.recipientName?.trim()) throw new BadRequestException('Recipient name is required for a gift');
       if (!gift.dog?.name?.trim() || !gift.dog.size) throw new BadRequestException('Tell us the name and size of the dog the gift is for');
@@ -119,9 +121,17 @@ export class CheckoutService {
     const deliveryCost = this.cartService.deliveryCostFor(deliveryMethod, cart, await this.cartService.cheapestDeliveryPrice());
     const total = +(cart.total + deliveryCost).toFixed(2);
 
+    // Built boxes, priced and checked once more: a one-time box becomes its
+    // products (stock held, sellers paid) plus the packing fee; a monthly box
+    // becomes a subscription whose boxes hold those products.
+    const boxes = await Promise.all(cart.items.filter((i: any) => i.customBoxId).map(async (i: any) => ({
+      line: i, monthly: !!i.customBox?.monthly, quote: await quoteBox(this.prisma, await boxLines(this.prisma, i.customBoxId), !!i.customBox?.monthly),
+    })));
+    const boxPlan = boxes.some((b) => b.monthly) ? await customBoxPlan(this.prisma) : null;
+
     // Determine order type
-    const hasSubscription = cart.items.some((i: any) => i.subscriptionPlanId);
-    const hasProducts = cart.items.some((i: any) => i.productId);
+    const hasSubscription = cart.items.some((i: any) => i.subscriptionPlanId) || boxes.some((b) => b.monthly);
+    const hasProducts = cart.items.some((i: any) => i.productId) || boxes.some((b) => !b.monthly);
     const orderType = hasSubscription && hasProducts ? 'MIXED' : hasSubscription ? 'SUBSCRIPTION' : 'PRODUCT';
 
     // A coupon is checked again now: it may have expired, run out, or been
@@ -130,8 +140,10 @@ export class CheckoutService {
 
     // Hold the stock first: if something sold out meanwhile, stop before any
     // order, address or subscription is created.
-    const productLines = cart.items.filter((i: any) => i.productId)
-      .map((i: any) => ({ productId: i.productId, quantity: i.quantity, name: i.product?.name }));
+    const productLines = [
+      ...cart.items.filter((i: any) => i.productId).map((i: any) => ({ productId: i.productId, quantity: i.quantity, name: i.product?.name })),
+      ...boxes.filter((b) => !b.monthly).flatMap((b) => b.quote.items.map((x) => ({ productId: x.productId, quantity: x.quantity, name: x.name }))),
+    ];
     await reserveStock(this.prisma, productLines);
 
     // Create or find address — only one of this customer's own. For a gift
@@ -166,7 +178,7 @@ export class CheckoutService {
 
     // Create order — and hand the held stock back if that fails.
     // Sellers' prices for their products in this basket (admin-only figures).
-    const productIds = cart.items.map((i: any) => i.productId).filter(Boolean) as string[];
+    const productIds = [...cart.items.map((i: any) => i.productId).filter(Boolean), ...boxes.flatMap((b) => b.quote.items.map((x) => x.productId))] as string[];
     const supplies = new Map(
       (productIds.length ? await this.prisma.productSupply.findMany({ where: { productId: { in: productIds } }, select: { productId: true, sellerPrice: true } }) : [])
         .map((x) => [x.productId, x.sellerPrice] as const),
@@ -192,7 +204,7 @@ export class CheckoutService {
           discountAmount: cart.discountAmount,
           total,
           items: {
-            create: cart.items.map((item: any) => ({
+            create: [...cart.items.filter((item: any) => !item.customBoxId).map((item: any) => ({
               productId: item.productId || null,
               subscriptionPlanId: item.subscriptionPlanId || null,
               name: item.product?.name || item.subscriptionPlan?.name || 'Item',
@@ -205,6 +217,16 @@ export class CheckoutService {
               sellerId: item.product?.sellerId ?? null,
               sellerPrice: item.productId ? supplies.get(item.productId) ?? null : null,
             })),
+            ...boxes.flatMap((b) => b.monthly
+              ? [{ subscriptionPlanId: boxPlan!.id, customBoxId: b.line.customBoxId, name: boxPlan!.name, price: b.quote.total, quantity: 1, total: b.quote.total }]
+              : [
+                  ...b.quote.items.map((x) => ({
+                    productId: x.productId, customBoxId: b.line.customBoxId, name: x.name, sku: x.sku, price: x.unit, quantity: x.quantity, total: x.total,
+                    sellerId: x.sellerId, sellerPrice: supplies.get(x.productId) ?? null,
+                  })),
+                  ...(b.quote.packingFee ? [{ customBoxId: b.line.customBoxId, name: 'Custom box — packing', price: b.quote.packingFee, quantity: 1, total: b.quote.packingFee }] : []),
+                ]),
+            ],
           },
         },
         include: { items: true, address: true, deliveryMethod: true },
@@ -236,6 +258,18 @@ export class CheckoutService {
             // Renewal only on an explicit yes: defaulting to true would renew
             // "by default", which consumer law voids (Art. 22(3)(i)).
             autoRenewal: !gift && item.subscriptionPlan.autoRenewal !== false && data.autoRenewal === true,
+          },
+          select: { id: true },
+        });
+        if (!firstSubscriptionId) firstSubscriptionId = created.id;
+      }
+      // A monthly box the customer built: a box a month, renewing monthly
+      // (they chose "every month" when building it).
+      for (const b of boxes.filter((x) => x.monthly)) {
+        const created = await this.prisma.customerSubscription.create({
+          data: {
+            userId, planId: boxPlan!.id, customBoxId: b.line.customBoxId, dogId, addressId: address.id,
+            status: 'PENDING', boxesTotal: 1, autoRenewal: true,
           },
           select: { id: true },
         });

@@ -94,7 +94,7 @@ export default function MonthlyBoxesPage() {
       rows.push([
         `${i.boxNumber}/${s.boxesTotal}`, a ? `${a.firstName} ${a.lastName}` : `${s.user.firstName} ${s.user.lastName}`, a?.phone ?? '', a?.city ?? '',
         a ? [a.addressLine1, a.addressLine2].filter(Boolean).join(', ') : '', s.dog?.name ?? '', SIZE[s.dog?.size] ?? '', (s.dog?.allergies ?? []).join('; '),
-        i.campaign?.name ?? '', i.gift && i.boxNumber === 1 ? `Gift from ${s.user.firstName} ${s.user.lastName}${i.gift.message ? `: ${i.gift.message}` : ''}` : '',
+        i.ownBox ? `Own box: ${i.ownBox.map((x: any) => `${x.quantity}× ${x.name}`).join(', ')}` : i.campaign?.name ?? '', i.gift && i.boxNumber === 1 ? `Gift from ${s.user.firstName} ${s.user.lastName}${i.gift.message ? `: ${i.gift.message}` : ''}` : '',
         STATUS[i.status as Status].label, i.trackingNumber ?? '', mapUrl(a),
       ]);
     }
@@ -259,7 +259,10 @@ export default function MonthlyBoxesPage() {
                     </td>
                     <td style={td}><strong>{i.boxNumber}</strong> of {s.boxesTotal}<div style={{ fontSize: 12, color: 'var(--slate-400)' }}>{s.plan?.name}</div></td>
                     <td style={td}>
-                      {i.campaign?.name ?? <span style={{ color: 'var(--amber-700)' }}>Not set</span>}
+                      {i.ownBox ? <>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--teal-700, #0f766e)', background: 'var(--teal-50, #f0fdfa)', borderRadius: 5, padding: '1px 6px' }}>Customer’s own box</span>
+                        {i.ownBox.map((x: any) => <div key={x.name} style={{ fontSize: 12, marginTop: 3 }}>{x.quantity}× {x.name}</div>)}
+                      </> : i.campaign?.name ?? <span style={{ color: 'var(--amber-700)' }}>Not set</span>}
                       {i.clashes?.map((c: any) => (
                         <div key={c.product} style={{ fontSize: 12, color: 'var(--red-700)', fontWeight: 700, marginTop: 4 }}>⚠ {c.product} contains {c.allergens.join(', ').toLowerCase()} — swap it</div>
                       ))}

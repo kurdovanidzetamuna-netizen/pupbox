@@ -2,6 +2,7 @@ import { Injectable, BadRequestException, NotFoundException } from '@nestjs/comm
 import { PrismaService } from '../prisma/prisma.service';
 import { Prisma } from '@prisma/client';
 import { checkChoice, sameChoice } from '../products/personalisation';
+import { boxLines, quoteBox, tidy, type BoxLine } from '../custom-box/custom-box';
 
 const cartInclude = {
   items: {
@@ -10,6 +11,8 @@ const cartInclude = {
       // The main photo (else the first), and the category for a picture when there's none.
       product: { include: { images: { orderBy: [{ isPrimary: 'desc' as const }, { sortOrder: 'asc' as const }], take: 1 }, inventory: true, category: { select: { slug: true, name: true } } } },
       subscriptionPlan: true,
+      // A built box: what's in it, with names and pictures for the basket.
+      customBox: { include: { items: { orderBy: { id: 'asc' as const }, include: { product: { select: { id: true, name: true, slug: true, translations: true, price: true, salePrice: true, images: { orderBy: [{ isPrimary: 'desc' as const }, { sortOrder: 'asc' as const }], take: 1 }, category: { select: { slug: true, name: true } } } } } } } },
     },
   },
   coupon: true,
@@ -39,6 +42,12 @@ export class CartService {
     if (!guest || guest.id === userCart.id) return userCart;
 
     for (const item of guest.items) {
+      // A built box moves over as it is.
+      if (item.customBoxId) {
+        await this.prisma.cartItem.update({ where: { id: item.id }, data: { cartId: userCart.id } });
+        await this.prisma.customBox.update({ where: { id: item.customBoxId }, data: { userId: userCart.userId } });
+        continue;
+      }
       const match = userCart.items.find((i: any) =>
         item.productId ? i.productId === item.productId && sameChoice(i.personalisation, item.personalisation) : i.subscriptionPlanId === item.subscriptionPlanId);
       if (!match) {
@@ -82,8 +91,12 @@ export class CartService {
     }
 
     if (subscriptionPlanId) {
-      const plan = await this.prisma.subscriptionPlan.findFirst({ where: { id: subscriptionPlanId, isActive: true, deletedAt: null } });
+      // The monthly custom box plan is only bought by building a box.
+      const plan = await this.prisma.subscriptionPlan.findFirst({ where: { id: subscriptionPlanId, isActive: true, deletedAt: null, isCustomBox: false } });
       if (!plan) throw new NotFoundException('Subscription plan not found');
+      if (await this.prisma.cartItem.count({ where: { cartId, customBox: { monthly: true } } })) {
+        throw new BadRequestException('Your basket already has a monthly box. Check that one out first, or remove it, then add a plan.');
+      }
       price = Number(plan.price);
 
       const existing = await this.prisma.cartItem.findFirst({ where: { cartId, subscriptionPlanId } });
@@ -97,9 +110,38 @@ export class CartService {
     return this.getCart(cartId);
   }
 
+  /**
+   * Puts a box the customer built in the basket (or replaces the one they
+   * were editing). A monthly box is a subscription, so it can't share the
+   * basket with another monthly box or a plan.
+   */
+  async addBox(cartId: string, userId: string | undefined, data: { items: BoxLine[]; monthly: boolean; replaceItemId?: string }) {
+    const monthly = !!data.monthly;
+    const quote = await quoteBox(this.prisma, data.items, monthly);
+    const lines = await this.prisma.cartItem.findMany({ where: { cartId }, select: { id: true, customBoxId: true, subscriptionPlanId: true, customBox: { select: { monthly: true } } } });
+    const replacing = data.replaceItemId ? lines.find((l) => l.id === data.replaceItemId && l.customBoxId) : undefined;
+    if (data.replaceItemId && !replacing) throw new NotFoundException('That box is no longer in your basket');
+    if (monthly && lines.some((l) => l.id !== replacing?.id && (l.subscriptionPlanId || l.customBox?.monthly))) {
+      throw new BadRequestException('Your basket already has a subscription. Check that one out first, or remove it, then add your monthly box.');
+    }
+    const box = await this.prisma.customBox.create({
+      data: { userId: userId ?? null, monthly, items: { create: tidy(data.items).map((l) => ({ productId: l.productId, quantity: l.quantity })) } },
+      select: { id: true },
+    });
+    if (replacing) {
+      await this.prisma.cartItem.update({ where: { id: replacing.id }, data: { customBoxId: box.id, price: quote.total, quantity: 1 } });
+      await this.prisma.customBox.deleteMany({ where: { id: replacing.customBoxId!, orderItems: { none: {} }, subscriptions: { none: {} } } });
+    } else {
+      await this.prisma.cartItem.create({ data: { cartId, customBoxId: box.id, price: quote.total, quantity: 1 } });
+    }
+    return this.getCart(cartId);
+  }
+
   async updateItem(cartId: string, itemId: string, quantity: number) {
     const item = await this.prisma.cartItem.findFirst({ where: { id: itemId, cartId } });
     if (!item) throw new NotFoundException('Cart item not found');
+    // A box is one box; its contents change in the builder.
+    if (item.customBoxId && quantity > 1) throw new BadRequestException('To change a box, edit what’s in it.');
     if (quantity <= 0) {
       await this.prisma.cartItem.delete({ where: { id: itemId } });
     } else {
@@ -198,6 +240,26 @@ export class CartService {
   private async refresh(cart: any) {
     let changed = false;
     for (const item of cart.items) {
+      if (item.customBoxId) {
+        // A built box: today's prices; products no longer allowed (or sold
+        // out) drop out, and a box left too small leaves the basket.
+        const lines = await boxLines(this.prisma, item.customBoxId);
+        const q = await quoteBox(this.prisma, lines, !!item.customBox?.monthly, { strict: false });
+        if (!q.ok) {
+          await this.prisma.cartItem.delete({ where: { id: item.id } });
+          changed = true;
+          continue;
+        }
+        if (q.items.length !== lines.length) {
+          await this.prisma.customBoxItem.deleteMany({ where: { boxId: item.customBoxId, productId: { notIn: q.items.map((i) => i.productId) } } });
+          changed = true;
+        }
+        if (Number(item.price) !== q.total) {
+          await this.prisma.cartItem.update({ where: { id: item.id }, data: { price: q.total } });
+          changed = true;
+        }
+        continue;
+      }
       const p = item.product, plan = item.subscriptionPlan;
       const gone = p
         ? !!p.deletedAt || !['ACTIVE', 'OUT_OF_STOCK'].includes(p.status) || !p.standaloneSale
@@ -232,8 +294,9 @@ export class CartService {
     }
 
     const total = Math.max(0, subtotal - discountAmount);
-    const hasSubscription = cart.items.some((i: any) => i.subscriptionPlanId);
-    const deliveryIncluded = cart.items.some((i: any) => i.subscriptionPlan?.deliveryIncluded);
+    // A monthly box is a subscription with delivery included, like a plan.
+    const hasSubscription = cart.items.some((i: any) => i.subscriptionPlanId || i.customBox?.monthly);
+    const deliveryIncluded = cart.items.some((i: any) => i.subscriptionPlan?.deliveryIncluded || i.customBox?.monthly);
 
     return { ...cart, subtotal: +subtotal.toFixed(2), discountAmount: +discountAmount.toFixed(2), total: +total.toFixed(2), hasSubscription, deliveryIncluded, itemCount: cart.items.reduce((s: number, i: any) => s + i.quantity, 0) };
   }
