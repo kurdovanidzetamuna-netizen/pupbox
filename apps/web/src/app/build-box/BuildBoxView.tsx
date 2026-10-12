@@ -4,11 +4,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useLanguage } from '@/context/LanguageContext';
 import { useCart } from '@/context/CartContext';
 import { fill } from '@/context/strings/purchase';
-import { Heading, PAGE_TOP } from '@/components/ui/Heading';
-import { Icon } from '@/components/ui/icons';
-import Modal from '@/components/ui/Modal';
+import { TYPE } from '@/components/ui/Heading';
 import { FieldError } from '@/components/ui/FormError';
-import { categoryLook } from '@/lib/shopIcons';
 import { available } from '@/lib/useChoice';
 
 type Config = { minItems: number; packingFee: number; monthlyDiscount: number; mystery: { enabled: boolean; price: number; max: number } };
@@ -18,30 +15,30 @@ const DRAFT = 'pupbox_box_draft';
 const MYSTERY = '__mystery__';
 
 /**
- * Build-your-own box, made to play with: choose once or every month, then tap
- * treats and they drop into the box — empty spots show how many are still
- * needed, the box cheers as it fills, and a mystery surprise can go in too
- * (admin picks it when packing). Editing a box from the basket replaces it.
+ * Build-your-own box, as it always looked: a catalogue of box items (its
+ * own, from admin → Custom box items — not the shop) as small emoji cards
+ * with "+ Add", and beside it the box: how full it is, what's in it, the
+ * price and the order button. Once or every month (with a discount), and a
+ * mystery surprise admin picks when packing. Editing from the basket
+ * replaces that box.
  */
 export default function BuildBoxView({ products, config: raw }: { products: any[]; config: Config }) {
-  // Older settings have no mystery part: then there's no surprise to offer.
-  const config: Config = { ...raw, mystery: raw.mystery ?? { enabled: false, price: 0, max: 0 } };
   const { t, lang } = useLanguage();
   const router = useRouter();
   const params = useSearchParams();
   const { cart, ready, addBox } = useCart();
   const editId = params.get('edit');
+  // Older settings have no mystery part: then there's no surprise to offer.
+  const config: Config = { ...raw, mystery: raw.mystery ?? { enabled: false, price: 0, max: 0 } };
   const mysteryOn = config.mystery.enabled && config.mystery.max > 0;
 
   const [monthly, setMonthly] = useState(params.get('monthly') === '1');
   const [picks, setPicks] = useState<Record<string, number>>({});
   const [mystery, setMystery] = useState(0);
   const [cat, setCat] = useState('');
-  const [sheet, setSheet] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  // The last tile tapped, for its "+1" and the box's newest item to drop in.
-  const [bump, setBump] = useState<{ id: string; n: number } | null>(null);
+  const summaryRef = useRef<HTMLDivElement>(null);
   const loaded = useRef(false);
 
   // Editing a box from the basket: start from what's in it. Otherwise pick up
@@ -70,6 +67,7 @@ export default function BuildBoxView({ products, config: raw }: { products: any[
   }, [picks, mystery, monthly, editId]);
 
   const nameOf = (p: any) => (lang === 'ka' && p.translations?.ka?.name?.trim()) || p.name;
+  const lineOf = (p: any) => (lang === 'ka' && p.translations?.ka?.shortDescription?.trim()) || p.shortDescription || '';
   const off = (n: number) => (monthly ? r2(n * (1 - config.monthlyDiscount / 100)) : n);
   const shopUnit = (p: any) => Number(p.salePrice ?? p.price);
 
@@ -82,31 +80,25 @@ export default function BuildBoxView({ products, config: raw }: { products: any[
 
   // What's in the box, priced.
   const lines = products.filter((p) => picks[p.id] > 0).map((p) => ({ p, q: picks[p.id], total: r2(off(shopUnit(p)) * picks[p.id]) }));
-  const mysteryUnit = off(config.mystery?.price ?? 0);
+  const mysteryUnit = off(config.mystery.price);
   const count = lines.reduce((n, l) => n + l.q, 0) + mystery;
   const itemsTotal = r2(lines.reduce((n, l) => n + l.total, 0) + mysteryUnit * mystery);
-  const fullTotal = r2(lines.reduce((n, l) => n + shopUnit(l.p) * l.q, 0) + (config.mystery?.price ?? 0) * mystery);
+  const fullTotal = r2(lines.reduce((n, l) => n + shopUnit(l.p) * l.q, 0) + config.mystery.price * mystery);
   const fee = count ? config.packingFee : 0;
   const total = r2(itemsTotal + fee);
   const need = Math.max(0, config.minItems - count);
-  const mood = count === 0 ? t('cb.mood0') : need ? fill(t('cb.mood1'), { n: need }) : count >= config.minItems + 3 ? t('cb.mood3') : t('cb.mood2');
 
   const add = (id: string, max: number) => {
     setError('');
-    if (id === MYSTERY) {
-      if (mystery >= Math.min(max, config.mystery.max)) return;
-      setMystery((m) => m + 1);
-    } else {
-      if ((picks[id] ?? 0) >= max) return;
-      setPicks((x) => ({ ...x, [id]: (x[id] ?? 0) + 1 }));
-    }
-    setBump((b) => ({ id, n: (b?.n ?? 0) + 1 }));
+    if (id === MYSTERY) return setMystery((m) => Math.min(config.mystery.max, m + 1));
+    setPicks((x) => ((x[id] ?? 0) >= max ? x : { ...x, [id]: (x[id] ?? 0) + 1 }));
   };
   const less = (id: string) => {
     setError('');
     if (id === MYSTERY) return setMystery((m) => Math.max(0, m - 1));
     setPicks((x) => { const n = { ...x }; if ((n[id] ?? 0) > 1) n[id]--; else delete n[id]; return n; });
   };
+  const drop = (id: string) => (id === MYSTERY ? setMystery(0) : setPicks((x) => { const n = { ...x }; delete n[id]; return n; }));
 
   async function submit() {
     if (need || busy) return;
@@ -121,211 +113,197 @@ export default function BuildBoxView({ products, config: raw }: { products: any[
     }
   }
 
-  /** A product's picture: its photo, or its category's icon on a soft colour. */
-  const face = (p: any, cls: string) => {
-    const img = p.images?.[0];
-    const look = categoryLook(p.category);
+  /** One catalogue card: emoji, name, line, price; − and "+ Add". */
+  const card = (o: { id: string; emoji: string; name: string; line: string; price: number; was?: number; q: number; max: number; popular?: boolean; mystery?: boolean }) => {
+    const inBox = o.q > 0;
+    const out = o.max === 0;
     return (
-      <span className={`shrink-0 overflow-hidden flex items-center justify-center ${img ? 'bg-white' : `bg-gradient-to-br ${look.tint}`} ${cls}`}>
-        {img ? <img src={img.url} alt="" className="w-full h-full object-cover" /> : <span aria-hidden="true">{look.icon}</span>}
-      </span>
-    );
-  };
-
-  // Every unit in the box as its own little tile (newest last), then empty spots up to the minimum.
-  const units: { key: string; id: string; p?: any }[] = [];
-  for (const l of lines) for (let i = 0; i < l.q; i++) units.push({ key: `${l.p.id}-${i}`, id: l.p.id, p: l.p });
-  for (let i = 0; i < mystery; i++) units.push({ key: `m-${i}`, id: MYSTERY });
-  const slots = Math.max(0, config.minItems - units.length);
-
-  /** The box: its contents dropping in, empty spots, mood, price and the button. */
-  const theBox = (
-    <div className="flex flex-col gap-4">
-      {/* The open box */}
-      <div className="relative pt-5">
-        {/* Flaps */}
-        <span aria-hidden="true" className="absolute left-3 top-0 w-[38%] h-6 rounded-t-2xl bg-teal-100 -rotate-[8deg] origin-bottom-right" />
-        <span aria-hidden="true" className="absolute right-3 top-0 w-[38%] h-6 rounded-t-2xl bg-teal-100 rotate-[8deg] origin-bottom-left" />
-        <div className="relative rounded-3xl bg-teal-50 ring-2 ring-teal-100 p-3 min-h-[148px]">
-          <div className="flex flex-wrap gap-2">
-            {units.map((u, i) => (
-              <button key={u.key} type="button" onClick={() => less(u.id)} title={t('cb.remove')} aria-label={`${t('cb.remove')}: ${u.p ? nameOf(u.p) : t('cb.mystery')}`}
-                className={`group relative w-12 h-12 rounded-2xl ${i === units.length - 1 && bump ? 'animate-[dropIn_0.45s_ease-out]' : ''}`}>
-                {u.p ? face(u.p, 'w-12 h-12 rounded-2xl text-[22px] ring-2 ring-white')
-                  : <span className="w-12 h-12 rounded-2xl bg-peach-50 ring-2 ring-white text-peach-600 flex items-center justify-center text-[20px] font-extrabold">?</span>}
-                <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-white text-gray-400 ring-1 ring-gray-200 hidden group-hover:flex items-center justify-center"><Icon name="minus" className="w-3 h-3" strokeWidth={2.6} /></span>
-              </button>
-            ))}
-            {Array.from({ length: slots }).map((_, i) => (
-              <span key={`s${i}`} title={t('cb.slot')} className="w-12 h-12 rounded-2xl border-2 border-dashed border-teal-200 flex items-center justify-center text-teal-300">
-                <Icon name="plus" className="w-4 h-4" strokeWidth={2.4} />
-              </span>
-            ))}
+      <div key={o.id} className={`relative rounded-2xl p-4 transition-all ${
+        o.mystery ? 'bg-peach-50/60 ring-2 ring-peach-200' : out ? 'bg-gray-50 ring-1 ring-gray-100' : inBox ? 'bg-white ring-2 ring-teal-300' : 'bg-white ring-1 ring-gray-100 hover:ring-gray-200'}`}>
+        {inBox ? (
+          <span key={o.q} className={`absolute -top-2 -right-2 text-white text-[11px] font-bold px-2 py-0.5 rounded-full animate-[pop_0.3s_ease-out] ${o.mystery ? 'bg-peach-400' : 'bg-teal-600'}`}>{fill(t('cb.added'), { n: o.q })}</span>
+        ) : o.mystery ? (
+          <span className="absolute -top-2 -right-2 bg-peach-400 text-white text-[11px] font-bold px-2 py-0.5 rounded-full">{t('cb.secret')}</span>
+        ) : o.popular ? (
+          <span className="absolute -top-2 -right-2 bg-amber-400 text-white text-[11px] font-bold px-2 py-0.5 rounded-full">{t('cb.popular')}</span>
+        ) : null}
+        <div className="flex items-start gap-3">
+          <span className={`w-11 h-11 rounded-xl flex items-center justify-center text-[22px] shrink-0 transition-colors ${o.mystery ? 'bg-white' : inBox ? 'bg-teal-50' : 'bg-gray-50'} ${out ? 'grayscale opacity-50' : ''}`} aria-hidden="true">{o.emoji}</span>
+          <div className="flex-1 min-w-0">
+            <p className={`font-bold text-[13.5px] leading-tight ${out ? 'text-gray-400' : 'text-gray-900'}`}>{o.name}</p>
+            {o.line && <p className="text-gray-400 text-[12px] mt-0.5 leading-snug">{o.line}</p>}
+            <p className="mt-1.5 flex items-baseline gap-1.5">
+              <span className={`font-extrabold text-[13.5px] ${o.mystery ? 'text-peach-600' : 'text-teal-600'}`}>₾{o.price % 1 ? o.price.toFixed(2) : o.price}</span>
+              {o.was != null && o.was > o.price && <span className="text-[11px] text-gray-400 line-through">₾{o.was % 1 ? o.was.toFixed(2) : o.was}</span>}
+            </p>
           </div>
         </div>
-      </div>
-
-      <p key={mood} className={`text-[14px] font-bold animate-[fadeUp_0.3s_ease-out] ${need ? 'text-gray-700' : 'text-teal-700'}`}>{mood}</p>
-
-      <dl className="space-y-1.5 text-[13px]">
-        <div className="flex justify-between text-gray-500"><dt>{fill(t('cb.items'), { n: count })}</dt><dd className="tabular-nums">{money(monthly ? fullTotal : itemsTotal)}</dd></div>
-        {monthly && fullTotal > itemsTotal && (
-          <div className="flex justify-between text-teal-700"><dt>{t('cb.saving')} (−{config.monthlyDiscount}%)</dt><dd className="tabular-nums">−{money(r2(fullTotal - itemsTotal))}</dd></div>
-        )}
-        {fee > 0 && <div className="flex justify-between text-gray-500"><dt>{t('cb.packing')}</dt><dd className="tabular-nums">{money(fee)}</dd></div>}
-        <div className="flex justify-between items-baseline pt-1.5 border-t border-gray-100">
-          <dt className="font-bold text-gray-900">{t('cb.total')}</dt>
-          <dd className="text-[20px] font-extrabold text-gray-900 tabular-nums">{money(total)}{monthly && <span className="text-[12px] font-semibold text-gray-500"> {t('cb.perMonth')}</span>}</dd>
+        <div className="flex items-center justify-end gap-2 mt-3">
+          {out ? (
+            <span className="text-[12px] font-semibold text-gray-400">{t('shop.outOfStock')}</span>
+          ) : (<>
+            {inBox && (
+              <button type="button" onClick={() => less(o.id)} aria-label={`${t('cb.remove')}: ${o.name}`}
+                className="w-7 h-7 rounded-full bg-gray-100 hover:bg-red-50 hover:text-red-500 text-gray-500 font-bold text-base flex items-center justify-center transition-colors">−</button>
+            )}
+            <button type="button" onClick={() => add(o.id, o.max)} disabled={o.q >= o.max}
+              className={`px-3 py-1.5 rounded-full text-[12px] font-bold transition-colors disabled:opacity-40 ${
+                o.mystery ? (inBox ? 'bg-peach-400 text-white hover:bg-peach-500' : 'bg-white text-peach-600 hover:bg-peach-400 hover:text-white')
+                  : inBox ? 'bg-teal-600 text-white hover:bg-teal-700' : 'bg-teal-50 text-teal-700 hover:bg-teal-600 hover:text-white'}`}>
+              {t('cb.addBtn')}
+            </button>
+          </>)}
         </div>
-      </dl>
-
-      {error && <FieldError message={error} />}
-      <button type="button" onClick={submit} disabled={!!need || busy}
-        className={`h-12 rounded-full text-[14.5px] font-bold flex items-center justify-center gap-2 transition-all ${need ? 'bg-gray-100 text-gray-400' : 'bg-teal-600 text-white hover:bg-teal-700 animate-[pop_0.35s_ease-out]'}`}>
-        {busy ? <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> : <Icon name="bag" className="w-[18px] h-[18px]" strokeWidth={2.2} />}
-        {editId ? t('cb.save') : t('cb.add')}
-      </button>
-      {monthly && <p className="text-[11.5px] leading-relaxed text-gray-500 -mt-1">{fill(t('cb.monthlyNote'), { n: config.monthlyDiscount })}</p>}
-    </div>
-  );
-
-  /** A treat to tap: the whole card adds one; − takes one out. */
-  const tile = (key: string, opts: { id: string; name: string; price: number; was?: number; q: number; max: number; picture: React.ReactNode; mystery?: boolean; note?: string }, i: number) => {
-    const out = opts.max === 0;
-    const full = !out && opts.q >= opts.max;
-    return (
-      <div key={key} className="relative animate-[fadeUp_0.35s_ease-out_both]" style={{ animationDelay: `${Math.min(i, 10) * 35}ms` }}>
-        <button type="button" onClick={() => add(opts.id, opts.max)} disabled={out || full} aria-label={`${t('shop.quickAdd')}: ${opts.name}`}
-          className={`group w-full h-full text-left flex flex-col rounded-3xl p-2.5 transition-all active:scale-[0.97] ${
-            opts.mystery ? 'bg-peach-50/70 ring-2 ring-dashed ring-peach-200 hover:ring-peach-300'
-              : out ? 'bg-gray-50 ring-1 ring-gray-100 cursor-not-allowed'
-              : opts.q ? 'bg-white ring-2 ring-teal-300' : 'bg-white ring-1 ring-gray-100 hover:ring-teal-200 hover:-translate-y-0.5'}`}>
-          <span className={`relative block ${opts.mystery ? 'animate-[wiggle_2.4s_ease-in-out_infinite]' : 'group-hover:animate-[wiggle_0.6s_ease-in-out]'}`}>{opts.picture}</span>
-          <span className={`px-1 pt-2.5 text-[13px] font-bold leading-snug line-clamp-2 ${out ? 'text-gray-400' : 'text-gray-900'}`}>{opts.name}</span>
-          {opts.note && <span className="px-1 pt-0.5 text-[11.5px] text-gray-500 leading-snug line-clamp-2">{opts.note}</span>}
-          <span className="px-1 pt-1.5 mt-auto flex items-baseline gap-1.5">
-            <span className={`text-[14px] font-extrabold tabular-nums ${out ? 'text-gray-400' : opts.mystery ? 'text-peach-600' : monthly ? 'text-teal-700' : 'text-gray-900'}`}>{money(opts.price)}</span>
-            {opts.was != null && opts.was > opts.price && <span className="text-[11px] text-gray-400 line-through tabular-nums">{money(opts.was)}</span>}
-          </span>
-          {out && <span className="absolute inset-x-3 top-3 text-center text-[11px] font-bold text-white bg-gray-500/80 rounded-full py-0.5">{t('shop.outOfStock')}</span>}
-        </button>
-        {/* How many are in, and one out */}
-        {opts.q > 0 && (
-          <span className="absolute top-1.5 right-1.5 flex items-center gap-1">
-            <button type="button" onClick={() => less(opts.id)} aria-label={`${t('cb.remove')}: ${opts.name}`} title={t('cb.remove')}
-              className="w-7 h-7 rounded-full bg-white/95 text-gray-500 ring-1 ring-gray-200 flex items-center justify-center hover:text-red-500 hover:ring-red-200"><Icon name="minus" className="w-3.5 h-3.5" strokeWidth={2.6} /></button>
-            <span key={opts.q} className="min-w-[28px] h-7 px-1.5 rounded-full bg-teal-600 text-white text-[12.5px] font-extrabold flex items-center justify-center animate-[pop_0.3s_ease-out]">{opts.q}</span>
-          </span>
-        )}
-        {bump?.id === opts.id && (
-          <span key={bump.n} aria-hidden="true" className="pointer-events-none absolute left-1/2 top-8 text-[15px] font-extrabold text-teal-600 animate-[floatUp_0.7s_ease-out_forwards]">+1</span>
-        )}
       </div>
     );
   };
 
   return (
-    <main className="min-h-screen bg-white">
-      <div className={`max-w-7xl mx-auto px-4 sm:px-6 ${PAGE_TOP} pb-32 lg:pb-14`}>
-        <Heading title={editId ? t('cb.edit') : t('cb.title')} subtitle={fill(t('cb.sub'), { n: config.minItems })} />
-
-        {/* Step 1: once or every month */}
-        <p className="text-[12px] font-bold uppercase tracking-wider text-teal-700/70 mb-2.5"><span className="mr-1.5">1</span>{t('cb.step1')}</p>
-        <div role="radiogroup" aria-label={t('cb.step1')} className="grid grid-cols-2 gap-3 max-w-xl mb-8">
-          {([[false, 'box', t('cb.once'), t('cb.onceSub')], [true, 'repeat', t('cb.monthly'), fill(t('cb.monthlySub'), { n: config.monthlyDiscount })]] as const).map(([m, icon, title, sub]) => {
-            const on = monthly === m;
-            return (
-              <button key={String(m)} type="button" role="radio" aria-checked={on} onClick={() => setMonthly(m)}
-                className={`relative text-left rounded-3xl p-3.5 sm:p-4 transition-all ${on ? 'bg-teal-50 ring-2 ring-teal-300' : 'bg-white ring-1 ring-gray-200/80 hover:ring-teal-200'}`}>
-                <span className={`w-10 h-10 rounded-2xl flex items-center justify-center mb-2 ${on ? 'bg-white text-teal-600' : 'bg-gray-50 text-gray-500'}`}><Icon name={icon} className="w-5 h-5" /></span>
-                <span className="block text-[14.5px] font-bold text-gray-900">{title}</span>
-                <span className="block text-[12px] text-gray-500 mt-0.5 leading-snug">{sub}</span>
-                {m && config.monthlyDiscount > 0 && <span className="absolute top-3 right-3 text-[11px] font-extrabold text-peach-600 bg-peach-50 rounded-full px-2 py-0.5">−{config.monthlyDiscount}%</span>}
-                {on && <span className="absolute bottom-3 right-3 w-5 h-5 rounded-full bg-teal-600 text-white flex items-center justify-center"><Icon name="check" className="w-3 h-3" strokeWidth={3} /></span>}
-              </button>
-            );
-          })}
+    <main className="min-h-screen bg-teal-50/40">
+      <section className="max-w-6xl mx-auto px-4 sm:px-6 pt-8 sm:pt-10 pb-28 lg:pb-16">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <span className="inline-flex items-center gap-2 bg-white text-teal-700 text-[11px] font-bold px-4 py-2 rounded-full mb-4 ring-1 ring-teal-100 tracking-wide uppercase">🛠️ {t('cb.badge')}</span>
+          <h1 className={TYPE.page}>{editId ? t('cb.edit') : t('cb.heroTitle')}</h1>
+          <p className={`${TYPE.subtitle} mt-2 max-w-xl mx-auto`}>{fill(t('cb.heroSub'), { n: config.minItems })}</p>
         </div>
 
-        <div className="grid lg:grid-cols-[minmax(0,1fr)_360px] gap-6 lg:gap-10 items-start [&>*]:min-w-0">
-          <div>
-            {/* Step 2: fill it */}
-            <div className="flex flex-wrap items-end justify-between gap-3 mb-3">
-              <div>
-                <p className="text-[12px] font-bold uppercase tracking-wider text-teal-700/70"><span className="mr-1.5">2</span>{t('cb.step2')}</p>
-                <p className="text-[13px] text-gray-500 mt-1 flex items-center gap-1.5"><Icon name="sparkle" className="w-4 h-4 text-teal-500" />{t('cb.tapHint')}</p>
-              </div>
-              {cats.length > 1 && (
-                <div className="flex gap-1.5 overflow-x-auto max-w-full [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                  {[{ slug: '', name: t('cb.all') }, ...cats].map((c: any) => {
-                    const on = cat === c.slug;
-                    const look = c.slug ? categoryLook(c) : null;
-                    return (
-                      <button key={c.slug || 'all'} type="button" onClick={() => setCat(c.slug)} aria-pressed={on}
-                        className={`shrink-0 h-9 pl-2 pr-3.5 rounded-full text-[12.5px] font-semibold whitespace-nowrap inline-flex items-center gap-1.5 transition-colors ${on ? 'bg-teal-50 text-teal-800 ring-1 ring-teal-200' : 'bg-white text-gray-600 ring-1 ring-gray-200/80 hover:bg-teal-50/40'}`}>
-                        <span className="w-6 h-6 rounded-full bg-gray-50 flex items-center justify-center text-[13px]" aria-hidden="true">{look ? look.icon : <Icon name="paw" className="w-3.5 h-3.5 text-teal-600" />}</span>
-                        {c.slug ? ((lang === 'ka' && c.translations?.ka?.name) || c.name) : c.name}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
+        {/* Once / every month */}
+        <div className="flex justify-center mb-6">
+          <div role="radiogroup" aria-label={`${t('cb.once')} / ${t('cb.monthly')}`} className="inline-flex bg-white ring-1 ring-gray-200/70 rounded-full p-1 gap-1">
+            {([[false, '📦', t('cb.once')], [true, '🔄', t('cb.monthly')]] as const).map(([m, emoji, label]) => (
+              <button key={String(m)} type="button" role="radio" aria-checked={monthly === m} onClick={() => setMonthly(m)}
+                className={`flex items-center gap-2 px-5 sm:px-6 py-2.5 rounded-full text-[13.5px] font-bold transition-all ${monthly === m ? 'bg-teal-600 text-white' : 'text-gray-500 hover:text-gray-800'}`}>
+                <span aria-hidden="true">{emoji}</span>{label}
+                {m && config.monthlyDiscount > 0 && <span className={`text-[11px] font-extrabold ${monthly ? 'text-white/90' : 'text-peach-600'}`}>−{config.monthlyDiscount}%</span>}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {monthly && (
+          <div className="max-w-2xl mx-auto mb-8 bg-white ring-1 ring-teal-100 rounded-2xl px-5 py-4 flex items-start gap-4 animate-[fadeUp_0.25s_ease-out]">
+            <span className="text-2xl shrink-0" aria-hidden="true">🔄</span>
+            <div>
+              <p className="font-bold text-teal-800 text-[13.5px] mb-0.5">{t('cb.monthlyBanner')}</p>
+              <p className="text-gray-600 text-[12.5px] leading-relaxed">{fill(t('cb.monthlyNote'), { n: config.monthlyDiscount })}</p>
             </div>
+          </div>
+        )}
+
+        <div className="flex flex-col lg:flex-row gap-8 items-start">
+          {/* ── Left: the box's own catalogue ── */}
+          <div className="flex-1 min-w-0 w-full">
+            {cats.length > 1 && (
+              <div className="flex flex-wrap gap-2 mb-6">
+                {[{ slug: '', name: t('cb.all') }, ...cats].map((c: any) => (
+                  <button key={c.slug || 'all'} type="button" onClick={() => setCat(c.slug)} aria-pressed={cat === c.slug}
+                    className={`px-4 py-2 rounded-full text-[12.5px] font-bold transition-colors ${cat === c.slug ? 'bg-teal-600 text-white' : 'bg-white ring-1 ring-gray-200 text-gray-600 hover:ring-gray-300'}`}>
+                    {c.slug ? ((lang === 'ka' && c.translations?.ka?.name) || c.name) : c.name}
+                  </button>
+                ))}
+              </div>
+            )}
 
             {products.length === 0 && !mysteryOn ? (
               <p className="text-center text-[14px] text-gray-500 py-16">{t('cb.none')}</p>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
-                {/* The surprise first: it's the fun one. */}
-                {mysteryOn && !cat && tile('mystery', {
-                  id: MYSTERY, name: t('cb.mystery'), note: t('cb.mysterySub'), q: mystery, max: config.mystery.max, mystery: true,
-                  price: mysteryUnit, was: monthly ? config.mystery.price : undefined,
-                  picture: (
-                    <span className="relative w-full aspect-[4/3] rounded-2xl bg-white flex items-center justify-center text-peach-500">
-                      <Icon name="gift" className="w-12 h-12" strokeWidth={1.5} />
-                      <span className="absolute top-2 left-2 text-[11px] font-extrabold text-peach-600 bg-peach-50 rounded-full px-2 py-0.5">{fill(t('cb.mysteryMax'), { n: config.mystery.max })}</span>
-                      <span className="absolute right-[30%] top-[22%] text-[22px] font-black text-peach-400">?</span>
-                    </span>
-                  ),
-                }, 0)}
-                {shown.map((p, i) => tile(p.id, {
-                  id: p.id, name: nameOf(p), q: picks[p.id] ?? 0, max: available(p.inventory),
-                  price: off(shopUnit(p)), was: monthly ? shopUnit(p) : undefined,
-                  picture: face(p, 'w-full aspect-[4/3] rounded-2xl text-[42px]'),
-                }, i + 1))}
+              <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-3">
+                {mysteryOn && !cat && card({ id: MYSTERY, emoji: '🎁', name: t('cb.mystery'), line: t('cb.mysterySub'), price: mysteryUnit, was: monthly ? config.mystery.price : undefined, q: mystery, max: config.mystery.max, mystery: true })}
+                {shown.map((p) => card({
+                  id: p.id, emoji: p.boxEmoji || '🐾', name: nameOf(p), line: lineOf(p), price: off(shopUnit(p)), was: monthly ? shopUnit(p) : undefined,
+                  q: picks[p.id] ?? 0, max: available(p.inventory), popular: p.boxPopular,
+                }))}
               </div>
             )}
           </div>
 
-          {/* The box, beside the treats on wide screens */}
-          <aside className="hidden lg:block sticky top-24 rounded-3xl bg-white ring-1 ring-gray-100 p-5">
-            <p className="text-[15px] font-bold text-gray-900 mb-1 flex items-center gap-2"><Icon name="box" className="w-5 h-5 text-teal-600" />{t('cb.yourBox')}</p>
-            {theBox}
-          </aside>
-        </div>
-      </div>
+          {/* ── Right: the box ── */}
+          <div ref={summaryRef} className="w-full lg:w-80 shrink-0 lg:sticky lg:top-24 scroll-mt-24">
+            <div className="bg-white rounded-3xl ring-1 ring-gray-100 overflow-hidden">
+              <div className="bg-teal-600 px-6 py-5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-teal-100 text-[11px] font-semibold uppercase tracking-wide">{t('cb.yourBox')}{monthly && ` · ${t('cb.monthly')}`}</p>
+                    <p key={count} className="text-white font-extrabold text-lg mt-0.5 animate-[fadeUp_0.25s_ease-out]">{count === 0 ? t('cb.emptyBox') : fill(t('cb.items'), { n: count })}</p>
+                  </div>
+                  <span className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center text-2xl" aria-hidden="true">{monthly ? '🔄' : '📦'}</span>
+                </div>
+                <div className="mt-4">
+                  <div className="flex justify-between text-[11.5px] text-white/75 mb-1.5">
+                    <span>{fill(t('cb.minOf'), { n: count, min: config.minItems })}</span>
+                    {!need && <span className="text-white font-bold">{t('cb.readyShort')}</span>}
+                  </div>
+                  <div className="h-1.5 bg-white/20 rounded-full overflow-hidden">
+                    <div className="h-full bg-white rounded-full transition-all duration-500" style={{ width: `${Math.min(100, (count / config.minItems) * 100)}%` }} />
+                  </div>
+                </div>
+              </div>
 
-      {/* Phones and tablets: the box in a bar at the bottom; tap for the whole box */}
-      <div className="lg:hidden fixed inset-x-0 bottom-0 z-40 bg-white/95 backdrop-blur border-t border-gray-100 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-        <div className="flex items-center gap-3 max-w-3xl mx-auto">
-          <button type="button" onClick={() => setSheet(true)} aria-label={t('cb.view')} className="flex-1 min-w-0 flex items-center gap-3 text-left">
-            <span key={count} className="relative w-11 h-11 shrink-0 rounded-2xl bg-teal-50 text-teal-600 flex items-center justify-center animate-[pop_0.3s_ease-out]">
-              <Icon name="box" className="w-5 h-5" />
-              {count > 0 && <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-teal-600 text-white text-[10px] font-bold flex items-center justify-center">{count}</span>}
-            </span>
-            <span className="min-w-0">
-              <span className={`block text-[12px] font-semibold truncate ${need ? 'text-gray-500' : 'text-teal-700'}`}>{mood}</span>
-              <span className="block text-[16px] font-extrabold text-gray-900 tabular-nums">{money(total)}{monthly && <span className="text-[11px] font-semibold text-gray-500"> {t('cb.perMonth')}</span>}</span>
-            </span>
-          </button>
-          <button type="button" onClick={need ? () => setSheet(true) : submit} disabled={busy}
-            className={`h-11 px-5 rounded-full text-[13.5px] font-bold flex items-center gap-2 transition-colors ${need ? 'bg-teal-50 text-teal-700' : 'bg-teal-600 text-white hover:bg-teal-700'}`}>
-            {busy ? <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> : <Icon name={need ? 'box' : 'bag'} className="w-[18px] h-[18px]" strokeWidth={2.2} />}
-            {need ? t('cb.view') : editId ? t('cb.save') : t('cb.add')}
-          </button>
+              <div className="px-6 py-5">
+                {count === 0 ? (
+                  <div className="text-center py-6">
+                    <p className="text-3xl mb-2" aria-hidden="true">🐾</p>
+                    <p className="text-gray-400 text-[13px]">{t('cb.emptyPanel')}</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2 mb-5 max-h-56 overflow-y-auto pr-1">
+                    {[...lines.map((l) => ({ id: l.p.id, emoji: l.p.boxEmoji || '🐾', name: nameOf(l.p), q: l.q, total: l.total })),
+                      ...(mystery ? [{ id: MYSTERY, emoji: '🎁', name: t('cb.mystery'), q: mystery, total: r2(mysteryUnit * mystery) }] : [])].map((x) => (
+                      <div key={x.id} className="flex items-center justify-between gap-2 text-[13px] animate-[fadeUp_0.2s_ease-out]">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="text-base shrink-0" aria-hidden="true">{x.emoji}</span>
+                          <span className="text-gray-700 font-medium truncate">{x.name}</span>
+                          {x.q > 1 && <span className="text-[11.5px] text-gray-400 shrink-0">×{x.q}</span>}
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className="font-bold text-teal-600 tabular-nums">{money(x.total)}</span>
+                          <button type="button" onClick={() => drop(x.id)} aria-label={`${t('shop.uncheck')}: ${x.name}`} className="text-gray-300 hover:text-red-400 transition-colors text-xs">✕</button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {count > 0 && (
+                  <div className="border-t border-gray-100 pt-4 space-y-2 text-[13px] mb-5">
+                    <div className="flex justify-between text-gray-500"><span>{fill(t('cb.items'), { n: count })}</span><span className="tabular-nums">{money(monthly ? fullTotal : itemsTotal)}</span></div>
+                    {monthly && fullTotal > itemsTotal && <div className="flex justify-between text-teal-700"><span>{t('cb.saving')} (−{config.monthlyDiscount}%)</span><span className="tabular-nums">−{money(r2(fullTotal - itemsTotal))}</span></div>}
+                    {fee > 0 && <div className="flex justify-between text-gray-500"><span>{t('cb.packing')}</span><span className="tabular-nums">{money(fee)}</span></div>}
+                    <div className="flex justify-between font-extrabold text-gray-900 text-base pt-1 border-t border-gray-100">
+                      <span>{t('cb.total')}</span>
+                      <span className="text-teal-600 tabular-nums">{money(total)}{monthly && <span className="text-[11px] font-semibold text-gray-500"> {t('cb.perMonth')}</span>}</span>
+                    </div>
+                  </div>
+                )}
+
+                {error && <FieldError message={error} className="mb-3" />}
+                <button type="button" onClick={submit} disabled={!!need || busy}
+                  className={`w-full py-3.5 rounded-2xl font-bold text-[13.5px] transition-all flex items-center justify-center gap-2 ${need ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-teal-600 hover:bg-teal-700 text-white hover:scale-[1.02]'}`}>
+                  {busy && <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />}
+                  {need ? fill(t('cb.addMore'), { n: need }) : editId ? t('cb.save') : fill(t('cb.order'), { total: money(total) })}
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
+      </section>
+
+      {/* Phones: how full the box is, always in view; tap to see it */}
+      <div className="lg:hidden fixed inset-x-0 bottom-0 z-40 bg-white/95 backdrop-blur border-t border-gray-100 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+        <button type="button" onClick={() => summaryRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+          className="w-full max-w-3xl mx-auto flex items-center gap-3 text-left">
+          <span className="w-11 h-11 shrink-0 rounded-2xl bg-teal-50 flex items-center justify-center text-xl" aria-hidden="true">{monthly ? '🔄' : '📦'}</span>
+          <span className="flex-1 min-w-0">
+            <span className="block text-[12px] font-semibold text-gray-500">{fill(t('cb.minOf'), { n: count, min: config.minItems })}{!need && <span className="text-teal-700"> · {t('cb.readyShort')}</span>}</span>
+            <span className="block h-1.5 mt-1 bg-gray-100 rounded-full overflow-hidden"><span className="block h-full bg-teal-500 rounded-full transition-all duration-500" style={{ width: `${Math.min(100, (count / config.minItems) * 100)}%` }} /></span>
+          </span>
+          <span className="shrink-0 text-right">
+            <span className="block text-[16px] font-extrabold text-gray-900 tabular-nums">{money(total)}</span>
+            <span className="block text-[11.5px] font-bold text-teal-700">{t('cb.toSummary')} ↓</span>
+          </span>
+        </button>
       </div>
-      <Modal open={sheet} onClose={() => setSheet(false)} title={t('cb.yourBox')}>{theBox}</Modal>
     </main>
   );
 }

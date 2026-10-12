@@ -402,6 +402,9 @@ model Product {
   inCustomBox      Boolean        @default(false)
   /// Can be packed as a "mystery item" in a built box (customers never see which).
   inMystery        Boolean        @default(false)
+  /// Build-your-own box items (not sold in the shop): the emoji they show with, and a "Popular" badge.
+  boxEmoji         String?
+  boxPopular       Boolean        @default(false)
   standaloneSale   Boolean        @default(true)
   seoTitle         String?
   seoDesc          String?

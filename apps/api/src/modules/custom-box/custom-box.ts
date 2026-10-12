@@ -3,10 +3,14 @@ import type { Prisma } from '@prisma/client';
 import type { PrismaService } from '../prisma/prisma.service';
 import { shopSettings } from '../settings/settings';
 
-/** Products a customer may put in a box they build. */
+/**
+ * What a customer may put in a box they build: its own catalogue, kept in
+ * admin → Custom box items — never the shop's products.
+ */
 export const BOX_PRODUCT_WHERE = {
   deletedAt: null,
   inCustomBox: true,
+  standaloneSale: false,
   status: { in: ['ACTIVE', 'OUT_OF_STOCK'] },
 } satisfies Prisma.ProductWhereInput;
 
@@ -45,13 +49,13 @@ export async function quoteBox(prisma: PrismaService, raw: BoxLine[], monthly: b
   const lines = tidy(raw);
   const products = lines.length ? await prisma.product.findMany({
     where: { id: { in: lines.map((l) => l.productId) } },
-    select: { id: true, name: true, sku: true, price: true, salePrice: true, sellerId: true, deletedAt: true, inCustomBox: true, status: true, personalisation: true, translations: true, inventory: { select: { quantity: true, reservedQty: true } } },
+    select: { id: true, name: true, sku: true, price: true, salePrice: true, sellerId: true, deletedAt: true, inCustomBox: true, standaloneSale: true, status: true, personalisation: true, translations: true, inventory: { select: { quantity: true, reservedQty: true } } },
   }) : [];
 
   const items: { productId: string; name: string; sku: string | null; sellerId: string | null; quantity: number; unit: number; shopUnit: number; total: number }[] = [];
   for (const l of lines) {
     const p = products.find((x) => x.id === l.productId);
-    const allowed = p && !p.deletedAt && p.inCustomBox && ['ACTIVE', 'OUT_OF_STOCK'].includes(p.status) && !p.personalisation;
+    const allowed = p && !p.deletedAt && p.inCustomBox && !p.standaloneSale && ['ACTIVE', 'OUT_OF_STOCK'].includes(p.status) && !p.personalisation;
     const left = p?.inventory ? Math.max(0, p.inventory.quantity - p.inventory.reservedQty) : 0;
     if (!allowed || left < l.quantity) {
       if (!strict) continue;

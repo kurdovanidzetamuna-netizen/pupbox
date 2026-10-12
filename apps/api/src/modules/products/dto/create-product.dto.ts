@@ -20,6 +20,9 @@ export class CreateProductDto {
   @IsOptional() @IsBoolean() inCustomBox?: boolean;
   /** Can be packed as a mystery item in a built box. */
   @IsOptional() @IsBoolean() inMystery?: boolean;
+  /** A build-your-own box item's emoji and "Popular" badge. */
+  @IsOptional() @IsString() @MaxLength(16) boxEmoji?: string;
+  @IsOptional() @IsBoolean() boxPopular?: boolean;
   @IsOptional() @IsString() seoTitle?: string;
   @IsOptional() @IsString() seoDesc?: string;
   @IsOptional() @IsString() status?: string;
