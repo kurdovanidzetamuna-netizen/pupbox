@@ -51,39 +51,34 @@ function Newsletter() {
   }
 
   return (
-    <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-teal-500 via-teal-600 to-teal-700 px-6 py-8 sm:px-10 sm:py-10 text-white">
-      <span aria-hidden="true" className="absolute -right-6 -top-8 text-[120px] opacity-10 rotate-12 select-none">🐾</span>
-      <span aria-hidden="true" className="absolute left-1/3 -bottom-20 w-64 h-64 rounded-full bg-white/10 blur-2xl" />
-      <div className="relative grid lg:grid-cols-2 gap-5 lg:gap-10 items-center text-center lg:text-left">
-        <div>
-          <p className="text-[20px] sm:text-[24px] font-extrabold tracking-tight">{t('ftr.newsTitle')}</p>
-          <p className="text-[13.5px] sm:text-[14px] text-white/85 mt-1.5 max-w-sm mx-auto lg:mx-0">{t('ftr.newsSub')}</p>
-        </div>
-        {state === 'done' ? (
-          <p role="status" className="inline-flex items-center justify-center lg:justify-start gap-2 text-[15px] font-bold animate-[pop_0.35s_ease-out]">
-            <span className="w-9 h-9 rounded-full bg-white text-teal-600 flex items-center justify-center"><Icon name="check" className="w-5 h-5" strokeWidth={2.4} /></span>
-            {t('ftr.newsDone')}
-          </p>
-        ) : (
-          <form onSubmit={submit} noValidate className="w-full max-w-lg mx-auto lg:max-w-none">
-            <div className="flex flex-col sm:flex-row gap-2 p-1.5 sm:rounded-full rounded-3xl bg-white/15 ring-1 ring-white/30 backdrop-blur-sm">
-              <label htmlFor="news-email" className="sr-only">{t('ftr.newsPlaceholder')}</label>
-              <input id="news-email" type="email" inputMode="email" autoComplete="email" value={email}
-                onChange={(e) => { setEmail(e.target.value); if (state !== 'busy') setState('idle'); }}
-                placeholder={t('ftr.newsPlaceholder')} aria-invalid={state === 'bad'}
-                className="flex-1 min-w-0 h-12 px-5 rounded-full bg-white text-gray-900 text-[14.5px] placeholder:text-gray-400 outline-none focus:ring-2 focus:ring-peach-300" />
-              <button type="submit" disabled={state === 'busy'}
-                className="h-12 px-6 rounded-full bg-peach-500 hover:bg-peach-600 text-white text-[14.5px] font-bold inline-flex items-center justify-center gap-2 transition-colors disabled:opacity-60">
-                {t('ftr.newsBtn')}
-                <Icon name="arrow" className="w-4 h-4" strokeWidth={2.4} />
-              </button>
-            </div>
-            {(state === 'bad' || state === 'fail') && (
-              <p role="alert" className="mt-2 text-[12.5px] font-semibold text-peach-100">{t(state === 'bad' ? 'ftr.newsBad' : 'ftr.newsFail')}</p>
-            )}
-          </form>
-        )}
+    <div className="flex flex-col lg:flex-row lg:items-center gap-4 lg:gap-10 rounded-2xl bg-gray-50 ring-1 ring-gray-100 px-5 py-6 sm:px-8 sm:py-7 text-center lg:text-left">
+      <div className="lg:flex-1">
+        <p className="text-[17px] font-bold text-gray-900">{t('ftr.newsTitle')}</p>
+        <p className="text-[13.5px] text-gray-500 mt-1">{t('ftr.newsSub')}</p>
       </div>
+      {state === 'done' ? (
+        <p role="status" className="lg:flex-1 inline-flex items-center justify-center lg:justify-start gap-2 text-[14px] font-semibold text-teal-700">
+          <Icon name="check" className="w-5 h-5" strokeWidth={2.4} />
+          {t('ftr.newsDone')}
+        </p>
+      ) : (
+        <form onSubmit={submit} noValidate className="lg:flex-1 w-full max-w-md mx-auto lg:max-w-none">
+          <div className="flex gap-2">
+            <label htmlFor="news-email" className="sr-only">{t('ftr.newsPlaceholder')}</label>
+            <input id="news-email" type="email" inputMode="email" autoComplete="email" value={email}
+              onChange={(e) => { setEmail(e.target.value); if (state !== 'busy') setState('idle'); }}
+              placeholder={t('ftr.newsPlaceholder')} aria-invalid={state === 'bad'}
+              className="flex-1 min-w-0 h-11 px-4 rounded-full bg-white ring-1 ring-gray-200 text-[14px] text-gray-900 placeholder:text-gray-400 outline-none focus:ring-2 focus:ring-teal-500" />
+            <button type="submit" disabled={state === 'busy'}
+              className="h-11 px-5 rounded-full bg-teal-600 hover:bg-teal-700 text-white text-[13.5px] font-semibold transition-colors disabled:opacity-60">
+              {t('ftr.newsBtn')}
+            </button>
+          </div>
+          {(state === 'bad' || state === 'fail') && (
+            <p role="alert" className="mt-2 text-[12.5px] font-medium text-red-600">{t(state === 'bad' ? 'ftr.newsBad' : 'ftr.newsFail')}</p>
+          )}
+        </form>
+      )}
     </div>
   );
 }
@@ -136,7 +131,7 @@ export default function Footer({ site }: { site: StoredContent | null }) {
                 <div className="flex gap-2.5 justify-center lg:justify-start">
                   {socials.map((s) => (
                     <a key={s.key} href={social[s.key]} target="_blank" rel="noopener noreferrer" aria-label={s.label}
-                      className="w-11 h-11 rounded-full bg-teal-50 text-teal-700 flex items-center justify-center hover:bg-teal-600 hover:text-white hover:-translate-y-0.5 transition-all">
+                      className="w-10 h-10 rounded-full bg-white ring-1 ring-gray-200 text-gray-500 flex items-center justify-center hover:text-teal-600 hover:ring-teal-300 transition">
                       <svg className="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d={s.path} /></svg>
                     </a>
                   ))}
@@ -155,12 +150,8 @@ export default function Footer({ site }: { site: StoredContent | null }) {
             {footer.legalLinks.filter((l: L) => l.label).map((l: L, i: number) => (
               <SmartLink key={i} href={l.href} className="hover:text-teal-700 transition-colors">{l.label}</SmartLink>
             ))}
-            <span className="inline-flex items-center gap-1.5" title={t('ftr.pay')}>
-              <Icon name="lock" className="w-3.5 h-3.5" />
-              <span className="px-1.5 py-0.5 rounded-md ring-1 ring-gray-200 text-[10.5px] font-extrabold italic text-[#1a1f71]">VISA</span>
-              <span className="px-1.5 py-0.5 rounded-md ring-1 ring-gray-200 inline-flex" aria-label="Mastercard">
-                <span className="w-3 h-3 rounded-full bg-[#eb001b]" /><span className="w-3 h-3 -ml-1 rounded-full bg-[#f79e1b]/90" />
-              </span>
+            <span className="inline-flex items-center gap-1.5">
+              <Icon name="lock" className="w-3.5 h-3.5" />{t('ftr.pay')}
             </span>
           </div>
         </div>

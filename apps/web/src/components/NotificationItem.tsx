@@ -104,24 +104,24 @@ export default function NotificationItem({ n, compact, onChange, onOpen, classNa
     </li>
   );
 
-  // Full row on the notifications page: one compact line of title + time,
-  // the text under it. The row actions sit above the row-wide button; on
-  // touch screens (no hover) they are always shown.
+  // A row in the notifications page's list: unread ones carry a teal dot and
+  // a faint tint. Mark-read and remove appear on hover (desktop); on phones
+  // tapping the row marks it read, and "Mark all as read" is at the top.
   return (
-    <li style={style} className={`${className} group relative flex items-start gap-3 p-3 sm:p-3.5 rounded-2xl bg-white ring-1 transition-all duration-200 hover:shadow-soft focus-within:ring-teal-300 ${unread ? 'ring-teal-200/80 bg-gradient-to-r from-teal-50/70 to-white' : 'ring-gray-200/60 hover:ring-gray-300/70'}`}>
-      <button type="button" onClick={open} className="absolute inset-0 rounded-2xl focus-visible:outline-none" aria-label={title} />
-      <span className={`relative shrink-0 w-10 h-10 rounded-xl flex items-center justify-center ${look.tile}`}>
+    <li style={style} className={`${className} group relative flex items-start gap-3 pl-5 pr-3 sm:pr-4 py-3.5 transition-colors ${unread ? 'bg-teal-50/40 hover:bg-teal-50/70' : 'hover:bg-gray-50'}`}>
+      {unread && <span className="absolute left-2 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-teal-500" aria-label={t('ntf.unread')} />}
+      <button type="button" onClick={open} className="absolute inset-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-teal-400" aria-label={title} />
+      <span className={`relative shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${look.tile}`}>
         <Icon name={look.icon} className="w-[18px] h-[18px]" />
-        {unread && <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-teal-500 ring-2 ring-white" aria-label={t('ntf.unread')} />}
       </span>
       <div className="relative flex-1 min-w-0 pointer-events-none">
         <div className="flex items-baseline gap-2">
-          <p className={`flex-1 min-w-0 text-[13.5px] leading-snug ${unread ? 'font-bold text-gray-900' : 'font-semibold text-gray-700'}`}>{title}</p>
-          <span className="shrink-0 text-[11.5px] text-gray-400 whitespace-nowrap">{ago(n.createdAt)}</span>
+          <p className={`flex-1 min-w-0 text-[14px] leading-snug ${unread ? 'font-bold text-gray-900' : 'font-medium text-gray-700'}`}>{title}</p>
+          <span className={`shrink-0 text-[11.5px] whitespace-nowrap ${unread ? 'text-teal-700 font-semibold' : 'text-gray-400'}`}>{ago(n.createdAt)}</span>
         </div>
-        <p className="text-[12.5px] text-gray-500 leading-snug mt-0.5 line-clamp-2">{body}</p>
+        <p className="text-[13px] text-gray-500 leading-snug mt-0.5 line-clamp-2">{body}</p>
       </div>
-      <span className="relative self-center flex shrink-0 -mr-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity">
+      <span className="relative self-center hidden sm:flex shrink-0 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
         {unread && <IconButton icon="check" size="sm" label={t('ntf.markRead')} onClick={() => { onChange({ ...n, readAt: new Date().toISOString() }); markRead(n.id).catch(() => {}); }} />}
         <IconButton icon="trash" size="sm" tone="danger" label={t('ntf.remove')} onClick={() => { onChange(null); removeNotice(n.id).catch(() => {}); }} />
       </span>

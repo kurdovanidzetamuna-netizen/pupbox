@@ -8,21 +8,14 @@ export const SITE_STRINGS: Record<string, { en: string; ka: string }> = {
   'nav.me':                 { en: 'Account',                     ka: 'ანგარიში' },
   'nav.more':               { en: 'More',                        ka: 'მეტი' },
   'nav.close':              { en: 'Close menu',                  ka: 'მენიუს დახურვა' },
-  'nav.hello':              { en: 'Hello, {name}!',              ka: 'გამარჯობა, {name}!' },
-  'nav.helloGuest':         { en: 'Welcome to Pupbox 🐾',        ka: 'მოგესალმები Pupbox-ში 🐾' },
-  'nav.guestSub':           { en: 'Sign in to track boxes and orders.', ka: 'შედი, რომ ყუთებსა და შეკვეთებს თვალი ადევნო.' },
-  'nav.explore':            { en: 'Explore',                     ka: 'აღმოაჩინე' },
-  'nav.help':               { en: 'Help & more',                 ka: 'დახმარება და სხვა' },
   'nav.buildBox':           { en: 'Build your own box',          ka: 'ააწყე შენი კოლოფი' },
   'nav.gift':               { en: 'Gift a box',                  ka: 'აჩუქე კოლოფი' },
   'nav.blog':               { en: 'Blog',                        ka: 'ბლოგი' },
   'nav.faq':                { en: 'FAQ',                         ka: 'კითხვა-პასუხი' },
   'nav.howItWorks':         { en: 'How it works',                ka: 'როგორ მუშაობს' },
-  'nav.orders':             { en: 'My orders',                   ka: 'ჩემი შეკვეთები' },
-  'nav.dogs':               { en: 'My dogs',                     ka: 'ჩემი ძაღლები' },
 
   // Footer
-  'ftr.newsTitle':          { en: 'Treats in your inbox 💌',      ka: 'სიახლეები შენს ფოსტაში 💌' },
+  'ftr.newsTitle':          { en: 'Get news and offers',         ka: 'მიიღე სიახლეები და შეთავაზებები' },
   'ftr.newsSub':            { en: 'New boxes, tips and members-only deals. No spam, ever.', ka: 'ახალი ყუთები, რჩევები და ფასდაკლებები. სპამის გარეშე.' },
   'ftr.newsPlaceholder':    { en: 'Your email',                  ka: 'შენი ელ-ფოსტა' },
   'ftr.newsBtn':            { en: 'Subscribe',                   ka: 'გამოწერა' },
@@ -37,23 +30,8 @@ export const SITE_STRINGS: Record<string, { en: string; ka: string }> = {
   'ftr.contact':            { en: 'Contact us',                  ka: 'კონტაქტი' },
 
   // Home page
-  'home.trust1':            { en: 'Free delivery',               ka: 'უფასო მიწოდება' },
-  'home.trust2':            { en: 'Cancel anytime',              ka: 'გაუქმება ნებისმიერ დროს' },
-  'home.trust3':            { en: 'Picked for your dog',         ka: 'შერჩეული შენი ძაღლისთვის' },
-  'home.waysTitle':         { en: 'Pick your way',               ka: 'აირჩიე შენი გზა' },
-  'home.boxTitle':          { en: 'Inside every box',            ka: 'რა არის ყუთში' },
-  'home.stepsTitle':        { en: 'Three easy steps',            ka: 'სამი მარტივი ნაბიჯი' },
-  'home.reviewsTitle':      { en: 'Happy tails',                 ka: 'ბედნიერი კუდები' },
-  'home.ctaTitle':          { en: 'Ready to make that tail wag?', ka: 'მზად ხარ, რომ კუდი გაუქიცინო?' },
-  'home.ctaSub':            { en: 'First box ships in 3–5 days.', ka: 'პირველი ყუთი 3–5 დღეში.' },
   'home.seeAll':            { en: 'See all',                     ka: 'ყველას ნახვა' },
-  'home.swipe':             { en: 'Swipe',                       ka: 'გადაფურცლე' },
 
-  'home.way.box':           { en: 'A new surprise every month',  ka: 'ახალი სიურპრიზი ყოველ თვე' },
-  'home.way.custom':        { en: 'You choose every item',       ka: 'თავად აირჩიე ყველაფერი' },
-  'home.way.gift':          { en: 'Make a friend’s dog happy',   ka: 'გაახარე მეგობრის ძაღლი' },
-  'home.way.shop':          { en: 'Treats, toys & care',         ka: 'ნუგბარი, სათამაშოები, მოვლა' },
-  'home.plansTitle':        { en: 'Choose your plan',            ka: 'აირჩიე გეგმა' },
 
   // FAQ page
   'faq.title':              { en: 'Questions & answers',         ka: 'კითხვა-პასუხი' },

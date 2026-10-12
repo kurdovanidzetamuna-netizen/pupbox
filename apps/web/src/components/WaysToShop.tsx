@@ -12,32 +12,34 @@ const WAYS = [
 ] as const;
 
 /**
- * The four ways to buy, side by side: the monthly box, a box you build, a
- * gift box, and the shop. Each card is one big link. Flat, mint line icons
- * (lilac for the gift).
+ * The four ways to buy: the monthly box, a box you build, a gift box, and the
+ * shop. Each card is one link. Full-width rows on phones; on wider screens
+ * they share one centred row, so fewer ways never leave a gap.
  */
 export default function WaysToShop({ className = '' }: { className?: string }) {
   const { t } = useLanguage();
   return (
     <section className={`py-12 sm:py-14 bg-white ${className}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
-        <Heading kind="section" align="center" title={t('ways.title')} subtitle={t('ways.sub')} />
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <Heading kind="section" align="center" title={t('ways.title')} />
+        <div className="flex flex-wrap justify-center gap-3 sm:gap-4">
           {WAYS.map((w, i) => {
-            const isGiftTone = w.tone === 'lilac';
+            const gift = w.tone === 'lilac';
             return (
               <Link key={w.key} href={w.href}
-                className={`group relative flex flex-col rounded-3xl p-5 sm:p-6 transition-all hover:-translate-y-1 animate-[fadeUp_0.4s_ease-out_both] ${
-                  isGiftTone ? 'bg-lilac-50/70 hover:bg-lilac-50' : 'bg-teal-50/60 hover:bg-teal-50'}`} style={{ animationDelay: `${i * 60}ms` }}>
-                {'isNew' in w && w.isNew && <span className="absolute top-4 right-4 text-[11px] font-extrabold text-lilac-600 bg-white rounded-full px-2.5 py-0.5">{t('ways.new')}</span>}
-                <span className={`w-12 h-12 rounded-2xl bg-white flex items-center justify-center mb-4 transition-transform group-hover:scale-110 group-hover:-rotate-6 ${isGiftTone ? 'text-lilac-600' : 'text-teal-600'}`}>
+                className="group relative w-full sm:w-[calc(50%-8px)] lg:w-[calc(25%-12px)] flex sm:flex-col items-center sm:items-start gap-4 sm:gap-0 rounded-2xl bg-white ring-1 ring-gray-100 hover:ring-teal-200 hover:shadow-soft p-4 sm:p-5 transition-all animate-[fadeUp_0.4s_ease-out_both]"
+                style={{ animationDelay: `${i * 60}ms` }}>
+                <span className={`w-12 h-12 shrink-0 rounded-xl flex items-center justify-center sm:mb-4 transition-transform group-hover:scale-105 ${gift ? 'bg-lilac-50 text-lilac-600' : 'bg-teal-50 text-teal-600'}`}>
                   <Icon name={w.icon} className="w-6 h-6" strokeWidth={1.7} />
                 </span>
-                <span className="text-[16px] font-bold text-gray-900">{t(`ways.${w.key}.t`)}</span>
-                <span className="mt-1.5 text-[13px] leading-relaxed text-gray-500 flex-1">{t(`ways.${w.key}.s`)}</span>
-                <span className={`mt-4 w-9 h-9 rounded-full bg-white flex items-center justify-center transition-colors ${isGiftTone ? 'text-lilac-600 group-hover:bg-lilac-400 group-hover:text-white' : 'text-teal-700 group-hover:bg-teal-600 group-hover:text-white'}`}>
-                  <svg className="w-4 h-4 transition-transform group-hover:translate-x-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+                <span className="flex-1 min-w-0">
+                  <span className="flex items-center gap-2">
+                    <span className="text-[15px] font-bold text-gray-900">{t(`ways.${w.key}.t`)}</span>
+                    {'isNew' in w && w.isNew && <span className="text-[10.5px] font-bold text-lilac-600 bg-lilac-50 rounded-full px-2 py-0.5">{t('ways.new')}</span>}
+                  </span>
+                  <span className="block mt-1 text-[13px] leading-relaxed text-gray-500">{t(`ways.${w.key}.s`)}</span>
                 </span>
+                <Icon name="arrow" className="w-4 h-4 shrink-0 text-gray-300 group-hover:text-teal-600 group-hover:translate-x-0.5 transition sm:absolute sm:top-5 sm:right-5" />
               </Link>
             );
           })}
