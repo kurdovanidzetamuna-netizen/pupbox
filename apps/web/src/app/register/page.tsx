@@ -16,14 +16,17 @@ import { forgetReferral, rememberReferral, storedReferral } from '@/lib/referral
 import { FieldError, FormAlert, countErrors, revealFirstError } from '@/components/ui/FormError';
 import { Heading } from '@/components/ui/Heading';
 import IconButton from '@/components/ui/IconButton';
+import Modal from '@/components/ui/Modal';
+import { GIFT } from '@/lib/gift';
 
-type Step = 'details' | 'verify' | 'dog';
+type Step = 'about' | 'account' | 'verify' | 'done';
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /**
- * Sign-up in three steps: details → confirm phone and email with codes →
- * the dog (optional; skippable). A referral code from the link (or one kept
- * from an earlier visit) is filled in but stays editable.
+ * Sign-up in short steps: about you (name, email, phone) → account (password,
+ * invite code, consent) → confirm phone and email with codes. Then a pop-up
+ * asks about the dog straight away (optional; skippable). A referral code
+ * from the link (or one kept from an earlier visit) is filled in.
  */
 function RegisterForm() {
   const router = useRouter();
@@ -32,7 +35,7 @@ function RegisterForm() {
   const { refresh: refreshCart } = useCart();
   const { t, lang } = useLanguage();
 
-  const [step, setStep] = useState<Step>(params.get('step') === 'verify' ? 'verify' : 'details');
+  const [step, setStep] = useState<Step>(params.get('step') === 'verify' ? 'verify' : 'about');
   const [form, setForm] = useState({ firstName: '', lastName: '', email: '', password: '', phone: '', referralCode: '' });
   const [fromLink, setFromLink] = useState(false);
   const [phoneOk, setPhoneOk] = useState(false);
@@ -41,6 +44,7 @@ function RegisterForm() {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [dog, setDog] = useState<DogProfile>(emptyDogProfile);
+  const [showPw, setShowPw] = useState(false);
 
   // The link's code wins; otherwise one remembered from an earlier visit.
   useEffect(() => {
@@ -55,13 +59,22 @@ function RegisterForm() {
     setFieldErrors(e => ({ ...e, [key]: '' }));
   };
 
-  async function handleSubmit(e: React.FormEvent) {
+  function nextStep(e: React.FormEvent) {
     e.preventDefault();
     const errs: Record<string, string> = {};
     if (!form.firstName.trim()) errs.firstName = t('reg.e.firstName');
     if (!form.lastName.trim()) errs.lastName = t('reg.e.lastName');
     if (!EMAIL_RE.test(form.email.trim())) errs.email = t('reg.e.email');
     if (!phoneOk) errs.phone = t(form.phone ? 'reg.e.phone' : 'ui.e.phone');
+    if (countErrors(errs)) { setFieldErrors(errs); return revealFirstError(); }
+    setFieldErrors({}); setError('');
+    setStep('account');
+    window.scrollTo({ top: 0 });
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const errs: Record<string, string> = {};
     if (form.password.length < 8) errs.password = t('reg.e.password');
     if (countErrors(errs)) { setFieldErrors(errs); return revealFirstError(); }
     setFieldErrors({});
@@ -77,7 +90,12 @@ function RegisterForm() {
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error((Array.isArray(data.message) ? data.message[0] : data.message) || t('co.e.generic'));
+      if (!res.ok) {
+        const msg = (Array.isArray(data.message) ? data.message[0] : data.message) || t('co.e.generic');
+        // A problem with the name, email or phone belongs to the first step.
+        if (/email|phone|name/i.test(msg)) setStep('about');
+        throw new Error(msg);
+      }
       localStorage.setItem('pupbox_token', data.token);
       forgetReferral();
       await refreshCart(); // merges anything added as a guest into the account cart
@@ -90,7 +108,7 @@ function RegisterForm() {
     }
   }
 
-  const verified = useCallback(() => { setStep('dog'); window.scrollTo({ top: 0 }); }, []);
+  const verified = useCallback(() => { setStep('done'); window.scrollTo({ top: 0 }); }, []);
 
   async function saveDog() {
     if (!dog.name.trim()) { setFieldErrors({ dogName: t('co.e.dogName') }); return revealFirstError(); }
@@ -106,17 +124,17 @@ function RegisterForm() {
   const field = (key: string) => `w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 ${fieldErrors[key] ? 'border-red-400 bg-red-50' : 'border-gray-200'}`;
   const err = (key: string) => <FieldError message={fieldErrors[key]} />;
   const bad = (key: string) => ({ 'aria-invalid': !!fieldErrors[key] });
-  const steps: Step[] = ['details', 'verify', 'dog'];
+  const steps: Step[] = ['about', 'account', 'verify'];
 
   return (
     <main className="min-h-[70vh] bg-gray-50 flex flex-col items-center px-4 pt-8 sm:pt-10 pb-14">
       <ol className="flex items-center gap-2 mb-6 text-xs" aria-label={t('aria.signupSteps')}>
         {steps.map((s, i) => {
-          const at = steps.indexOf(step);
+          const at = step === 'done' ? steps.length : steps.indexOf(step);
           return (
             <li key={s} className="flex items-center gap-2" aria-current={s === step ? 'step' : undefined}>
               <span className={`w-6 h-6 rounded-full flex items-center justify-center font-bold ${i < at ? 'bg-teal-600 text-white' : i === at ? 'bg-teal-600 text-white ring-4 ring-teal-100' : 'bg-gray-200 text-gray-500'}`}>{i < at ? '✓' : i + 1}</span>
-              <span className={i === at ? 'font-semibold text-gray-900' : 'text-gray-400'}>{t(`reg.step.${s}`)}</span>
+              <span className={`hidden sm:inline ${i === at ? 'font-semibold text-gray-900' : 'text-gray-400'}`}>{t(`reg.step.${s}`)}</span>
               {i < steps.length - 1 && <span className="w-5 h-px bg-gray-200" aria-hidden="true" />}
             </li>
           );
@@ -124,11 +142,11 @@ function RegisterForm() {
       </ol>
 
       <div className="bg-white rounded-3xl ring-1 ring-gray-200/60 p-6 sm:p-8 w-full max-w-lg">
-        {step === 'details' && (
+        {step === 'about' && (
           <>
             <Heading kind="form" as="h1" title={t('register.heading')} subtitle={t('register.subheading')} />
             <FormAlert message={error} missing={countErrors(fieldErrors)} className="mb-4" />
-            <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+            <form onSubmit={nextStep} className="space-y-4" noValidate>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">{t('register.firstName')} <span className="text-red-500">*</span></label>
@@ -152,27 +170,42 @@ function RegisterForm() {
                   onChange={(v, ok) => { set('phone', v); setPhoneOk(ok); }} />
                 {!fieldErrors.phone && <p className="text-xs text-gray-400 mt-1">{t('reg.phoneHint')}</p>}
               </div>
-              <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">{t('login.password')} <span className="text-red-500">*</span></label>
-                <input id="password" type="password" {...bad('password')} autoComplete="new-password" value={form.password} onChange={e => set('password', e.target.value)} className={field('password')} placeholder="••••••••" />
-                {err('password')}
-              </div>
-              <div>
-                <label htmlFor="referralCode" className="block text-sm font-medium text-gray-700 mb-1">{t('reg.referral')}</label>
-                <input id="referralCode" value={form.referralCode} onChange={e => set('referralCode', e.target.value)} className={field('referralCode')} maxLength={40} />
-                {fromLink && form.referralCode && <p className="text-xs text-green-700 mt-1">🎁 {t('reg.referralFrom')}</p>}
-              </div>
-              <label className="flex items-start gap-3 text-sm text-gray-600 cursor-pointer">
-                <input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} className="mt-0.5 accent-teal-600 w-4 h-4" />
-                <span>{t('reg.consent')}</span>
-              </label>
-              <LegalNotice />
-              <div className="flex justify-end pt-1"><IconButton type="submit" icon="arrow" tone="primary" label={loading ? t('register.loading') : t('register.btn')} disabled={loading} /></div>
+              <div className="flex justify-end pt-1"><IconButton type="submit" icon="arrow" tone="primary" label={t('reg.next')} /></div>
             </form>
             <p className="text-center text-sm text-gray-500 mt-6">
               {t('register.haveAccount')}{' '}
               <Link href="/login" className="text-teal-600 font-medium hover:underline">{t('register.signIn')}</Link>
             </p>
+          </>
+        )}
+
+        {step === 'account' && (
+          <>
+            <Heading kind="form" as="h1" title={t('reg.accountTitle')} subtitle={t('reg.accountSub')} />
+            <FormAlert message={error} missing={countErrors(fieldErrors)} className="mb-4" />
+            <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">{t('login.password')} <span className="text-red-500">*</span></label>
+                <div className="relative">
+                  <input id="password" type={showPw ? 'text' : 'password'} {...bad('password')} autoComplete="new-password" value={form.password} onChange={e => set('password', e.target.value)} className={`${field('password')} pr-12`} placeholder="••••••••" autoFocus />
+                  <button type="button" onClick={() => setShowPw(v => !v)} aria-label={t(showPw ? 'reg.hidePw' : 'reg.showPw')} title={t(showPw ? 'reg.hidePw' : 'reg.showPw')} aria-pressed={showPw}
+                    className="absolute right-1.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:text-teal-700 hover:bg-teal-50 transition-colors">
+                    <Icon name={showPw ? 'eyeOff' : 'eye'} className="w-[18px] h-[18px]" />
+                  </button>
+                </div>
+                {fieldErrors.password ? err('password') : <p className={`text-xs mt-1 ${form.password.length >= 8 ? 'text-teal-600' : 'text-gray-400'}`}>{form.password.length >= 8 ? '✓ ' : ''}{t('reg.pwHint')}</p>}
+              </div>
+              <ReferralField value={form.referralCode} fromLink={fromLink} onChange={v => set('referralCode', v)} />
+              <label className="flex items-start gap-3 text-sm text-gray-600 cursor-pointer">
+                <input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} className="mt-0.5 accent-teal-600 w-4 h-4" />
+                <span>{t('reg.consent')}</span>
+              </label>
+              <LegalNotice />
+              <div className="flex items-center justify-between pt-1">
+                <IconButton icon="undo" label={t('reg.back')} onClick={() => { setStep('about'); setError(''); }} />
+                <IconButton type="submit" icon="arrow" tone="primary" label={loading ? t('register.loading') : t('register.btn')} disabled={loading} />
+              </div>
+            </form>
           </>
         )}
 
@@ -184,19 +217,56 @@ function RegisterForm() {
           </>
         )}
 
-        {step === 'dog' && (
-          <>
-            <Heading kind="form" as="h1" title={t('wel.title')} subtitle={t('wel.sub')} />
-            <DogProfileForm value={dog} onChange={d => { setDog(d); setFieldErrors({}); }} compact nameError={fieldErrors.dogName} />
-            <FormAlert message={error} className="mt-4" />
-            <div className="flex items-center justify-end gap-1 mt-6 pt-4 border-t border-gray-100">
-              <IconButton icon="close" label={t('wel.skip')} onClick={() => router.push(redirect)} />
-              <IconButton icon="check" tone="primary" label={loading ? t('co.saving') : t('wel.save')} onClick={saveDog} disabled={loading} />
-            </div>
-          </>
+        {step === 'done' && (
+          <div className="text-center py-6">
+            <span className="inline-block text-5xl animate-[bob_2s_ease-in-out_infinite]" aria-hidden="true">🐶</span>
+            <Heading kind="form" as="h1" align="center" title={t('wel.title')} subtitle={t('wel.sub')} className="mt-3" />
+          </div>
         )}
       </div>
+
+      {/* Straight after sign-up: the dog, in the same pop-up as everywhere else. */}
+      <Modal open={step === 'done'} onClose={() => router.push(redirect)} title={t('wel.title')} size="lg"
+        footer={<>
+          <IconButton icon="close" label={t('wel.skip')} onClick={() => router.push(redirect)} />
+          <IconButton icon="check" tone="primary" label={loading ? t('co.saving') : t('wel.save')} onClick={saveDog} disabled={loading} />
+        </>}>
+        <p className="text-[13px] text-gray-500 -mt-1 mb-4">{t('wel.sub')}</p>
+        <FormAlert message={error} className="mb-4" />
+        <DogProfileForm value={dog} onChange={d => { setDog(d); setFieldErrors({}); }} compact nameError={fieldErrors.dogName} />
+      </Modal>
     </main>
+  );
+}
+
+/**
+ * The invite code as a small lilac gift card: a link-in code shows as
+ * "added" with the code and a remove icon; otherwise one tap opens a short
+ * code field.
+ */
+function ReferralField({ value, fromLink, onChange }: { value: string; fromLink: boolean; onChange: (v: string) => void }) {
+  const { t } = useLanguage();
+  const [open, setOpen] = useState(!!value);
+  const applied = fromLink && !!value;
+  return (
+    <div className={`rounded-2xl ${GIFT.soft} p-3`}>
+      <div className="flex items-center gap-3">
+        <span className={`w-9 h-9 shrink-0 rounded-xl bg-white flex items-center justify-center ${GIFT.icon}`}><Icon name="gift" className="w-[18px] h-[18px]" /></span>
+        <div className="flex-1 min-w-0">
+          <p className={`text-[13px] font-bold ${GIFT.text}`}>{applied ? t('reg.refApplied') : t('reg.refAsk')}</p>
+          {!applied && <p className="text-[11.5px] text-gray-500">{t('reg.refAskSub')}</p>}
+          {applied && <p className="text-[12px] font-mono font-bold tracking-wider text-gray-700 truncate">{value}</p>}
+        </div>
+        {applied
+          ? <IconButton icon="close" size="sm" label={t('reg.refRemove')} onClick={() => { onChange(''); setOpen(true); }} />
+          : !open && <IconButton icon="plus" size="sm" label={t('reg.refAdd')} onClick={() => setOpen(true)} />}
+      </div>
+      {open && !applied && (
+        <input id="referralCode" aria-label={t('reg.referral')} value={value} onChange={e => onChange(e.target.value.toUpperCase().replace(/\s+/g, ''))} maxLength={40} autoFocus
+          placeholder={t('reg.refPlaceholder')}
+          className="mt-3 w-full h-10 rounded-full bg-white border border-lilac-100 px-4 text-[13px] font-mono font-bold tracking-wider uppercase placeholder:font-sans placeholder:font-normal placeholder:tracking-normal placeholder:normal-case placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-lilac-400" />
+      )}
+    </div>
   );
 }
 
