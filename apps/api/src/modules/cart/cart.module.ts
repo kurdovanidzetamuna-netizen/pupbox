@@ -27,6 +27,7 @@ class BoxLineDto {
 class AddBoxDto {
   @IsArray() @ArrayMaxSize(60) @ValidateNested({ each: true }) @Type(() => BoxLineDto) items: BoxLineDto[];
   @IsOptional() @IsBoolean() monthly?: boolean;
+  @IsOptional() @Type(() => Number) @IsNumber() @Min(0) mystery?: number;
   @IsOptional() @IsString() replaceItemId?: string;
 }
 
@@ -77,7 +78,7 @@ export class CartController {
   @ApiOperation({ summary: 'Put a box the customer built in the cart (or replace the one being edited)' })
   addBox(@Request() req: any, @Headers() headers: any, @Body() dto: AddBoxDto) {
     const { userId, sessionId } = this.resolveSession(req, headers);
-    return this.service.getOrCreate(userId, sessionId).then(cart => this.service.addBox(cart.id, userId, { items: dto.items, monthly: !!dto.monthly, replaceItemId: dto.replaceItemId }));
+    return this.service.getOrCreate(userId, sessionId).then(cart => this.service.addBox(cart.id, userId, { items: dto.items, monthly: !!dto.monthly, mystery: dto.mystery, replaceItemId: dto.replaceItemId }));
   }
 
   @Put('items/:itemId')

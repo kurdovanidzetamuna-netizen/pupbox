@@ -18,6 +18,8 @@ export class CreateProductDto {
   @IsOptional() @IsBoolean() standaloneSale?: boolean;
   /** Customers may put it in a box they build. */
   @IsOptional() @IsBoolean() inCustomBox?: boolean;
+  /** Can be packed as a mystery item in a built box. */
+  @IsOptional() @IsBoolean() inMystery?: boolean;
   @IsOptional() @IsString() seoTitle?: string;
   @IsOptional() @IsString() seoDesc?: string;
   @IsOptional() @IsString() status?: string;

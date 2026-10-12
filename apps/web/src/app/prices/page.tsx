@@ -1,7 +1,7 @@
 import { api } from '@/lib/api';
 import PlanSection from './PlanSection';
 import BoxContents from './BoxContents';
-import BuildBoxPromo from './BuildBoxPromo';
+import BuildBoxPromo from '@/components/BuildBoxPromo';
 import { PricesHeader, PricesIncludes } from './PricesHeader';
 import { pricingPage } from '@pupbox/content';
 import { getStoredContent, pageMetadata } from '@/lib/content';

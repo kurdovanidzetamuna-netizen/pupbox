@@ -28,7 +28,7 @@ export default function EditProductPage() {
 
   const [form, setForm] = useState({
     name: '', slug: '', sku: '', brand: '', shortDescription: '', description: '',
-    price: '', salePrice: '', categoryId: '', includedInBox: false, standaloneSale: true, inCustomBox: false,
+    price: '', salePrice: '', categoryId: '', includedInBox: false, standaloneSale: true, inCustomBox: false, inMystery: false,
     seoTitle: '', seoDesc: '', stockQuantity: '', lowStockAlert: '',
   });
   const [images, setImages] = useState<any[]>([]);
@@ -74,6 +74,7 @@ export default function EditProductPage() {
         includedInBox: product.includedInBox ?? false,
         standaloneSale: product.standaloneSale ?? true,
         inCustomBox: product.inCustomBox ?? false,
+        inMystery: product.inMystery ?? false,
         seoTitle: product.seoTitle || '',
         seoDesc: product.seoDesc || '',
         stockQuantity: product.inventory?.quantity != null ? String(product.inventory.quantity) : '',
@@ -192,7 +193,7 @@ export default function EditProductPage() {
     const body: any = {
       name: form.name, slug: form.slug, sku: form.sku,
       price: Number(form.price),
-      includedInBox: form.includedInBox, standaloneSale: form.standaloneSale, inCustomBox: form.inCustomBox,
+      includedInBox: form.includedInBox, standaloneSale: form.standaloneSale, inCustomBox: form.inCustomBox, inMystery: form.inMystery,
     };
     if (form.brand) body.brand = form.brand;
     if (form.shortDescription) body.shortDescription = form.shortDescription;
@@ -424,6 +425,10 @@ export default function EditProductPage() {
               <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--slate-600)', cursor: 'pointer' }} title="Shown on the build-your-own box page. Products that need a size or a name are left out.">
                 <input type="checkbox" checked={form.inCustomBox} onChange={e => set('inCustomBox', e.target.checked)} />
                 Can go in a custom box
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--slate-600)', cursor: 'pointer' }} title="Packed as a surprise in built boxes that have a mystery item. Customers never see which.">
+                <input type="checkbox" checked={form.inMystery} onChange={e => set('inMystery', e.target.checked)} />
+                Can be a mystery item
               </label>
             </div>
           </div>

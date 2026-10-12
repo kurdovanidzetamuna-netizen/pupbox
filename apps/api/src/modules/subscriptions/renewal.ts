@@ -5,7 +5,7 @@ import type { EmailService } from '../email/email.service';
 import { shopSettings } from '../settings/settings';
 import { subscriptionPeriod } from './subscription-period';
 import { cancelUnpaidOrder } from '../orders/order-lifecycle';
-import { boxLines, quoteBox } from '../custom-box/custom-box';
+import { quoteSavedBox } from '../custom-box/custom-box';
 
 /**
  * What the next term costs, as an order line. A plan: its price. A monthly
@@ -18,7 +18,7 @@ async function termLine(prisma: PrismaService, s: { customBoxId: string | null; 
     const price = Number(s.plan.price);
     return { price, item: { subscriptionPlanId: s.plan.id, name: s.plan.name, price, quantity: 1, total: price } };
   }
-  const q = await quoteBox(prisma, await boxLines(prisma, s.customBoxId), true, { strict: false });
+  const { quote: q } = await quoteSavedBox(prisma, s.customBoxId, true, { strict: false });
   if (!q.ok) return null;
   return { price: q.total, item: { subscriptionPlanId: s.plan.id, customBoxId: s.customBoxId, name: s.plan.name, price: q.total, quantity: 1, total: q.total } };
 }

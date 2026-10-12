@@ -22,7 +22,7 @@ function Card({ title, intro, children }: { title: string; intro: ReactNode; chi
 /** Shop rules admin can change without a developer. Stored as the CMS row config-settings; they apply at once. */
 export default function SettingsPage() {
   const [content, setContent] = useState<any>({});
-  const [v, setV] = useState({ freeHours: '12', noticeDays: '7', graceDays: '3', orderEmail: '', boxMin: '3', boxFee: '5', boxMonthly: '10' });
+  const [v, setV] = useState({ freeHours: '12', noticeDays: '7', graceDays: '3', orderEmail: '', boxMin: '3', boxFee: '5', boxMonthly: '10', mysteryOn: true, mysteryPrice: '15', mysteryMax: '2' });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
@@ -39,6 +39,9 @@ export default function SettingsPage() {
         boxMin: String(c.customBox?.minItems ?? 3),
         boxFee: String(c.customBox?.packingFee ?? 5),
         boxMonthly: String(c.customBox?.monthlyDiscount ?? 10),
+        mysteryOn: c.customBox?.mystery?.enabled !== false,
+        mysteryPrice: String(c.customBox?.mystery?.price ?? 15),
+        mysteryMax: String(c.customBox?.mystery?.max ?? 2),
       });
     }).finally(() => setLoading(false));
   }, []);
@@ -54,6 +57,9 @@ export default function SettingsPage() {
     if (!(Number.isInteger(minItems) && minItems >= 1 && minItems <= 50)) return setMsg({ ok: false, text: 'Custom box: at least 1 to 50 items.' });
     if (!(packingFee >= 0 && packingFee <= 500)) return setMsg({ ok: false, text: 'Custom box packing fee: ₾0 to ₾500.' });
     if (!(monthlyDiscount >= 0 && monthlyDiscount <= 90)) return setMsg({ ok: false, text: 'Monthly box discount: 0 to 90%.' });
+    const mPrice = Number(v.mysteryPrice), mMax = Number(v.mysteryMax);
+    if (!(mPrice >= 0 && mPrice <= 500)) return setMsg({ ok: false, text: 'Mystery item price: ₾0 to ₾500.' });
+    if (!(Number.isInteger(mMax) && mMax >= 1 && mMax <= 10)) return setMsg({ ok: false, text: 'Mystery items per box: 1 to 10.' });
     const orderEmail = v.orderEmail.trim();
     if (orderEmail && !/^\S+@\S+\.\S+$/.test(orderEmail)) return setMsg({ ok: false, text: 'Enter a valid email address, or leave it empty.' });
     setSaving(true); setMsg(null);
@@ -62,7 +68,7 @@ export default function SettingsPage() {
       cancellation: { ...(content.cancellation ?? {}), freeHours },
       renewal: { ...(content.renewal ?? {}), noticeDays, graceDays },
       notifications: { ...(content.notifications ?? {}), orderEmail },
-      customBox: { ...(content.customBox ?? {}), minItems, packingFee, monthlyDiscount },
+      customBox: { ...(content.customBox ?? {}), minItems, packingFee, monthlyDiscount, mystery: { enabled: v.mysteryOn, price: mPrice, max: mMax } },
     };
     const res = await fetch(`${API}/cms`, {
       method: 'POST',
@@ -109,6 +115,18 @@ export default function SettingsPage() {
             </label>
             <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 14, color: 'var(--slate-700)' }}>
               Monthly box: <input type="number" min={0} max={90} value={v.boxMonthly} onChange={set('boxMonthly')} style={numInput} /> % off the products
+            </label>
+            <div style={{ borderTop: '1px solid var(--slate-200b)', margin: '16px 0 12px' }} />
+            <p style={{ fontWeight: 700, color: 'var(--slate-800)', fontSize: 13.5, margin: '0 0 4px' }}>🎁 Mystery item</p>
+            <p style={{ ...help, marginBottom: 10 }}>Customers can add a surprise without knowing what it is. You pack one of the products marked “Can be a mystery item” (on each product’s page); the monthly packing list shows how many and what you can choose from.</p>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 14, color: 'var(--slate-700)', marginBottom: 10, cursor: 'pointer' }}>
+              <input type="checkbox" checked={v.mysteryOn} onChange={(e) => { setV(x => ({ ...x, mysteryOn: e.target.checked })); setMsg(null); }} /> Offer a mystery item
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 14, color: 'var(--slate-700)', marginBottom: 10, opacity: v.mysteryOn ? 1 : 0.5 }}>
+              Price ₾ <input type="number" min={0} max={500} step="0.5" value={v.mysteryPrice} onChange={set('mysteryPrice')} disabled={!v.mysteryOn} style={numInput} /> each
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 14, color: 'var(--slate-700)', opacity: v.mysteryOn ? 1 : 0.5 }}>
+              At most <input type="number" min={1} max={10} value={v.mysteryMax} onChange={set('mysteryMax')} disabled={!v.mysteryOn} style={numInput} /> per box
             </label>
           </Card>
 

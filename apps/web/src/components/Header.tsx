@@ -61,10 +61,11 @@ export default function Header({ site }: { site: StoredContent | null }) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-3">
         <Logo brand={c.brand} />
 
-        <nav className="hidden lg:flex gap-6 xl:gap-8 text-sm font-medium text-gray-600" aria-label={t('aria.mainNav')}>
+        {/* The menu: compact pills, close together; the current page lightly marked. */}
+        <nav className="hidden md:flex items-center gap-0.5 text-[13.5px] font-medium text-gray-600" aria-label={t('aria.mainNav')}>
           {nav.map((n, i) => (
             <SmartLink key={i} href={n.href} aria-current={isActive(n.href) ? 'page' : undefined}
-              className={`transition-colors hover:text-teal-600 ${isActive(n.href) ? 'text-teal-600 font-semibold' : ''}`}>
+              className={`h-9 px-3 lg:px-3.5 inline-flex items-center rounded-full whitespace-nowrap transition-colors ${isActive(n.href) ? 'bg-teal-50 text-teal-700 font-semibold' : 'hover:bg-gray-50 hover:text-teal-700'}`}>
               {n.label}
             </SmartLink>
           ))}

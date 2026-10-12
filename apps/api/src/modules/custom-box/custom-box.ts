@@ -34,8 +34,14 @@ export function tidy(lines: BoxLine[]): BoxLine[] {
  * (refreshing a basket, renewals): products no longer allowed or out of stock
  * are left out; `ok` says whether the box still has enough items.
  */
-export async function quoteBox(prisma: PrismaService, raw: BoxLine[], monthly: boolean, { strict = true } = {}) {
+export async function quoteBox(prisma: PrismaService, raw: BoxLine[], monthly: boolean, { strict = true, mystery: wantMystery = 0 } = {}) {
   const { customBox: cfg } = await shopSettings(prisma);
+  // Surprise items: only while admin offers them, and no more than the limit.
+  const askedMystery = Math.max(0, Math.floor(Number(wantMystery) || 0));
+  const allowedMystery = cfg.mystery.enabled ? Math.min(askedMystery, cfg.mystery.max) : 0;
+  if (strict && askedMystery > allowedMystery) {
+    throw new BadRequestException(cfg.mystery.enabled ? `At most ${cfg.mystery.max} mystery items per box.` : 'Mystery items aren’t offered right now. Remove it and try again.');
+  }
   const lines = tidy(raw);
   const products = lines.length ? await prisma.product.findMany({
     where: { id: { in: lines.map((l) => l.productId) } },
@@ -58,19 +64,28 @@ export async function quoteBox(prisma: PrismaService, raw: BoxLine[], monthly: b
     items.push({ productId: p!.id, name: p!.name, sku: p!.sku, sellerId: p!.sellerId, quantity: l.quantity, unit, shopUnit, total: r2(unit * l.quantity) });
   }
 
-  const count = items.reduce((n, i) => n + i.quantity, 0);
-  const itemsTotal = r2(items.reduce((n, i) => n + i.total, 0));
-  const fullTotal = r2(items.reduce((n, i) => n + i.shopUnit * i.quantity, 0));
+  const mysteryUnit = monthly ? r2(cfg.mystery.price * (1 - cfg.monthlyDiscount / 100)) : cfg.mystery.price;
+  const mystery = { count: allowedMystery, unit: mysteryUnit, total: r2(mysteryUnit * allowedMystery) };
+  const count = items.reduce((n, i) => n + i.quantity, 0) + mystery.count;
+  const itemsTotal = r2(items.reduce((n, i) => n + i.total, 0) + mystery.total);
+  const fullTotal = r2(items.reduce((n, i) => n + i.shopUnit * i.quantity, 0) + cfg.mystery.price * mystery.count);
   const ok = count >= cfg.minItems;
   if (strict && !ok) throw new BadRequestException(`A custom box needs at least ${cfg.minItems} items.`);
   const packingFee = count ? cfg.packingFee : 0;
-  return { items, count, itemsTotal, saving: r2(fullTotal - itemsTotal), packingFee, total: r2(itemsTotal + packingFee), minItems: cfg.minItems, ok };
+  return { items, mystery, count, itemsTotal, saving: r2(fullTotal - itemsTotal), packingFee, total: r2(itemsTotal + packingFee), minItems: cfg.minItems, ok };
 }
 export type BoxQuote = Awaited<ReturnType<typeof quoteBox>>;
 
-/** A box's saved contents, as lines. */
-export async function boxLines(prisma: PrismaService, boxId: string): Promise<BoxLine[]> {
-  return prisma.customBoxItem.findMany({ where: { boxId }, select: { productId: true, quantity: true } });
+/** A box's saved contents: its products and how many mystery items. */
+export async function boxContents(prisma: PrismaService, boxId: string): Promise<{ lines: BoxLine[]; mystery: number }> {
+  const box = await prisma.customBox.findUnique({ where: { id: boxId }, select: { mysteryCount: true, items: { select: { productId: true, quantity: true } } } });
+  return { lines: box?.items ?? [], mystery: box?.mysteryCount ?? 0 };
+}
+
+/** Today's price of a saved box (see quoteBox). */
+export async function quoteSavedBox(prisma: PrismaService, boxId: string, monthly: boolean, opts: { strict?: boolean } = {}) {
+  const { lines, mystery } = await boxContents(prisma, boxId);
+  return { lines, quote: await quoteBox(prisma, lines, monthly, { ...opts, mystery }) };
 }
 
 export const CUSTOM_PLAN_SLUG = 'custom-box-monthly';

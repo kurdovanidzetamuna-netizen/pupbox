@@ -28,7 +28,7 @@ interface CartContextType {
   addProduct: (productId: string, quantity?: number, personalisation?: { engraving?: string; size?: string }) => Promise<void>;
   addPlan: (planId: string) => Promise<void>;
   /** Puts a box the customer built in the basket, or replaces the one being edited. */
-  addBox: (items: { productId: string; quantity: number }[], monthly: boolean, replaceItemId?: string) => Promise<void>;
+  addBox: (items: { productId: string; quantity: number }[], monthly: boolean, mystery?: number, replaceItemId?: string) => Promise<void>;
   updateItem: (itemId: string, quantity: number) => Promise<void>;
   removeItem: (itemId: string) => Promise<void>;
   applyCoupon: (code: string) => Promise<void>;
@@ -73,7 +73,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       cart, ready, loading, refresh,
       addProduct: (productId, quantity = 1, personalisation) => call('/items', 'POST', { productId, quantity, ...(personalisation ? { personalisation } : {}) }),
       addPlan: (planId) => call('/items', 'POST', { subscriptionPlanId: planId }),
-      addBox: (items, monthly, replaceItemId) => call('/custom-box', 'POST', { items, monthly, ...(replaceItemId ? { replaceItemId } : {}) }),
+      addBox: (items, monthly, mystery = 0, replaceItemId) => call('/custom-box', 'POST', { items, monthly, mystery, ...(replaceItemId ? { replaceItemId } : {}) }),
       updateItem: (itemId, quantity) => call(`/items/${itemId}`, 'PUT', { quantity }),
       removeItem: (itemId) => call(`/items/${itemId}`, 'DELETE'),
       applyCoupon: (code) => call('/coupon', 'POST', { code }),

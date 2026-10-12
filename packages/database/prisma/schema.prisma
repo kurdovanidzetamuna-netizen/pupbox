@@ -400,6 +400,8 @@ model Product {
   includedInBox    Boolean        @default(false)
   /// Customers may put it in a box they build themselves.
   inCustomBox      Boolean        @default(false)
+  /// Can be packed as a "mystery item" in a built box (customers never see which).
+  inMystery        Boolean        @default(false)
   standaloneSale   Boolean        @default(true)
   seoTitle         String?
   seoDesc          String?
@@ -1151,6 +1153,9 @@ model CustomBox {
   user          User?           @relation(fields: [userId], references: [id])
   /// Every month (a subscription) or just once.
   monthly       Boolean         @default(false)
+  /// Surprise items: the customer pays for them blind; admin picks them from
+  /// products marked "Can be a mystery item" when packing.
+  mysteryCount  Int             @default(0)
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
 

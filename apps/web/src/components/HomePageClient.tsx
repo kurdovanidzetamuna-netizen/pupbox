@@ -5,6 +5,10 @@ import PlanSection from '@/app/prices/PlanSection';
 import HeroAnimate from '@/components/HeroAnimate';
 import DogRunner from '@/components/DogRunner';
 import SmartLink from '@/components/SmartLink';
+import Link from 'next/link';
+import WaysToShop from '@/components/WaysToShop';
+import BuildBoxPromo from '@/components/BuildBoxPromo';
+import { Icon } from '@/components/ui/icons';
 import Accent from '@/components/Accent';
 import { useLanguage } from '@/context/LanguageContext';
 import { usePage } from '@/lib/usePage';
@@ -70,6 +74,10 @@ export default function HomePageClient({ plans, content, faq, pricing }: Props) 
                         {hero.cta2Text}
                       </SmartLink>
                     )}
+                    {/* Build your own box: the playful way in. */}
+                    <Link href="/build-box" className="group inline-flex whitespace-nowrap items-center justify-center gap-2 bg-white text-teal-700 ring-2 ring-teal-200 font-semibold px-5 py-3 rounded-full text-sm hover:ring-teal-400 transition">
+                      <Icon name="sparkle" className="w-4 h-4 group-hover:animate-[wiggle_0.6s_ease-in-out]" strokeWidth={2} />{t('cb.startCta')}
+                    </Link>
                   </div>
                 </HeroAnimate>
                 {(hero.steps.length > 0 || hero.stepsNote) && (
@@ -134,6 +142,9 @@ export default function HomePageClient({ plans, content, faq, pricing }: Props) 
         </section>
       )}
 
+      {/* ── FOUR WAYS: box, your own box, gift, shop ── */}
+      <WaysToShop />
+
       {/* ── WHAT'S IN THE BOX ── */}
       {c.on('whatsInBox') && (
         <section className="py-12 sm:py-14 bg-white">
@@ -181,6 +192,7 @@ export default function HomePageClient({ plans, content, faq, pricing }: Props) 
           <div className="max-w-7xl mx-auto px-6">
             <Heading kind="section" align="center" title={c.plans.heading} subtitle={c.plans.description || undefined} />
             <PlanSection plans={plans} content={pricing} />
+            <BuildBoxPromo />
           </div>
         </section>
       )}

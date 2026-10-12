@@ -30,5 +30,8 @@ export function itemName(item: any, lang: string): string {
 
 /** What's in a built box, in a few words: "2× Biscuits, 1× Paw balm". */
 export function boxSummary(item: any, lang: string): string {
-  return (item?.customBox?.items ?? []).map((x: any) => `${x.quantity}× ${catalogText(x.product, 'name', lang)}`).join(', ');
+  const parts = (item?.customBox?.items ?? []).map((x: any) => `${x.quantity}× ${catalogText(x.product, 'name', lang)}`);
+  const m = item?.customBox?.mysteryCount ?? 0;
+  if (m) parts.push(`${m}× ${lang === 'ka' ? 'სიურპრიზი' : 'Mystery item'}`);
+  return parts.join(', ');
 }

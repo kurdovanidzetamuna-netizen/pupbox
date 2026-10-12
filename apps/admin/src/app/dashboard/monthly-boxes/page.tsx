@@ -190,6 +190,13 @@ export default function MonthlyBoxesPage() {
               </div>
             ))}
           </div>
+          {data.mystery?.needed > 0 && (
+            <div style={{ marginTop: 14, background: 'var(--amber-50, #fffbeb)', borderRadius: 10, padding: '10px 12px', fontSize: 13 }}>
+              <strong>🎁 {data.mystery.needed} mystery item{data.mystery.needed === 1 ? '' : 's'}</strong> — pick from:{' '}
+              {data.mystery.pool.length ? data.mystery.pool.map((p: any) => `${p.name} (${p.inStock} in stock)`).join(', ')
+                : <span style={{ color: 'var(--red-700)', fontWeight: 600 }}>no product is marked “Can be a mystery item” yet</span>}
+            </div>
+          )}
         </div>
       )}
 
@@ -261,7 +268,7 @@ export default function MonthlyBoxesPage() {
                     <td style={td}>
                       {i.ownBox ? <>
                         <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--teal-700, #0f766e)', background: 'var(--teal-50, #f0fdfa)', borderRadius: 5, padding: '1px 6px' }}>Customer’s own box</span>
-                        {i.ownBox.map((x: any) => <div key={x.name} style={{ fontSize: 12, marginTop: 3 }}>{x.quantity}× {x.name}</div>)}
+                        {i.ownBox.map((x: any) => <div key={x.name} style={{ fontSize: 12, marginTop: 3, ...(x.mystery ? { color: 'var(--amber-700, #b45309)', fontWeight: 700 } : {}) }}>{x.quantity}× {x.mystery ? '🎁 Mystery item (you choose)' : x.name}</div>)}
                       </> : i.campaign?.name ?? <span style={{ color: 'var(--amber-700)' }}>Not set</span>}
                       {i.clashes?.map((c: any) => (
                         <div key={c.product} style={{ fontSize: 12, color: 'var(--red-700)', fontWeight: 700, marginTop: 4 }}>⚠ {c.product} contains {c.allergens.join(', ').toLowerCase()} — swap it</div>

@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 export default async function BuildBoxPage() {
   const [products, config] = await Promise.all([
     api.customBox.products().catch(() => []),
-    api.customBox.config().catch(() => ({ minItems: 3, packingFee: 5, monthlyDiscount: 10 })),
+    api.customBox.config().catch(() => ({ minItems: 3, packingFee: 5, monthlyDiscount: 10, mystery: { enabled: false, price: 0, max: 0 } })),
   ]);
   return <Suspense><BuildBoxView products={products} config={config} /></Suspense>;
 }

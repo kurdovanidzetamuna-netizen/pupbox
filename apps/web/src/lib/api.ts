@@ -38,7 +38,7 @@ export const api = {
   },
   /** Sellers with something on sale (public face only). */
   customBox: {
-    config: () => fetchAPI<{ minItems: number; packingFee: number; monthlyDiscount: number }>('/custom-box/config', { cache: 'no-store' }),
+    config: () => fetchAPI<{ minItems: number; packingFee: number; monthlyDiscount: number; mystery: { enabled: boolean; price: number; max: number } }>('/custom-box/config', { cache: 'no-store' }),
     products: () => fetchAPI<any[]>('/custom-box/products', { cache: 'no-store' }),
   },
   sellers: {

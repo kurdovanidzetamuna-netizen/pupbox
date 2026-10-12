@@ -4,7 +4,7 @@ import { CartService } from '../cart/cart.service';
 import { Prisma } from '@prisma/client';
 import { releaseStock, reserveStock } from '../products/stock';
 import { cancelUnpaidOrder } from '../orders/order-lifecycle';
-import { boxLines, customBoxPlan, quoteBox } from '../custom-box/custom-box';
+import { customBoxPlan, quoteSavedBox } from '../custom-box/custom-box';
 
 export interface GiftDetails {
   recipientName: string;
@@ -125,7 +125,7 @@ export class CheckoutService {
     // products (stock held, sellers paid) plus the packing fee; a monthly box
     // becomes a subscription whose boxes hold those products.
     const boxes = await Promise.all(cart.items.filter((i: any) => i.customBoxId).map(async (i: any) => ({
-      line: i, monthly: !!i.customBox?.monthly, quote: await quoteBox(this.prisma, await boxLines(this.prisma, i.customBoxId), !!i.customBox?.monthly),
+      line: i, monthly: !!i.customBox?.monthly, quote: (await quoteSavedBox(this.prisma, i.customBoxId, !!i.customBox?.monthly)).quote,
     })));
     const boxPlan = boxes.some((b) => b.monthly) ? await customBoxPlan(this.prisma) : null;
 
@@ -224,6 +224,8 @@ export class CheckoutService {
                     productId: x.productId, customBoxId: b.line.customBoxId, name: x.name, sku: x.sku, price: x.unit, quantity: x.quantity, total: x.total,
                     sellerId: x.sellerId, sellerPrice: supplies.get(x.productId) ?? null,
                   })),
+                  // Surprise items: admin picks them when packing; the customer never sees which.
+                  ...(b.quote.mystery.count ? [{ customBoxId: b.line.customBoxId, name: 'Mystery item', price: b.quote.mystery.unit, quantity: b.quote.mystery.count, total: b.quote.mystery.total }] : []),
                   ...(b.quote.packingFee ? [{ customBoxId: b.line.customBoxId, name: 'Custom box — packing', price: b.quote.packingFee, quantity: 1, total: b.quote.packingFee }] : []),
                 ]),
             ],

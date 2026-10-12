@@ -2,7 +2,7 @@ import { Injectable, BadRequestException, NotFoundException } from '@nestjs/comm
 import { PrismaService } from '../prisma/prisma.service';
 import { Prisma } from '@prisma/client';
 import { checkChoice, sameChoice } from '../products/personalisation';
-import { boxLines, quoteBox, tidy, type BoxLine } from '../custom-box/custom-box';
+import { quoteBox, quoteSavedBox, tidy, type BoxLine } from '../custom-box/custom-box';
 
 const cartInclude = {
   items: {
@@ -115,9 +115,9 @@ export class CartService {
    * were editing). A monthly box is a subscription, so it can't share the
    * basket with another monthly box or a plan.
    */
-  async addBox(cartId: string, userId: string | undefined, data: { items: BoxLine[]; monthly: boolean; replaceItemId?: string }) {
+  async addBox(cartId: string, userId: string | undefined, data: { items: BoxLine[]; monthly: boolean; mystery?: number; replaceItemId?: string }) {
     const monthly = !!data.monthly;
-    const quote = await quoteBox(this.prisma, data.items, monthly);
+    const quote = await quoteBox(this.prisma, data.items, monthly, { mystery: data.mystery });
     const lines = await this.prisma.cartItem.findMany({ where: { cartId }, select: { id: true, customBoxId: true, subscriptionPlanId: true, customBox: { select: { monthly: true } } } });
     const replacing = data.replaceItemId ? lines.find((l) => l.id === data.replaceItemId && l.customBoxId) : undefined;
     if (data.replaceItemId && !replacing) throw new NotFoundException('That box is no longer in your basket');
@@ -125,7 +125,7 @@ export class CartService {
       throw new BadRequestException('Your basket already has a subscription. Check that one out first, or remove it, then add your monthly box.');
     }
     const box = await this.prisma.customBox.create({
-      data: { userId: userId ?? null, monthly, items: { create: tidy(data.items).map((l) => ({ productId: l.productId, quantity: l.quantity })) } },
+      data: { userId: userId ?? null, monthly, mysteryCount: quote.mystery.count, items: { create: tidy(data.items).map((l) => ({ productId: l.productId, quantity: l.quantity })) } },
       select: { id: true },
     });
     if (replacing) {
@@ -243,8 +243,7 @@ export class CartService {
       if (item.customBoxId) {
         // A built box: today's prices; products no longer allowed (or sold
         // out) drop out, and a box left too small leaves the basket.
-        const lines = await boxLines(this.prisma, item.customBoxId);
-        const q = await quoteBox(this.prisma, lines, !!item.customBox?.monthly, { strict: false });
+        const { lines, quote: q } = await quoteSavedBox(this.prisma, item.customBoxId, !!item.customBox?.monthly, { strict: false });
         if (!q.ok) {
           await this.prisma.cartItem.delete({ where: { id: item.id } });
           changed = true;

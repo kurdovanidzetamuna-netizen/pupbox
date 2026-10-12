@@ -13,12 +13,16 @@ export interface ShopSettings {
   /** Where "new order" emails go; empty = none. */
   orderNotifyEmail: string;
   /** Building your own box: at least this many items, a packing fee, and % off the products for a monthly box. */
-  customBox: { minItems: number; packingFee: number; monthlyDiscount: number };
+  customBox: {
+    minItems: number; packingFee: number; monthlyDiscount: number;
+    /** Surprise items: on/off, price each, and at most this many per box. */
+    mystery: { enabled: boolean; price: number; max: number };
+  };
 }
 
 const DEFAULTS: ShopSettings = {
   freeCancelHours: 12, renewalNoticeDays: 7, renewalGraceDays: 3, orderNotifyEmail: '',
-  customBox: { minItems: 3, packingFee: 5, monthlyDiscount: 10 },
+  customBox: { minItems: 3, packingFee: 5, monthlyDiscount: 10, mystery: { enabled: true, price: 15, max: 2 } },
 };
 
 const num = (v: unknown, fallback: number, max: number) => {
@@ -38,6 +42,11 @@ export async function shopSettings(prisma: PrismaService): Promise<ShopSettings>
       minItems: Math.max(1, Math.round(num(c.customBox?.minItems, DEFAULTS.customBox.minItems, 50))),
       packingFee: num(c.customBox?.packingFee, DEFAULTS.customBox.packingFee, 500),
       monthlyDiscount: num(c.customBox?.monthlyDiscount, DEFAULTS.customBox.monthlyDiscount, 90),
+      mystery: {
+        enabled: c.customBox?.mystery?.enabled !== false,
+        price: num(c.customBox?.mystery?.price, DEFAULTS.customBox.mystery.price, 500),
+        max: Math.round(num(c.customBox?.mystery?.max, DEFAULTS.customBox.mystery.max, 10)),
+      },
     },
   };
 }
