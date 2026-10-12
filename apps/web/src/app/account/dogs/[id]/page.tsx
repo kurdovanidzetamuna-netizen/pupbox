@@ -118,7 +118,7 @@ export default function DogProfilePage() {
   const age = dogAge(dog.birthday, t);
   const bday = birthdayLine(dog.birthday, t);
   const plans: any[] = dog.subscriptions ?? [];
-  const tone = gift ? { soft: 'bg-peach-50', text: 'text-peach-600' } : { soft: 'bg-teal-50', text: 'text-teal-700' };
+  const tone = gift ? { soft: 'bg-lilac-50', text: 'text-lilac-600' } : { soft: 'bg-teal-50', text: 'text-teal-700' };
   const chips = (list: string[], cls: string) => list.map((x) => <span key={x} className={`text-[12px] font-semibold rounded-full px-2.5 py-1 ${cls}`}>{dogOption(x, lang, t)}</span>);
   const none = <span className="text-[12.5px] text-gray-400">{t('dogs.notSet')}</span>;
   const edit = () => { setDraft(fromDog(dog)); setNameError(''); setError(''); };
@@ -180,7 +180,7 @@ export default function DogProfilePage() {
           </span>
           <h1 className="mt-2 flex items-center gap-2 text-[26px] sm:text-[30px] font-extrabold text-gray-900 leading-tight">
             <span className="truncate">{dog.name}</span>
-            {dog.gender && <span className={dog.gender === 'MALE' ? 'text-teal-600' : 'text-peach-500'}>{dog.gender === 'MALE' ? '♂' : '♀'}</span>}
+            {dog.gender && <span className={dog.gender === 'MALE' ? 'text-teal-600' : 'text-lilac-600'}>{dog.gender === 'MALE' ? '♂' : '♀'}</span>}
           </h1>
           <p className="text-[14px] text-gray-600 truncate">{[dog.breed, age].filter(Boolean).join(' · ') || t('dogs.notSet')}</p>
           {bday && <p className="mt-2 inline-flex items-center gap-1.5 h-7 px-3 rounded-full bg-white text-peach-600 text-[12px] font-bold"><span className="inline-block animate-[wiggle_2s_ease-in-out_infinite]">🎂</span>{bday}</p>}
@@ -203,7 +203,7 @@ export default function DogProfilePage() {
       </div>
 
       {/* Details */}
-      <div className="grid md:grid-cols-2 gap-3 items-start">
+      <div className="columns-1 md:columns-2 gap-3 [&>section]:mb-3 [&>section]:break-inside-avoid">
         {section('shield', t('dogs.secHealth'), (
           <div className="flex flex-wrap gap-1.5">{dog.allergies?.length ? chips(dog.allergies, 'bg-red-50 text-red-600') : <span className="text-[12.5px] font-semibold text-teal-700">✓ {t('dogs.noAllergies')}</span>}</div>
         ), 0)}
@@ -242,7 +242,7 @@ export default function DogProfilePage() {
         ) : <span className="text-[12.5px] text-gray-400">{t('dogs.planOff')}</span>, 3)}
       </div>
 
-      {gift && <p className="text-[12.5px] text-peach-600 bg-peach-50 rounded-2xl px-4 py-3">🎁 {t('dogs.giftNote')}</p>}
+      {gift && <p className="text-[12.5px] text-lilac-600 bg-lilac-50 rounded-2xl px-4 py-3">🎁 {t('dogs.giftNote')}</p>}
 
       {/* Edit in a pop-up */}
       <Modal open={!!draft} onClose={() => setDraft(null)} title={dog.name} size="lg"

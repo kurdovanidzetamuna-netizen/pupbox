@@ -90,9 +90,10 @@ const TOY_LIKES = ['Squeaky', 'Plush', 'Rope', 'Ball', 'Puzzle', 'Tug', 'Fetch',
 function Section({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
   return (
     <div>
-      <p className="text-sm font-semibold text-gray-900">{title}</p>
-      {hint && <p className="text-xs text-gray-400 mt-0.5 mb-2.5">{hint}</p>}
-      {!hint && <div className="mb-2.5" />}
+      <p className="mb-2 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+        <span className="text-[13px] font-bold text-gray-900">{title}</span>
+        {hint && <span className="text-[11.5px] text-gray-400">{hint}</span>}
+      </p>
       {children}
     </div>
   );
@@ -108,7 +109,7 @@ function Chip({ active, onClick, children, tone = 'teal' }: { active: boolean; o
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className={`px-3.5 py-2 rounded-full text-sm font-medium border transition ${active ? on : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'}`}
+      className={`h-8 px-3 rounded-full text-[12.5px] font-semibold border transition ${active ? on : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'}`}
     >
       {active && <span className="mr-1">✓</span>}{children}
     </button>
@@ -133,22 +134,20 @@ function ChipGroup({ options, selected, onChange, tone = 'teal', addLabel }: {
 
   return (
     <div>
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-1.5">
         {options.map((o) => <Chip key={o} active={selected.includes(o)} onClick={() => toggle(o)} tone={tone}>{t(`dog.opt.${o}`, o)}</Chip>)}
         {extras.map((e) => <Chip key={e} active onClick={() => toggle(e)} tone={tone}>{e}</Chip>)}
       </div>
-      <div className="flex gap-2 mt-2.5">
+      <div className="flex gap-1.5 mt-2 max-w-sm">
         <input
           value={custom}
           onChange={(e) => setCustom(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addCustom(); } }}
           placeholder={addLabel}
-          className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400"
+          className="flex-1 h-8 border border-gray-200 rounded-full px-3 text-[12.5px] focus:outline-none focus:ring-2 focus:ring-teal-400"
         />
-        <button type="button" onClick={addCustom} disabled={!custom.trim()}
-          className="px-4 rounded-lg text-sm font-medium border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40">
-          {t('dog.add')}
-        </button>
+        <button type="button" onClick={addCustom} disabled={!custom.trim()} aria-label={t('dog.add')} title={t('dog.add')}
+          className="w-8 h-8 shrink-0 rounded-full bg-teal-50 text-teal-700 hover:bg-teal-100 disabled:opacity-40 flex items-center justify-center text-[18px] leading-none">+</button>
       </div>
     </div>
   );
@@ -172,38 +171,38 @@ export default function DogProfileForm({ value, onChange, showOptional = true, c
   const { t } = useLanguage();
   const [expanded, setExpanded] = useState(false);
   const set = <K extends keyof DogProfile>(k: K, v: DogProfile[K]) => onChange({ ...value, [k]: v });
-  const field = 'w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400';
+  const field = 'w-full h-10 border border-gray-200 rounded-xl px-3 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400';
   const allergySet = new Set(value.allergies.map((a) => a.toLowerCase()));
   const hiddenFoods = FOOD_LIKES.filter((f) => allergySet.has(f.toLowerCase()));
   const showDetails = !compact || expanded;
 
   return (
-    <div className="space-y-7">
+    <div className="space-y-5">
       <div className={`grid gap-4 ${showDetails ? 'sm:grid-cols-2' : ''}`}>
         <div>
-          <label htmlFor="dog-name" className="text-sm font-semibold text-gray-900 block mb-2.5">{t('dog.name')} <span className="text-teal-600">*</span></label>
+          <label htmlFor="dog-name" className="text-[13px] font-bold text-gray-900 block mb-2">{t('dog.name')} <span className="text-teal-600">*</span></label>
           <input id="dog-name" value={value.name} onChange={(e) => set('name', e.target.value)} aria-invalid={!!nameError}
             className={`${field} ${nameError ? 'border-red-400 bg-red-50' : ''}`} placeholder={t('dog.namePh')} />
           <FieldError message={nameError} />
         </div>
         {showDetails && (
           <div>
-            <label htmlFor="dog-breed" className="text-sm font-semibold text-gray-900 block mb-2.5">{t('dog.breed')}</label>
+            <label htmlFor="dog-breed" className="text-[13px] font-bold text-gray-900 block mb-2">{t('dog.breed')}</label>
             <input id="dog-breed" value={value.breed} onChange={(e) => set('breed', e.target.value)} className={field} placeholder={t('dog.breedPh')} />
           </div>
         )}
       </div>
 
       <Section title={t('dog.size')} hint={t('dog.sizeHint')}>
-        <div className={`grid grid-cols-2 sm:grid-cols-5 gap-2 rounded-xl ${sizeError ? 'ring-2 ring-red-200 ring-offset-2' : ''}`} aria-invalid={!!sizeError} tabIndex={sizeError ? -1 : undefined}>
+        <div className={`flex flex-wrap gap-1.5 rounded-xl ${sizeError ? 'ring-2 ring-red-200 ring-offset-2' : ''}`} aria-invalid={!!sizeError} tabIndex={sizeError ? -1 : undefined}>
           {SIZES.map((s) => {
             const active = value.size === s.value;
             return (
-              <button key={s.value} type="button" onClick={() => set('size', active ? '' : s.value)} aria-pressed={active}
-                className={`p-3 rounded-xl border text-center transition ${active ? 'border-teal-500 bg-teal-50 ring-1 ring-teal-400' : 'border-gray-200 bg-white hover:border-gray-300'}`}>
-                <div className="text-2xl leading-none mb-1.5">{s.emoji}</div>
-                <div className={`text-xs font-semibold ${active ? 'text-teal-700' : 'text-gray-700'}`}>{t(`dog.size.${s.value}`)}</div>
-                <div className="text-[11px] text-gray-400 mt-0.5">{t(`dog.sizeHint.${s.value}`)}</div>
+              <button key={s.value} type="button" onClick={() => set('size', active ? '' : s.value)} aria-pressed={active} title={t(`dog.sizeHint.${s.value}`)}
+                className={`h-9 pl-2 pr-3 rounded-full border inline-flex items-center gap-1.5 text-[12.5px] font-semibold transition ${active ? 'border-teal-500 bg-teal-50 text-teal-700' : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'}`}>
+                <span className="text-[16px] leading-none" aria-hidden="true">{s.emoji}</span>
+                {t(`dog.size.${s.value}`)}
+                <span className="text-[11px] font-normal text-gray-400">{t(`dog.sizeHint.${s.value}`)}</span>
               </button>
             );
           })}
@@ -239,7 +238,7 @@ export default function DogProfileForm({ value, onChange, showOptional = true, c
       )}
 
       {showDetails && (
-        <div className="grid sm:grid-cols-2 gap-6">
+        <div className="grid sm:grid-cols-3 gap-4">
           <Section title={t('dog.gender')}>
             <div className="flex gap-2">
               {[{ v: 'MALE', k: 'dog.male' }, { v: 'FEMALE', k: 'dog.female' }].map((g) => (
@@ -247,14 +246,14 @@ export default function DogProfileForm({ value, onChange, showOptional = true, c
               ))}
             </div>
           </Section>
-          <Section title={t('dog.weight')} hint={t('dog.weightHint')}>
-            <div className="relative max-w-[160px]">
+          <Section title={t('dog.weight')}>
+            <div className="relative">
               <input type="number" min="0" step="0.1" value={value.weightKg} onChange={(e) => set('weightKg', e.target.value)} className={`${field} pr-10`} placeholder="18" />
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">{t('dog.kg')}</span>
             </div>
           </Section>
-          <Section title={t('dog.birthday')} hint={t('dog.birthdayHint')}>
-            <input type="date" value={value.birthday} max={new Date().toISOString().slice(0, 10)} onChange={(e) => set('birthday', e.target.value)} className={`${field} max-w-[200px]`} />
+          <Section title={t('dog.birthday')}>
+            <input type="date" value={value.birthday} max={new Date().toISOString().slice(0, 10)} onChange={(e) => set('birthday', e.target.value)} className={field} />
           </Section>
         </div>
       )}
@@ -281,15 +280,13 @@ export default function DogProfileForm({ value, onChange, showOptional = true, c
           </Section>
 
           <Section title={t('dog.chew')} hint={t('dog.chewHint')}>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="flex flex-wrap gap-1.5">
               {CHEW_LEVELS.map((c) => {
                 const active = value.chewingStrength === c.value;
                 return (
-                  <button key={c.value} type="button" onClick={() => set('chewingStrength', active ? '' : c.value)} aria-pressed={active}
-                    className={`p-3 rounded-xl border text-center transition ${active ? 'border-teal-500 bg-teal-50 ring-1 ring-teal-400' : 'border-gray-200 bg-white hover:border-gray-300'}`}>
-                    <div className="text-xl leading-none mb-1.5">{c.emoji}</div>
-                    <div className={`text-xs font-semibold ${active ? 'text-teal-700' : 'text-gray-700'}`}>{t(`dog.chew.${c.value}`)}</div>
-                    <div className="text-[11px] text-gray-400 mt-0.5 leading-tight">{t(`dog.chewHint.${c.value}`)}</div>
+                  <button key={c.value} type="button" onClick={() => set('chewingStrength', active ? '' : c.value)} aria-pressed={active} title={t(`dog.chewHint.${c.value}`)}
+                    className={`h-9 pl-2 pr-3 rounded-full border inline-flex items-center gap-1.5 text-[12.5px] font-semibold transition ${active ? 'border-teal-500 bg-teal-50 text-teal-700' : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'}`}>
+                    <span className="text-[16px] leading-none" aria-hidden="true">{c.emoji}</span>{t(`dog.chew.${c.value}`)}
                   </button>
                 );
               })}
@@ -298,7 +295,7 @@ export default function DogProfileForm({ value, onChange, showOptional = true, c
 
           <Section title={t('dog.notes')} hint={t('dog.optional')}>
             <textarea value={value.specialNotes} onChange={(e) => set('specialNotes', e.target.value)} rows={2} maxLength={500}
-              className={`${field} resize-y`} placeholder={t('dog.notesPh')} />
+              className={`${field} h-auto py-2.5 resize-y`} placeholder={t('dog.notesPh')} />
           </Section>
         </>
       )}

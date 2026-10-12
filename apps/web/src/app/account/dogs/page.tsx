@@ -100,21 +100,21 @@ export default function MyDogsPage() {
               <li key={d.id} className="animate-[fadeUp_0.4s_ease-out_both]" style={{ animationDelay: `${Math.min(i, 8) * 50}ms` }}>
                 <Link href={`/account/dogs/${d.id}`} aria-label={`${d.name} — ${t('dogs.open')}`}
                   className="group block bg-white rounded-3xl p-2 ring-1 ring-gray-200/60 hover:ring-teal-200 hover:-translate-y-0.5 transition-all">
-                  <div className={`relative aspect-square rounded-[20px] overflow-hidden ${gift ? 'bg-peach-50' : TINTS[i % TINTS.length]}`}>
+                  <div className={`relative aspect-square rounded-[20px] overflow-hidden ${gift ? 'bg-lilac-50' : TINTS[i % TINTS.length]}`}>
                     {d.photoUrl
                       // eslint-disable-next-line @next/next/no-img-element
                       ? <img src={d.photoUrl} alt={d.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
                       : <span className="absolute inset-0 flex items-center justify-center text-[52px]" aria-hidden="true"><span className="inline-block animate-[bob_2.6s_ease-in-out_infinite]"><span className="inline-block group-hover:animate-[wag_0.5s_ease-in-out_infinite]">{gift ? '🐕' : '🐶'}</span></span></span>}
                     <span className="absolute left-1/2 bottom-5 pointer-events-none" aria-hidden="true">
-                      {[0, 1].map((k) => <span key={k} className="absolute opacity-0 text-[15px] group-hover:animate-[heartUp_1.3s_ease-out_infinite]" style={{ left: `${(k ? 1 : -1) * 12}px`, animationDelay: `${k * 0.35}s` }}>{gift ? '🧡' : '💚'}</span>)}
+                      {[0, 1].map((k) => <span key={k} className="absolute opacity-0 text-[15px] group-hover:animate-[heartUp_1.3s_ease-out_infinite]" style={{ left: `${(k ? 1 : -1) * 12}px`, animationDelay: `${k * 0.35}s` }}>{gift ? '💜' : '💚'}</span>)}
                     </span>
-                    {gift && <span className="absolute top-2 left-2 max-w-[80%] truncate h-6 px-2 rounded-full bg-white/90 text-[11px] font-bold text-peach-600 inline-flex items-center gap-1" title={d.giftFor ? fill(t('dogs.giftFor'), { name: d.giftFor }) : t('dogs.giftDog')}>🎁 {d.giftFor || t('dogs.giftDog')}</span>}
+                    {gift && <span className="absolute top-2 left-2 max-w-[80%] truncate h-6 px-2 rounded-full bg-white/90 text-[11px] font-bold text-lilac-600 inline-flex items-center gap-1" title={d.giftFor ? fill(t('dogs.giftFor'), { name: d.giftFor }) : t('dogs.giftDog')}>🎁 {d.giftFor || t('dogs.giftDog')}</span>}
                     {bday && <span className="absolute top-2 right-2 w-7 h-7 rounded-full bg-white/90 flex items-center justify-center text-[14px] animate-[wiggle_2.4s_ease-in-out_infinite]" title={bday} aria-label={bday}>🎂</span>}
                   </div>
                   <div className="px-2 pt-2.5 pb-1.5">
                     <div className="flex items-center gap-1.5">
                       <p className="text-[15px] font-extrabold text-gray-900 truncate">{d.name}</p>
-                      {d.gender && <span className={`text-[13px] font-bold ${d.gender === 'MALE' ? 'text-teal-600' : 'text-peach-500'}`}>{d.gender === 'MALE' ? '♂' : '♀'}</span>}
+                      {d.gender && <span className={`text-[13px] font-bold ${d.gender === 'MALE' ? 'text-teal-600' : 'text-lilac-600'}`}>{d.gender === 'MALE' ? '♂' : '♀'}</span>}
                       <svg className="ml-auto w-4 h-4 text-gray-300 group-hover:text-teal-600 transition-all group-hover:translate-x-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>
                     </div>
                     <p className="text-[12px] text-gray-500 truncate">{[d.breed, age].filter(Boolean).join(' · ') || ' '}</p>
