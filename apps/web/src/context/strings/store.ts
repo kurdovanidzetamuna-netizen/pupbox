@@ -91,7 +91,10 @@ export const STORE_STRINGS: Record<string, { en: string; ka: string }> = {
   'pdp.nextImg':            { en: 'Next photo',                 ka: 'შემდეგი ფოტო' },
   'pdp.addMore':            { en: 'add one more',               ka: 'კიდევ ერთის დამატება' },
   'pdp.picks':              { en: 'Your picks',                 ka: 'შენი არჩევანი' },
-  'pdp.picksHint':          { en: 'pick another size or name to add a different one', ka: 'სხვა ზომის ან სახელის დასამატებლად აირჩიე ახალი' },
+  'pdp.picksHint':          { en: 'write another name to add one more', ka: 'კიდევ ერთის დასამატებლად ჩაწერე ახალი სახელი' },
+  'pdp.picksHintSize':      { en: 'pick another size to add it too', ka: 'სხვა ზომის დასამატებლად აირჩიე ახალი' },
+  'shop.details':           { en: 'All details',                ka: 'სრული აღწერა' },
+  'shop.pickSize':          { en: 'Choose a size first',        ka: 'ჯერ ზომა აირჩიე' },
   'pdp.pickEdit':           { en: 'Show this choice',           ka: 'ამ არჩევანის ჩვენება' },
   'pdp.addError':           { en: 'Could not add to cart. Please try again.', ka: 'კალათაში დამატება ვერ მოხერხდა. სცადე თავიდან.' },
 

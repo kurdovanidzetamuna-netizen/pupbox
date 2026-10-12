@@ -1,6 +1,9 @@
 'use client';
 import Link from 'next/link';
-import { useBasketLine } from '@/lib/useBasketLine';
+import { useState } from 'react';
+import { useChoice, available } from '@/lib/useChoice';
+import SizeChips from '@/components/shop/SizeChips';
+import QuickChoose from '@/components/shop/QuickChoose';
 import QuantityStepper from '@/components/shop/QuantityStepper';
 import InBasketTag from '@/components/shop/InBasketTag';
 import { useLanguage } from '@/context/LanguageContext';
@@ -10,18 +13,20 @@ import { categoryLook } from '@/lib/shopIcons';
 
 const money = (n: unknown) => `₾${Number(n).toFixed(2)}`;
 
-/** How many can still be bought (stock minus what's held in open orders). */
-export const available = (inv: any) => (inv ? Math.max(0, Number(inv.quantity) - Number(inv.reservedQty || 0)) : 0);
+export { available };
 
 /**
  * A compact product card: a soft image with its badges, name, a two-line
  * description and the price. ＋ adds one; once it's in the basket the button
  * becomes − n + (up to what's in stock) and a 🛍 n badge marks the card.
- * Products that need a choice (size, engraving) open their page instead.
+ * Sizes are chosen right on the card; a product with a name to engrave
+ * opens a small quick-choose pop-up.
  */
 export default function ProductCard({ product, index = 0 }: { product: any; index?: number }) {
   const { t, lang } = useLanguage();
-  const basket = useBasketLine(product.id);
+  const c = useChoice(product);
+  const basket = c.basket;
+  const [choosing, setChoosing] = useState(false);
   const { inCart, line, busy } = basket;
   const error = !!basket.error;
 
@@ -34,7 +39,6 @@ export default function ProductCard({ product, index = 0 }: { product: any; inde
   const low = !soldOut && product.inventory && left <= Number(product.inventory.lowStockAlert || 0);
   const sale = product.salePrice && Number(product.salePrice) < Number(product.price);
   const off = sale ? Math.round((1 - Number(product.salePrice) / Number(product.price)) * 100) : 0;
-  const needsChoice = !!(product.personalisation?.engraving || product.personalisation?.sizes?.length);
   // The photo admin marked as main, else the first.
   const img = product.images?.find((i: any) => i.isPrimary) ?? product.images?.[0];
   const href = `/shop/${product.slug}`;
@@ -79,6 +83,13 @@ export default function ProductCard({ product, index = 0 }: { product: any; inde
         )}
       </Link>
 
+      {/* Sizes: chosen right here */}
+      {c.sizes.length > 0 && !soldOut && (
+        <div className="px-1 pt-2" title={c.errs.size ? t('shop.pickSize') : undefined}>
+          <SizeChips sizes={c.sizes} value={c.size} onPick={c.setSize} counts={c.sizeCounts} error={!!c.errs.size} compact label={t('pdp.size')} />
+        </div>
+      )}
+
       <div className="px-1 pt-2.5 pb-0.5 flex items-center justify-between gap-2">
         <div className="min-w-0 leading-none">
           <span className={`text-[15px] font-extrabold ${soldOut ? 'text-gray-400' : sale ? 'text-peach-600' : 'text-gray-900'}`}>{money(sale ? product.salePrice : product.price)}</span>
@@ -90,11 +101,19 @@ export default function ProductCard({ product, index = 0 }: { product: any; inde
             className="w-9 h-9 shrink-0 rounded-full bg-gray-100 text-gray-300 flex items-center justify-center cursor-not-allowed">
             <Icon name="ban" className="w-[18px] h-[18px]" strokeWidth={2.2} />
           </span>
-        ) : needsChoice ? (
-          <Link href={href} aria-label={`${t('shop.choose')}: ${name}`} title={t('shop.choose')}
+        ) : c.engr ? (
+          <button type="button" onClick={() => setChoosing(true)} aria-label={`${t('shop.choose')}: ${name}`} title={t('shop.choose')}
             className="w-9 h-9 shrink-0 rounded-full bg-teal-50 text-teal-700 flex items-center justify-center hover:bg-teal-100 hover:text-teal-800 transition-colors">
             <Icon name="sliders" className="w-[18px] h-[18px]" strokeWidth={2.2} />
-          </Link>
+          </button>
+        ) : c.sizes.length > 0 ? (
+          <button type="button" onClick={c.add} disabled={busy} aria-label={`${t('shop.quickAdd')}: ${name}${c.size ? ` · ${c.size}` : ''}`}
+            title={c.size ? t('shop.quickAdd') : t('shop.pickSize')}
+            className={`w-9 h-9 shrink-0 rounded-full flex items-center justify-center transition-colors active:scale-90 ${
+              error || c.errs.size ? 'bg-red-50 text-red-500' : 'bg-teal-50 text-teal-700 hover:bg-teal-100 hover:text-teal-800'}`}>
+            {busy ? <span className="w-4 h-4 border-2 border-teal-200 border-t-teal-600 rounded-full animate-spin" />
+              : <Icon name={error ? 'alert' : 'plus'} className="w-[18px] h-[18px]" strokeWidth={2.4} />}
+          </button>
         ) : line ? (
           <QuantityStepper value={line.quantity} onLess={basket.less} onMore={basket.more} max={left} busy={busy} trashAtOne label={fill(t('shop.inBasket'), { n: inCart })} />
         ) : (
@@ -106,6 +125,7 @@ export default function ProductCard({ product, index = 0 }: { product: any; inde
           </button>
         )}
       </div>
+      {c.engr && <QuickChoose open={choosing} onClose={() => setChoosing(false)} product={product} name={name} img={img?.url} c={c} />}
     </div>
   );
 }

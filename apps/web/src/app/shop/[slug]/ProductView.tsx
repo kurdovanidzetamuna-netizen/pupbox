@@ -10,8 +10,11 @@ import Field from '@/components/ui/Field';
 import { FieldError } from '@/components/ui/FormError';
 import { Icon } from '@/components/ui/icons';
 import { categoryLook } from '@/lib/shopIcons';
-import { useBasketLine } from '@/lib/useBasketLine';
-import ProductCard, { available } from '@/components/shop/ProductCard';
+import { useChoice, available } from '@/lib/useChoice';
+import ProductCard from '@/components/shop/ProductCard';
+import SizeChips from '@/components/shop/SizeChips';
+import AddButton from '@/components/shop/AddButton';
+import PicksList from '@/components/shop/PicksList';
 import QuantityStepper from '@/components/shop/QuantityStepper';
 import InBasketTag from '@/components/shop/InBasketTag';
 import PerksStrip from '@/components/shop/PerksStrip';
@@ -29,7 +32,8 @@ const SIZE_SHORT = ['XS', 'S', 'M', 'L', 'XL'];
 export default function ProductView({ product, related, content }: { product: any; related: any[]; content: StoredContent | null }) {
   const { t, lang } = useLanguage();
   const c = usePage(shopPage, content);
-  const basket = useBasketLine(product.id);
+  const ch = useChoice(product);
+  const { basket, sizes, engr, size, engraving, qty, setQty, errs, room, picked } = ch;
   const { inCart, busy } = basket;
 
   const ka = product.translations?.ka ?? {};
@@ -52,46 +56,15 @@ export default function ProductView({ product, related, content }: { product: an
   const off = sale ? Math.round((1 - Number(product.salePrice) / Number(product.price)) * 100) : 0;
   const price = sale ? product.salePrice : product.price;
 
-  const sizes: string[] = product.personalisation?.sizes ?? [];
-  const engr = product.personalisation?.engraving as { maxLength: number } | undefined;
-  const needsChoice = sizes.length > 0 || !!engr;
-  const [size, setSize] = useState('');
-  const [engraving, setEngraving] = useState('');
-  const [qty, setQty] = useState(1);
-  const [errs, setErrs] = useState<{ size?: string; engraving?: string }>({});
-
-  // The page always starts fresh (1, nothing chosen). Each size / name is its
-  // own basket line, so several can be picked; the button shows when the
-  // current choice is already in the basket.
-  const room = Math.max(0, left - basket.totalInCart);
-  const choice = needsChoice ? { ...(engr ? { engraving: engraving.trim() } : {}), ...(sizes.length ? { size } : {}) } : null;
-  const complete = (!sizes.length || !!size) && (!engr || !!engraving.trim());
-  const match = complete ? basket.lineFor(choice) : null;
-  const picked = !!match && qty === 1;
-
-  async function addToBasket() {
-    const e: typeof errs = {};
-    if (sizes.length && !size) e.size = t('pdp.p.needSize');
-    if (engr && !engraving.trim()) e.engraving = t('pdp.p.needName');
-    setErrs(e);
-    if (e.size || e.engraving) return;
-    if (await basket.add(qty, choice)) setQty(1);
-  }
-
-  /** Put a picked line's size and name back in the form. */
-  function choose(l: any) {
-    if (l.personalisation?.size) setSize(l.personalisation.size);
-    if (engr) setEngraving(l.personalisation?.engraving ?? '');
-    setQty(1); setErrs({});
-  }
+  const addToBasket = ch.add;
 
   // Coming back with the browser's Back button can restore the page as it
   // was; start fresh instead.
   useEffect(() => {
-    const onShow = (e: PageTransitionEvent) => { if (e.persisted) { setQty(1); setSize(''); setEngraving(''); setErrs({}); } };
+    const onShow = (e: PageTransitionEvent) => { if (e.persisted) ch.reset(); };
     window.addEventListener('pageshow', onShow);
     return () => window.removeEventListener('pageshow', onShow);
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // The phone buy bar steps aside once the page's content has scrolled by
   // (so it never sits on top of the footer).
@@ -117,22 +90,7 @@ export default function ProductView({ product, related, content }: { product: an
     <div className="flex items-center gap-2.5">
       <QuantityStepper value={qty} onLess={() => setQty((q) => Math.max(1, q - 1))} onMore={() => setQty((q) => Math.min(room || 1, q + 1))} max={room} />
       {(
-        <button type="button" onClick={addToBasket} disabled={busy || room === 0}
-          aria-label={picked ? `${fill(t('shop.inBasket'), { n: match!.quantity })} · ${t('pdp.addMore')}` : `${t('shop.quickAdd')} · ${money(Number(price) * qty)}`}
-          title={picked ? `${fill(t('shop.inBasket'), { n: match!.quantity })} · ${t('pdp.addMore')}` : t('shop.quickAdd')}
-          className={`flex-1 sm:flex-none inline-flex items-center justify-center gap-2 rounded-full font-extrabold transition-colors disabled:opacity-50 ${
-            picked ? 'bg-teal-50 text-teal-800 ring-1 ring-teal-200 hover:bg-teal-100' : 'bg-teal-600 text-white hover:bg-teal-700'} h-9 px-4 text-[13.5px]`}>
-          {busy ? <span className={`w-4 h-4 border-2 rounded-full animate-spin ${picked ? 'border-teal-200 border-t-teal-600' : 'border-white/40 border-t-white'}`} />
-            : <><span className="relative">
-                <Icon name={picked ? 'check' : 'bag'} className="w-[18px] h-[18px]" strokeWidth={2.2} />
-                {(picked || qty > 1) && (
-                  <span key={picked ? `in${match!.quantity}` : qty}
-                    className={`absolute -top-2 -right-2.5 min-w-[16px] h-4 px-1 rounded-full text-[10px] font-extrabold leading-4 text-center animate-[pop_0.25s_ease-out] ${picked ? 'bg-teal-600 text-white' : 'bg-white text-teal-700'}`}>
-                    {picked ? match!.quantity : qty}
-                  </span>
-                )}
-              </span><span className="tabular-nums">{money(Number(price) * qty)}</span></>}
-        </button>
+        <AddButton picked={picked} inBasket={inCart} qty={qty} unit={Number(price)} busy={busy} disabled={room === 0} onClick={addToBasket} className="flex-1 sm:flex-none" />
       )}
     </div>
   );
@@ -239,12 +197,9 @@ export default function ProductView({ product, related, content }: { product: an
               <div className="flex items-center gap-2.5" {...(sizes.length && !soldOut ? { 'aria-invalid': !!errs.size, tabIndex: errs.size ? -1 : undefined } : {})}>
                 <dt className="w-14 shrink-0 font-semibold text-gray-400">{t('pdp.size')}{sizes.length > 0 && !soldOut && <span className="text-red-400"> *</span>}</dt>
                 <dd className="flex flex-wrap gap-1.5">
-                  {sizes.length > 0 && !soldOut ? sizes.map((sz) => (
-                    <button key={sz} type="button" onClick={() => { setSize(sz); setErrs((x) => ({ ...x, size: undefined })); }} aria-pressed={size === sz}
-                      className={`min-w-[2.25rem] h-8 px-3 rounded-lg text-[12px] font-bold transition-colors ${size === sz ? 'bg-teal-50 text-teal-800 ring-2 ring-teal-300' : 'bg-white text-gray-700 ring-1 ring-gray-200/80 hover:bg-teal-50/50 hover:ring-teal-200'}`}>
-                      {sz}
-                    </button>
-                  )) : DOG_SIZES.map((sz, i) => {
+                  {sizes.length > 0 && !soldOut ? (
+                    <SizeChips sizes={sizes} value={size} onPick={ch.setSize} counts={ch.sizeCounts} error={!!errs.size} label={t('pdp.size')} />
+                  ) : DOG_SIZES.map((sz, i) => {
                     const on = !product.dogSizes?.length || product.dogSizes.includes(sz);
                     return (
                       <span key={sz} title={`${t(`dog.size.${sz}`)} · ${t(`dog.sizeHint.${sz}`)}`} aria-label={`${t(`dog.size.${sz}`)}${on ? '' : ' —'}`}
@@ -270,38 +225,14 @@ export default function ProductView({ product, related, content }: { product: an
                 <div className="sm:flex-1 min-w-0">
                   <Field id="engraving" label={t('pdp.p.name')} value={engraving} required maxLength={engr.maxLength} error={errs.engraving}
                     hint={fill(t('pdp.p.hint'), { n: engr.maxLength - [...engraving].length })}
-                    onChange={(v) => { setEngraving(v); setErrs((x) => ({ ...x, engraving: undefined })); }} />
+                    onChange={ch.setEngraving} />
                 </div>
               )}
               <div className="hidden sm:flex sm:h-12 sm:items-center shrink-0">{buy(false)}</div>
             </div>
             {basket.error && <FieldError message={basket.error} />}
 
-            {/* What was picked this visit: one row per size / name */}
-            {needsChoice && basket.lines.length > 0 && (
-              <div className="mt-4 rounded-2xl bg-teal-50/50 ring-1 ring-teal-100/70 p-2.5 animate-[fadeUp_0.2s_ease-out]">
-                <p className="px-1.5 pb-1.5 text-[11.5px] text-gray-500">
-                  <span className="font-bold text-teal-800">{t('pdp.picks')}</span> · {t('pdp.picksHint')}
-                </p>
-                <ul className="space-y-1">
-                  {basket.lines.map((l) => {
-                    const on = match?.id === l.id;
-                    return (
-                      <li key={l.id} className={`flex items-center gap-2 rounded-xl pl-1.5 pr-1 py-1 ${on ? 'bg-white ring-1 ring-teal-200' : ''}`}>
-                        <button type="button" onClick={() => choose(l)} title={t('pdp.pickEdit')}
-                          className="flex-1 min-w-0 flex items-center gap-2 text-left rounded-lg py-1 hover:text-teal-800">
-                          {l.personalisation?.size && <span className="shrink-0 min-w-[2rem] h-6 px-2 rounded-md bg-white ring-1 ring-teal-100 text-[11.5px] font-bold text-teal-800 inline-flex items-center justify-center">{l.personalisation.size}</span>}
-                          {l.personalisation?.engraving && <span className="truncate text-[13px] font-semibold text-gray-800">„{l.personalisation.engraving}“</span>}
-                          <span className="ml-auto shrink-0 text-[12px] font-bold text-gray-500 tabular-nums">{money(Number(l.price) * l.quantity)}</span>
-                        </button>
-                        <QuantityStepper value={l.quantity} busy={busy} trashAtOne max={l.quantity + room}
-                          onLess={() => basket.setLine(l, l.quantity - 1)} onMore={() => basket.setLine(l, l.quantity + 1)} />
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            )}
+            <PicksList c={ch} className="mt-4" />
 
             {c.on('perks') && <PerksStrip items={c.perks.items} className="mt-5" />}
 
