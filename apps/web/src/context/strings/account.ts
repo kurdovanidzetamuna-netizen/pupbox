@@ -337,4 +337,12 @@ export const ACCOUNT_STRINGS: Record<string, { en: string; ka: string }> = {
   'reg.refAdd':             { en: 'Add code',                   ka: 'კოდის დამატება' },
   'reg.refRemove':          { en: 'Remove code',                ka: 'კოდის წაშლა' },
   'reg.refPlaceholder':     { en: 'e.g. ANNA20',                ka: 'მაგ. ANNA20' },
+  'ntf.sub':                { en: 'Orders, boxes, gifts and rewards — everything in one place.', ka: 'შეკვეთები, ყუთები, საჩუქრები და ჯილდოები — ყველაფერი ერთად.' },
+  'ntf.allRead':            { en: 'You’re all caught up',        ka: 'ყველაფერი წაკითხულია' },
+  'ntf.newN':               { en: '{n} new',                     ka: '{n} ახალი' },
+  'ntf.week':               { en: 'This week',                   ka: 'ამ კვირაში' },
+  'ntf.show':               { en: 'Show',                        ka: 'ჩვენება' },
+  'ntf.c.orders':           { en: 'Orders & payments',           ka: 'შეკვეთები და გადახდები' },
+  'ntf.c.boxes':            { en: 'Boxes & plans',               ka: 'ყუთები და გეგმები' },
+  'ntf.c.gifts':            { en: 'Gifts & rewards',             ka: 'საჩუქრები და ჯილდოები' },
 };

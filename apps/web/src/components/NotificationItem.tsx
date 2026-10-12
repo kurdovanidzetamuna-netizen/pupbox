@@ -9,17 +9,17 @@ import { markRead, removeNotice, type Notice } from '@/lib/notifications';
 
 /** Icon and soft colour tile for each kind of notification. */
 const LOOK: Record<string, { icon: string; tile: string }> = {
-  WELCOME:         { icon: 'sparkle',  tile: 'bg-lilac-100 text-lilac-600' },
+  WELCOME:         { icon: 'sparkle',  tile: 'bg-lilac-50 text-lilac-600' },
   ORDER_PAID:      { icon: 'check',    tile: 'bg-teal-50 text-teal-700' },
   PAYMENT_FAILED:  { icon: 'alert',    tile: 'bg-red-50 text-red-500' },
-  ORDER_SHIPPED:   { icon: 'truck',    tile: 'bg-sky-50 text-sky-600' },
-  ORDER_DELIVERED: { icon: 'box',      tile: 'bg-teal-50 text-teal-700' },
-  RENEWAL_DUE:     { icon: 'calendar', tile: 'bg-amber-50 text-amber-600' },
-  BOX_SHIPPED:     { icon: 'truck',    tile: 'bg-sky-50 text-sky-600' },
-  BOX_DELIVERED:   { icon: 'box',      tile: 'bg-peach-100 text-peach-600' },
-  GIFT_SENT:       { icon: 'gift',     tile: 'bg-lilac-100 text-lilac-600' },
-  REFUNDED:        { icon: 'undo',     tile: 'bg-amber-50 text-amber-600' },
-  REFERRAL_REWARD: { icon: 'coin',     tile: 'bg-peach-100 text-peach-600' },
+  ORDER_SHIPPED:   { icon: 'truck',    tile: 'bg-teal-50 text-teal-700' },
+  ORDER_DELIVERED: { icon: 'home',     tile: 'bg-teal-50 text-teal-700' },
+  RENEWAL_DUE:     { icon: 'calendar', tile: 'bg-teal-50 text-teal-700' },
+  BOX_SHIPPED:     { icon: 'truck',    tile: 'bg-teal-50 text-teal-700' },
+  BOX_DELIVERED:   { icon: 'box',      tile: 'bg-teal-50 text-teal-700' },
+  GIFT_SENT:       { icon: 'gift',     tile: 'bg-lilac-50 text-lilac-600' },
+  REFUNDED:        { icon: 'undo',     tile: 'bg-teal-50 text-teal-700' },
+  REFERRAL_REWARD: { icon: 'coin',     tile: 'bg-lilac-50 text-lilac-600' },
 };
 
 const money = (n: unknown) => Number(n ?? 0).toFixed(2).replace(/\.00$/, '');
@@ -66,8 +66,10 @@ export function useAgo() {
  * it marks it read and opens where it points. `onChange` lets the list
  * update itself.
  */
-export default function NotificationItem({ n, compact, onChange, onOpen }: {
+export default function NotificationItem({ n, compact, onChange, onOpen, className = '', style }: {
   n: Notice;
+  className?: string;
+  style?: React.CSSProperties;
   compact?: boolean;
   onChange: (n: Notice | null) => void;
   onOpen?: () => void;
@@ -87,10 +89,11 @@ export default function NotificationItem({ n, compact, onChange, onOpen }: {
   }
 
   return (
-    <li className={`group relative flex gap-3 rounded-2xl transition-colors ${compact ? 'p-2.5' : 'p-3.5'} ${unread ? 'bg-teal-50/50 hover:bg-teal-50' : 'hover:bg-gray-50'}`}>
+    <li style={style} className={`${className} group relative flex gap-3 rounded-2xl transition-colors ${compact ? 'p-2.5' : 'p-3.5 bg-white ring-1 hover:ring-teal-200'} ${unread ? (compact ? 'bg-teal-50/50 hover:bg-teal-50' : 'ring-teal-100 bg-teal-50/30') : (compact ? 'hover:bg-gray-50' : 'ring-gray-200/60')}`}>
       <button type="button" onClick={open} className="absolute inset-0 rounded-2xl" aria-label={title} />
       <span className={`relative shrink-0 rounded-xl flex items-center justify-center ${compact ? 'w-9 h-9' : 'w-10 h-10'} ${look.tile}`}>
         <Icon name={look.icon} className="w-[18px] h-[18px]" />
+        {unread && !compact && <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-teal-500 ring-2 ring-white animate-pulse" />}
       </span>
       <div className="relative flex-1 min-w-0 pointer-events-none">
         <p className={`text-[13px] leading-snug ${unread ? 'font-semibold text-gray-900' : 'font-medium text-gray-700'}`}>{title}</p>
