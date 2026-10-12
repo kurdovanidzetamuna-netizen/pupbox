@@ -39,11 +39,11 @@ function PlanSectionInner({ plans, content }: { plans: any[]; content: StoredCon
             className={`absolute top-1 bottom-1 left-1 w-[calc(50%-4px)] rounded-full transition-all duration-300 ease-[cubic-bezier(.4,0,.2,1)] ${
               gift ? 'translate-x-full bg-lilac-100' : 'translate-x-0 bg-white'}`} />
           {([['self', L.toggleMine, 'paw'], ['gift', L.toggleGift, 'gift']] as const).map(([m, label, icon]) => (
-            <button key={m} type="button" role="radio" aria-checked={mode === m} aria-label={label} onClick={() => choose(m)}
-              className={`group/opt relative z-10 w-14 h-10 rounded-full inline-flex items-center justify-center transition-colors duration-300 ${
+            <button key={m} type="button" role="radio" aria-checked={mode === m} onClick={() => choose(m)}
+              className={`relative z-10 h-10 px-3 sm:px-5 gap-2 rounded-full inline-flex items-center justify-center text-[13px] sm:text-[13.5px] font-bold whitespace-nowrap transition-colors duration-300 ${
                 mode === m ? (m === 'gift' ? 'text-lilac-600' : 'text-teal-700') : 'text-gray-500 hover:text-gray-800'}`}>
-              <Icon name={icon} className="w-5 h-5" />
-              <span role="tooltip" className="pointer-events-none absolute top-full mt-1.5 left-1/2 -translate-x-1/2 hidden group-hover/opt:block group-focus-visible/opt:block whitespace-nowrap rounded-lg bg-gray-800 text-white text-[11px] font-medium px-2 py-1 z-30">{label}</span>
+              <Icon name={icon} className="hidden min-[400px]:block w-[18px] h-[18px] shrink-0" />
+              {label.replace(/^[^\p{L}]+/u, '')}
             </button>
           ))}
         </div>
