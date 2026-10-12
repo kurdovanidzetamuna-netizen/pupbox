@@ -39,6 +39,7 @@ export default function PlansList({ subs, setSubs, toast, view = 'list' }: {
 }) {
   const router = useRouter();
   const { t, lang } = useLanguage();
+  const [open, setOpen] = useState<string | null>(null);
   const [toggling, setToggling] = useState<string | null>(null);
   const [paying, setPaying] = useState<string | null>(null);
   const [cancelConfirm, setCancelConfirm] = useState<string | null>(null);
@@ -134,6 +135,7 @@ export default function PlansList({ subs, setSubs, toast, view = 'list' }: {
   useEffect(() => {
     const id = new URLSearchParams(window.location.search).get('cancel');
     if (!id || !subs.some(s => s.id === id)) return;
+    setOpen(id);
     document.getElementById(`sub-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     askCancel(id);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -175,7 +177,7 @@ export default function PlansList({ subs, setSubs, toast, view = 'list' }: {
 
   return (
     <>
-      <ul className={`grid gap-4 items-start ${view === 'grid' ? 'md:grid-cols-2' : ''}`}>
+      <ul className={`grid items-start ${view === 'grid' ? 'gap-4 md:grid-cols-2' : 'gap-2.5'}`}>
         {subs.map((sub, i) => {
           const live = !['CANCELLED', 'EXPIRED'].includes(sub.status);
           const isActive = sub.status === 'ACTIVE';
@@ -193,8 +195,46 @@ export default function PlansList({ subs, setSubs, toast, view = 'list' }: {
           ];
           return (
             <li key={sub.id} id={`sub-${sub.id}`} className="bg-white rounded-3xl ring-1 ring-gray-200/60 overflow-hidden animate-[fadeUp_0.4s_ease-out_both]" style={{ animationDelay: `${Math.min(i, 6) * 60}ms` }}>
-              {/* Head */}
-              <div className={`${head} px-5 pt-5 pb-4`}>
+              {view === 'list' && (
+                <div className="flex items-center gap-2 pr-3">
+                  <button type="button" onClick={() => setOpen(open === sub.id ? null : sub.id)} aria-expanded={open === sub.id}
+                    className="flex-1 min-w-0 flex items-center gap-3 sm:gap-4 p-3 text-left">
+                    <span className={`w-11 h-11 shrink-0 rounded-2xl ${head} flex items-center justify-center text-[22px]`} aria-hidden="true">
+                      <span className={`inline-block ${live ? 'animate-[bob_2.4s_ease-in-out_infinite]' : 'grayscale opacity-60'}`}>{sub.isGift ? '🎁' : '📦'}</span>
+                    </span>
+                    <span className="flex-1 min-w-0">
+                      <span className="block text-[14px] font-extrabold text-gray-900 truncate">{planText(sub.plan, 'name', lang)}</span>
+                      <span className={`block text-[12px] truncate ${sub.isGift ? `${GIFT.text} font-semibold` : 'text-gray-500'}`}>
+                        {sub.isGift ? (sub.giftFor ? fill(t('sub.giftFor'), { name: sub.giftFor }) : t('sub.gift')) : [sub.dog?.name, fill(t('sub.shape'), { months: months(Number(sub.plan?.durationValue) || 1), boxes: boxes(Number(sub.plan?.boxCount) || 1) })].filter(Boolean).join(' · ')}
+                      </span>
+                    </span>
+                    <span className="hidden md:block w-28 shrink-0" title={t('sub.delivered')}>
+                      <span className="flex items-center justify-between text-[11px] text-gray-400"><Icon name="box" className="w-3.5 h-3.5" /><span><b className="text-gray-900 text-[12.5px]">{sent}</b>/{total}</span></span>
+                      <span className="block mt-1 h-1.5 rounded-full bg-gray-100 overflow-hidden"><span className="block h-full rounded-full bg-teal-500" style={{ width: `${Math.min(100, (sent / total) * 100)}%` }} /></span>
+                    </span>
+                    <span className="hidden sm:block w-28 shrink-0 text-right">
+                      <span className="block text-[11px] text-gray-400">{t(sub.nextRenewalAt ? 'sub.nextRenewal' : 'sub.endsOn')}</span>
+                      <span className="block text-[12.5px] font-bold text-gray-800">{sub.nextRenewalAt ? date(sub.nextRenewalAt) : sub.endDate ? date(sub.endDate) : '—'}</span>
+                    </span>
+                    <span className="shrink-0 text-right">
+                      <span className="block text-[14px] font-extrabold text-gray-900">{gel(sub.plan?.price)}</span>
+                      <span className={`mt-0.5 inline-flex h-5 px-2 rounded-full text-[10.5px] font-bold items-center gap-1 ${STATUS[sub.status] || STATUS.PENDING}`}>
+                        {isActive && <span className="w-1.5 h-1.5 rounded-full bg-teal-500 animate-pulse" />}{t(`sub.status.${sub.status}`, sub.status)}
+                      </span>
+                    </span>
+                    {due && <span className="w-2 h-2 rounded-full bg-lilac-600 shrink-0" title={t('ord.status.PENDING')} />}
+                    <svg className={`w-4 h-4 shrink-0 text-gray-300 transition-transform ${open === sub.id ? 'rotate-180 text-teal-600' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
+                  </button>
+                  {isActive && !sub.cancelledAt && (
+                    <Menu label={planText(sub.plan, 'name', lang)} items={[
+                      { icon: 'pin', label: t('addr.change'), onClick: () => openAddress(sub) },
+                      { icon: 'trash', label: t('sub.cancel'), tone: 'danger' as const, onClick: () => askCancel(sub.id) },
+                    ]} />
+                  )}
+                </div>
+              )}
+              {/* Head (grid card) */}
+              {view === 'grid' && <div className={`${head} px-5 pt-5 pb-4`}>
                 <div className="flex items-start gap-3">
                   <span className="w-12 h-12 shrink-0 rounded-2xl bg-white flex items-center justify-center text-[26px]" aria-hidden="true">
                     <span className={`inline-block ${live ? 'animate-[bob_2.4s_ease-in-out_infinite]' : 'grayscale opacity-60'}`}>{sub.isGift ? '🎁' : '📦'}</span>
@@ -234,9 +274,9 @@ export default function PlansList({ subs, setSubs, toast, view = 'list' }: {
                   </ol>
                   <p className="shrink-0 text-[12px] text-gray-500"><span className="text-[15px] font-extrabold text-gray-900">{sent}</span>/{total}</p>
                 </div>
-              </div>
+              </div>}
 
-              <div className="p-5 space-y-3">
+              {(view === 'grid' || open === sub.id) && <div className={`p-5 space-y-3 ${view === 'list' ? 'border-t border-gray-100 animate-[fadeIn_0.2s_ease-out]' : ''}`}>
                 {/* Facts */}
                 <dl className={`grid gap-2 ${facts.length > 3 ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3'}`}>
                   {facts.map(([icon, k, v]) => (
@@ -319,7 +359,7 @@ export default function PlansList({ subs, setSubs, toast, view = 'list' }: {
                     </ul>
                   </div>
                 )}
-              </div>
+              </div>}
             </li>
           );
         })}
