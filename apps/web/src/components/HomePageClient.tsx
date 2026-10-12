@@ -12,6 +12,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { usePage } from '@/lib/usePage';
 import { mdCols } from '@/lib/grid';
 import { Heading, TYPE } from '@/components/ui/Heading';
+import Button from '@/components/ui/Button';
 
 interface Props {
   plans: any[];
@@ -61,16 +62,12 @@ export default function HomePageClient({ plans, content, faq, pricing }: Props) 
                   {/* One primary action and one alternative. "How it works" is in the
                       nav and summarised by the steps right below, so a third
                       button only competed with the two that matter. */}
-                  <div className="flex flex-col sm:flex-row gap-3 mb-7">
+                  <div className="flex flex-wrap gap-2 mb-7">
                     {hero.cta1Text && (
-                      <SmartLink href={hero.cta1Href} className="inline-flex whitespace-nowrap items-center justify-center bg-teal-600 text-white font-semibold px-6 py-3 rounded-full text-sm hover:bg-teal-700 transition">
-                        {hero.cta1Text}
-                      </SmartLink>
+                      <Button href={hero.cta1Href} icon="box" label={hero.cta1Text} />
                     )}
                     {hero.cta2Text && (
-                      <SmartLink href={hero.cta2Href} className="inline-flex whitespace-nowrap items-center justify-center bg-teal-50 text-teal-700 font-semibold px-6 py-3 rounded-full text-sm hover:bg-teal-100 transition">
-                        {hero.cta2Text}
-                      </SmartLink>
+                      <Button href={hero.cta2Href} icon="arrow" tone="soft" label={hero.cta2Text} />
                     )}
                   </div>
                 </HeroAnimate>

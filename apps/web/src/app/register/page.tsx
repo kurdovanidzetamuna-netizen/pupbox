@@ -15,6 +15,7 @@ import { authFetch } from '@/lib/authFetch';
 import { forgetReferral, rememberReferral, storedReferral } from '@/lib/referral';
 import { FieldError, FormAlert, countErrors, revealFirstError } from '@/components/ui/FormError';
 import { Heading } from '@/components/ui/Heading';
+import IconButton from '@/components/ui/IconButton';
 
 type Step = 'details' | 'verify' | 'dog';
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -166,9 +167,7 @@ function RegisterForm() {
                 <span>{t('reg.consent')}</span>
               </label>
               <LegalNotice />
-              <button type="submit" disabled={loading} className="w-full bg-teal-600 text-white py-3 rounded-xl font-semibold hover:bg-teal-700 transition disabled:opacity-50">
-                {loading ? t('register.loading') : t('register.btn')}
-              </button>
+              <div className="flex justify-end pt-1"><IconButton type="submit" icon="arrow" tone="primary" label={loading ? t('register.loading') : t('register.btn')} disabled={loading} /></div>
             </form>
             <p className="text-center text-sm text-gray-500 mt-6">
               {t('register.haveAccount')}{' '}
@@ -190,9 +189,9 @@ function RegisterForm() {
             <Heading kind="form" as="h1" title={t('wel.title')} subtitle={t('wel.sub')} />
             <DogProfileForm value={dog} onChange={d => { setDog(d); setFieldErrors({}); }} compact nameError={fieldErrors.dogName} />
             <FormAlert message={error} className="mt-4" />
-            <div className="flex gap-3 mt-6">
-              <button type="button" onClick={() => router.push(redirect)} className="border border-gray-200 text-gray-600 px-5 py-3 rounded-xl font-medium hover:bg-gray-50">{t('wel.skip')}</button>
-              <button type="button" onClick={saveDog} disabled={loading} className="flex-1 bg-teal-600 text-white py-3 rounded-xl font-bold hover:bg-teal-700 disabled:opacity-50">{loading ? t('co.saving') : t('wel.save')}</button>
+            <div className="flex items-center justify-end gap-1 mt-6 pt-4 border-t border-gray-100">
+              <IconButton icon="close" label={t('wel.skip')} onClick={() => router.push(redirect)} />
+              <IconButton icon="check" tone="primary" label={loading ? t('co.saving') : t('wel.save')} onClick={saveDog} disabled={loading} />
             </div>
           </>
         )}

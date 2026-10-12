@@ -7,6 +7,8 @@ import { useCart } from '@/context/CartContext';
 import { API_URL } from '@/lib/api';
 import { FieldError, FormAlert, countErrors, revealFirstError } from '@/components/ui/FormError';
 import { Heading } from '@/components/ui/Heading';
+import IconButton from '@/components/ui/IconButton';
+import Button from '@/components/ui/Button';
 
 /** Opened from the reset email: choose a new password, then you're signed in. */
 function ResetForm() {
@@ -69,7 +71,7 @@ function ResetForm() {
         ) : linkBroken ? (
           <>
             <FormAlert message={t('rp.e.link')} className="mb-4" />
-            <Link href="/forgot-password" className="block text-center w-full bg-teal-600 text-white py-3 rounded-xl font-semibold hover:bg-teal-700">{t('rp.newLink')}</Link>
+            <div className="flex justify-center"><Button href="/forgot-password" icon="mail" label={t('rp.newLink')} /></div>
           </>
         ) : (
           <form onSubmit={submit} className="space-y-4" noValidate>
@@ -86,9 +88,7 @@ function ResetForm() {
               <FieldError message={fieldErrors.pw2} />
             </div>
             <FormAlert message={error} />
-            <button type="submit" disabled={loading} className="w-full bg-teal-600 text-white py-3 rounded-xl font-semibold hover:bg-teal-700 transition disabled:opacity-50">
-              {loading ? t('rp.saving') : t('rp.btn')}
-            </button>
+            <div className="flex justify-end pt-1"><IconButton type="submit" icon="arrow" tone="primary" label={loading ? t('rp.saving') : t('rp.btn')} disabled={loading} /></div>
           </form>
         )}
       </div>

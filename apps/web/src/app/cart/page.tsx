@@ -11,6 +11,7 @@ import ChoiceNote from '@/components/ChoiceNote';
 import { FieldError } from '@/components/ui/FormError';
 import { Heading } from '@/components/ui/Heading';
 import { Icon } from '@/components/ui/icons';
+import Button from '@/components/ui/Button';
 
 export default function CartPage() {
   const { t, lang } = useLanguage();
@@ -38,8 +39,8 @@ export default function CartPage() {
           <div className="text-6xl mb-6">🛒</div>
           <Heading align="center" title={t('co.empty.title')} subtitle={t('co.empty.sub')} />
           <div className="flex gap-4 justify-center">
-            <Link href="/prices" className="inline-flex items-center justify-center bg-teal-600 text-white px-6 py-3 rounded-full font-medium hover:bg-teal-700 transition">{t('co.empty.plans')}</Link>
-            <Link href="/shop" className="border border-teal-600 text-teal-600 px-6 py-3 rounded-full font-medium hover:bg-teal-50 transition">{t('cart.browse')}</Link>
+            <Button href="/prices" icon="box" label={t('co.empty.plans')} />
+            <Button href="/shop" icon="bag" tone="soft" label={t('cart.browse')} />
           </div>
         </div>
       </main>
@@ -130,9 +131,7 @@ export default function CartPage() {
                 </div>
                 <div className="border-t border-gray-100 pt-2 flex justify-between font-bold text-gray-900 text-base"><dt>{t('co.sum.total')}</dt><dd>{gel(cart.total)}</dd></div>
               </dl>
-              <Link href="/checkout" className="mt-5 flex w-full items-center justify-center bg-teal-600 text-white font-bold py-3 rounded-xl hover:bg-teal-700 transition">
-                {t('cart.checkout')}
-              </Link>
+              <div className="mt-5 flex justify-end"><Button href="/checkout" icon="arrow" label={t('cart.checkout')} /></div>
             </div>
           </div>
         </div>

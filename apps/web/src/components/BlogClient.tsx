@@ -5,6 +5,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { blogPage, type StoredContent } from '@pupbox/content';
 import { usePage } from '@/lib/usePage';
 import { Heading } from '@/components/ui/Heading';
+import Button from '@/components/ui/Button';
 
 interface Props {
   posts: any[];
@@ -35,9 +36,7 @@ export default function BlogClient({ posts, total, pages, page, categories, cont
                 <div className="w-20 h-20 bg-teal-50 rounded-full flex items-center justify-center text-4xl mb-6">✍️</div>
                 <Heading kind="section" align="center" title={c.empty.heading} className="!mb-2" />
                 <p className="text-gray-400 mb-8 max-w-xs">{c.empty.description}</p>
-                <Link href="/" className="inline-flex items-center justify-center bg-teal-600 text-white text-sm font-bold px-6 py-3 rounded-full hover:bg-teal-700 transition">
-                  {t('global.backToHome')}
-                </Link>
+                <Button href="/" icon="home" label={t('global.backToHome')} />
               </div>
             ) : (
               <>

@@ -6,6 +6,7 @@ import { usePage } from '@/lib/usePage';
 import SmartLink from '@/components/SmartLink';
 import Accent from '@/components/Accent';
 import { Heading } from '@/components/ui/Heading';
+import Button from '@/components/ui/Button';
 
 function useInView(threshold = 0.15) {
   const ref = useRef<HTMLDivElement>(null);
@@ -136,16 +137,12 @@ export default function HowItWorksClient({ content, faq }: { content: StoredCont
               </div>
             ))}
           </div>
-          <div className="flex justify-center gap-3 flex-wrap">
+          <div className="flex justify-center gap-2 flex-wrap">
             {cta.button1Text && (
-              <SmartLink href={cta.button1Href} className="inline-flex items-center justify-center bg-teal-600 hover:bg-teal-700 text-white font-semibold px-6 py-3 rounded-xl text-base transition-all hover:scale-105 shadow-md shadow-teal-100">
-                {cta.button1Text}
-              </SmartLink>
+              <Button href={cta.button1Href} icon="box" label={cta.button1Text} />
             )}
             {cta.button2Text && (
-              <SmartLink href={cta.button2Href} className="inline-flex items-center justify-center bg-white hover:bg-gray-50 border border-gray-200 text-gray-600 font-medium px-6 py-3 rounded-2xl text-base transition-all shadow-sm">
-                {cta.button2Text}
-              </SmartLink>
+              <Button href={cta.button2Href} icon="arrow" tone="soft" label={cta.button2Text} />
             )}
           </div>
         </div>

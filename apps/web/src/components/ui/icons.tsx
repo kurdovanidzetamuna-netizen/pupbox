@@ -44,6 +44,8 @@ const P: Record<string, string> = {
   cake: 'M4 21h16M5 21v-7a2 2 0 012-2h10a2 2 0 012 2v7M5 16c2 1.5 4 1.5 7 0s5-1.5 7 0M12 12V8M12 5.5a1 1 0 100-2 1 1 0 000 2z',
   grid: 'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z',
   list: 'M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01',
+  arrow: 'M5 12h14M13 6l6 6-6 6',
+  refresh: 'M20 11a8 8 0 10-2.3 5.7M20 4v7h-7',
   logout: 'M15 4h3a2 2 0 012 2v12a2 2 0 01-2 2h-3M10 16l-4-4 4-4M6 12h11',
 };
 

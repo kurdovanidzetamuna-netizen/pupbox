@@ -10,6 +10,7 @@ import Logo from '@/components/Logo';
 import SmartLink from '@/components/SmartLink';
 import NotificationBell from '@/components/NotificationBell';
 import MiniCart from '@/components/shop/MiniCart';
+import Button from '@/components/ui/Button';
 
 /** Logo, menu and button come from admin → Page Builder → Header & Footer. */
 export default function Header({ site }: { site: StoredContent | null }) {
@@ -151,9 +152,7 @@ export default function Header({ site }: { site: StoredContent | null }) {
             )}
           </ul>
           {c.header.buttonText && (
-            <SmartLink href={c.header.buttonHref} className="mt-4 flex w-full items-center justify-center bg-teal-600 text-white font-bold py-3 rounded-xl hover:bg-teal-700">
-              {c.header.buttonText}
-            </SmartLink>
+            <div className="mt-4 flex justify-center"><Button href={c.header.buttonHref} icon="box" label={c.header.buttonText} /></div>
           )}
           <div className="mt-4 grid grid-cols-2 gap-1 p-1 rounded-full bg-gray-100" role="radiogroup" aria-label={t('nav.language')}>
             {([['ka', 'ქართული'], ['en', 'English']] as const).map(([code, label]) => (

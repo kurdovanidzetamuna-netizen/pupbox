@@ -6,6 +6,7 @@ import { fill } from '@/context/strings/purchase';
 import { API_URL } from '@/lib/api';
 import { FieldError, FormAlert, countErrors, revealFirstError } from '@/components/ui/FormError';
 import { Heading } from '@/components/ui/Heading';
+import IconButton from '@/components/ui/IconButton';
 
 /** Asks for a reset link. Says the same thing whether or not the account exists. */
 export default function ForgotPasswordPage() {
@@ -50,9 +51,7 @@ export default function ForgotPasswordPage() {
                 <FieldError message={emailError} />
                 <FormAlert message={error} className="mt-3" />
               </div>
-              <button type="submit" disabled={loading} className="w-full bg-teal-600 text-white py-3 rounded-xl font-semibold hover:bg-teal-700 transition disabled:opacity-50">
-                {loading ? t('fp.sending') : t('fp.btn')}
-              </button>
+              <div className="flex justify-end pt-1"><IconButton type="submit" icon="arrow" tone="primary" label={loading ? t('fp.sending') : t('fp.btn')} disabled={loading} /></div>
             </form>
           </>
         )}

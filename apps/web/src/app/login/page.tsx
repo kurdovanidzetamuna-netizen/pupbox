@@ -8,6 +8,7 @@ import { safeRedirect } from '@/lib/safeRedirect';
 import { API_URL } from '@/lib/api';
 import { FieldError, FormAlert, countErrors, revealFirstError } from '@/components/ui/FormError';
 import { Heading } from '@/components/ui/Heading';
+import IconButton from '@/components/ui/IconButton';
 
 function LoginForm() {
   const router = useRouter();
@@ -71,9 +72,7 @@ function LoginForm() {
               <Link href="/forgot-password" className="text-sm text-teal-600 hover:underline">{t('login.forgot')}</Link>
             </div>
           </div>
-          <button type="submit" disabled={loading} className="w-full bg-teal-600 text-white py-3 rounded-xl font-semibold hover:bg-teal-700 transition disabled:opacity-50">
-            {loading ? t('login.loading') : t('login.btn')}
-          </button>
+          <div className="flex justify-end pt-1"><IconButton type="submit" icon="arrow" tone="primary" label={loading ? t('login.loading') : t('login.btn')} disabled={loading} /></div>
         </form>
         <p className="text-center text-sm text-gray-500 mt-6">
           {t('login.noAccount')}{' '}
