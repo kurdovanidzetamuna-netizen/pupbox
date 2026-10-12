@@ -1,8 +1,15 @@
 import { SITE_URL, atLang, type Lang } from '@/lib/seo';
 
-/** Structured data for search engines (schema.org), as one <script>. */
+/**
+ * Structured data for search engines (schema.org), as one <script>. Several
+ * items go into a single object with one "@context" and an "@graph" list:
+ * a bare list has no "@context" at the top, which some browser extensions
+ * and parsers (Safari ones among them) expect and crash without.
+ */
 export function JsonLd({ data }: { data: object | object[] }) {
-  return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(data).replace(/</g, '\\u003c') }} />;
+  const items = (Array.isArray(data) ? data : [data]).map(({ '@context': _, ...rest }: any) => rest);
+  const doc = { '@context': 'https://schema.org', '@graph': items };
+  return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(doc).replace(/</g, '\\u003c') }} />;
 }
 
 /** Home › … › this page, for the path shown under a search result. */
