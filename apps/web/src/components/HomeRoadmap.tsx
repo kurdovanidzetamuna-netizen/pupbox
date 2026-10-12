@@ -3,6 +3,7 @@ import Link from '@/components/LangLink';
 import { useLanguage } from '@/context/LanguageContext';
 import { Icon } from '@/components/ui/icons';
 import FadeIn from '@/components/FadeIn';
+import { DogDoodle, Paw } from '@/components/Doodles';
 
 type Step = { icon?: string; title: string; desc?: string };
 
@@ -107,8 +108,15 @@ export default function HomeRoadmap({ steps }: { steps: Step[] }) {
                 <Pin i={i} />
               </span>
             ))}
-            <span className="absolute -right-2 top-1/2 -translate-y-1/2 flex items-center gap-2" title={t('home.roadEnd')}>
-              <span className="w-9 h-9 rounded-full bg-white ring-1 ring-gray-100 shadow-soft text-rose-500 flex items-center justify-center"><Icon name="heart" className="w-4 h-4" /></span>
+            {/* Paw prints between the stops, and a happy dog at the finish. */}
+            {['25%', '50%', '75%'].map((x, i) => (
+              <span key={x} className="absolute -translate-x-1/2 -translate-y-1/2 flex gap-1 text-teal-300" style={{ left: x, top: '50%' }}>
+                <Paw className="w-3.5 h-3.5" style={{ transform: `rotate(${i % 2 ? 70 : 110}deg) translateY(-3px)` }} />
+                <Paw className="w-3.5 h-3.5" style={{ transform: `rotate(${i % 2 ? 70 : 110}deg) translateY(3px)` }} />
+              </span>
+            ))}
+            <span className="absolute -right-6 top-1/2 -translate-y-[70%]" title={t('home.roadEnd')}>
+              <DogDoodle className="w-20 h-[70px] motion-safe:animate-[bob_3s_ease-in-out_infinite]" />
             </span>
           </div>
           {stops.map((s, i) => i % 2 === 1 && (
@@ -129,7 +137,7 @@ export default function HomeRoadmap({ steps }: { steps: Step[] }) {
             </li>
           ))}
           <li className="relative flex items-center gap-3 h-12">
-            <span className="absolute -left-16 w-12 h-12 rounded-full bg-white ring-[6px] ring-rose-100 shadow-soft text-rose-500 flex items-center justify-center"><Icon name="heart" className="w-5 h-5" /></span>
+            <span className="absolute -left-16 w-12 h-12 rounded-full bg-white ring-[6px] ring-rose-100 shadow-soft flex items-center justify-center"><DogDoodle className="w-10 h-9" /></span>
             <span className="text-[15px] font-bold text-gray-900">{t('home.roadEnd')}</span>
           </li>
         </ol>
