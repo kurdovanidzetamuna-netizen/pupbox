@@ -21,6 +21,19 @@ import PerksStrip from '@/components/shop/PerksStrip';
 
 const money = (n: unknown) => `₾${Number(n).toFixed(2)}`;
 const DOG_SIZES = ['EXTRA_SMALL', 'SMALL', 'MEDIUM', 'LARGE', 'EXTRA_LARGE'];
+const STAGES = ['PUPPY', 'ADULT', 'SENIOR'];
+
+/**
+ * Which of an ordered scale a product suits, in few words: "every …" when
+ * it's all (or none set), "small – large" for a run of three or more,
+ * otherwise "a · b".
+ */
+function span(scale: string[], picked: string[] | undefined, name: (x: string) => string, all: string) {
+  const on = scale.filter((x) => picked?.includes(x));
+  if (!on.length || on.length === scale.length) return all;
+  const run = scale.indexOf(on[on.length - 1]) - scale.indexOf(on[0]) + 1 === on.length;
+  return run && on.length >= 3 ? `${name(on[0])} – ${name(on[on.length - 1])}` : on.map(name).join(' · ');
+}
 
 /**
  * A product, built from the shop's own pieces: gallery, the shared title,
@@ -190,37 +203,33 @@ export default function ProductView({ product, related, content }: { product: an
               {soldOut ? t('shop.outOfStock') : low ? fill(t('shop.onlyLeft'), { n: left }) : t('shop.inStock')}
             </p>
 
-            {/* Size and age. A size you choose is a row of chips; which dogs it
-                suits is plain text (like age), so it never looks clickable. */}
-            <dl className="mt-5 space-y-2.5 text-[12px]">
-              {sizes.length > 0 && !soldOut ? (
-                <div className="flex items-center gap-2.5" aria-invalid={!!errs.size} tabIndex={errs.size ? -1 : undefined}>
-                  <dt className="w-[5.5rem] shrink-0 font-semibold text-gray-400">{t('pdp.size')}<span className="text-red-400"> *</span></dt>
-                  <dd><SizeChips sizes={sizes} value={size} onPick={ch.setSize} counts={ch.sizeCounts} error={!!errs.size} label={t('pdp.size')} /></dd>
-                </div>
-              ) : sizes.length > 0 ? (
-                <div className="flex items-center gap-2.5">
-                  <dt className="w-[5.5rem] shrink-0 font-semibold text-gray-400">{t('pdp.size')}</dt>
-                  <dd className="text-gray-700 font-medium">{sizes.join(' · ')}</dd>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2.5">
-                  <dt className="w-[5.5rem] shrink-0 font-semibold text-gray-400">{t('shop.dogSize')}</dt>
-                  <dd className="text-gray-700 font-medium">
-                    {!product.dogSizes?.length || product.dogSizes.length === DOG_SIZES.length ? t('pdp.allSizes')
-                      : DOG_SIZES.filter((sz) => product.dogSizes.includes(sz)).map((sz, i) => (
-                        <span key={sz} title={t(`dog.sizeHint.${sz}`)}>{i > 0 && ' · '}{t(`dog.size.${sz}`)}</span>
-                      ))}
-                  </dd>
-                </div>
-              )}
-              {errs.size && <FieldError message={errs.size} className="!mt-0 pl-[6.125rem]" />}
-              <div className="flex items-center gap-2.5">
-                <dt className="w-[5.5rem] shrink-0 font-semibold text-gray-400">{t('pdp.age')}</dt>
-                <dd className="text-gray-700 font-medium">
-                  {product.lifeStages?.length ? product.lifeStages.map((st: string) => t(`pdp.stage.${st}`)).join(' · ') : t('pdp.stage.ALL')}
-                </dd>
+            {/* A size to choose: chips. */}
+            {sizes.length > 0 && !soldOut && (
+              <div className="mt-5" aria-invalid={!!errs.size} tabIndex={errs.size ? -1 : undefined}>
+                <p className="text-[12px] font-semibold text-gray-500 mb-1.5">{t('pdp.size')}<span className="text-red-400"> *</span></p>
+                <SizeChips sizes={sizes} value={size} onPick={ch.setSize} counts={ch.sizeCounts} error={!!errs.size} label={t('pdp.size')} />
+                {errs.size && <FieldError message={errs.size} />}
               </div>
+            )}
+
+            {/* Who it's for: quiet info tiles (no hover, no outline), so they
+                never read as something to tap. */}
+            <dl className="mt-5 flex flex-wrap gap-2">
+              {[
+                ...(sizes.length === 0 ? [{ icon: 'paw' as const, label: t('shop.dogSize'), value: span(DOG_SIZES, product.dogSizes, (x) => t(`dog.size.${x}`), t('pdp.allSizes')) }]
+                  : soldOut ? [{ icon: 'paw' as const, label: t('pdp.size'), value: sizes.join(' · ') }] : []),
+                { icon: 'calendar' as const, label: t('pdp.age'), value: span(STAGES, product.lifeStages, (x) => t(`pdp.stage.${x}`), t('pdp.stage.ALL')) },
+              ].map((f) => (
+                <div key={f.label} className="flex items-center gap-2.5 rounded-2xl bg-gray-50 pl-2.5 pr-4 py-2 min-w-0">
+                  <span className="w-8 h-8 shrink-0 rounded-xl bg-white text-teal-600 flex items-center justify-center" aria-hidden="true">
+                    <Icon name={f.icon} className="w-4 h-4" strokeWidth={1.9} />
+                  </span>
+                  <div className="min-w-0">
+                    <dt className="text-[11px] text-gray-400 leading-tight">{f.label}</dt>
+                    <dd className="text-[13px] font-semibold text-gray-800 leading-snug">{f.value}</dd>
+                  </div>
+                </div>
+              ))}
             </dl>
 
             {/* Engraved name, quantity and add — one line */}
