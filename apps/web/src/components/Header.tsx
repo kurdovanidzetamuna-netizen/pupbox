@@ -1,9 +1,10 @@
 'use client';
-import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import Link from '@/components/LangLink';
+import { useRouter } from 'next/navigation';
+import { usePath } from '@/lib/path';
 import { createPortal } from 'react-dom';
 import { signOut } from '@/lib/signOut';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { sitePage, type StoredContent } from '@pupbox/content';
 import { useLanguage } from '@/context/LanguageContext';
 import { usePage } from '@/lib/usePage';
@@ -47,7 +48,7 @@ export default function Header({ site }: { site: StoredContent | null }) {
   // The header keeps four main pages; the blog lives in the footer and the side menu.
   const main = [...nav.filter((n) => !n.href.startsWith('/blog')), { label: t('nav.buildBox'), href: '/build-box' }]
     .filter((l, i, all) => all.findIndex((x) => x.href === l.href) === i).slice(0, 4);
-  const pathname = usePathname();
+  const pathname = usePath();
   const router = useRouter();
   const [drawer, setDrawer] = useState(false);
   const [askOut, setAskOut] = useState(false);
@@ -158,7 +159,7 @@ export default function Header({ site }: { site: StoredContent | null }) {
                 </span>
               </>
             ) : (
-              <GuestMenu />
+              <SignInButton />
             )}
 
             {/* The basket is for customers; a guest sees it only once something is in it. */}
@@ -295,41 +296,21 @@ export default function Header({ site }: { site: StoredContent | null }) {
 }
 
 /**
- * Signed out: one round account icon. It opens a small menu with
- * "Sign in" and "Create account", instead of two buttons side by side.
+ * Signed out: one green round button. It opens sign in as a pop-up (with
+ * "Create account" inside it), the same on phones and computers.
  */
-function GuestMenu() {
+function SignInButton() {
   const { t } = useLanguage();
-  const pathname = usePathname();
-  const [open, setOpen] = useState(false);
-  const box = useRef<HTMLDivElement>(null);
-
-  useEffect(() => { setOpen(false); }, [pathname]);
-  useEffect(() => {
-    if (!open) return;
-    const onDown = (e: MouseEvent) => { if (!box.current?.contains(e.target as Node)) setOpen(false); };
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
-    document.addEventListener('mousedown', onDown);
-    document.addEventListener('keydown', onKey);
-    return () => { document.removeEventListener('mousedown', onDown); document.removeEventListener('keydown', onKey); };
-  }, [open]);
-
+  const label = `${t('nav.signIn')} / ${t('nav.signUp')}`;
   return (
-    <div ref={box} className="relative">
-      <button type="button" onClick={() => setOpen((o) => !o)} aria-label={t('nav.signIn')} title={t('nav.signIn')} aria-expanded={open} aria-haspopup="menu"
-        className={`inline-flex items-center justify-center w-9 h-9 rounded-full transition-colors ${open ? 'bg-teal-50 text-teal-700' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'}`}>
-        <Icon name="user" className="w-5 h-5" />
-      </button>
-      {open && (
-        <div role="menu" className="absolute right-0 top-full mt-2 z-50 w-52 rounded-2xl bg-white ring-1 ring-gray-200/80 shadow-[0_12px_32px_-12px_rgba(36,48,58,0.25)] p-1.5 animate-[fadeUp_0.15s_ease-out]">
-          <Link href="/login" role="menuitem" className="flex items-center gap-2.5 h-10 px-3 rounded-xl text-[13.5px] font-semibold text-gray-800 hover:bg-gray-50">
-            <Icon name="user" className="w-4 h-4 text-teal-600" />{t('nav.signIn')}
-          </Link>
-          <Link href="/register" role="menuitem" className="flex items-center gap-2.5 h-10 px-3 rounded-xl text-[13.5px] font-semibold text-gray-800 hover:bg-gray-50">
-            <Icon name="plus" className="w-4 h-4 text-teal-600" />{t('nav.signUp')}
-          </Link>
-        </div>
-      )}
-    </div>
+    <span className="relative inline-flex group/tip">
+      <Link href="/login" aria-label={label}
+        className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-teal-600 text-white shadow-glow hover:bg-teal-700 hover:scale-105 transition">
+        <Icon name="user" className="w-[18px] h-[18px]" strokeWidth={2} />
+      </Link>
+      <span role="tooltip" className="pointer-events-none absolute top-full mt-1.5 right-0 whitespace-nowrap rounded-lg bg-gray-800 text-white text-[11px] font-medium px-2 py-1 z-30 hidden [@media(hover:hover)]:group-hover/tip:block group-focus-visible/tip:block animate-[fadeIn_0.12s_ease-out]">
+        {label}
+      </span>
+    </span>
   );
 }

@@ -33,14 +33,18 @@ export async function getFaq(): Promise<FaqItem[] | null> {
  * section in admin. Georgian — the site's default language — is what search
  * engines and link previews get. `fullTitle` skips the " | Pupbox" suffix.
  */
+/** A page's address in a language: ('/shop', 'en') → /en/shop. */
+const atLang = (path: string, lang: 'ka' | 'en') => `/${lang}${path === '/' ? '' : path}`;
+
 export async function pageMetadata(page: PageDef, { fullTitle = false } = {}): Promise<Metadata> {
   const seo = localizePage(page, await getStoredContent(page), 'ka').seo ?? {};
   const images = seo.shareImage ? [{ url: seo.shareImage }] : undefined;
   return {
     title: fullTitle ? { absolute: seo.title } : seo.title,
     description: seo.description,
-    alternates: { canonical: page.path },
-    openGraph: { title: seo.title, description: seo.description, url: page.path, ...(images ? { images } : {}) },
+    // Georgian is the main address; the English one is listed beside it.
+    alternates: { canonical: atLang(page.path, 'ka'), languages: { ka: atLang(page.path, 'ka'), en: atLang(page.path, 'en') } },
+    openGraph: { title: seo.title, description: seo.description, url: atLang(page.path, 'ka'), ...(images ? { images } : {}) },
     twitter: { title: seo.title, description: seo.description, ...(images ? { images } : {}) },
   };
 }

@@ -1,7 +1,8 @@
 import { MetadataRoute } from 'next';
 import { API_URL } from '@/lib/api';
 
-const BASE = process.env.NEXT_PUBLIC_SITE_URL || 'https://pupbox.ge';
+// Pages are listed at their Georgian address (the site's main language).
+const BASE = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://pupbox.ge'}/ka`;
 
 async function fetchJson(path: string) {
   try {

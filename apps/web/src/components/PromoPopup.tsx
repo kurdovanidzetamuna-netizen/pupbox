@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState, useCallback } from 'react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import Link from '@/components/LangLink';
+import { usePath } from '@/lib/path';
 import { useLanguage } from '@/context/LanguageContext';
 
 interface Popup {
@@ -75,7 +75,7 @@ export default function PromoPopup() {
   const [popup, setPopup] = useState<Popup | null>(null);
   const [visible, setVisible] = useState(false);
   const [copied, setCopied] = useState(false);
-  const pathname = usePathname();
+  const pathname = usePath();
   const { lang } = useLanguage();
 
   const dismiss = useCallback(() => {

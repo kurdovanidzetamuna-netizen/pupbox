@@ -1,5 +1,5 @@
 'use client';
-import Link from 'next/link';
+import Link from '@/components/LangLink';
 import Modal from '@/components/ui/Modal';
 import Field from '@/components/ui/Field';
 import { FieldError } from '@/components/ui/FormError';

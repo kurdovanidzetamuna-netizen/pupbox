@@ -1,6 +1,6 @@
 'use client';
 import { formatDate } from '@/lib/dates';
-import Link from 'next/link';
+import Link from '@/components/LangLink';
 import { useLanguage } from '@/context/LanguageContext';
 import { blogPage, type StoredContent } from '@pupbox/content';
 import { usePage } from '@/lib/usePage';

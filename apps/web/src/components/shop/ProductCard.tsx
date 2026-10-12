@@ -1,5 +1,5 @@
 'use client';
-import Link from 'next/link';
+import Link from '@/components/LangLink';
 import { useState } from 'react';
 import { useChoice, available } from '@/lib/useChoice';
 import SizeChips from '@/components/shop/SizeChips';

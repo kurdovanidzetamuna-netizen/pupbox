@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import Link from '@/components/LangLink';
 
 /** The brand mark from Header & Footer settings: an uploaded logo, or icon + name. */
 export default function Logo({ brand, className = '' }: { brand: { logoImage: string; logoIcon: string; name: string }; className?: string }) {

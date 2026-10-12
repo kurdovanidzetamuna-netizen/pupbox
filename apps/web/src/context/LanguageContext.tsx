@@ -6,6 +6,8 @@ import { STORE_STRINGS } from './strings/store';
 import { ACCOUNT_STRINGS } from './strings/account';
 import { SITE_STRINGS } from './strings/site';
 import { LANG_COOKIE } from '@/lib/lang';
+import { usePathname, useRouter } from 'next/navigation';
+import { langOf, stripLang, withLang } from '@/lib/path';
 
 type Lang = 'en' | 'ka';
 
@@ -111,18 +113,13 @@ function rememberForServer(l: Lang) {
 }
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [lang, setLangState] = useState<Lang>('ka');
+  // The language is the one in the address: /ka/... or /en/....
+  const pathname = usePathname() || '/';
+  const router = useRouter();
+  const lang: Lang = langOf(pathname);
   // CMS overrides: key → { en, ka }
   const [cms, setCms] = useState<Record<string, { en: string; ka: string }>>({});
 
-  // Georgian is the site's language: every page load starts in Georgian.
-  // English is a switch for the current visit only, so a refresh or a new
-  // visit never lands someone in English by surprise. (An older saved choice
-  // is cleared.)
-  useEffect(() => {
-    try { localStorage.removeItem('pupbox_lang'); } catch {}
-    rememberForServer('ka');
-  }, []);
 
   // Fetch translations from CMS once on mount
   useEffect(() => {
@@ -167,10 +164,12 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   // Screen readers and search engines read the page language from <html>.
   useEffect(() => { document.documentElement.lang = lang; }, [lang]);
 
+  /** Switching language moves to the same page in the other language. */
   function setLang(l: Lang) {
-    setLangState(l);
+    if (l === lang) return;
     rememberForServer(l);
     saveForEmails(l);
+    router.push(`${withLang(stripLang(pathname), l)}${window.location.search}${window.location.hash}`);
   }
 
   const t = useCallback((key: string, fallback?: string): string => {

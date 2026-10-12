@@ -1,8 +1,8 @@
 'use client';
-import Link from 'next/link';
+import Link from '@/components/LangLink';
 import { homePage, type StoredContent } from '@pupbox/content';
 import FadeIn from '@/components/FadeIn';
-import PlanSection from '@/app/prices/PlanSection';
+import PlanSection from '@/app/[lang]/prices/PlanSection';
 import HeroAnimate from '@/components/HeroAnimate';
 import HomeRoadmap from '@/components/HomeRoadmap';
 import DogRunner from '@/components/DogRunner';

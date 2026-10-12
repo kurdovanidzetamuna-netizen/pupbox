@@ -1,5 +1,5 @@
 'use client';
-import Link from 'next/link';
+import Link from '@/components/LangLink';
 import { useLanguage } from '@/context/LanguageContext';
 import { Heading } from '@/components/ui/Heading';
 import { Icon } from '@/components/ui/icons';
