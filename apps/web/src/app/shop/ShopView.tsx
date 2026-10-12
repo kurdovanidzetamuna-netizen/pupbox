@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState, useTransition } from 'react';
 import { shopPage, type StoredContent } from '@pupbox/content';
 import { usePage } from '@/lib/usePage';
 import { useLanguage } from '@/context/LanguageContext';
@@ -55,7 +55,11 @@ export default function ShopView({ products, total, pages, page, categories, bra
   const seller = params.get('seller') || '';
   const sellerName = (x: any) => x ? x.name : '';
   const [query, setQuery] = useState(search);
-  useEffect(() => setQuery(search), [search]);
+  const [searching, startSearch] = useTransition();
+  // What the box last sent: the address catching up to it mustn't overwrite
+  // letters typed since. Only an outside change (a chip ✕, Back) refills it.
+  const sent = useRef(search);
+  useEffect(() => { if (search !== sent.current) { sent.current = search; setQuery(search); } }, [search]);
 
   /** The address with some filters changed (page always resets). */
   const hrefWith = (change: Record<string, string | null>) => {
@@ -66,6 +70,18 @@ export default function ShopView({ products, total, pages, page, categories, bra
     return qs ? `${pathname}?${qs}` : pathname;
   };
   const go = (change: Record<string, string | null>) => router.push(hrefWith(change), { scroll: false });
+
+  /** Search as you type: a moment after the last key, without filling Back history. */
+  const find = (text: string) => {
+    const q = text.trim();
+    if (q === sent.current) return;
+    sent.current = q;
+    startSearch(() => router.replace(hrefWith({ search: q || null }), { scroll: false }));
+  };
+  useEffect(() => {
+    const id = setTimeout(() => find(query), 300);
+    return () => clearTimeout(id);
+  }, [query]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const catName = (cat: any) => (lang === 'ka' && cat.translations?.ka?.name) || cat.name;
   const activeCat = categories.find((x) => x.slug === category);
@@ -88,17 +104,18 @@ export default function ShopView({ products, total, pages, page, categories, bra
       <section className="bg-gradient-to-br from-teal-50 via-white to-peach-50/70">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-8 sm:pt-10 pb-7">
           <Heading title={c.header.heading} subtitle={c.header.description || undefined} className="!mb-5" />
-          <form role="search" onSubmit={(e) => { e.preventDefault(); go({ search: query.trim() || null }); }} className="w-full max-w-3xl">
+          <form role="search" onSubmit={(e) => { e.preventDefault(); find(query); }} className="w-full max-w-3xl">
             <div className="flex items-center h-11 sm:h-12 rounded-full bg-white ring-1 ring-gray-200/80 focus-within:ring-2 focus-within:ring-teal-300 pl-2 pr-1.5 transition">
               <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t('shop.search')} aria-label={t('shop.search')}
                 className="flex-1 min-w-0 h-full bg-transparent px-3 text-[13.5px] sm:text-[14px] text-gray-900 placeholder:text-gray-400 outline-none [&::-webkit-search-cancel-button]:hidden" />
               {query && (
-                <button type="button" onClick={() => { setQuery(''); if (search) go({ search: null }); }} aria-label={t('shop.clear')}
+                <button type="button" onClick={() => { setQuery(''); find(''); }} aria-label={t('shop.clear')}
                   className="w-9 h-9 rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-700 flex items-center justify-center"><Icon name="close" className="w-4 h-4" /></button>
               )}
               <button type="submit" aria-label={t('shop.find')} title={t('shop.find')}
                 className="w-8 h-8 sm:w-9 sm:h-9 shrink-0 rounded-full bg-teal-600 text-white flex items-center justify-center hover:bg-teal-700 transition-colors">
-                <Icon name="search" className="w-4 h-4" strokeWidth={2.4} />
+                {searching ? <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                  : <Icon name="search" className="w-4 h-4" strokeWidth={2.4} />}
               </button>
             </div>
           </form>
