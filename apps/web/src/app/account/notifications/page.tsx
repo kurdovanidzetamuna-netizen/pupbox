@@ -5,6 +5,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { fill } from '@/context/strings/purchase';
 import { authFetch, loginUrl, SessionExpiredError } from '@/lib/authFetch';
 import { Icon } from '@/components/ui/icons';
+import IconButton from '@/components/ui/IconButton';
 import NotificationItem from '@/components/NotificationItem';
 import { markRead, setUnread, useUnread, type Notice } from '@/lib/notifications';
 
@@ -78,7 +79,7 @@ export default function NotificationsPage() {
 
   return (
     <div>
-      {/* Title, how much is new, and "Mark all as read" as a quiet link. */}
+      {/* Title, how much is new, and "Mark all as read" as an icon. */}
       <div className="flex items-end justify-between gap-3 mb-5">
         <div className="min-w-0">
           <h1 className="text-2xl sm:text-[28px] font-extrabold tracking-tight text-gray-900 flex items-center gap-2.5">
@@ -87,27 +88,21 @@ export default function NotificationsPage() {
           </h1>
           <p className="text-[13.5px] text-gray-500 mt-1">{unread > 0 ? fill(t('ntf.newN'), { n: unread }) : t('ntf.allRead')}</p>
         </div>
-        {unread > 0 && (
-          <button type="button" onClick={readAll}
-            className="shrink-0 inline-flex items-center gap-1.5 h-9 px-3 rounded-full text-[13px] font-semibold text-teal-700 hover:bg-teal-50 transition-colors">
-            <Icon name="check" className="w-4 h-4" strokeWidth={2.2} />
-            <span className="hidden sm:inline">{t('ntf.readAll')}</span>
-          </button>
-        )}
+        {unread > 0 && <IconButton icon="check" tone="primary" label={t('ntf.readAll')} onClick={readAll} />}
       </div>
 
-      {/* Filters, in the site's grey pill switch; scrolls sideways on phones. */}
-      <div className="-mx-4 px-4 sm:mx-0 sm:px-0 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden mb-4">
+      {/* Filters as icons (name on hover), in the site's grey pill switch. */}
+      <div className="mb-4">
         <div role="tablist" aria-label={t('ntf.show')} className="inline-flex gap-1 p-1 rounded-full bg-gray-100">
           {FILTERS.map((f) => {
             const on = filter === f.key;
             return (
-              <button key={f.key} type="button" role="tab" aria-selected={on} onClick={() => setFilter(f.key)}
-                className={`shrink-0 inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full text-[12.5px] font-semibold whitespace-nowrap transition-colors ${
+              <button key={f.key} type="button" role="tab" aria-selected={on} aria-label={t(f.label)} onClick={() => setFilter(f.key)}
+                className={`group/tab relative shrink-0 inline-flex items-center justify-center w-10 h-9 rounded-full transition-colors ${
                   on ? 'bg-white text-teal-700 shadow-sm' : 'text-gray-500 hover:text-gray-800'}`}>
-                <Icon name={f.icon} className="w-3.5 h-3.5" />
-                {t(f.label)}
-                {f.key === 'unread' && unread > 0 && <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-teal-600 text-white text-[10px] font-bold leading-[18px] text-center tabular-nums">{unread}</span>}
+                <Icon name={f.icon} className="w-[18px] h-[18px]" />
+                {f.key === 'unread' && unread > 0 && <span className="absolute top-0.5 right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-teal-600 text-white text-[9.5px] font-bold leading-4 text-center tabular-nums">{unread}</span>}
+                <span role="tooltip" className="pointer-events-none absolute top-full mt-1.5 left-1/2 -translate-x-1/2 hidden group-hover/tab:block group-focus-visible/tab:block whitespace-nowrap rounded-lg bg-gray-800 text-white text-[11px] font-medium px-2 py-1 z-30">{t(f.label)}</span>
               </button>
             );
           })}
@@ -121,10 +116,7 @@ export default function NotificationsPage() {
             <span className="mx-auto mb-3 w-12 h-12 rounded-full bg-red-50 text-red-500 flex items-center justify-center"><Icon name="alert" className="w-6 h-6" /></span>
             <p className="text-[15px] font-bold text-gray-900">{t('ntf.errTitle')}</p>
             <p className="text-[13px] text-gray-500 mt-1">{t('ntf.errSub')}</p>
-            <button type="button" onClick={() => { setFailed(false); load(); }}
-              className="mt-4 inline-flex items-center gap-1.5 h-9 px-4 rounded-full text-[13px] font-semibold text-teal-700 ring-1 ring-teal-200 hover:bg-teal-50 transition-colors">
-              <Icon name="refresh" className="w-4 h-4" />{t('ntf.retry')}
-            </button>
+            <div className="mt-4 flex justify-center"><IconButton icon="refresh" tone="primary" label={t('ntf.retry')} onClick={() => { setFailed(false); load(); }} /></div>
           </div>
         ) : items === null ? (
           <div className="divide-y divide-gray-100" aria-busy="true" aria-label={t('ui.wait')}>
@@ -147,9 +139,6 @@ export default function NotificationsPage() {
               {t(filter === 'unread' ? 'ntf.allRead' : filter === 'all' ? 'ntf.empty' : 'ntf.emptyKind')}
             </p>
             <p className="text-[13px] text-gray-500 mt-1 max-w-xs mx-auto">{t(filter === 'unread' ? 'ntf.allReadSub' : 'ntf.emptySub')}</p>
-            {filter !== 'all' && (
-              <button type="button" onClick={() => setFilter('all')} className="mt-4 text-[13px] font-semibold text-teal-700 hover:underline underline-offset-4">{t('ntf.seeAll')}</button>
-            )}
           </div>
         ) : (
           <>
@@ -165,11 +154,8 @@ export default function NotificationsPage() {
             ))}
             {hasMore && (
               <div className="border-t border-gray-100 p-3 text-center">
-                <button type="button" disabled={loadingMore}
-                  onClick={async () => { setLoadingMore(true); await load(shown[shown.length - 1].id); setLoadingMore(false); }}
-                  className="inline-flex items-center gap-1.5 h-9 px-4 rounded-full text-[13px] font-semibold text-teal-700 hover:bg-teal-50 transition disabled:opacity-50">
-                  {loadingMore ? t('ui.wait') : t('ntf.more')}
-                </button>
+                <IconButton icon={loadingMore ? 'refresh' : 'plus'} tone="primary" label={loadingMore ? t('ui.wait') : t('ntf.more')} disabled={loadingMore}
+                  onClick={async () => { setLoadingMore(true); await load(shown[shown.length - 1].id); setLoadingMore(false); }} />
               </div>
             )}
             {failed && <p role="alert" className="border-t border-gray-100 px-4 py-3 text-center text-[13px] text-red-600">{t('ntf.errSub')}</p>}

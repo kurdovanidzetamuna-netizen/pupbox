@@ -69,9 +69,9 @@ function Newsletter() {
               onChange={(e) => { setEmail(e.target.value); if (state !== 'busy') setState('idle'); }}
               placeholder={t('ftr.newsPlaceholder')} aria-invalid={state === 'bad'}
               className="flex-1 min-w-0 h-11 px-4 rounded-full bg-white ring-1 ring-gray-200 text-[14px] text-gray-900 placeholder:text-gray-400 outline-none focus:ring-2 focus:ring-teal-500" />
-            <button type="submit" disabled={state === 'busy'}
-              className="h-11 px-5 rounded-full bg-teal-600 hover:bg-teal-700 text-white text-[13.5px] font-semibold transition-colors disabled:opacity-60">
-              {t('ftr.newsBtn')}
+            <button type="submit" disabled={state === 'busy'} aria-label={t('ftr.newsBtn')} title={t('ftr.newsBtn')}
+              className="shrink-0 w-11 h-11 rounded-full bg-teal-600 hover:bg-teal-700 text-white inline-flex items-center justify-center transition-colors disabled:opacity-60">
+              <Icon name="send" className="w-5 h-5" />
             </button>
           </div>
           {(state === 'bad' || state === 'fail') && (

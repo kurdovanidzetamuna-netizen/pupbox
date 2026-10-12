@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { createPortal } from 'react-dom';
 import { signOut } from '@/lib/signOut';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { sitePage, type StoredContent } from '@pupbox/content';
 import { useLanguage } from '@/context/LanguageContext';
 import { usePage } from '@/lib/usePage';
@@ -11,8 +11,10 @@ import Logo from '@/components/Logo';
 import SmartLink from '@/components/SmartLink';
 import NotificationBell from '@/components/NotificationBell';
 import MiniCart from '@/components/shop/MiniCart';
+import { useCart } from '@/context/CartContext';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { Icon } from '@/components/ui/icons';
+import IconButton from '@/components/ui/IconButton';
 
 /** An icon for a menu link, picked from where it goes. */
 const iconFor = (href: string) =>
@@ -39,8 +41,12 @@ const NO_TAB_BAR = [/^\/checkout/, /^\/build-box/, /^\/shop\/[^/]+$/];
  */
 export default function Header({ site }: { site: StoredContent | null }) {
   const { lang, setLang, t } = useLanguage();
+  const { cart } = useCart();
   const c = usePage(sitePage, site);
   const nav: { label: string; href: string }[] = c.header.links.filter((n: any) => n.label);
+  // The header keeps four main pages; the blog lives in the footer and the side menu.
+  const main = [...nav.filter((n) => !n.href.startsWith('/blog')), { label: t('nav.buildBox'), href: '/build-box' }]
+    .filter((l, i, all) => all.findIndex((x) => x.href === l.href) === i).slice(0, 4);
   const pathname = usePathname();
   const router = useRouter();
   const [drawer, setDrawer] = useState(false);
@@ -114,7 +120,7 @@ export default function Header({ site }: { site: StoredContent | null }) {
 
           {/* The four main pages: compact pills; the current page lightly marked. */}
           <nav className="hidden lg:flex items-center gap-0.5 text-[13.5px] font-medium text-gray-600" aria-label={t('aria.mainNav')}>
-            {nav.slice(0, 4).map((n, i) => (
+            {main.map((n, i) => (
               <SmartLink key={i} href={n.href} aria-current={isActive(n.href) ? 'page' : undefined}
                 className={`h-9 px-3.5 inline-flex items-center rounded-full whitespace-nowrap transition-colors ${isActive(n.href) ? 'bg-teal-50 text-teal-700 font-semibold' : 'hover:bg-gray-50 hover:text-teal-700'}`}>
                 {n.label}
@@ -147,24 +153,16 @@ export default function Header({ site }: { site: StoredContent | null }) {
                     pathname.startsWith('/account') ? 'bg-teal-100 text-teal-800' : 'bg-teal-50 text-teal-700 hover:bg-teal-100'}`}>
                   {me.initial || <Icon name="paw" className="w-4 h-4" />}
                 </Link>
-                <button type="button" onClick={() => setAskOut(true)} title={t('acc.signOut')}
-                  className="hidden lg:inline-flex items-center gap-1.5 h-9 px-3 rounded-full text-[13px] font-semibold text-gray-500 hover:text-red-600 hover:bg-red-50 transition">
-                  <Icon name="logout" className="w-4 h-4" />
-                  {t('acc.signOut')}
-                </button>
+                <span className="hidden lg:inline-flex">
+                  <IconButton icon="power" tone="danger" tip="bottom" label={t('acc.signOut')} onClick={() => setAskOut(true)} />
+                </span>
               </>
             ) : (
-              <>
-                <Link href="/login" className="inline-flex items-center h-9 px-3 rounded-full text-[13px] font-semibold text-gray-700 hover:text-teal-700 hover:bg-teal-50 transition">
-                  {t('nav.signIn')}
-                </Link>
-                <Link href="/register" className="hidden lg:inline-flex items-center h-9 px-3.5 rounded-full text-[13px] font-semibold text-teal-700 ring-1 ring-teal-200 hover:bg-teal-50 transition">
-                  {t('nav.signUp')}
-                </Link>
-              </>
+              <GuestMenu />
             )}
 
-            <MiniCart />
+            {/* The basket is for customers; a guest sees it only once something is in it. */}
+            {(signedIn || (cart?.itemCount ?? 0) > 0) && <MiniCart />}
 
             {c.header.buttonText && (
               <SmartLink href={c.header.buttonHref} className="group hidden lg:inline-flex items-center justify-center gap-1.5 ml-1 bg-teal-600 text-white text-[13px] font-semibold h-9 pl-4 pr-3 hover:bg-teal-700">
@@ -245,9 +243,13 @@ export default function Header({ site }: { site: StoredContent | null }) {
                       <Icon name="arrow" className="w-4 h-4 text-gray-300" />
                     </Link>
                   ) : (
-                    <div className="grid grid-cols-2 gap-2">
-                      <Link href="/login" tabIndex={f} className="h-10 rounded-full ring-1 ring-gray-200 text-[13px] font-semibold text-gray-700 inline-flex items-center justify-center hover:bg-gray-50">{t('nav.signIn')}</Link>
-                      <Link href="/register" tabIndex={f} className="h-10 rounded-full bg-teal-600 text-white text-[13px] font-semibold inline-flex items-center justify-center hover:bg-teal-700">{t('nav.signUp')}</Link>
+                    <div className="-mx-5 -my-2">
+                      <Link href="/login" tabIndex={f} className="flex items-center gap-3 h-12 px-5 text-[14.5px] font-semibold text-gray-900 hover:bg-gray-50">
+                        <Icon name="user" className="w-[18px] h-[18px] text-teal-600" />{t('nav.signIn')}
+                      </Link>
+                      <Link href="/register" tabIndex={f} className="flex items-center gap-3 h-12 px-5 text-[14.5px] font-medium text-gray-800 hover:bg-gray-50">
+                        <Icon name="plus" className="w-[18px] h-[18px] text-teal-600" />{t('nav.signUp')}
+                      </Link>
                     </div>
                   )}
                 </div>
@@ -277,10 +279,9 @@ export default function Header({ site }: { site: StoredContent | null }) {
                     ))}
                   </div>
                   {signedIn && (
-                    <button type="button" onClick={() => { setDrawer(false); setAskOut(true); }} tabIndex={f}
-                      className="mt-3 w-full h-10 rounded-full text-[13px] font-semibold text-gray-500 hover:text-red-600 hover:bg-red-50 inline-flex items-center justify-center gap-2 transition">
-                      <Icon name="logout" className="w-4 h-4" />{t('acc.signOut')}
-                    </button>
+                    <div className="mt-3 flex justify-center">
+                      <IconButton icon="power" tone="danger" label={t('acc.signOut')} onClick={() => { setDrawer(false); setAskOut(true); }} />
+                    </div>
                   )}
                 </div>
               </div>
@@ -290,5 +291,45 @@ export default function Header({ site }: { site: StoredContent | null }) {
         document.body,
       )}
     </>
+  );
+}
+
+/**
+ * Signed out: one round account icon. It opens a small menu with
+ * "Sign in" and "Create account", instead of two buttons side by side.
+ */
+function GuestMenu() {
+  const { t } = useLanguage();
+  const pathname = usePathname();
+  const [open, setOpen] = useState(false);
+  const box = useRef<HTMLDivElement>(null);
+
+  useEffect(() => { setOpen(false); }, [pathname]);
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => { if (!box.current?.contains(e.target as Node)) setOpen(false); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => { document.removeEventListener('mousedown', onDown); document.removeEventListener('keydown', onKey); };
+  }, [open]);
+
+  return (
+    <div ref={box} className="relative">
+      <button type="button" onClick={() => setOpen((o) => !o)} aria-label={t('nav.signIn')} title={t('nav.signIn')} aria-expanded={open} aria-haspopup="menu"
+        className={`inline-flex items-center justify-center w-9 h-9 rounded-full transition-colors ${open ? 'bg-teal-50 text-teal-700' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'}`}>
+        <Icon name="user" className="w-5 h-5" />
+      </button>
+      {open && (
+        <div role="menu" className="absolute right-0 top-full mt-2 z-50 w-52 rounded-2xl bg-white ring-1 ring-gray-200/80 shadow-[0_12px_32px_-12px_rgba(36,48,58,0.25)] p-1.5 animate-[fadeUp_0.15s_ease-out]">
+          <Link href="/login" role="menuitem" className="flex items-center gap-2.5 h-10 px-3 rounded-xl text-[13.5px] font-semibold text-gray-800 hover:bg-gray-50">
+            <Icon name="user" className="w-4 h-4 text-teal-600" />{t('nav.signIn')}
+          </Link>
+          <Link href="/register" role="menuitem" className="flex items-center gap-2.5 h-10 px-3 rounded-xl text-[13.5px] font-semibold text-gray-800 hover:bg-gray-50">
+            <Icon name="plus" className="w-4 h-4 text-teal-600" />{t('nav.signUp')}
+          </Link>
+        </div>
+      )}
+    </div>
   );
 }

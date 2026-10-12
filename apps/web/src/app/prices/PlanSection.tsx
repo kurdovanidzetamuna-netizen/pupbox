@@ -2,6 +2,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import PlanCard from '@/components/PlanCard';
+import { Icon } from '@/components/ui/icons';
 import type { StoredContent } from '@pupbox/content';
 import { usePlanLabels } from '@/lib/planLabels';
 
@@ -37,11 +38,12 @@ function PlanSectionInner({ plans, content }: { plans: any[]; content: StoredCon
           <span aria-hidden="true"
             className={`absolute top-1 bottom-1 left-1 w-[calc(50%-4px)] rounded-full transition-all duration-300 ease-[cubic-bezier(.4,0,.2,1)] ${
               gift ? 'translate-x-full bg-lilac-100' : 'translate-x-0 bg-white'}`} />
-          {([['self', L.toggleMine], ['gift', L.toggleGift]] as const).map(([m, label]) => (
-            <button key={m} type="button" role="radio" aria-checked={mode === m} onClick={() => choose(m)}
-              className={`relative z-10 px-5 sm:px-7 py-2.5 rounded-full text-sm font-bold whitespace-nowrap transition-colors duration-300 ${
+          {([['self', L.toggleMine, 'paw'], ['gift', L.toggleGift, 'gift']] as const).map(([m, label, icon]) => (
+            <button key={m} type="button" role="radio" aria-checked={mode === m} aria-label={label} onClick={() => choose(m)}
+              className={`group/opt relative z-10 w-14 h-10 rounded-full inline-flex items-center justify-center transition-colors duration-300 ${
                 mode === m ? (m === 'gift' ? 'text-lilac-600' : 'text-teal-700') : 'text-gray-500 hover:text-gray-800'}`}>
-              {label}
+              <Icon name={icon} className="w-5 h-5" />
+              <span role="tooltip" className="pointer-events-none absolute top-full mt-1.5 left-1/2 -translate-x-1/2 hidden group-hover/opt:block group-focus-visible/opt:block whitespace-nowrap rounded-lg bg-gray-800 text-white text-[11px] font-medium px-2 py-1 z-30">{label}</span>
             </button>
           ))}
         </div>

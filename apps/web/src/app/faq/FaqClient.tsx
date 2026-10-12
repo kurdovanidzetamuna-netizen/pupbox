@@ -3,7 +3,6 @@ import { useState } from 'react';
 import { DEFAULT_FAQ, type FaqItem } from '@pupbox/content';
 import { useLanguage } from '@/context/LanguageContext';
 import { Icon } from '@/components/ui/icons';
-import Button from '@/components/ui/Button';
 
 /** All questions, whatever page they're ticked for, in order, one open at a time. */
 export default function FaqClient({ faq }: { faq: FaqItem[] | null }) {
@@ -47,13 +46,6 @@ export default function FaqClient({ faq }: { faq: FaqItem[] | null }) {
           </ul>
         )}
 
-        <div className="mt-10 rounded-2xl bg-gray-50 ring-1 ring-gray-100 text-center px-6 py-7">
-          <p className="text-[15px] font-semibold text-gray-800">{t('faq.more')}</p>
-          <div className="mt-4 flex flex-wrap justify-center gap-2">
-            <Button href="/how-it-works" icon="info" label={t('nav.howItWorks')} tone="soft" />
-            <Button href="/prices" icon="box" label={t('nav.plans')} />
-          </div>
-        </div>
       </section>
     </main>
   );

@@ -4,7 +4,8 @@ import { homePage, type StoredContent } from '@pupbox/content';
 import FadeIn from '@/components/FadeIn';
 import PlanSection from '@/app/prices/PlanSection';
 import HeroAnimate from '@/components/HeroAnimate';
-import WaysToShop from '@/components/WaysToShop';
+import HomeRoadmap from '@/components/HomeRoadmap';
+import DogRunner from '@/components/DogRunner';
 import BuildBoxPromo from '@/components/BuildBoxPromo';
 import Accent from '@/components/Accent';
 import { useLanguage } from '@/context/LanguageContext';
@@ -31,6 +32,10 @@ const label = (s: string) => s.replace(/\s*[→›>]+\s*$/u, '').replace(/^\p{Ex
  * are fewer (or a short last row), so 2, 4 or 5 items never leave a hole.
  * One per row on phones.
  */
+/** Soft light tints, used in turn so sections don't all look the same. */
+const SOFT = ['bg-teal-50', 'bg-lilac-50', 'bg-sky-50', 'bg-rose-50'];
+const CARD = ['from-teal-50/70', 'from-lilac-50/70', 'from-sky-50/70', 'from-rose-50/70'];
+
 const ROW = 'flex flex-wrap justify-center gap-4 sm:gap-5';
 const CELL = 'w-full sm:w-[calc(50%-10px)] lg:w-[calc(33.333%-14px)]';
 
@@ -38,13 +43,13 @@ const CELL = 'w-full sm:w-[calc(50%-10px)] lg:w-[calc(33.333%-14px)]';
 export default function HomePageClient({ plans, content, pricing }: Props) {
   const { t } = useLanguage();
   const c = usePage(homePage, content);
-  const { hero, stats, whatsInBox: box, howItWorks: hiw, testimonials } = c;
+  const { hero, whatsInBox: box, howItWorks: hiw, testimonials } = c;
 
   return (
     <main className="min-h-screen bg-white">
       {/* ── HERO ── text and one clear action beside the photo; stacked and centred on phones */}
       {c.on('hero') && (
-        <section className="bg-gradient-to-b from-teal-50/70 to-white">
+        <section className="bg-gradient-to-br from-teal-50/80 via-white to-sky-50/70">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12 lg:py-14 grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
             <div className="text-center lg:text-left">
               {hero.badge && (
@@ -90,33 +95,19 @@ export default function HomePageClient({ plans, content, pricing }: Props) {
         </section>
       )}
 
-      {/* ── NUMBERS ── */}
-      {c.on('stats') && stats.items.length > 0 && (
-        <section className="border-y border-gray-100 bg-white py-5">
-          <div className="max-w-3xl mx-auto px-4 grid gap-4 text-center" style={{ gridTemplateColumns: `repeat(${stats.items.length}, minmax(0, 1fr))` }}>
-            {stats.items.map((s: any, i: number) => (
-              <div key={i}>
-                <p className="text-xl sm:text-2xl font-extrabold text-teal-600">{s.value}</p>
-                <p className="text-[12px] sm:text-sm text-gray-400 mt-0.5">{s.label}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* ── WAYS TO SHOP ── */}
-      <WaysToShop />
+      {/* ── ROADMAP: the four ways and how it works, as one road ── */}
+      {c.on('howItWorks') && <HomeRoadmap steps={hiw.steps} />}
 
       {/* ── WHAT'S IN THE BOX ── */}
       {c.on('whatsInBox') && box.items.length > 0 && (
-        <section className="py-12 sm:py-14 bg-gray-50">
+        <section className="py-12 sm:py-14 bg-gradient-to-b from-lilac-50/60 to-white">
           <div className="max-w-6xl mx-auto px-4 sm:px-6">
             <Heading kind="section" align="center" title={box.heading} />
             <div className="flex flex-wrap justify-center gap-2.5 sm:gap-5">
               {box.items.map((item: any, i: number) => (
                 <FadeIn key={i} delay={i * 60} direction="up" className={CELL}>
                   <div className="h-full flex items-center sm:items-start gap-4 rounded-2xl bg-white ring-1 ring-gray-100 px-4 py-3 sm:p-5">
-                    <span className="w-11 h-11 shrink-0 rounded-xl bg-teal-50 flex items-center justify-center text-xl" aria-hidden="true">{item.icon}</span>
+                    <span className={`w-11 h-11 shrink-0 rounded-xl ${SOFT[i % SOFT.length]} flex items-center justify-center text-xl`} aria-hidden="true">{item.icon}</span>
                     <div className="min-w-0">
                       <h3 className="font-bold text-gray-900 text-[15px]">{item.title}</h3>
                       {item.desc && <p className="hidden sm:block mt-1 text-[13px] text-gray-500 leading-relaxed">{item.desc}</p>}
@@ -129,39 +120,9 @@ export default function HomePageClient({ plans, content, pricing }: Props) {
         </section>
       )}
 
-      {/* ── HOW IT WORKS ── */}
-      {c.on('howItWorks') && hiw.steps.length > 0 && (
-        <section className="py-12 sm:py-14 bg-white">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6">
-            <Heading kind="section" align="center" title={hiw.heading} />
-            <div className="flex flex-wrap justify-center gap-2.5 sm:gap-5">
-              {hiw.steps.map((step: any, i: number) => (
-                <FadeIn key={i} delay={i * 80} direction="up" className="w-full sm:w-[calc(50%-10px)] lg:w-[calc(25%-15px)]">
-                  <div className="h-full flex lg:flex-col items-center sm:items-start lg:items-center gap-4 lg:gap-3 lg:text-center rounded-2xl ring-1 ring-gray-100 px-4 py-3 sm:p-5">
-                    <span className="relative w-12 h-12 shrink-0 rounded-full bg-teal-50 flex items-center justify-center text-xl" aria-hidden="true">
-                      {step.icon}
-                      <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-teal-600 text-white text-[10.5px] font-bold flex items-center justify-center ring-2 ring-white">{i + 1}</span>
-                    </span>
-                    <div className="min-w-0">
-                      <h3 className="font-bold text-gray-900 text-[15px]">{step.title}</h3>
-                      {step.desc && <p className="hidden sm:block mt-1 text-[13px] text-gray-500 leading-relaxed">{step.desc}</p>}
-                    </div>
-                  </div>
-                </FadeIn>
-              ))}
-            </div>
-            <div className="mt-6 text-center">
-              <Link href="/how-it-works" className="inline-flex items-center gap-1 text-[13.5px] font-semibold text-teal-700 hover:underline underline-offset-4">
-                {t('home.seeAll')}<Icon name="arrow" className="w-4 h-4" />
-              </Link>
-            </div>
-          </div>
-        </section>
-      )}
-
       {/* ── PLANS ── */}
       {c.on('plans') && plans.length > 0 && (
-        <section className="py-12 sm:py-14 bg-gray-50" id="pricing">
+        <section className="py-12 sm:py-14 bg-gradient-to-b from-white via-teal-50/50 to-white" id="pricing">
           <div className="max-w-7xl mx-auto px-4 sm:px-6">
             <Heading kind="section" align="center" title={c.plans.heading} subtitle={c.plans.description || undefined} />
             <PlanSection plans={plans} content={pricing} />
@@ -169,6 +130,14 @@ export default function HomePageClient({ plans, content, pricing }: Props) {
           </div>
         </section>
       )}
+
+      {/* ── BREAK TIME ── a small game: Pupbox isn't a standard shop */}
+      <section className="py-12 sm:py-14 bg-gradient-to-b from-white via-sky-50/60 to-white">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6">
+          <Heading kind="section" align="center" title={t('game.break')} subtitle={t('game.breakSub')} />
+          <DogRunner />
+        </div>
+      </section>
 
       {/* ── REVIEWS ── placeholder reviews until launch, by decision */}
       {c.on('testimonials') && testimonials.items.length > 0 && (
@@ -178,7 +147,7 @@ export default function HomePageClient({ plans, content, pricing }: Props) {
             <div className={ROW}>
               {testimonials.items.map((item: any, i: number) => (
                 <FadeIn key={i} delay={i * 80} direction="up" className={CELL}>
-                  <figure className="h-full flex flex-col rounded-2xl ring-1 ring-gray-100 p-5">
+                  <figure className={`h-full flex flex-col rounded-2xl bg-gradient-to-br ${CARD[i % CARD.length]} to-white ring-1 ring-gray-100 p-5`}>
                     <div className="flex gap-0.5 text-teal-500" aria-label="5/5">
                       {[0, 1, 2, 3, 4].map((s) => <Icon key={s} name="star" className="w-4 h-4 fill-current" />)}
                     </div>

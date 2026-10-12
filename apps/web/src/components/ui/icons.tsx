@@ -49,6 +49,10 @@ const P: Record<string, string> = {
   eye: 'M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12zM12 15a3 3 0 100-6 3 3 0 000 6z',
   eyeOff: 'M3 3l18 18M10.6 6A9.8 9.8 0 0112 5.9c6 0 9.5 6.1 9.5 6.1a17 17 0 01-3 3.7M6.5 7.6A17 17 0 002.5 12s3.5 6.1 9.5 6.1a9.5 9.5 0 004.3-1M9.9 10a3 3 0 004.1 4.1',
   logout: 'M15 4h3a2 2 0 012 2v12a2 2 0 01-2 2h-3M10 16l-4-4 4-4M6 12h11',
+  power: 'M12 3v8M7.1 6.3a7.5 7.5 0 109.8 0',
+  user: 'M12 12a4 4 0 100-8 4 4 0 000 8zM4.5 20a7.5 7.5 0 0115 0',
+  send: 'M4 12l16-8-6 16-2.5-6.5L4 12zM11.5 13.5L20 4',
+  flag: 'M5 21V4M5 4h11l-2 4 2 4H5',
 };
 
 export function Icon({ name, className = 'w-[18px] h-[18px]', strokeWidth = 1.8 }: { name: keyof typeof P | string; className?: string; strokeWidth?: number }) {

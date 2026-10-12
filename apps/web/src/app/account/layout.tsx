@@ -5,6 +5,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { signOut } from '@/lib/signOut';
 import { useState } from 'react';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
+import IconButton from '@/components/ui/IconButton';
 import { useUnread } from '@/lib/notifications';
 
 const LINKS = [
@@ -55,9 +56,9 @@ export default function AccountLayout({ children }: { children: React.ReactNode 
               <Link href="/prices" className="flex items-center justify-center gap-2 w-full bg-teal-600 text-white text-sm font-semibold py-2.5 hover:bg-teal-700">
                 + {t('acc.subscribe')}
               </Link>
-              <button type="button" onClick={() => setAskOut(true)} className="w-full text-sm font-semibold text-gray-500 hover:text-red-600 py-2.5 rounded-xl hover:bg-white transition">
-                {t('acc.signOut')}
-              </button>
+              <div className="flex justify-center">
+                <IconButton icon="power" tone="danger" label={t('acc.signOut')} onClick={() => setAskOut(true)} />
+              </div>
             </div>
           </nav>
         </aside>
