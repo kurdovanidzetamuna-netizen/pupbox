@@ -93,7 +93,3 @@ a.border-gray-200.rounded-lg:hover, button.border-gray-200.rounded-lg:hover { ba
   [class*="animate-[pop"], [class*="animate-[fadeUp"] { animation: none !important; }
 }
 
-/* The home page roadmap: the road's centre line drifts toward the finish. */
-@keyframes roadDash { to { stroke-dashoffset: -52; } }
-.road-dash { animation: roadDash 2.4s linear infinite; }
-@media (prefers-reduced-motion: reduce) { .road-dash { animation: none; } }
