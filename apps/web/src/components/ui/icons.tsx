@@ -37,6 +37,9 @@ const P: Record<string, string> = {
   ban: 'M12 21a9 9 0 100-18 9 9 0 000 18zM5.6 5.6l12.8 12.8',
   paw: 'M8.5 8a1.8 1.8 0 100-3.6 1.8 1.8 0 000 3.6zM15.5 8a1.8 1.8 0 100-3.6 1.8 1.8 0 000 3.6zM5 12.2a1.7 1.7 0 100-3.4 1.7 1.7 0 000 3.4zM19 12.2a1.7 1.7 0 100-3.4 1.7 1.7 0 000 3.4zM12 11c-2.5 0-5 3.2-5 5.6 0 1.6 1.2 2.4 2.6 2.4 1 0 1.6-.5 2.4-.5s1.4.5 2.4.5c1.4 0 2.6-.8 2.6-2.4 0-2.4-2.5-5.6-5-5.6z',
   store: 'M3 9l1.5-5h15L21 9M3 9h18M3 9v1a3 3 0 006 0 3 3 0 006 0 3 3 0 006 0V9M5 13v7h14v-7M10 20v-4h4v4',
+  chat: 'M5 5h14v10H10l-4 4v-4H5zM9 10h.01M12 10h.01M15 10h.01',
+  repeat: 'M17 2l3 3-3 3M4 11V9a4 4 0 014-4h12M7 22l-3-3 3-3M20 13v2a4 4 0 01-4 4H4',
+  heart: 'M12 20s-7-4.4-7-10a4 4 0 017-2.6A4 4 0 0119 10c0 5.6-7 10-7 10z',
   logout: 'M15 4h3a2 2 0 012 2v12a2 2 0 01-2 2h-3M10 16l-4-4 4-4M6 12h11',
 };
 
@@ -46,4 +49,21 @@ export function Icon({ name, className = 'w-[18px] h-[18px]', strokeWidth = 1.8 
       <path d={P[name] ?? ''} />
     </svg>
   );
+}
+
+/**
+ * Admin picks an emoji in Page Builder; the site shows the matching mint
+ * line icon instead, so pages stay calm and in one style.
+ */
+export const LINE_ICON: Record<string, string> = {
+  '🚚': 'truck', '📦': 'box', '🔒': 'lock', '💳': 'card', '🐾': 'paw', '🐕': 'paw', '🐶': 'paw', '🎁': 'gift', '↩️': 'undo',
+  '⭐': 'star', '✨': 'sparkle', '🛡️': 'shield', '📍': 'pin', '💬': 'chat', '🔄': 'repeat', '🔁': 'repeat', '❤️': 'heart', '💚': 'heart',
+  '📅': 'calendar', '🗓️': 'calendar', '✅': 'check', '📞': 'phone', '✉️': 'mail', '📧': 'mail', '🔔': 'bell', '🏪': 'store', '🛍️': 'bag', '💰': 'coin',
+};
+
+/** A Page Builder emoji as a line icon (or the emoji in grey when there's no match). */
+export function LineIcon({ emoji, className = 'w-5 h-5', strokeWidth = 1.8 }: { emoji: string; className?: string; strokeWidth?: number }) {
+  const name = LINE_ICON[emoji] ?? LINE_ICON[emoji?.replace(/\uFE0F/g, '')];
+  return name ? <Icon name={name} className={className} strokeWidth={strokeWidth} />
+    : <span className="grayscale opacity-70 leading-none" aria-hidden="true">{emoji}</span>;
 }
