@@ -1,5 +1,4 @@
 'use client';
-import Link from '@/components/LangLink';
 import { useEffect, useState, Suspense, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useLanguage } from '@/context/LanguageContext';
@@ -13,9 +12,13 @@ import DogProfileForm, { emptyDogProfile, toDogPayload, type DogProfile } from '
 import { API_URL } from '@/lib/api';
 import { authFetch } from '@/lib/authFetch';
 import { forgetReferral, rememberReferral, storedReferral } from '@/lib/referral';
-import { FieldError, FormAlert, countErrors, revealFirstError } from '@/components/ui/FormError';
+import { FormAlert, countErrors, revealFirstError } from '@/components/ui/FormError';
 import { Heading } from '@/components/ui/Heading';
 import IconButton from '@/components/ui/IconButton';
+import Button from '@/components/ui/Button';
+import Field from '@/components/ui/Field';
+import AuthTabs from '@/components/AuthTabs';
+import { PwEye } from '@/app/[lang]/login/LoginForm';
 import Modal from '@/components/ui/Modal';
 import { GIFT } from '@/lib/gift';
 
@@ -122,13 +125,11 @@ export function RegisterForm({ inModal = false }: { inModal?: boolean }) {
     finally { setLoading(false); }
   }
 
-  const field = (key: string) => `w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 ${fieldErrors[key] ? 'border-red-400 bg-red-50' : 'border-gray-200'}`;
-  const err = (key: string) => <FieldError message={fieldErrors[key]} />;
-  const bad = (key: string) => ({ 'aria-invalid': !!fieldErrors[key] });
   const steps: Step[] = ['about', 'account', 'verify'];
 
   return (
     <main className={inModal ? 'px-6 sm:px-8 pb-7 flex flex-col items-center' : 'min-h-[70vh] bg-gray-50 flex flex-col items-center px-4 pt-8 sm:pt-10 pb-14'}>
+      {step === 'about' && <div className="w-full max-w-lg"><AuthTabs current="register" /></div>}
       <ol className="flex items-center gap-2 mb-6 text-xs" aria-label={t('aria.signupSteps')}>
         {steps.map((s, i) => {
           const at = step === 'done' ? steps.length : steps.indexOf(step);
@@ -149,34 +150,17 @@ export function RegisterForm({ inModal = false }: { inModal?: boolean }) {
             <FormAlert message={error} missing={countErrors(fieldErrors)} className="mb-4" />
             <form onSubmit={nextStep} className="space-y-4" noValidate>
               <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">{t('register.firstName')} <span className="text-red-500">*</span></label>
-                  <input id="firstName" {...bad('firstName')} autoComplete="given-name" value={form.firstName} onChange={e => set('firstName', e.target.value)} className={field('firstName')} />
-                  {err('firstName')}
-                </div>
-                <div>
-                  <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">{t('register.lastName')} <span className="text-red-500">*</span></label>
-                  <input id="lastName" {...bad('lastName')} autoComplete="family-name" value={form.lastName} onChange={e => set('lastName', e.target.value)} className={field('lastName')} />
-                  {err('lastName')}
-                </div>
+                <Field id="firstName" label={t('register.firstName')} required autoComplete="given-name" value={form.firstName} error={fieldErrors.firstName} onChange={v => set('firstName', v)} />
+                <Field id="lastName" label={t('register.lastName')} required autoComplete="family-name" value={form.lastName} error={fieldErrors.lastName} onChange={v => set('lastName', v)} />
               </div>
+              <Field id="email" type="email" label={t('login.email')} required autoComplete="email" inputMode="email" value={form.email} error={fieldErrors.email} onChange={v => set('email', v)} />
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">{t('login.email')} <span className="text-red-500">*</span></label>
-                <input id="email" type="email" {...bad('email')} autoComplete="email" value={form.email} onChange={e => set('email', e.target.value)} className={field('email')} placeholder="anna@example.com" />
-                {err('email')}
-              </div>
-              <div>
-                <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">{t('reg.phone')} <span className="text-red-500">*</span></label>
-                <PhoneInput id="phone" label={t('reg.phone')} value={form.phone} required error={fieldErrors.phone}
+                <PhoneInput id="phone" label={t('reg.phone')} value={form.phone} required error={fieldErrors.phone} floatLabel
                   onChange={(v, ok) => { set('phone', v); setPhoneOk(ok); }} />
-                {!fieldErrors.phone && <p className="text-xs text-gray-400 mt-1">{t('reg.phoneHint')}</p>}
+                {!fieldErrors.phone && <p className="mt-1 px-1 text-[11.5px] text-gray-500">{t('reg.phoneHint')}</p>}
               </div>
-              <div className="flex justify-end pt-1"><IconButton type="submit" icon="arrow" tone="primary" label={t('reg.next')} /></div>
+              <Button type="submit" size="lg" icon="arrow" label={t('reg.next')} className="mt-2" />
             </form>
-            <p className="text-center text-sm text-gray-500 mt-6">
-              {t('register.haveAccount')}{' '}
-              <Link href="/login" className="text-teal-600 font-medium hover:underline">{t('register.signIn')}</Link>
-            </p>
           </>
         )}
 
@@ -186,15 +170,10 @@ export function RegisterForm({ inModal = false }: { inModal?: boolean }) {
             <FormAlert message={error} missing={countErrors(fieldErrors)} className="mb-4" />
             <form onSubmit={handleSubmit} className="space-y-4" noValidate>
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">{t('login.password')} <span className="text-red-500">*</span></label>
-                <div className="relative">
-                  <input id="password" type={showPw ? 'text' : 'password'} {...bad('password')} autoComplete="new-password" value={form.password} onChange={e => set('password', e.target.value)} className={`${field('password')} pr-12`} placeholder="••••••••" autoFocus />
-                  <button type="button" onClick={() => setShowPw(v => !v)} aria-label={t(showPw ? 'reg.hidePw' : 'reg.showPw')} title={t(showPw ? 'reg.hidePw' : 'reg.showPw')} aria-pressed={showPw}
-                    className="absolute right-1.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:text-teal-700 hover:bg-teal-50 transition-colors">
-                    <Icon name={showPw ? 'eyeOff' : 'eye'} className="w-[18px] h-[18px]" />
-                  </button>
-                </div>
-                {fieldErrors.password ? err('password') : <p className={`text-xs mt-1 ${form.password.length >= 8 ? 'text-teal-600' : 'text-gray-400'}`}>{form.password.length >= 8 ? '✓ ' : ''}{t('reg.pwHint')}</p>}
+                <Field id="password" type={showPw ? 'text' : 'password'} label={t('login.password')} required autoComplete="new-password"
+                  value={form.password} error={fieldErrors.password} onChange={v => set('password', v)}
+                  trailing={<PwEye shown={showPw} onToggle={() => setShowPw(v => !v)} />} />
+                {!fieldErrors.password && <p className={`mt-1 px-1 text-[11.5px] ${form.password.length >= 8 ? 'text-teal-600' : 'text-gray-500'}`}>{form.password.length >= 8 ? '✓ ' : ''}{t('reg.pwHint')}</p>}
               </div>
               <ReferralField value={form.referralCode} fromLink={fromLink} onChange={v => set('referralCode', v)} />
               <label className="flex items-start gap-3 text-sm text-gray-600 cursor-pointer">
@@ -202,9 +181,9 @@ export function RegisterForm({ inModal = false }: { inModal?: boolean }) {
                 <span>{t('reg.consent')}</span>
               </label>
               <LegalNotice />
-              <div className="flex items-center justify-between pt-1">
+              <div className="flex items-center gap-2 pt-1">
                 <IconButton icon="undo" label={t('reg.back')} onClick={() => { setStep('about'); setError(''); }} />
-                <IconButton type="submit" icon="arrow" tone="primary" label={loading ? t('register.loading') : t('register.btn')} disabled={loading} />
+                <Button type="submit" size="lg" icon="check" label={loading ? t('register.loading') : t('register.btn')} disabled={loading} />
               </div>
             </form>
           </>

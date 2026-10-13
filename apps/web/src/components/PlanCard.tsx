@@ -101,7 +101,7 @@ export default function PlanCard({ plan, isGift = false, labels: L }: Props) {
     <div
       onClick={handleChoose}
       aria-busy={loading}
-      className={`group relative w-full flex flex-col text-left rounded-3xl p-5 cursor-pointer transition-all duration-300 hover:-translate-y-1.5 focus:outline-none focus-visible:ring-4 focus-visible:ring-teal-200 ${
+      className={`group relative w-full flex flex-col text-left rounded-[22px] lg:rounded-3xl p-4 lg:p-5 cursor-pointer transition-all duration-300 hover:-translate-y-1.5 focus:outline-none focus-visible:ring-4 focus-visible:ring-teal-200 ${
         featured
           ? isGift
             ? 'bg-gradient-to-b from-lilac-50 to-white ring-2 ring-lilac-400/60'
@@ -117,17 +117,17 @@ export default function PlanCard({ plan, isGift = false, labels: L }: Props) {
       )}
 
       <div className="flex items-center justify-between gap-3">
-        <h3 className="text-lg font-bold text-gray-800">{name}</h3>
+        <h3 className="text-[16px] lg:text-lg font-bold text-gray-800">{name}</h3>
         {isGift && <span className="text-xl" aria-hidden="true">🎁</span>}
       </div>
       <p className="text-xs mt-1 leading-snug text-gray-500 line-clamp-1">
         {isGift ? fill(L.giftCard, { plan: name }) : planText(plan, 'description', lang)}
       </p>
 
-      <p className="mt-4 text-3xl leading-none font-extrabold tracking-tight text-gray-800">{gel(plan.price)}</p>
+      <p className="mt-3 lg:mt-4 text-[26px] lg:text-3xl leading-none font-extrabold tracking-tight text-gray-800">{gel(plan.price)}</p>
       <div className="mt-2 flex flex-wrap items-center gap-2 min-h-[1.5rem]">
         {plan.monthlyEquivPrice && (
-          <span className="text-sm text-gray-500">≈ {gel(Number(plan.monthlyEquivPrice).toFixed(2))}{t('global.perMonth')}</span>
+          <span className="text-[13px] lg:text-sm text-gray-500">≈ {gel(Number(plan.monthlyEquivPrice).toFixed(2))}{t('global.perMonth')}</span>
         )}
         {Number(plan.discountPercent) > 0 && (
           <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-teal-50 text-teal-700">
@@ -136,17 +136,17 @@ export default function PlanCard({ plan, isGift = false, labels: L }: Props) {
         )}
       </div>
 
-      <div className="my-4 h-px bg-gray-100" />
+      <div className="my-3 lg:my-4 h-px bg-gray-100" />
 
-      <ul className="space-y-2 mb-5 flex-1">
+      <ul className="space-y-1.5 lg:space-y-2 mb-4 lg:mb-5 flex-1">
         {benefits.map((b: string, i: number) => (
-          <li key={i} className="flex items-start gap-2.5 text-sm text-gray-600">{check}{benefitText(b)}</li>
+          <li key={i} className="flex items-start gap-2 lg:gap-2.5 text-[13px] lg:text-sm text-gray-600">{check}{benefitText(b)}</li>
         ))}
         {plan.deliveryIncluded && !benefitsMentionDelivery && (
-          <li className="flex items-start gap-2.5 text-sm text-gray-600">{check}{freeDeliveryLabel}</li>
+          <li className="flex items-start gap-2 lg:gap-2.5 text-[13px] lg:text-sm text-gray-600">{check}{freeDeliveryLabel}</li>
         )}
         {isGift && (
-          <li className="flex items-start gap-2.5 text-sm text-gray-600">{check}{t('co.gift.planPerk')}</li>
+          <li className="flex items-start gap-2 lg:gap-2.5 text-[13px] lg:text-sm text-gray-600">{check}{t('co.gift.planPerk')}</li>
         )}
         {moreBenefits > 0 && (
           <li className="pl-7">
@@ -161,7 +161,7 @@ export default function PlanCard({ plan, isGift = false, labels: L }: Props) {
 
       <button type="button" disabled={loading} aria-label={`${isGift ? L.giftCta : L.cta}: ${name}, ${gel(plan.price)}`}
         onClick={e => { e.stopPropagation(); handleChoose(); }}
-        className={`w-full flex items-center justify-center gap-2 py-3 rounded-full font-bold text-sm transition-all duration-200 focus:outline-none focus-visible:ring-4 focus-visible:ring-teal-200 ${
+        className={`w-full flex items-center justify-center gap-2 py-2.5 lg:py-3 rounded-full font-bold text-[13.5px] lg:text-sm transition-all duration-200 focus:outline-none focus-visible:ring-4 focus-visible:ring-teal-200 ${
           featured
             ? isGift
               ? 'bg-lilac-400 text-white group-hover:bg-lilac-600'

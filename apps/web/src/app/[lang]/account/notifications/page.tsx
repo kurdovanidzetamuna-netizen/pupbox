@@ -1,4 +1,6 @@
 'use client';
+import Caps from '@/components/ui/Caps';
+import EmptyState from '@/components/ui/EmptyState';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/context/LanguageContext';
@@ -82,8 +84,8 @@ export default function NotificationsPage() {
       {/* Title, how much is new, and "Mark all as read" as an icon. */}
       <div className="flex items-end justify-between gap-3 mb-5">
         <div className="min-w-0">
-          <h1 className="text-2xl sm:text-[28px] font-extrabold tracking-tight text-gray-900 flex items-center gap-2.5">
-            {t('ntf.title')}
+          <h1 className="text-xl sm:text-[22px] font-bold tracking-tight text-gray-900 flex items-center gap-2.5">
+            <Caps text={t('ntf.title')} />
             {unread > 0 && <span className="min-w-[24px] h-6 px-2 rounded-full bg-teal-600 text-white text-[12px] font-bold leading-6 text-center tabular-nums animate-[pop_0.3s_ease-out]">{unread}</span>}
           </h1>
           <p className="text-[13.5px] text-gray-500 mt-1">{unread > 0 ? fill(t('ntf.newN'), { n: unread }) : t('ntf.allRead')}</p>
@@ -93,13 +95,13 @@ export default function NotificationsPage() {
 
       {/* Filters as icons (name on hover), in the site's grey pill switch. */}
       <div className="mb-4">
-        <div role="tablist" aria-label={t('ntf.show')} className="inline-flex gap-1 p-1 rounded-full bg-gray-100">
+        <div role="tablist" aria-label={t('ntf.show')} className="inline-flex gap-1 p-1 rounded-full bg-gray-200/80 ring-1 ring-inset ring-gray-300/60">
           {FILTERS.map((f) => {
             const on = filter === f.key;
             return (
               <button key={f.key} type="button" role="tab" aria-selected={on} aria-label={t(f.label)} onClick={() => setFilter(f.key)}
                 className={`group/tab relative shrink-0 inline-flex items-center justify-center w-10 h-9 rounded-full transition-colors ${
-                  on ? 'bg-white text-teal-700 shadow-sm' : 'text-gray-500 hover:text-gray-800'}`}>
+                  on ? 'bg-white text-teal-700 shadow-[0_1px_4px_rgba(36,48,58,0.15)]' : 'text-gray-600 hover:text-gray-900'}`}>
                 <Icon name={f.icon} className="w-[18px] h-[18px]" />
                 {f.key === 'unread' && unread > 0 && <span className="absolute top-0.5 right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-teal-600 text-white text-[9.5px] font-bold leading-4 text-center tabular-nums">{unread}</span>}
                 <span role="tooltip" className="pointer-events-none absolute top-full mt-1.5 left-1/2 -translate-x-1/2 hidden group-hover/tab:block group-focus-visible/tab:block whitespace-nowrap rounded-lg bg-gray-800 text-white text-[11px] font-medium px-2 py-1 z-30">{t(f.label)}</span>
@@ -131,15 +133,9 @@ export default function NotificationsPage() {
             ))}
           </div>
         ) : shown.length === 0 ? (
-          <div className="px-6 py-14 text-center">
-            <span className="mx-auto w-16 h-16 rounded-full bg-teal-50 text-teal-600 flex items-center justify-center animate-[bob_2.4s_ease-in-out_infinite]">
-              <Icon name={filter === 'unread' ? 'check' : 'bell'} className="w-7 h-7" />
-            </span>
-            <p className="mt-4 text-[15px] font-bold text-gray-900">
-              {t(filter === 'unread' ? 'ntf.allRead' : filter === 'all' ? 'ntf.empty' : 'ntf.emptyKind')}
-            </p>
-            <p className="text-[13px] text-gray-500 mt-1 max-w-xs mx-auto">{t(filter === 'unread' ? 'ntf.allReadSub' : 'ntf.emptySub')}</p>
-          </div>
+          <EmptyState art={filter === 'unread' ? 'heart' : 'paw'} tint={filter === 'unread' ? 'bg-pastel-pink' : 'bg-pastel-mint'}
+            title={t(filter === 'unread' ? 'ntf.allRead' : filter === 'all' ? 'ntf.empty' : 'ntf.emptyKind')}
+            text={t(filter === 'unread' ? 'ntf.allReadSub' : 'ntf.emptySub')} />
         ) : (
           <>
             {groups.map((g, gi) => (

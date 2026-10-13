@@ -1,4 +1,5 @@
 'use client';
+import Segmented from '@/components/ui/Segmented';
 import { useEffect, useState } from 'react';
 import { useLanguage } from '@/context/LanguageContext';
 import { fill } from '@/context/strings/purchase';
@@ -63,15 +64,8 @@ export default function AddressesAndCards({ onExpired }: { onExpired: () => void
 
       {/* Kept mounted while closed, so the summary counts stay right. */}
       <div id="wallet-body" hidden={!open} className="px-4 sm:px-5 pb-4 sm:pb-5">
-        <div role="tablist" aria-label={t('wallet.title')} className="grid grid-cols-2 p-1 mb-3 rounded-full bg-gray-100 text-[12.5px] font-semibold">
-          {tabs.map((x) => (
-            <button key={x.id} type="button" role="tab" aria-selected={tab === x.id} aria-controls={`wallet-${x.id}`} onClick={() => pick(x.id)}
-              className={`h-8 rounded-full flex items-center justify-center gap-1.5 transition-colors ${tab === x.id ? 'bg-white text-teal-700 ring-1 ring-gray-200/80' : 'text-gray-500 hover:text-gray-800'}`}>
-              <Icon name={x.icon} className="w-4 h-4" />{x.label}
-              <span className={`text-[10.5px] tabular-nums rounded-full px-1.5 ${tab === x.id ? 'bg-teal-50 text-teal-700' : 'bg-white/70 text-gray-500'}`}>{counts[x.id]}</span>
-            </button>
-          ))}
-        </div>
+        <Segmented size="sm" className="mb-3" label={t('wallet.title')} value={tab} onChange={pick}
+          options={tabs.map((x) => ({ value: x.id, label: x.label, icon: x.icon, count: counts[x.id] }))} />
         <div id="wallet-addresses" role="tabpanel" hidden={tab !== 'addresses'}>
           <AddressBook onExpired={onExpired} addTick={addTick.addresses} onCount={(n) => setCounts((c) => ({ ...c, addresses: n }))} />
         </div>

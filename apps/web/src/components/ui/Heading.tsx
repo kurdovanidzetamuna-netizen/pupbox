@@ -1,22 +1,35 @@
+import Caps from './Caps';
+
 /**
  * The site's one type scale and title spacing. Every page title, section
  * title and form title goes through these, so sizes and gaps match
  * everywhere. Compact on purpose: Georgian letters already read large.
  *
  *   hero     30 → 36px   (home only)
- *   page     24 → 28px   h1 at the top of a page
+ *   page     24 → 34px   h1 at the top of a page, with the sunny squiggle under it
  *   section  20 → 22px   h2 for a block within a page
  *   form     20px        sign-in, sign-up, checkout steps, small cards
  *   subtitle 13 → 14px   grey, 6px under its title
+ *
+ * Georgian titles are drawn in capital letters (Mtavruli), as on the home page.
  */
 export const TYPE = {
   hero: 'text-[30px] sm:text-[36px] font-extrabold tracking-tight leading-[1.15] text-gray-900',
-  page: 'text-2xl sm:text-[28px] font-extrabold tracking-tight leading-tight text-gray-900',
+  page: 'text-[24px] sm:text-[30px] lg:text-[34px] font-extrabold tracking-tight leading-tight text-gray-900',
   section: 'text-xl sm:text-[22px] font-bold tracking-tight leading-snug text-gray-900',
   form: 'text-xl font-bold tracking-tight leading-snug text-gray-900',
   subtitle: 'text-[13px] sm:text-sm leading-relaxed text-gray-500',
   eyebrow: 'inline-flex items-center gap-1.5 rounded-full bg-teal-50 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-teal-700',
 } as const;
+
+/** Pupbox's hand-drawn sunny squiggle, under page and home-section titles. */
+export function Squiggle({ center = false, className = '' }: { center?: boolean; className?: string }) {
+  return (
+    <svg viewBox="0 0 120 12" className={`block mt-2 w-24 sm:w-28 h-3 text-[#F2C230] ${center ? 'mx-auto' : ''} ${className}`} fill="none" aria-hidden="true">
+      <path d="M2 7c10-6 18 6 28 0s18-6 28 0 18 6 28 0 18-6 30 0" stroke="currentColor" strokeWidth="4" strokeLinecap="round" />
+    </svg>
+  );
+}
 
 /** Space between a title block and what follows, by kind. */
 const GAP = { hero: 'mb-4', page: 'mb-6 sm:mb-8', section: 'mb-5 sm:mb-6', form: 'mb-5' } as const;
@@ -44,8 +57,9 @@ export function Heading({ kind = 'page', as, title, subtitle, eyebrow, align = '
   const text = (
     <div className={`min-w-0 ${center ? 'mx-auto max-w-2xl text-center' : ''}`}>
       {eyebrow && <span className={`${TYPE.eyebrow} mb-3`}>{eyebrow}</span>}
-      <Tag id={id} className={`${TYPE[kind]} [overflow-wrap:anywhere]`}>{title}</Tag>
-      {subtitle && <p className={`${TYPE.subtitle} mt-1.5 ${center ? '' : 'max-w-2xl'}`}>{subtitle}</p>}
+      <Tag id={id} className={`${TYPE[kind]} [overflow-wrap:anywhere]`}>{typeof title === 'string' ? <Caps text={title} /> : title}</Tag>
+      {kind === 'page' && <Squiggle center={center} />}
+      {subtitle && <p className={`${TYPE.subtitle} ${kind === 'page' ? 'mt-2.5' : 'mt-1.5'} ${center ? '' : 'max-w-2xl'}`}>{subtitle}</p>}
     </div>
   );
   return (

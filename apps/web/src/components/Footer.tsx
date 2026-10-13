@@ -51,18 +51,18 @@ function Newsletter() {
   }
 
   return (
-    <div className="flex flex-col lg:flex-row lg:items-center gap-4 lg:gap-10 rounded-2xl bg-gray-50 ring-1 ring-gray-100 px-5 py-6 sm:px-8 sm:py-7 text-center lg:text-left">
-      <div className="lg:flex-1">
-        <p className="text-[17px] font-bold text-gray-900">{t('ftr.newsTitle')}</p>
+    <div className="flex flex-col md:flex-row md:items-center gap-4 md:gap-8 rounded-[24px] bg-gray-50 ring-1 ring-gray-100 px-5 py-5 sm:px-8 sm:py-7">
+      <div className="md:flex-1">
+        <p className="text-[16px] sm:text-[17px] font-bold text-gray-900">{t('ftr.newsTitle')}</p>
         <p className="text-[13.5px] text-gray-500 mt-1">{t('ftr.newsSub')}</p>
       </div>
       {state === 'done' ? (
-        <p role="status" className="lg:flex-1 inline-flex items-center justify-center lg:justify-start gap-2 text-[14px] font-semibold text-teal-700">
+        <p role="status" className="md:flex-1 inline-flex items-center gap-2 text-[14px] font-semibold text-teal-700">
           <Icon name="check" className="w-5 h-5" strokeWidth={2.4} />
           {t('ftr.newsDone')}
         </p>
       ) : (
-        <form onSubmit={submit} noValidate className="lg:flex-1 w-full max-w-md mx-auto lg:max-w-none">
+        <form onSubmit={submit} noValidate className="md:flex-1 w-full">
           <div className="flex gap-2">
             <label htmlFor="news-email" className="sr-only">{t('ftr.newsPlaceholder')}</label>
             <input id="news-email" type="email" inputMode="email" autoComplete="email" value={email}
@@ -113,12 +113,12 @@ export default function Footer({ site }: { site: StoredContent | null }) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-10 sm:pt-14">
         <Newsletter />
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-12 gap-x-6 gap-y-9 py-10 sm:py-12">
-          <div className="col-span-2 md:col-span-3 lg:col-span-5 text-center lg:text-left">
-            <Logo brand={c.brand} className="justify-center lg:justify-start" />
-            {footer.tagline && <p className="text-[13.5px] text-gray-500 leading-relaxed mt-3 max-w-xs mx-auto lg:mx-0">{footer.tagline}</p>}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-12 gap-x-6 gap-y-8 py-8 sm:py-12">
+          <div className="col-span-2 sm:col-span-3 lg:col-span-5">
+            <Logo brand={c.brand} />
+            {footer.tagline && <p className="text-[13.5px] text-gray-500 leading-relaxed mt-3 max-w-sm">{footer.tagline}</p>}
             {showContact && (
-              <ul className="mt-4 space-y-2 text-[13.5px] text-gray-500 inline-block text-left">
+              <ul className="mt-4 space-y-2 text-[13.5px] text-gray-500">
                 {contact.email && <li><a href={`mailto:${contact.email}`} className="inline-flex items-center gap-2 hover:text-teal-700"><Icon name="mail" className="w-4 h-4 text-teal-600" />{contact.email}</a></li>}
                 {contact.phone && <li><a href={`tel:${contact.phone.replace(/\s/g, '')}`} className="inline-flex items-center gap-2 hover:text-teal-700"><Icon name="phone" className="w-4 h-4 text-teal-600" />{contact.phone}</a></li>}
                 {contact.address && <li className="flex items-center gap-2"><Icon name="pin" className="w-4 h-4 text-teal-600" />{contact.address}</li>}
@@ -128,7 +128,7 @@ export default function Footer({ site }: { site: StoredContent | null }) {
             {socials.length > 0 && (
               <div className="mt-5">
                 <p className="text-[12px] font-bold text-gray-400 uppercase tracking-wider mb-2.5">{t('ftr.follow')}</p>
-                <div className="flex gap-2.5 justify-center lg:justify-start">
+                <div className="flex gap-2.5">
                   {socials.map((s) => (
                     <a key={s.key} href={social[s.key]} target="_blank" rel="noopener noreferrer" aria-label={s.label}
                       className="w-10 h-10 rounded-full bg-white ring-1 ring-gray-200 text-gray-500 flex items-center justify-center hover:text-teal-600 hover:ring-teal-300 transition">
@@ -141,12 +141,12 @@ export default function Footer({ site }: { site: StoredContent | null }) {
           </div>
           <div className="lg:col-span-2 lg:col-start-7"><LinkColumn title={t('ftr.shop')} links={shop} /></div>
           <div className="lg:col-span-2"><LinkColumn title={t('ftr.help')} links={help} /></div>
-          <div className="col-span-2 md:col-span-1 lg:col-span-2 max-md:text-center"><LinkColumn title={footer.column2Title || t('ftr.account')} links={footer.column2Links} /></div>
+          <div className="lg:col-span-2"><LinkColumn title={footer.column2Title || t('ftr.account')} links={footer.column2Links} /></div>
         </div>
 
-        <div className="border-t border-gray-100 py-6 flex flex-col lg:flex-row items-center justify-between gap-4 text-[12.5px] text-gray-400">
-          <p className="text-center">© {new Date().getFullYear()} {c.brand.name || 'Pupbox'}. {footer.copyright}</p>
-          <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
+        <div className="border-t border-gray-100 py-6 flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-4 text-[12.5px] text-gray-400">
+          <p>© {new Date().getFullYear()} {c.brand.name || 'Pupbox'}. {footer.copyright}</p>
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
             {footer.legalLinks.filter((l: L) => l.label).map((l: L, i: number) => (
               <SmartLink key={i} href={l.href} className="hover:text-teal-700 transition-colors">{l.label}</SmartLink>
             ))}

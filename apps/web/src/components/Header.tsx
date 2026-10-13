@@ -16,6 +16,7 @@ import { useCart } from '@/context/CartContext';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { Icon } from '@/components/ui/icons';
 import IconButton from '@/components/ui/IconButton';
+import Caps from '@/components/ui/Caps';
 
 /** An icon for a menu link, picked from where it goes. */
 const iconFor = (href: string) =>
@@ -35,8 +36,8 @@ const NO_TAB_BAR = [/^\/checkout/, /^\/build-box/, /^\/shop\/[^/]+$/];
 /**
  * Logo, menu and button come from admin → Page Builder → Header & Footer.
  *
- * Desktop: logo, the four main pages, then language, sign in / sign up (or
- * bell, avatar and sign out), basket and Subscribe.
+ * Desktop: logo, the four main pages, then language, bell, basket,
+ * the "me" pill (sign in, or your initial and name) and Subscribe.
  * Phones and tablets: a slim top bar, a tab bar at the bottom with the four
  * main pages + "More", and "More" opens a plain side menu with the rest.
  */
@@ -45,8 +46,9 @@ export default function Header({ site }: { site: StoredContent | null }) {
   const { cart } = useCart();
   const c = usePage(sitePage, site);
   const nav: { label: string; href: string }[] = c.header.links.filter((n: any) => n.label);
-  // The header keeps four main pages; the blog lives in the footer and the side menu.
-  const main = [...nav.filter((n) => !n.href.startsWith('/blog')), { label: t('nav.buildBox'), href: '/build-box' }]
+  // The header keeps the main pages; the blog lives in the footer and the side
+  // menu, and build-your-own is reached from Prices and the home page.
+  const main = nav.filter((n) => !n.href.startsWith('/blog') && !n.href.startsWith('/build-box'))
     .filter((l, i, all) => all.findIndex((x) => x.href === l.href) === i).slice(0, 4);
   const pathname = usePath();
   const router = useRouter();
@@ -97,10 +99,11 @@ export default function Header({ site }: { site: StoredContent | null }) {
   }
 
   const tabBar = !NO_TAB_BAR.some((r) => r.test(pathname));
+  // Plans sits in the middle as the main, highlighted tab.
   const tabs = [
     { href: '/', icon: 'home', label: t('nav.home') },
-    { href: '/prices', icon: 'box', label: t('nav.plans') },
     { href: '/shop', icon: 'bag', label: t('nav.shopShort') },
+    { href: '/prices', icon: 'box', label: t('nav.plans'), main: true },
     signedIn ? { href: '/account', icon: 'paw', label: t('nav.me') } : { href: '/login', icon: 'key', label: t('nav.signIn') },
   ];
   // Everything the tabs don't cover, for the side menu.
@@ -120,26 +123,23 @@ export default function Header({ site }: { site: StoredContent | null }) {
           <Logo brand={c.brand} />
 
           {/* The four main pages: compact pills; the current page lightly marked. */}
-          <nav className="hidden lg:flex items-center gap-0.5 text-[13.5px] font-medium text-gray-600" aria-label={t('aria.mainNav')}>
+          <nav className="hidden lg:flex items-center text-[13px] font-semibold text-gray-600" aria-label={t('aria.mainNav')}>
             {main.map((n, i) => (
               <SmartLink key={i} href={n.href} aria-current={isActive(n.href) ? 'page' : undefined}
-                className={`h-9 px-3.5 inline-flex items-center rounded-full whitespace-nowrap transition-colors ${isActive(n.href) ? 'bg-teal-50 text-teal-700 font-semibold' : 'hover:bg-gray-50 hover:text-teal-700'}`}>
-                {n.label}
+                className={`h-9 px-2.5 inline-flex items-center rounded-[10px] whitespace-nowrap transition-colors ${isActive(n.href) ? 'bg-teal-50 text-teal-700 font-semibold' : 'hover:bg-gray-50 hover:text-teal-700'}`}>
+                <Caps text={n.label} />
               </SmartLink>
             ))}
           </nav>
 
-          {/* Right side, quietest to loudest, ending on Subscribe. */}
-          <div className="flex items-center gap-0.5">
-            <div role="radiogroup" aria-label={t('nav.language')}
-              className="relative hidden lg:grid grid-cols-2 items-center h-7 p-0.5 mr-1 rounded-full bg-gray-100">
-              <span aria-hidden="true"
-                className={`absolute top-0.5 bottom-0.5 w-[calc(50%-2px)] rounded-full bg-white ring-1 ring-gray-200/80 transition-transform duration-300 ease-out ${lang === 'en' ? 'translate-x-full' : 'translate-x-0'}`}
-                style={{ left: 2 }} />
+          {/* Right side, quietest to loudest: language, bell, basket, the "me" button, Subscribe — all with the same soft round corners. */}
+          <div className="flex items-center gap-1 sm:gap-2">
+            {/* Language: a two-part switch with the same corners as the buttons */}
+            <div role="radiogroup" aria-label={t('nav.language')} className="hidden lg:grid grid-cols-2 h-10 p-1 rounded-[16px] bg-gray-100">
               {([['ka', 'ქა', 'ქართული'], ['en', 'EN', 'English']] as const).map(([code, short, full]) => (
                 <button key={code} type="button" role="radio" aria-checked={lang === code} aria-label={full} title={full}
                   onClick={() => setLang(code)}
-                  className={`relative z-10 h-6 px-2 text-[10.5px] font-bold rounded-full transition-colors ${lang === code ? 'text-teal-700' : 'text-gray-400 hover:text-gray-700'}`}>
+                  className={`h-8 min-w-[36px] px-2 rounded-[12px] text-[12px] font-bold transition-colors ${lang === code ? 'bg-white text-teal-700 shadow-[0_1px_3px_rgba(36,48,58,0.12)]' : 'text-gray-500 hover:text-gray-800'}`}>
                   {short}
                 </button>
               ))}
@@ -147,12 +147,17 @@ export default function Header({ site }: { site: StoredContent | null }) {
 
             {signedIn && <NotificationBell />}
 
+            {/* The basket is for customers; a guest sees it only once something is in it. */}
+            {(signedIn || (cart?.itemCount ?? 0) > 0) && <MiniCart />}
+
             {signedIn ? (
               <>
                 <Link href="/account" aria-label={t('nav.account')} title={t('nav.account')}
-                  className={`hidden lg:inline-flex items-center justify-center w-8 h-8 rounded-full text-[13px] font-bold transition-colors ${
-                    pathname.startsWith('/account') ? 'bg-teal-100 text-teal-800' : 'bg-teal-50 text-teal-700 hover:bg-teal-100'}`}>
-                  {me.initial || <Icon name="paw" className="w-4 h-4" />}
+                  className={`inline-flex items-center gap-2 h-10 pl-1 pr-1 sm:pr-3.5 rounded-[16px] transition-colors ${pathname.startsWith('/account') ? 'bg-teal-50' : 'bg-gray-100 hover:bg-gray-200/70'}`}>
+                  <span className="w-8 h-8 rounded-[12px] bg-teal-600 text-white inline-flex items-center justify-center text-[13px] font-bold">
+                    {me.initial || <Icon name="paw" className="w-4 h-4" />}
+                  </span>
+                  <span className="hidden sm:inline max-w-[120px] truncate text-[13px] font-semibold text-gray-900">{me.name || t('nav.account')}</span>
                 </Link>
                 <span className="hidden lg:inline-flex">
                   <IconButton icon="power" tone="danger" tip="bottom" label={t('acc.signOut')} onClick={() => setAskOut(true)} />
@@ -162,13 +167,10 @@ export default function Header({ site }: { site: StoredContent | null }) {
               <SignInButton />
             )}
 
-            {/* The basket is for customers; a guest sees it only once something is in it. */}
-            {(signedIn || (cart?.itemCount ?? 0) > 0) && <MiniCart />}
-
             {c.header.buttonText && (
-              <SmartLink href={c.header.buttonHref} className="group hidden lg:inline-flex items-center justify-center gap-1.5 ml-1 bg-teal-600 text-white text-[13px] font-semibold h-9 pl-4 pr-3 hover:bg-teal-700">
-                {c.header.buttonText}
-                <svg className="w-4 h-4 transition-transform group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+              <SmartLink href={c.header.buttonHref} className="group hidden lg:inline-flex items-center gap-1.5 ml-1 h-10 pl-3.5 pr-4 !rounded-[16px] bg-teal-600 text-white text-[13px] font-semibold hover:bg-teal-700 transition-colors">
+                <Icon name="box" className="w-[17px] h-[17px] transition-transform group-hover:rotate-[-12deg]" strokeWidth={2.2} />
+                <Caps text={c.header.buttonText} />
               </SmartLink>
             )}
 
@@ -195,12 +197,23 @@ export default function Header({ site }: { site: StoredContent | null }) {
                 <ul className="max-w-xl mx-auto grid grid-cols-5 h-16">
                   {tabs.map((tab) => {
                     const on = tab.href === '/' ? pathname === '/' : isActive(tab.href);
+                    if (tab.main) return (
+                      <li key={tab.href} className="relative">
+                        <Link href={tab.href} aria-current={on ? 'page' : undefined}
+                          className="absolute left-1/2 -translate-x-1/2 -top-5 flex flex-col items-center gap-1 text-[10.5px] font-bold text-teal-700">
+                          <span className={`w-14 h-14 rounded-[18px] text-white flex items-center justify-center ring-4 ring-white shadow-[0_8px_18px_-8px_rgba(34,163,139,0.8)] transition-transform active:scale-95 ${on ? 'bg-teal-700' : 'bg-teal-600'}`}>
+                            <Icon name={tab.icon} className="w-6 h-6" strokeWidth={2.1} />
+                          </span>
+                          <span className="max-w-[80px] truncate"><Caps text={tab.label} /></span>
+                        </Link>
+                      </li>
+                    );
                     return (
                       <li key={tab.href}>
                         <Link href={tab.href} aria-current={on ? 'page' : undefined}
                           className={`h-full flex flex-col items-center justify-center gap-1 text-[10.5px] font-semibold transition-colors ${on ? 'text-teal-700' : 'text-gray-500'}`}>
                           <Icon name={tab.icon} className="w-[22px] h-[22px]" strokeWidth={on ? 2.1 : 1.7} />
-                          <span className="max-w-full truncate px-1">{tab.label}</span>
+                          <span className="max-w-full truncate px-1"><Caps text={tab.label} /></span>
                         </Link>
                       </li>
                     );
@@ -209,7 +222,7 @@ export default function Header({ site }: { site: StoredContent | null }) {
                     <button type="button" onClick={() => setDrawer(true)} aria-expanded={drawer} aria-controls="site-drawer"
                       className={`w-full h-full flex flex-col items-center justify-center gap-1 text-[10.5px] font-semibold ${drawer ? 'text-teal-700' : 'text-gray-500'}`}>
                       <svg className="w-[22px] h-[22px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" /></svg>
-                      {t('nav.more')}
+                      <Caps text={t('nav.more')} />
                     </button>
                   </li>
                 </ul>
@@ -233,7 +246,7 @@ export default function Header({ site }: { site: StoredContent | null }) {
 
               <div className="flex-1 overflow-y-auto">
                 {/* Who you are, or a quiet way in */}
-                <div className="px-5 py-4 border-b border-gray-100">
+                <div className="px-5 py-3 border-b border-gray-100">
                   {signedIn ? (
                     <Link href="/account" tabIndex={f} className="flex items-center gap-3">
                       <span className="w-10 h-10 rounded-full bg-teal-50 text-teal-700 flex items-center justify-center text-[14px] font-bold shrink-0">{me.initial || <Icon name="paw" className="w-4 h-4" />}</span>
@@ -245,25 +258,25 @@ export default function Header({ site }: { site: StoredContent | null }) {
                     </Link>
                   ) : (
                     <div className="-mx-5 -my-2">
-                      <Link href="/login" tabIndex={f} className="flex items-center gap-3 h-12 px-5 text-[14.5px] font-semibold text-gray-900 hover:bg-gray-50">
+                      <Link href="/login" tabIndex={f} className="flex items-center gap-3 h-10 px-5 text-[14.5px] font-semibold text-gray-900 hover:bg-gray-50">
                         <Icon name="user" className="w-[18px] h-[18px] text-teal-600" />{t('nav.signIn')}
                       </Link>
-                      <Link href="/register" tabIndex={f} className="flex items-center gap-3 h-12 px-5 text-[14.5px] font-medium text-gray-800 hover:bg-gray-50">
+                      <Link href="/register" tabIndex={f} className="flex items-center gap-3 h-10 px-5 text-[14.5px] font-medium text-gray-800 hover:bg-gray-50">
                         <Icon name="plus" className="w-[18px] h-[18px] text-teal-600" />{t('nav.signUp')}
                       </Link>
                     </div>
                   )}
                 </div>
 
-                <ul className="py-2">
+                <ul className="py-1.5">
                   {more.map((l) => {
                     const on = isActive(l.href);
                     return (
                       <li key={l.href}>
                         <SmartLink href={l.href} aria-current={on ? 'page' : undefined} tabIndex={f}
-                          className={`flex items-center gap-3 h-12 px-5 text-[14.5px] font-medium transition-colors ${on ? 'text-teal-700 bg-teal-50/60' : 'text-gray-800 hover:bg-gray-50'}`}>
+                          className={`flex items-center gap-3 h-10 px-5 text-[14px] font-semibold transition-colors ${on ? 'text-teal-700 bg-teal-50/60' : 'text-gray-800 hover:bg-gray-50'}`}>
                           <Icon name={iconFor(l.href)} className={`w-[18px] h-[18px] ${on ? 'text-teal-600' : 'text-gray-400'}`} />
-                          {l.label}
+                          <Caps text={l.label} />
                         </SmartLink>
                       </li>
                     );
@@ -296,21 +309,19 @@ export default function Header({ site }: { site: StoredContent | null }) {
 }
 
 /**
- * Signed out: one green round button. It opens sign in as a pop-up (with
- * "Create account" inside it), the same on phones and computers.
+ * Signed out: the "me" pill, like bog.ge's — a mint avatar with "Sign in"
+ * beside it (just the avatar on small phones). It opens sign in as a pop-up
+ * (with "Create account" inside it), the same on phones and computers.
  */
 function SignInButton() {
   const { t } = useLanguage();
-  const label = `${t('nav.signIn')} / ${t('nav.signUp')}`;
   return (
-    <span className="relative inline-flex group/tip">
-      <Link href="/login" aria-label={label}
-        className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-teal-600 text-white shadow-glow hover:bg-teal-700 hover:scale-105 transition">
-        <Icon name="user" className="w-[18px] h-[18px]" strokeWidth={2} />
-      </Link>
-      <span role="tooltip" className="pointer-events-none absolute top-full mt-1.5 right-0 whitespace-nowrap rounded-lg bg-gray-800 text-white text-[11px] font-medium px-2 py-1 z-30 hidden [@media(hover:hover)]:group-hover/tip:block group-focus-visible/tip:block animate-[fadeIn_0.12s_ease-out]">
-        {label}
+    <Link href="/login" aria-label={`${t('nav.signIn')} / ${t('nav.signUp')}`}
+      className="inline-flex items-center gap-2 h-10 pl-1 pr-1 sm:pr-3.5 rounded-[16px] bg-gray-100 hover:bg-gray-200/70 transition-colors">
+      <span className="w-8 h-8 rounded-[12px] bg-teal-600 text-white inline-flex items-center justify-center">
+        <Icon name="user" className="w-[17px] h-[17px]" strokeWidth={2} />
       </span>
-    </span>
+      <span className="hidden sm:inline text-[13px] font-semibold text-gray-900"><Caps text={t('nav.signIn')} /></span>
+    </Link>
   );
 }

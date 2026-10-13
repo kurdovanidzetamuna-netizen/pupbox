@@ -1,4 +1,6 @@
 'use client';
+import EmptyState from '@/components/ui/EmptyState';
+import { Heading } from '@/components/ui/Heading';
 import { useState } from 'react';
 import { DEFAULT_FAQ, type FaqItem } from '@pupbox/content';
 import { useLanguage } from '@/context/LanguageContext';
@@ -19,13 +21,12 @@ export default function FaqClient({ faq }: { faq: FaqItem[] | null }) {
         <span className="mx-auto mb-4 w-12 h-12 rounded-2xl bg-teal-50 text-teal-600 flex items-center justify-center">
           <Icon name="chat" className="w-6 h-6" />
         </span>
-        <h1 className="text-2xl sm:text-[28px] font-extrabold tracking-tight text-gray-900">{t('faq.title')}</h1>
-        <p className="text-[14px] sm:text-[15px] text-gray-500 mt-2 max-w-md mx-auto">{t('faq.sub')}</p>
+        <Heading align="center" title={t('faq.title')} subtitle={t('faq.sub')} className="!mb-0" />
       </section>
 
       <section className="max-w-2xl mx-auto px-4 pb-14">
         {items.length === 0 ? (
-          <p className="text-center text-gray-500 py-10">{t('faq.empty')}</p>
+          <EmptyState art="heart" tint="bg-pastel-pink" title={t('faq.empty')} action={{ href: '/how-it-works', label: t('nav.howItWorks'), icon: 'info' }} />
         ) : (
           <ul className="space-y-2.5">
             {items.map((item, i) => {
