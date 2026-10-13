@@ -106,18 +106,21 @@ export default function VerifyCodes({ onDone }: { onDone: () => void }) {
     const title = channel === 'PHONE' ? 'SMS' : t('acc.notifEmail');
     if (done) {
       return (
-        <div className="flex items-center gap-3 rounded-2xl bg-teal-50/70 px-4 py-3 animate-[fadeUp_0.2s_ease-out]">
-          <span className="w-9 h-9 rounded-xl bg-teal-500 text-white flex items-center justify-center shrink-0"><Icon name="check" className="w-[18px] h-[18px]" strokeWidth={2.4} /></span>
+        <div className="flex items-center gap-3 rounded-[18px] bg-teal-50/70 px-4 py-3 animate-[fadeUp_0.2s_ease-out]">
+          <span className="w-9 h-9 rounded-xl bg-white text-teal-600 flex items-center justify-center shrink-0"><Icon name={channel === 'PHONE' ? 'phone' : 'mail'} className="w-[18px] h-[18px]" /></span>
           <div className="min-w-0">
             <p className="text-[13px] font-semibold text-gray-900">{title}</p>
             <p className="text-[12px] text-gray-500 truncate">{to}</p>
           </div>
-          <span className="ml-auto text-[12px] font-semibold text-teal-700">{t('ver.done')}</span>
+          {/* Confirmed: just the tick, as on every other confirmed field */}
+          <span className="ml-auto w-6 h-6 rounded-full bg-teal-600 text-white flex items-center justify-center shrink-0" role="img" aria-label={t('ver.done')} title={t('ver.done')}>
+            <Icon name="check" className="w-3.5 h-3.5" strokeWidth={3} />
+          </span>
         </div>
       );
     }
     return (
-      <div className="rounded-2xl ring-1 ring-gray-200/70 p-4">
+      <div className="rounded-[18px] ring-1 ring-gray-200/70 p-4">
         <div className="flex items-center gap-3 mb-3">
           <span className="w-9 h-9 rounded-xl bg-gray-100 text-gray-600 flex items-center justify-center shrink-0"><Icon name={channel === 'PHONE' ? 'phone' : 'mail'} className="w-[18px] h-[18px]" /></span>
           <div className="min-w-0 flex-1">

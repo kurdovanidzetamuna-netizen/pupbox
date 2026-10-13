@@ -34,6 +34,30 @@ export const homePage: PageDef = {
       ],
     },
     {
+      id: 'ways', label: 'Cards under the slider', icon: '🧭',
+      fields: [
+        list('items', 'Cards', [
+          icon('icon'), text('title', 'Title'), text('short', 'Short title on phones'), area('desc', 'Description (computers)'), link('href', 'Goes to'),
+        ], [
+          {
+            icon: '📦', href: '/prices#plans',
+            title: tx('Monthly box', 'ყოველთვიური კოლოფი'), short: tx('Monthly box', 'კოლოფი'),
+            desc: tx('A new surprise every month, picked for your dog’s size.', 'ყოველ თვე ახალი სიურპრიზი, შერჩეული შენი ძაღლის ზომისთვის.'),
+          },
+          {
+            icon: '🎁', href: '/prices?gift=true',
+            title: tx('Gift box', 'საჩუქრის კოლოფი'), short: tx('Gift', 'საჩუქარი'),
+            desc: tx('Send a box to a friend’s dog, with your message.', 'გაუგზავნე კოლოფი მეგობრის ძაღლს შენი წერილით.'),
+          },
+          {
+            icon: '🧩', href: '/build-box',
+            title: tx('Build your own box', 'ააწყე შენი კოლოფი'), short: tx('Build', 'ააწყე'),
+            desc: tx('Pick every treat and toy yourself — once or every month.', 'თავად აირჩიე ყველა ნუგბარი და სათამაშო — ერთხელ ან ყოველთვიურად.'),
+          },
+        ], 'Up to three cards. The icon picks a 3D picture: 📦 box, 🎁 gift, 🧩 build your own.'),
+      ],
+    },
+    {
       id: 'stats', label: 'Numbers bar', icon: '📊',
       fields: [
         list('items', 'Numbers', [value('value', 'Number', '', 'e.g. 500+'), text('label', 'Label')], [

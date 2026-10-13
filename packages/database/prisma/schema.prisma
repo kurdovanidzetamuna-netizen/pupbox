@@ -1178,3 +1178,11 @@ model CustomBoxItem {
 
   @@unique([boxId, productId])
 }
+
+/// Emails from the newsletter box in the site footer.
+model NewsletterSubscriber {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  language  String   @default("ka")
+  createdAt DateTime @default(now())
+}

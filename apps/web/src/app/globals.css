@@ -7,21 +7,21 @@
   body { @apply antialiased; }
 }
 
-/* Flat, friendly buttons: every filled brand button is a solid mint pill
-   with no shadow; it darkens a touch on hover. Set here once so all pages
-   match. */
-a.bg-teal-600, button.bg-teal-600 {
-  border-radius: 9999px;
+/* Flat, friendly buttons: every filled brand button is solid mint with the
+   cards' soft rounded corners and no shadow; it darkens a touch on hover.
+   :where() keeps this weak, so a button's own rounded-* class still wins. */
+:where(a.bg-teal-600, button.bg-teal-600) {
+  border-radius: 14px;
   box-shadow: none;
   transition: background-color 0.15s ease;
 }
 button.bg-teal-600:disabled { opacity: 0.55; }
 
-/* Secondary buttons (grey outline) become soft mint pills everywhere, so a
+/* Secondary buttons (grey outline) become soft mint buttons everywhere, so a
    page has one primary look and one secondary look, nothing else. */
 a.border-gray-200.rounded-xl, button.border-gray-200.rounded-xl,
 a.border-gray-200.rounded-lg, button.border-gray-200.rounded-lg {
-  border-radius: 9999px;
+  border-radius: 14px;
   border-color: transparent;
   background-color: #F0FBF8;
   color: #1A8574;
@@ -90,5 +90,56 @@ a.border-gray-200.rounded-lg:hover, button.border-gray-200.rounded-lg:hover { ba
 @media (prefers-reduced-motion: reduce) {
   .wag, .wag-hover:hover .wag-on-hover, .confetti-piece { animation: none !important; }
   .confetti-piece { display: none; }
-  [class*="animate-[pop"], [class*="animate-[fadeUp"] { animation: none !important; }
+  [class*="animate-[pop"], [class*="animate-[fadeUp"], [class*="animate-[bob"] { animation: none !important; }
 }
+
+
+/* ── Glow CTA ── the page's main call to action: a solid mint button with the
+   cards' rounded corners, a white icon and the label, with soft round corners. On hover it grows a flowing ring and
+   glow in our green and the sunny yellow of the pug photo.
+   The ring sits behind the pill, so the pill must not make its own stacking
+   context (no z-index, transform or isolation on it); its parent should
+   (e.g. `relative z-0`), which components/ui/CtaGlow does. */
+.cta-glow {
+  --glow: linear-gradient(90deg, #22A38B, #F2C230, #5ECDB5, #EDB400, #36B9A0, #22A38B);
+  position: relative;
+  display: inline-flex; align-items: center; justify-content: center;
+  height: 2.75rem; padding: 0 1.25rem 0 1rem; gap: .5rem; border-radius: 18px;
+  background: #22A38B; color: #fff; font-weight: 700; font-size: 14px; white-space: nowrap;
+  transition: background-color .2s ease;
+}
+.cta-glow::before, .cta-glow::after {
+  content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit;
+  background: var(--glow); background-size: 400%;
+  animation: glowFlow 10s linear infinite;
+  transition: inset .3s ease, opacity .3s ease;
+}
+.cta-glow::after { filter: blur(18px); opacity: 0; }
+.cta-glow:hover, .cta-glow:focus-visible { background: #1A8574; }
+.cta-glow:hover::before, .cta-glow:focus-visible::before { inset: -4px; border-radius: 22px; }
+.cta-glow:hover::after, .cta-glow:focus-visible::after { inset: 8px -4px -8px; opacity: .55; }
+.cta-glow:active { background: #166A5E; }
+.cta-glow-icon { display: inline-flex; flex-shrink: 0; }
+.cta-glow-icon svg { transition: transform .2s ease; }
+.cta-glow:hover .cta-glow-icon svg { transform: rotate(-12deg) scale(1.1); }
+@keyframes glowFlow { 0% { background-position: 0 0; } 50% { background-position: 300% 0; } 100% { background-position: 0 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .cta-glow::before, .cta-glow::after { animation: none; }
+}
+
+/* A bar that fills like a timer (slider dots, the changing steps). Pause it
+   with .is-paused on a parent. */
+@keyframes fillBar { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+.fill-bar { transform-origin: left; animation: fillBar var(--dur, 7s) linear forwards; }
+.is-paused .fill-bar { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) { .fill-bar { animation: none; transform: scaleX(1); } }
+
+/* Hero slider: the card eases in on load and the words rise in one after another. */
+@keyframes heroIn { from { opacity: 0; transform: translateY(14px) scale(.985); } to { opacity: 1; transform: none; } }
+@keyframes heroRise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+.hero-in { animation: heroIn .7s cubic-bezier(.22,.8,.24,1) both; }
+.hero-rise > * { animation: heroRise .6s cubic-bezier(.22,.8,.24,1) both; }
+.hero-rise > :nth-child(1) { animation-delay: .25s; } .hero-rise > :nth-child(2) { animation-delay: .35s; }
+.hero-rise > :nth-child(3) { animation-delay: .45s; } .hero-rise > :nth-child(4) { animation-delay: .55s; }
+@media (prefers-reduced-motion: reduce) { .hero-in, .hero-rise > * { animation: none; } }

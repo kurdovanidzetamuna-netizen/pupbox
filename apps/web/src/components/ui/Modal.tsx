@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Icon } from './icons';
+import Caps from './Caps';
 
 const WIDTH = { sm: 'sm:max-w-md', md: 'sm:max-w-lg', lg: 'sm:max-w-3xl' } as const;
 
@@ -60,7 +61,7 @@ export default function Modal({ open, onClose, title, children, footer, header, 
           </div>
         ) : (
         <div className="flex items-center justify-between gap-4 px-5 sm:px-7 pt-3 sm:pt-6 pb-3 shrink-0">
-          <h2 className="text-[17px] sm:text-lg font-bold text-gray-900 leading-tight">{title}</h2>
+          <h2 className="text-[17px] sm:text-lg font-bold text-gray-900 leading-tight">{typeof title === 'string' ? <Caps text={title} /> : title}</h2>
           <button type="button" data-close onClick={onClose} aria-label="×"
             className="-mr-2 w-9 h-9 shrink-0 rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-700 flex items-center justify-center">
             <Icon name="close" className="w-[18px] h-[18px]" />

@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "postgres": {
+      "command": "sh",
+      "args": [
+        "-c",
+        "set -a; . ./.env; set +a; exec docker run -i --rm -e DATABASE_URI=\"$(printf %s \"$DATABASE_URL\" | sed 's/@localhost:/@host.docker.internal:/')\" crystaldba/postgres-mcp --access-mode=restricted"
+      ]
+    }
+  }
+}

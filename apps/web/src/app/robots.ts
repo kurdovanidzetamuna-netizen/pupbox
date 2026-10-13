@@ -8,7 +8,7 @@ export default function robots(): MetadataRoute.Robots {
         userAgent: '*',
         allow: '/',
         // Prefix rules: '/checkout' also covers /checkout/thank-you.
-        disallow: ['/account', '/cart', '/checkout', '/login', '/register', '/verify', '/api/'],
+        disallow: [...['ka', 'en'].flatMap((l) => ['account', 'cart', 'checkout', 'login', 'register', 'verify', 'forgot-password', 'reset-password'].map((p) => `/${l}/${p}`)), '/api/'],
       },
     ],
     sitemap: `${base}/sitemap.xml`,

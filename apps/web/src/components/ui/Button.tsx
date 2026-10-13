@@ -3,8 +3,10 @@ import SmartLink from '@/components/SmartLink';
 import { Icon } from './icons';
 
 const SIZE = {
-  sm: 'h-8 px-3 gap-1.5 text-[12.5px]',
-  md: 'h-10 px-4 gap-2 text-[13.5px]',
+  sm: 'h-8 px-3 gap-1.5 text-[12.5px] rounded-[11px]',
+  md: 'h-10 px-4 gap-2 text-[13.5px] rounded-[13px]',
+  /** Full width, for the one main action of a form (sign in, next, pay). */
+  lg: 'w-full h-12 px-5 gap-2 text-[14.5px] rounded-[16px] font-bold',
 } as const;
 const TONE = {
   primary: 'bg-teal-600 text-white hover:bg-teal-700',
@@ -12,9 +14,9 @@ const TONE = {
   ghost: 'text-gray-600 hover:bg-gray-100',
 } as const;
 
-/** The one look for a labelled button or link, in two sizes only — never bigger. */
+/** The one look for a labelled button or link: card-style rounded corners; `lg` is the full-width main action of a form. */
 export function buttonClass(size: keyof typeof SIZE = 'md', tone: keyof typeof TONE = 'primary') {
-  return `inline-flex items-center justify-center rounded-full font-semibold whitespace-nowrap transition-colors disabled:opacity-50 ${SIZE[size]} ${TONE[tone]}`;
+  return `inline-flex items-center justify-center font-semibold whitespace-nowrap transition-colors disabled:opacity-50 ${SIZE[size]} ${TONE[tone]}`;
 }
 
 /**

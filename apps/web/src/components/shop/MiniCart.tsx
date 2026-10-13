@@ -1,5 +1,6 @@
 'use client';
-import Link from 'next/link';
+import { GlossyBone } from '@/components/Glossy3D';
+import Link from '@/components/LangLink';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
@@ -62,11 +63,11 @@ export default function MiniCart() {
 
           {items.length === 0 ? (
             <div className="px-6 pt-4 pb-7 text-center">
-              <span className="mx-auto mb-3 w-12 h-12 rounded-2xl bg-teal-50 text-teal-600 flex items-center justify-center"><Icon name="bag" className="w-6 h-6" /></span>
-              <p className="text-[13px] font-semibold text-gray-800">{t('mini.empty')}</p>
-              <Link href="/shop" onClick={() => setOpen(false)} aria-label={t('mini.toShop')} title={t('mini.toShop')}
-                className="mt-4 mx-auto w-11 h-11 rounded-full bg-teal-50 text-teal-700 flex items-center justify-center hover:bg-teal-100">
-                <Icon name="search" className="w-5 h-5" strokeWidth={2.2} />
+              <span className="mx-auto mb-3 w-20 h-20 rounded-full bg-pastel-sun flex items-center justify-center"><GlossyBone className="w-14 h-14 animate-[bob_3s_ease-in-out_infinite]" /></span>
+              <p className="text-[14px] font-extrabold text-gray-900">{t('mini.empty')}</p>
+              <Link href="/shop" onClick={() => setOpen(false)}
+                className="mt-4 mx-auto inline-flex items-center gap-1.5 h-10 px-4 rounded-[13px] bg-teal-600 text-white text-[13px] font-semibold hover:bg-teal-700">
+                <Icon name="bag" className="w-4 h-4" strokeWidth={2.2} />{t('mini.toShop')}
               </Link>
             </div>
           ) : (<>

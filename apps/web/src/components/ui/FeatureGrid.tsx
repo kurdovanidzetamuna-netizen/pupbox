@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import Link from '@/components/LangLink';
 import { TYPE } from '@/components/ui/Heading';
 import { LineIcon } from '@/components/ui/icons';
 
