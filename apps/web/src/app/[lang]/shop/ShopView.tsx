@@ -1,4 +1,5 @@
 'use client';
+import EmptyState from '@/components/ui/EmptyState';
 import Link from '@/components/LangLink';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState, useTransition } from 'react';
@@ -101,7 +102,7 @@ export default function ShopView({ products, total, pages, page, categories, bra
   return (
     <main className="min-h-screen bg-white">
       {/* ── Banner: title, the search, small promises ── */}
-      <section className="bg-gradient-to-br from-teal-50 via-white to-peach-50/70">
+      <section className="bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-8 sm:pt-10 pb-7">
           <Heading title={c.header.heading} subtitle={c.header.description || undefined} className="!mb-5" />
           <form role="search" onSubmit={(e) => { e.preventDefault(); find(query); }} className="w-full max-w-3xl">
@@ -187,10 +188,8 @@ export default function ShopView({ products, total, pages, page, categories, bra
 
         {/* ── Products ── */}
         {products.length === 0 ? (
-          <div className="text-center py-16">
-            <span className="mx-auto mb-4 w-16 h-16 rounded-3xl bg-teal-50 flex items-center justify-center text-3xl" aria-hidden="true">🔍</span>
-            <p className="text-[15px] font-semibold text-gray-800">{t('shop.none')}</p>
-            <p className="text-[13px] text-gray-500 mt-1">{t('shop.noneSub')}</p>
+          <div className="text-center">
+            <EmptyState art="ball" tint="bg-pastel-sky" title={t('shop.none')} text={t('shop.noneSub')} className="!pb-2" />
             {/* Searched inside a filter: offer the same words across the whole shop. */}
             {search && active.length > 1 && (
               <Link href={`${pathname}?search=${encodeURIComponent(search)}`}

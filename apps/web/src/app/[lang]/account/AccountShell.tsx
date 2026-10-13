@@ -1,4 +1,5 @@
 'use client';
+import Button from '@/components/ui/Button';
 import Link from '@/components/LangLink';
 import { useRouter } from 'next/navigation';
 import { usePath } from '@/lib/path';
@@ -35,17 +36,17 @@ export default function AccountShell({ children }: { children: React.ReactNode }
   }
 
   return (
-    <main className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-10 pb-14 flex flex-col lg:flex-row gap-6 lg:gap-10">
+    <main className="min-h-screen bg-pastel-grey">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 sm:pt-8 lg:pt-10 pb-14 flex flex-col lg:flex-row gap-4 sm:gap-6 lg:gap-10">
         <aside className="lg:w-64 shrink-0">
           <nav aria-label={t('acc.title')} className="lg:sticky lg:top-24">
             <p className="hidden lg:block text-xs font-bold text-gray-400 uppercase tracking-wider px-3 mb-3">{t('acc.title')}</p>
-            <ul className="flex lg:flex-col gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden pb-1 lg:pb-0 -mx-4 px-4 lg:mx-0 lg:px-0">
+            <ul className="flex lg:flex-col gap-1.5 lg:gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden pb-1 lg:pb-0 -mx-4 px-4 lg:mx-0 lg:px-0">
               {LINKS.map((l) => (
                 <li key={l.href} className="shrink-0">
                   <Link href={l.href} aria-current={active(l.href) ? 'page' : undefined}
-                    className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-[13px] font-medium whitespace-nowrap transition-colors ${
-                      active(l.href) ? 'bg-white text-teal-700 ring-1 ring-teal-100' : 'text-gray-500 hover:bg-white/70 hover:text-gray-800'}`}>
+                    className={`flex items-center gap-2 lg:gap-2.5 h-10 lg:h-auto px-3.5 lg:py-2.5 rounded-full lg:rounded-[14px] text-[13px] font-semibold whitespace-nowrap ring-1 ring-inset transition-colors ${
+                      active(l.href) ? 'bg-teal-50 lg:bg-white text-teal-700 ring-teal-300 lg:ring-teal-100' : 'bg-white lg:bg-transparent text-gray-600 lg:text-gray-500 ring-gray-200 lg:ring-transparent hover:bg-white/70 hover:text-gray-800'}`}>
                     <svg className="w-[18px] h-[18px] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={l.icon} /></svg>
                     {t(l.k)}
                     {l.href === '/account/notifications' && unread > 0 && <span className="ml-auto min-w-[18px] h-[18px] px-1 rounded-full bg-teal-600 text-white text-[10px] font-bold leading-[18px] text-center tabular-nums">{unread}</span>}
@@ -54,9 +55,7 @@ export default function AccountShell({ children }: { children: React.ReactNode }
               ))}
             </ul>
             <div className="hidden lg:block mt-6 space-y-2">
-              <Link href="/prices" className="flex items-center justify-center gap-2 w-full bg-teal-600 text-white text-sm font-semibold py-2.5 hover:bg-teal-700">
-                + {t('acc.subscribe')}
-              </Link>
+              <Button href="/prices" icon="box" label={t('acc.subscribe').replace(/^\+\s*/, '')} className="w-full" />
               <div className="flex justify-center">
                 <IconButton icon="power" tone="danger" label={t('acc.signOut')} onClick={() => setAskOut(true)} />
               </div>

@@ -4,7 +4,10 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useLanguage } from '@/context/LanguageContext';
 import { useCart } from '@/context/CartContext';
 import { fill } from '@/context/strings/purchase';
-import { TYPE } from '@/components/ui/Heading';
+import { Heading } from '@/components/ui/Heading';
+import { Icon } from '@/components/ui/icons';
+import { GlossyBuild, GlossyPaw } from '@/components/Glossy3D';
+import EmptyState from '@/components/ui/EmptyState';
 import { FieldError } from '@/components/ui/FormError';
 import { available } from '@/lib/useChoice';
 
@@ -159,31 +162,30 @@ export default function BuildBoxView({ products, config: raw }: { products: any[
   };
 
   return (
-    <main className="min-h-screen bg-teal-50/40">
+    <main className="min-h-screen bg-white">
       <section className="max-w-6xl mx-auto px-4 sm:px-6 pt-8 sm:pt-10 pb-28 lg:pb-16">
         {/* Header */}
-        <div className="text-center mb-8">
-          <span className="inline-flex items-center gap-2 bg-white text-teal-700 text-[11px] font-bold px-4 py-2 rounded-full mb-4 ring-1 ring-teal-100 tracking-wide uppercase">🛠️ {t('cb.badge')}</span>
-          <h1 className={TYPE.page}>{editId ? t('cb.edit') : t('cb.heroTitle')}</h1>
-          <p className={`${TYPE.subtitle} mt-2 max-w-xl mx-auto`}>{fill(t('cb.heroSub'), { n: config.minItems })}</p>
+        <div className="text-center mb-7">
+          <span className="inline-flex items-center gap-1.5 bg-teal-50 text-teal-700 text-[12px] font-bold px-3.5 py-1.5 rounded-full mb-4"><Icon name="sparkle" className="w-3.5 h-3.5" />{t('cb.badge')}</span>
+          <Heading align="center" title={editId ? t('cb.edit') : t('cb.heroTitle')} subtitle={fill(t('cb.heroSub'), { n: config.minItems })} className="!mb-0" />
         </div>
 
         {/* Once / every month */}
         <div className="flex justify-center mb-6">
-          <div role="radiogroup" aria-label={`${t('cb.once')} / ${t('cb.monthly')}`} className="grid grid-cols-2 w-full max-w-sm sm:max-w-none sm:w-auto sm:inline-flex bg-white ring-1 ring-gray-200/70 rounded-full p-1 gap-1">
-            {([[false, '📦', t('cb.once')], [true, '🔄', t('cb.monthly')]] as const).map(([m, emoji, label]) => (
+          <div role="radiogroup" aria-label={`${t('cb.once')} / ${t('cb.monthly')}`} className="grid grid-cols-2 w-full max-w-sm sm:max-w-none sm:w-auto sm:inline-flex bg-gray-200/80 ring-1 ring-inset ring-gray-300/60 rounded-full p-1 gap-1">
+            {([[false, 'box', t('cb.once')], [true, 'repeat', t('cb.monthly')]] as const).map(([m, icon, label]) => (
               <button key={String(m)} type="button" role="radio" aria-checked={monthly === m} onClick={() => setMonthly(m)}
-                className={`flex items-center justify-center gap-1.5 sm:gap-2 px-2.5 sm:px-6 py-2.5 rounded-full text-[12.5px] sm:text-[13.5px] font-bold whitespace-nowrap transition-all ${monthly === m ? 'bg-teal-600 text-white' : 'text-gray-500 hover:text-gray-800'}`}>
-                <span aria-hidden="true">{emoji}</span>{label}
-                {m && config.monthlyDiscount > 0 && <span className={`text-[11px] font-extrabold ${monthly ? 'text-white/90' : 'text-peach-600'}`}>−{config.monthlyDiscount}%</span>}
+                className={`flex items-center justify-center gap-1.5 sm:gap-2 px-2.5 sm:px-6 py-2.5 rounded-full text-[12.5px] sm:text-[13.5px] font-bold whitespace-nowrap transition-all ${monthly === m ? 'bg-white text-teal-700 shadow-[0_1px_4px_rgba(36,48,58,0.15)]' : 'text-gray-600 hover:text-gray-900'}`}>
+                <Icon name={icon} className="w-[17px] h-[17px]" />{label}
+                {m && config.monthlyDiscount > 0 && <span className="text-[11px] font-extrabold text-peach-600">−{config.monthlyDiscount}%</span>}
               </button>
             ))}
           </div>
         </div>
 
         {monthly && (
-          <div className="max-w-2xl mx-auto mb-8 bg-white ring-1 ring-teal-100 rounded-2xl px-5 py-4 flex items-start gap-4 animate-[fadeUp_0.25s_ease-out]">
-            <span className="text-2xl shrink-0" aria-hidden="true">🔄</span>
+          <div className="max-w-2xl mx-auto mb-8 bg-teal-50 rounded-[20px] px-5 py-4 flex items-start gap-3.5 animate-[fadeUp_0.25s_ease-out]">
+            <span className="w-9 h-9 shrink-0 rounded-xl bg-white text-teal-600 flex items-center justify-center"><Icon name="repeat" className="w-[18px] h-[18px]" /></span>
             <div>
               <p className="font-bold text-teal-800 text-[13.5px] mb-0.5">{t('cb.monthlyBanner')}</p>
               <p className="text-gray-600 text-[12.5px] leading-relaxed">{fill(t('cb.monthlyNote'), { n: config.monthlyDiscount })}</p>
@@ -195,10 +197,11 @@ export default function BuildBoxView({ products, config: raw }: { products: any[
           {/* ── Left: the box's own catalogue ── */}
           <div className="flex-1 min-w-0 w-full">
             {cats.length > 1 && (
-              <div className="flex flex-wrap gap-2 mb-6">
+              /* Categories: one row that scrolls sideways on phones, wraps on bigger screens */
+              <div className="flex sm:flex-wrap gap-2 mb-4 sm:mb-5 overflow-x-auto sm:overflow-visible -mx-4 px-4 sm:mx-0 sm:px-0 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 {[{ slug: '', name: t('cb.all') }, ...cats].map((c: any) => (
                   <button key={c.slug || 'all'} type="button" onClick={() => setCat(c.slug)} aria-pressed={cat === c.slug}
-                    className={`px-4 py-2 rounded-full text-[12.5px] font-bold transition-colors ${cat === c.slug ? 'bg-teal-600 text-white' : 'bg-white ring-1 ring-gray-200 text-gray-600 hover:ring-gray-300'}`}>
+                    className={`shrink-0 h-9 px-4 rounded-full text-[12.5px] font-bold ring-1 ring-inset transition-colors ${cat === c.slug ? 'bg-teal-50 text-teal-700 ring-teal-400' : 'bg-white ring-gray-200 text-gray-600 hover:ring-gray-300'}`}>
                     {c.slug ? ((lang === 'ka' && c.translations?.ka?.name) || c.name) : c.name}
                   </button>
                 ))}
@@ -206,9 +209,10 @@ export default function BuildBoxView({ products, config: raw }: { products: any[
             )}
 
             {products.length === 0 && !mysteryOn ? (
-              <p className="text-center text-[14px] text-gray-500 py-16">{t('cb.none')}</p>
+              <EmptyState art="build" tint="bg-pastel-lilac" title={t('cb.none')} />
             ) : (
-              <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-3">
+              /* Computers: the list scrolls inside its own area so the box stays beside it */
+              <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-3 lg:max-h-[calc(100vh-8rem)] lg:overflow-y-auto lg:overscroll-contain lg:pr-2 lg:-mr-2 lg:pt-3 lg:-mt-3 [scrollbar-width:thin] [scrollbar-color:#BBEDE0_transparent]">
                 {mysteryOn && !cat && card({ id: MYSTERY, emoji: '🎁', name: t('cb.mystery'), line: t('cb.mysterySub'), price: mysteryUnit, was: monthly ? config.mystery.price : undefined, q: mystery, max: config.mystery.max, mystery: true })}
                 {shown.map((p) => card({
                   id: p.id, emoji: p.boxEmoji || '🐾', name: nameOf(p), line: lineOf(p), price: off(shopUnit(p)), was: monthly ? shopUnit(p) : undefined,
@@ -220,22 +224,22 @@ export default function BuildBoxView({ products, config: raw }: { products: any[
 
           {/* ── Right: the box ── */}
           <div ref={summaryRef} className="w-full lg:w-80 shrink-0 lg:sticky lg:top-24 scroll-mt-24">
-            <div className="bg-white rounded-3xl ring-1 ring-gray-100 overflow-hidden">
-              <div className="bg-teal-600 px-6 py-5">
+            <div className="bg-white rounded-[24px] ring-1 ring-gray-100 overflow-hidden">
+              <div className="bg-pastel-mint px-6 py-5">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-teal-100 text-[11px] font-semibold uppercase tracking-wide">{t('cb.yourBox')}{monthly && ` · ${t('cb.monthly')}`}</p>
-                    <p key={count} className="text-white font-extrabold text-lg mt-0.5 animate-[fadeUp_0.25s_ease-out]">{count === 0 ? t('cb.emptyBox') : fill(t('cb.items'), { n: count })}</p>
+                    <p className="text-teal-700 text-[11.5px] font-bold">{t('cb.yourBox')}{monthly && ` · ${t('cb.monthly')}`}</p>
+                    <p key={count} className="text-gray-900 font-extrabold text-lg mt-0.5 animate-[fadeUp_0.25s_ease-out]">{count === 0 ? t('cb.emptyBox') : fill(t('cb.items'), { n: count })}</p>
                   </div>
-                  <span className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center text-2xl" aria-hidden="true">{monthly ? '🔄' : '📦'}</span>
+                  <GlossyBuild className="w-14 h-14 -my-1 -mr-1" />
                 </div>
                 <div className="mt-4">
-                  <div className="flex justify-between text-[11.5px] text-white/75 mb-1.5">
+                  <div className="flex justify-between text-[11.5px] text-gray-600 mb-1.5">
                     <span>{fill(t('cb.minOf'), { n: count, min: config.minItems })}</span>
-                    {!need && <span className="text-white font-bold">{t('cb.readyShort')}</span>}
+                    {!need && <span className="text-teal-700 font-bold">{t('cb.readyShort')}</span>}
                   </div>
-                  <div className="h-1.5 bg-white/20 rounded-full overflow-hidden">
-                    <div className="h-full bg-white rounded-full transition-all duration-500" style={{ width: `${Math.min(100, (count / config.minItems) * 100)}%` }} />
+                  <div className="h-1.5 bg-white rounded-full overflow-hidden">
+                    <div className="h-full bg-teal-600 rounded-full transition-all duration-500" style={{ width: `${Math.min(100, (count / config.minItems) * 100)}%` }} />
                   </div>
                 </div>
               </div>
@@ -243,7 +247,7 @@ export default function BuildBoxView({ products, config: raw }: { products: any[
               <div className="px-6 py-5">
                 {count === 0 ? (
                   <div className="text-center py-6">
-                    <p className="text-3xl mb-2" aria-hidden="true">🐾</p>
+                    <GlossyPaw className="mx-auto w-12 h-12 mb-2" />
                     <p className="text-gray-400 text-[13px]">{t('cb.emptyPanel')}</p>
                   </div>
                 ) : (

@@ -1,4 +1,5 @@
 'use client';
+import { GlossyPaw } from '@/components/Glossy3D';
 import Link from '@/components/LangLink';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
@@ -70,7 +71,7 @@ export default function NotificationBell() {
               </div>
             ) : items.length === 0 ? (
               <div className="text-center px-6 py-8">
-                <span className="mx-auto mb-3 w-12 h-12 rounded-2xl bg-teal-50 text-teal-600 flex items-center justify-center"><Icon name="bell" className="w-6 h-6" /></span>
+                <GlossyPaw className="mx-auto mb-2 w-14 h-14 animate-[bob_3s_ease-in-out_infinite]" />
                 <p className="text-[13px] font-semibold text-gray-800">{t('ntf.empty')}</p>
                 <p className="text-[12px] text-gray-500 mt-1">{t('ntf.emptySub')}</p>
               </div>

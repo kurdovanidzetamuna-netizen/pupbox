@@ -37,6 +37,8 @@ const config: Config = {
         },
         peach: { 50: '#FFF6F1', 100: '#FFE9DE', 200: '#FFD5C0', 300: '#FFBE9F', 400: '#FFA77E', 500: '#F58F62', 600: '#E9784A' },
         lilac: { 50: '#F6F4FF', 100: '#ECE8FF', 400: '#A897F5', 600: '#7C68E0' },
+        // Soft card colours after bog.ge: one per card, never for text or buttons.
+        pastel: { sun: '#FFF1C9', peach: '#FFE5D6', lilac: '#E9E0FF', mint: '#D9F3E8', pink: '#FFDDEB', sky: '#DDEFFC', grey: '#F4F5F7' },
       },
       fontFamily: {
         sans: ['var(--font-sans)', 'Noto Sans Georgian', 'system-ui', 'sans-serif'],

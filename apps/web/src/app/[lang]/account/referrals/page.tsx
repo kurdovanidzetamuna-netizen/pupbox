@@ -1,4 +1,8 @@
 'use client';
+import Caps from '@/components/ui/Caps';
+import Button from '@/components/ui/Button';
+import EmptyState from '@/components/ui/EmptyState';
+import { GlossyGift } from '@/components/Glossy3D';
 import { formatDate } from '@/lib/dates';
 import Link from '@/components/LangLink';
 import { useEffect, useState } from 'react';
@@ -41,57 +45,55 @@ export default function ReferralsPage() {
 
         {data?.stats && (
           <>
-            <dl className="grid grid-cols-3 gap-4 mb-8">
+            {/* The invite: a sunny card with the link and one big copy button */}
+            <section className="relative overflow-hidden rounded-[24px] bg-pastel-sun p-5 sm:p-6 mb-4">
+              <div className="flex items-start gap-3.5">
+                <GlossyGift className="w-14 h-14 shrink-0 -mt-1 animate-[bob_3s_ease-in-out_infinite]" />
+                <div className="min-w-0">
+                  <h2 className="text-[16px] sm:text-[17px] font-extrabold text-gray-900"><Caps text={t('ref.yourLink')} /></h2>
+                  <p className="text-[12.5px] text-gray-700 mt-1 leading-relaxed">{t('ref.reward')}</p>
+                </div>
+              </div>
+              <div className="mt-4 flex flex-col sm:flex-row gap-2">
+                <input readOnly value={referralLink} aria-label={t('ref.yourLink')} onFocus={e => e.target.select()}
+                  className="flex-1 min-w-0 h-11 rounded-[14px] bg-white px-3.5 text-[13px] text-gray-700 outline-none focus:ring-2 focus:ring-teal-300" />
+                <Button onClick={copy} icon={copied ? 'check' : 'link'} label={copied ? t('ref.copied') : t('ref.copy')} className="!h-11" />
+              </div>
+            </section>
+
+            <dl className="grid grid-cols-3 gap-2 sm:gap-3 mb-6">
               {[
-                { k: 'ref.total', value: data.stats.total, color: 'text-gray-900' },
-                { k: 'ref.registered', value: data.stats.registered, color: 'text-blue-700' },
-                { k: 'ref.rewards', value: data.stats.rewarded, color: 'text-teal-700' },
+                { k: 'ref.total', value: data.stats.total, tint: 'bg-pastel-mint' },
+                { k: 'ref.registered', value: data.stats.registered, tint: 'bg-pastel-lilac' },
+                { k: 'ref.rewards', value: data.stats.rewarded, tint: 'bg-pastel-peach' },
               ].map(s => (
-                <div key={s.k} className="bg-white rounded-[28px] ring-1 ring-gray-200/60 p-5 text-center">
-                  <dd className={`text-3xl font-bold ${s.color}`}>{s.value}</dd>
-                  <dt className="text-sm text-gray-500 mt-1">{t(s.k)}</dt>
+                <div key={s.k} className={`rounded-[18px] ${s.tint} px-2 py-3 sm:p-4 text-center flex flex-col-reverse`}>
+                  <dt className="text-[11.5px] sm:text-[12.5px] font-semibold text-gray-700 mt-1 leading-tight [overflow-wrap:anywhere]">{t(s.k)}</dt>
+                  <dd className="text-[24px] sm:text-[28px] font-extrabold text-gray-900 leading-none">{s.value}</dd>
                 </div>
               ))}
             </dl>
 
-            <section className="bg-white rounded-[28px] ring-1 ring-gray-200/60 p-6 mb-8">
-              <h2 className="text-[15px] font-bold text-gray-900 mb-4">{t('ref.yourLink')}</h2>
-              <div className="flex items-center gap-3">
-                <input readOnly value={referralLink} aria-label={t('ref.yourLink')}
-                  className="flex-1 min-w-0 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-600 bg-gray-50 focus:outline-none" />
-                <button onClick={copy} className="bg-teal-600 text-white px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-teal-700 transition shrink-0">
-                  {copied ? t('ref.copied') : t('ref.copy')}
-                </button>
-              </div>
-              <p className="text-xs text-gray-500 mt-3">{t('ref.reward')}</p>
-            </section>
-
-            {data.referrals?.length > 0 && (
-              <section className="bg-white rounded-[28px] ring-1 ring-gray-200/60 overflow-hidden">
-                <h2 className="px-6 py-4 border-b border-gray-50 font-semibold text-gray-800">{t('ref.history')}</h2>
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500">{t('ref.friend')}</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500">{t('ref.joined')}</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500">{t('ref.status')}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.referrals.map((r: any) => (
-                      <tr key={r.id} className="border-t border-gray-50">
-                        <td className="px-4 py-3 text-gray-700">{r.invited ? `${r.invited.firstName} ${r.invited.lastName}` : t('ref.pending')}</td>
-                        <td className="px-4 py-3 text-gray-500 text-xs">{r.invited?.createdAt ? formatDate(new Date(r.invited.createdAt), lang) : '—'}</td>
-                        <td className="px-4 py-3">
-                          <span className={`text-xs font-medium px-2 py-1 rounded-full ${r.status === 'REWARD_GRANTED' ? 'bg-teal-100 text-teal-800' : r.status === 'REGISTERED' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'}`}>
-                            {t(`ref.status.${r.status}`, r.status)}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+            {data.referrals?.length > 0 ? (
+              <section className="bg-white rounded-[24px] ring-1 ring-gray-100 p-2">
+                <h2 className="px-3 pt-2 pb-2 text-[14px] font-extrabold text-gray-900"><Caps text={t('ref.history')} /></h2>
+                <ul className="divide-y divide-gray-100">
+                  {data.referrals.map((r: any) => (
+                    <li key={r.id} className="flex items-center gap-3 px-3 py-3">
+                      <span className="w-9 h-9 shrink-0 rounded-full bg-teal-50 text-teal-700 flex items-center justify-center text-[13px] font-bold">{(r.invited?.firstName?.[0] || '?').toUpperCase()}</span>
+                      <span className="flex-1 min-w-0">
+                        <span className="block text-[13.5px] font-semibold text-gray-900 truncate">{r.invited ? `${r.invited.firstName} ${r.invited.lastName}` : t('ref.pending')}</span>
+                        <span className="block text-[11.5px] text-gray-400">{r.invited?.createdAt ? formatDate(new Date(r.invited.createdAt), lang) : '—'}</span>
+                      </span>
+                      <span className={`shrink-0 text-[11.5px] font-bold px-2.5 py-1 rounded-full ${r.status === 'REWARD_GRANTED' ? 'bg-teal-50 text-teal-700' : r.status === 'REGISTERED' ? 'bg-lilac-50 text-lilac-600' : 'bg-gray-100 text-gray-600'}`}>
+                        {t(`ref.status.${r.status}`, r.status)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
               </section>
+            ) : (
+              <EmptyState compact art="heart" tint="bg-pastel-pink" title={t('ref.history')} text={t('ref.reward')} />
             )}
           </>
         )}

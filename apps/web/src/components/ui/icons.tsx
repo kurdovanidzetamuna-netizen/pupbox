@@ -28,6 +28,8 @@ const P: Record<string, string> = {
   sparkle: 'M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3zM19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8L19 16z',
   coin: 'M12 21a9 9 0 100-18 9 9 0 000 18zM14.5 9.5c-.4-.9-1.4-1.5-2.5-1.5-1.5 0-2.5.8-2.5 2s1 1.6 2.5 2 2.5.8 2.5 2-1 2-2.5 2c-1.1 0-2.1-.6-2.5-1.5M12 6.5V8m0 8v1.5',
   search: 'M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z',
+  bone: 'M8.4 6.4l9.2 9.2M6.4 8.4l9.2 9.2M2.8 7.5a2.2 2.2 0 104.4 0 2.2 2.2 0 10-4.4 0M5.3 5a2.2 2.2 0 104.4 0 2.2 2.2 0 10-4.4 0M14.3 19a2.2 2.2 0 104.4 0 2.2 2.2 0 10-4.4 0M16.8 16.5a2.2 2.2 0 104.4 0 2.2 2.2 0 10-4.4 0',
+  ball: 'M12 3a9 9 0 100 18 9 9 0 000-18zM3.6 9.2c4.6 1.8 12.2 1.8 16.8 0M3.6 14.8c4.6-1.8 12.2-1.8 16.8 0',
   sort: 'M7 4v16M7 20l-3-3M7 20l3-3M17 20V4M17 4l-3 3M17 4l3 3',
   filter: 'M4 5h16l-6 7.5V19l-4 2v-8.5L4 5z',
   sliders: 'M4 7h10M18 7h2M4 17h4M12 17h8M16 5v4M10 15v4',
@@ -70,7 +72,7 @@ export function Icon({ name, className = 'w-[18px] h-[18px]', strokeWidth = 1.8 
  */
 export const LINE_ICON: Record<string, string> = {
   '🚚': 'truck', '📦': 'box', '🔒': 'lock', '💳': 'card', '🐾': 'paw', '🐕': 'paw', '🐶': 'paw', '🎁': 'gift', '↩️': 'undo',
-  '⭐': 'star', '✨': 'sparkle', '🛡️': 'shield', '📍': 'pin', '💬': 'chat', '🔄': 'repeat', '🔁': 'repeat', '❤️': 'heart', '💚': 'heart',
+  '⭐': 'star', '✨': 'sparkle', '🦴': 'bone', '🍖': 'bone', '🧸': 'ball', '🎾': 'ball', '⚽': 'ball', '🛡️': 'shield', '📍': 'pin', '💬': 'chat', '🔄': 'repeat', '🔁': 'repeat', '❤️': 'heart', '💚': 'heart',
   '📅': 'calendar', '🗓️': 'calendar', '✅': 'check', '📞': 'phone', '✉️': 'mail', '📧': 'mail', '🔔': 'bell', '🏪': 'store', '🛍️': 'bag', '💰': 'coin',
 };
 
