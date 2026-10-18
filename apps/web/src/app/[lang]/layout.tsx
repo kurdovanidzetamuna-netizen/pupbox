@@ -51,6 +51,23 @@ export const viewport: Viewport = {
 
 export const generateStaticParams = () => [{ lang: 'ka' }, { lang: 'en' }];
 
+/**
+ * A refresh opens the page at the top, as if new; browsers otherwise put you
+ * back where you had scrolled. Back/forward between the site's pages still
+ * return to where you were. Runs before anything paints. The browser reads
+ * the setting from the page being left, so it's switched off on the way out
+ * (pagehide) and back on once the new page has loaded, since pages opened
+ * from it inherit the setting.
+ */
+const REFRESH_TO_TOP = `(function(){try{
+var h=history;
+addEventListener('pagehide',function(){h.scrollRestoration='manual'});
+addEventListener('pageshow',function(e){if(e.persisted)h.scrollRestoration='auto'});
+var n=performance.getEntriesByType('navigation')[0];
+if(n&&n.type==='reload'&&!location.hash)scrollTo(0,0);
+addEventListener('load',function(){setTimeout(function(){h.scrollRestoration='auto'},0)});
+}catch(e){}})();`;
+
 export default async function RootLayout({ children, modal, params }: Props) {
   // Only /ka and /en exist; anything else in the first place is not a page.
   if (params.lang !== 'ka' && params.lang !== 'en') notFound();
@@ -58,6 +75,7 @@ export default async function RootLayout({ children, modal, params }: Props) {
   return (
     <html lang={params.lang === 'en' ? 'en' : 'ka'} className={sans.variable}>
       <body className="font-sans bg-gray-50 text-gray-800">
+        <script dangerouslySetInnerHTML={{ __html: REFRESH_TO_TOP }} />
         <LanguageProvider>
           <CartProvider>
             <RefCapture />
