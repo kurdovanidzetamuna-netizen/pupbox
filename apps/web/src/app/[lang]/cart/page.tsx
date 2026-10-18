@@ -28,6 +28,14 @@ export default function CartPage() {
   const [couponError, setCouponError] = useState('');
   const [couponLoading, setCouponLoading] = useState(false);
   const [promoOpen, setPromoOpen] = useState(false);
+  // Which line a quantity change failed on, and why.
+  const [qtyError, setQtyError] = useState<{ id: string; message: string } | null>(null);
+
+  async function changeQty(itemId: string, quantity: number) {
+    setQtyError(null);
+    try { await updateItem(itemId, quantity); }
+    catch { setQtyError({ id: itemId, message: t('cart.e.qty') }); }
+  }
 
   async function handleApplyCoupon() {
     if (!couponInput.trim()) return;
@@ -68,6 +76,11 @@ export default function CartPage() {
           <ul className="space-y-2.5 sm:space-y-3">
             {cart.items.map((item: any) => {
               const fixed = item.subscriptionPlan || item.customBox;
+              // Free stock left for this line, after other lines of the same product.
+              const inv = item.product?.inventory;
+              const others = cart.items.filter((i: any) => i.id !== item.id && i.productId === item.productId).reduce((n: number, i: any) => n + i.quantity, 0);
+              const max = inv ? Math.max(0, inv.quantity - (inv.reservedQty || 0) - others) : Infinity;
+              const atMax = item.quantity >= max;
               return (
                 <li key={item.id} className="bg-white rounded-[22px] ring-1 ring-gray-100 p-3 sm:p-4 flex gap-3 sm:gap-4">
                   <ProductThumb item={item} className="w-[72px] h-[72px] sm:w-20 sm:h-20 rounded-[16px] text-3xl shrink-0" />
@@ -95,15 +108,18 @@ export default function CartPage() {
                         <span className="text-[12.5px] text-gray-400">{fill(t('cart.qty'), { n: 1 })}</span>
                       ) : (
                         <div className="inline-flex items-center h-9 rounded-full bg-gray-100 p-0.5">
-                          <button onClick={() => updateItem(item.id, item.quantity - 1)} aria-label={t('cart.decrease')}
+                          <button onClick={() => changeQty(item.id, item.quantity - 1)} aria-label={t('cart.decrease')}
                             className="w-8 h-8 rounded-full flex items-center justify-center text-gray-600 hover:bg-white hover:text-teal-700 transition"><Icon name="minus" className="w-4 h-4" strokeWidth={2.4} /></button>
                           <span className="w-7 text-center text-[13.5px] font-bold text-gray-900" aria-live="polite">{item.quantity}</span>
-                          <button onClick={() => updateItem(item.id, item.quantity + 1)} aria-label={t('cart.increase')}
-                            className="w-8 h-8 rounded-full flex items-center justify-center text-gray-600 hover:bg-white hover:text-teal-700 transition"><Icon name="plus" className="w-4 h-4" strokeWidth={2.4} /></button>
+                          <button onClick={() => changeQty(item.id, item.quantity + 1)} aria-label={t('cart.increase')} disabled={atMax}
+                            title={atMax ? fill(t('shop.onlyLeft'), { n: max }) : undefined}
+                            className="w-8 h-8 rounded-full flex items-center justify-center text-gray-600 hover:bg-white hover:text-teal-700 transition disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-gray-600"><Icon name="plus" className="w-4 h-4" strokeWidth={2.4} /></button>
                         </div>
                       )}
                       <span className="text-[16px] font-extrabold text-gray-900">{gel((Number(item.price) * item.quantity).toFixed(2))}</span>
                     </div>
+                    {!fixed && atMax && max > 0 && <p className="mt-1 text-[11.5px] font-medium text-amber-700">{fill(t('shop.onlyLeft'), { n: max })}</p>}
+                    <FieldError message={qtyError?.id === item.id ? qtyError?.message : null} />
                   </div>
                 </li>
               );

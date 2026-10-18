@@ -75,13 +75,15 @@ export class CartService {
     if (productId) {
       const product = await this.prisma.product.findFirst({ where: { id: productId, status: 'ACTIVE', deletedAt: null }, include: { inventory: true } });
       if (!product) throw new NotFoundException('Product not found or unavailable');
-      // What's free to sell: stock minus what unpaid orders are holding.
-      if (product.inventory && product.inventory.quantity - product.inventory.reservedQty < quantity) throw new BadRequestException('Insufficient stock');
+      // A bowl engraved "Rex" and one engraved "Luna" are two lines, not quantity 2.
+      const lines = await this.prisma.cartItem.findMany({ where: { cartId, productId } });
+      // What's free to sell (stock minus what unpaid orders are holding),
+      // against everything of this product already in the basket.
+      const inBasket = lines.reduce((n, l) => n + l.quantity, 0);
+      if (product.inventory && product.inventory.quantity - product.inventory.reservedQty < inBasket + quantity) throw new BadRequestException('Insufficient stock');
       price = Number(product.salePrice ?? product.price);
       const personalisation = checkChoice(product.personalisation, data.personalisation);
 
-      // A bowl engraved "Rex" and one engraved "Luna" are two lines, not quantity 2.
-      const lines = await this.prisma.cartItem.findMany({ where: { cartId, productId } });
       const existing = lines.find((l) => sameChoice(l.personalisation, personalisation));
       if (existing) {
         await this.prisma.cartItem.update({ where: { id: existing.id }, data: { quantity: existing.quantity + quantity } });
@@ -142,6 +144,14 @@ export class CartService {
     if (!item) throw new NotFoundException('Cart item not found');
     // A box is one box; its contents change in the builder.
     if (item.customBoxId && quantity > 1) throw new BadRequestException('To change a box, edit what’s in it.');
+    // One subscription per plan.
+    if (item.subscriptionPlanId && quantity > 1) throw new BadRequestException('A plan can be added once.');
+    // Only check stock when adding more, so a basket over stock can still go down.
+    if (item.productId && quantity > item.quantity) {
+      const inv = await this.prisma.inventory.findUnique({ where: { productId: item.productId } });
+      const others = await this.prisma.cartItem.aggregate({ where: { cartId, productId: item.productId, id: { not: itemId } }, _sum: { quantity: true } });
+      if (inv && inv.quantity - inv.reservedQty < quantity + (others._sum.quantity ?? 0)) throw new BadRequestException('Insufficient stock');
+    }
     if (quantity <= 0) {
       await this.prisma.cartItem.delete({ where: { id: itemId } });
     } else {

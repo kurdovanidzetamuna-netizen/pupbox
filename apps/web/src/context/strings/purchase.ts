@@ -142,6 +142,7 @@ export const PURCHASE_STRINGS: Record<string, { en: string; ka: string }> = {
   'cart.remove':            { en: 'Remove',                     ka: 'წაშლა' },
   'cart.decrease':          { en: 'Decrease quantity',          ka: 'რაოდენობის შემცირება' },
   'cart.increase':          { en: 'Increase quantity',          ka: 'რაოდენობის გაზრდა' },
+  'cart.e.qty':             { en: 'Couldn’t change the amount. Please try again.', ka: 'რაოდენობა ვერ შეიცვალა. სცადე ხელახლა.' },
   'cart.promo':             { en: 'Promo code',                 ka: 'პრომო კოდი' },
   'cart.promoPh':           { en: 'Enter code',                 ka: 'შეიყვანე კოდი' },
   'cart.apply':             { en: 'Apply',                      ka: 'გამოყენება' },
@@ -154,8 +155,8 @@ export const PURCHASE_STRINGS: Record<string, { en: string; ka: string }> = {
   // ── Thank-you / payment result ──
   'ty.order':               { en: 'Order',                      ka: 'შეკვეთა' },
   'ty.failed.title':        { en: 'Payment didn’t go through',  ka: 'გადახდა ვერ შესრულდა' },
-  'ty.failed.sub':          { en: 'Your payment was declined or timed out, so nothing was charged and the order was cancelled.', ka: 'გადახდა უარყოფილია ან ვადა გაუვიდა, ამიტომ თანხა არ ჩამოჭრილა და შეკვეთა გაუქმდა.' },
-  'ty.tryAgain':            { en: 'Choose again',               ka: 'თავიდან არჩევა' },
+  'ty.failed.sub':          { en: 'Your payment was declined or timed out, so nothing was charged. Your order is still saved — try again, perhaps with another card.', ka: 'გადახდა უარყოფილია ან ვადა გაუვიდა, ამიტომ თანხა არ ჩამოჭრილა. შეკვეთა ისევ შენახულია — სცადე თავიდან, შესაძლოა სხვა ბარათით.' },
+  'ty.tryAgain':            { en: 'Try again',                  ka: 'სცადე თავიდან' },
   'ty.created.title':       { en: 'Almost there',               ka: 'თითქმის მზადაა' },
   'ty.created.sub':         { en: 'Your order is saved. Complete payment to confirm it.', ka: 'შეკვეთა შენახულია. დასადასტურებლად დაასრულე გადახდა.' },
   'ty.payNow':              { en: 'Pay now',                    ka: 'გადახდა' },
