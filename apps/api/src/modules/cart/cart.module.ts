@@ -4,7 +4,7 @@ import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, Request, Qu
 import { AuthGuard } from '@nestjs/passport';
 import { OptionalJwtGuard } from '../auth/optional-jwt.guard';
 import { ApiBearerAuth, ApiTags, ApiOperation } from '@nestjs/swagger';
-import { IsOptional, IsString, IsNumber, IsUUID, Min, MaxLength, ValidateNested, IsArray, ArrayMaxSize, IsBoolean } from 'class-validator';
+import { IsOptional, IsString, IsNumber, IsInt, IsUUID, Min, MaxLength, ValidateNested, IsArray, ArrayMaxSize, IsBoolean } from 'class-validator';
 import { Type } from 'class-transformer';
 
 class PersonalisationDto {
@@ -16,12 +16,12 @@ class AddItemDto {
   @IsOptional() @IsString() productId?: string;
   @IsOptional() @ValidateNested() @Type(() => PersonalisationDto) personalisation?: PersonalisationDto;
   @IsOptional() @IsString() subscriptionPlanId?: string;
-  @IsOptional() @Type(() => Number) @IsNumber() @Min(1) quantity?: number;
+  @IsOptional() @Type(() => Number) @IsInt() @Min(1) quantity?: number;
 }
 
 class BoxLineDto {
   @IsString() productId: string;
-  @Type(() => Number) @IsNumber() @Min(1) quantity: number;
+  @Type(() => Number) @IsInt() @Min(1) quantity: number;
 }
 
 class AddBoxDto {
@@ -32,7 +32,7 @@ class AddBoxDto {
 }
 
 class UpdateItemDto {
-  @Type(() => Number) @IsNumber() @Min(0) quantity: number;
+  @Type(() => Number) @IsInt() @Min(0) quantity: number;
 }
 
 class ApplyCouponDto {

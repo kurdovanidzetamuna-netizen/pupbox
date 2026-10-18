@@ -80,7 +80,7 @@ export function LoginForm({ inModal = false }: { inModal?: boolean }) {
               <Link href="/forgot-password" className="text-sm text-teal-600 hover:underline">{t('login.forgot')}</Link>
             </div>
           </div>
-          <Button type="submit" size="lg" icon="key" label={loading ? t('login.loading') : t('login.btn')} disabled={loading} className="mt-2" />
+          <Button type="submit" size="lg" label={loading ? t('login.loading') : t('login.btn')} disabled={loading} className="mt-2" />
         </form>
       </div>
     </main>
