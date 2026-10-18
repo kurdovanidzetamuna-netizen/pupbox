@@ -91,6 +91,8 @@ a.border-gray-200.rounded-lg:hover, button.border-gray-200.rounded-lg:hover { ba
   .wag, .wag-hover:hover .wag-on-hover, .confetti-piece { animation: none !important; }
   .confetti-piece { display: none; }
   [class*="animate-[pop"], [class*="animate-[fadeUp"], [class*="animate-[bob"] { animation: none !important; }
+  /* Without the animation, things that fade in must still be there. */
+  [class*="animate-[pop"]:not(:disabled), [class*="animate-[fadeUp"]:not(:disabled) { opacity: 1 !important; transform: none !important; }
 }
 
 
