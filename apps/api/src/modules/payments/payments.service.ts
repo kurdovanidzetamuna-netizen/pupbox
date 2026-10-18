@@ -8,7 +8,6 @@ import { FlittService } from './flitt.service';
 import { EmailService } from '../email/email.service';
 import { ProductsService } from '../products/products.service';
 import { subscriptionPeriod } from '../subscriptions/subscription-period';
-import { releaseStock } from '../products/stock';
 import { cancelUnpaidOrder } from '../orders/order-lifecycle';
 import { sendGiftCard } from '../gifts/gift-card';
 import { extendAfterRenewal } from '../subscriptions/renewal';
@@ -285,11 +284,12 @@ export class PaymentsService implements OnModuleInit, OnModuleDestroy {
         // free-cancellation window (ReferralsService.grantDueRewards).
       }
     } else if (paymentStatus === 'FAILED' && order.status === 'PENDING') {
-      // Only a still-open order: an expired one already gave its stock back.
-      await this.prisma.order.update({ where: { id: order_id }, data: { status: 'CANCELLED' } });
-      const lines = await this.prisma.orderItem.findMany({ where: { orderId: order_id, productId: { not: null } }, select: { productId: true, quantity: true } });
-      await releaseStock(this.prisma, lines.map((l) => ({ productId: l.productId!, quantity: l.quantity })));
-      notify(this.prisma, order.userId, 'PAYMENT_FAILED', { orderId: order_id, total: Number(order.total), kind: order.type }, order.type === 'RENEWAL' ? '/account/subscriptions' : '/cart');
+      // A declined card leaves the order waiting for payment, stock still
+      // held, so the customer can try again (another card, more funds). The
+      // basket was emptied at checkout, so cancelling here made them rebuild
+      // it. Never paid, it expires like any unpaid order (expireUnpaid; for a
+      // renewal, endUnpaidRenewals).
+      notify(this.prisma, order.userId, 'PAYMENT_FAILED', { orderId: order_id, total: Number(order.total), kind: order.type }, order.type === 'RENEWAL' ? '/account/subscriptions' : '/account/orders');
     }
 
     return { status: 'ok' };
