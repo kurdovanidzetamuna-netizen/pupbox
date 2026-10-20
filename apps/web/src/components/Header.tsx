@@ -160,7 +160,7 @@ export default function Header({ site }: { site: StoredContent | null }) {
                   <span className="hidden sm:inline max-w-[120px] truncate text-[13px] font-semibold text-gray-900">{me.name || t('nav.account')}</span>
                 </Link>
                 <span className="hidden lg:inline-flex">
-                  <IconButton icon="power" tone="danger" tip="bottom" label={t('acc.signOut')} onClick={() => setAskOut(true)} />
+                  <IconButton icon="logout" size="sm" tip="bottom" label={t('acc.signOut')} onClick={() => setAskOut(true)} />
                 </span>
               </>
             ) : (
