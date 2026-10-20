@@ -8,9 +8,8 @@ import LegalNotice from '@/components/LegalNotice';
 import VerifyCodes from '@/components/VerifyCodes';
 import PhoneInput from '@/components/ui/PhoneInput';
 import { Icon } from '@/components/ui/icons';
-import DogProfileForm, { emptyDogProfile, toDogPayload, type DogProfile } from '@/components/DogProfileForm';
+import DogEditor from '@/components/DogEditor';
 import { API_URL } from '@/lib/api';
-import { authFetch } from '@/lib/authFetch';
 import { forgetReferral, rememberReferral, storedReferral } from '@/lib/referral';
 import { FormAlert, countErrors, revealFirstError } from '@/components/ui/FormError';
 import { Heading } from '@/components/ui/Heading';
@@ -19,7 +18,6 @@ import Button from '@/components/ui/Button';
 import Field from '@/components/ui/Field';
 import AuthTabs from '@/components/AuthTabs';
 import { PwEye } from '@/app/[lang]/login/LoginForm';
-import Modal from '@/components/ui/Modal';
 import { GIFT } from '@/lib/gift';
 
 type Step = 'about' | 'account' | 'verify' | 'done';
@@ -47,7 +45,6 @@ export function RegisterForm({ inModal = false }: { inModal?: boolean }) {
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
-  const [dog, setDog] = useState<DogProfile>(emptyDogProfile);
   const [showPw, setShowPw] = useState(false);
 
   // The link's code wins; otherwise one remembered from an earlier visit.
@@ -113,17 +110,6 @@ export function RegisterForm({ inModal = false }: { inModal?: boolean }) {
   }
 
   const verified = useCallback(() => { setStep('done'); window.scrollTo({ top: 0 }); }, []);
-
-  async function saveDog() {
-    if (!dog.name.trim()) { setFieldErrors({ dogName: t('co.e.dogName') }); return revealFirstError(); }
-    setLoading(true); setError('');
-    try {
-      const res = await authFetch('/me/dogs', { method: 'POST', body: JSON.stringify(toDogPayload(dog)) });
-      if (!res.ok) throw new Error((await res.json().catch(() => ({})))?.message || t('co.e.generic'));
-      router.push(redirect);
-    } catch (e: any) { setError(e.message); }
-    finally { setLoading(false); }
-  }
 
   const steps: Step[] = ['about', 'account', 'verify'];
 
@@ -205,16 +191,8 @@ export function RegisterForm({ inModal = false }: { inModal?: boolean }) {
         )}
       </div>
 
-      {/* Straight after sign-up: the dog, in the same pop-up as everywhere else. */}
-      <Modal open={step === 'done'} onClose={() => router.push(redirect)} title={t('wel.title')} size="lg"
-        footer={<>
-          <IconButton icon="close" label={t('wel.skip')} onClick={() => router.push(redirect)} />
-          <IconButton icon="check" tone="primary" label={loading ? t('co.saving') : t('wel.save')} onClick={saveDog} disabled={loading} />
-        </>}>
-        <p className="text-[13px] text-gray-500 -mt-1 mb-4">{t('wel.sub')}</p>
-        <FormAlert message={error} className="mb-4" />
-        <DogProfileForm value={dog} onChange={d => { setDog(d); setFieldErrors({}); }} compact nameError={fieldErrors.dogName} />
-      </Modal>
+      {/* Straight after sign-up: meet the dog, in the same pop-up as everywhere else. */}
+      <DogEditor open={step === 'done'} welcome onClose={() => router.push(redirect)} onSaved={() => router.push(redirect)} />
     </main>
   );
 }

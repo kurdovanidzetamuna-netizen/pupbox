@@ -42,6 +42,27 @@ export const ACCOUNT_STRINGS: Record<string, { en: string; ka: string }> = {
   'wel.save':               { en: 'Save my dog',                 ka: 'ძაღლის შენახვა' },
   'wel.skip':               { en: 'Skip for now',                ka: 'ახლა გამოტოვება' },
 
+  // ── Dog editor (add, edit, after sign-up) ──
+  'dogEd.s.hello':          { en: 'Hello',                       ka: 'გაცნობა' },
+  'dogEd.s.body':           { en: 'Size',                        ka: 'ზომა' },
+  'dogEd.s.health':         { en: 'Health',                      ka: 'ჯანმრთელობა' },
+  'dogEd.s.likes':          { en: 'Favourites',                  ka: 'საყვარელი' },
+  'dogEd.b.hello0':         { en: 'Woof! What’s my name?',       ka: 'ვუფ! რა მქვია?' },
+  'dogEd.b.hello1':         { en: 'Hi! I’m {name} 🐾',           ka: 'გამარჯობა! მე {name} ვარ 🐾' },
+  'dogEd.b.body0':          { en: 'How big am I? 📏',            ka: 'რა ზომის ვარ? 📏' },
+  'dogEd.b.body1':          { en: 'Perfect fit! ✨',             ka: 'იდეალურია! ✨' },
+  'dogEd.b.health0':        { en: 'Anything I shouldn’t eat?',   ka: 'რა არ უნდა ვჭამო?' },
+  'dogEd.b.health1':        { en: 'Got it — I’ll stay safe 🛡️',  ka: 'გასაგებია — დაცული ვიქნები 🛡️' },
+  'dogEd.b.likes0':         { en: 'Now the fun part — what do I love?', ka: 'ახლა სახალისო ნაწილი — რა მიყვარს?' },
+  'dogEd.b.likes1':         { en: 'Yum! You know me so well 😋', ka: 'ნამდვილად კარგად მიცნობ 😋' },
+  'dogEd.photoCta':         { en: 'Add my best photo',           ka: 'დაამატე ჩემი საუკეთესო ფოტო' },
+  'dogEd.noAllergy':        { en: 'Nothing so far — lucky pup! 🎉', ka: 'ჯერჯერობით არაფერი — იღბლიანი ლეკვია! 🎉' },
+  'dogEd.age':              { en: 'Age: {age} 🎈',               ka: 'ასაკი: {age} 🎈' },
+  'dogEd.next':             { en: 'Next',                        ka: 'შემდეგი' },
+  'dogEd.back':             { en: 'Back',                        ka: 'უკან' },
+  'dogEd.add':              { en: 'Add to the family',           ka: 'ოჯახში დამატება' },
+  'dogEd.save':             { en: 'Save',                        ka: 'შენახვა' },
+
   // ── Account extras ──
   'acc.consent':            { en: 'Offers and reminders',        ka: 'შეთავაზებები და შეხსენებები' },
   'acc.consentSub':         { en: 'Birthday treats, restock reminders and the occasional offer, by email and SMS.', ka: 'დაბადების დღის საჩუქრები, შეხსენებები და შეთავაზებები ელფოსტითა და SMS-ით.' },

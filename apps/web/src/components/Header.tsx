@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { usePath } from '@/lib/path';
 import { createPortal } from 'react-dom';
 import { signOut } from '@/lib/signOut';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { sitePage, type StoredContent } from '@pupbox/content';
 import { useLanguage } from '@/context/LanguageContext';
 import { usePage } from '@/lib/usePage';
@@ -36,13 +36,14 @@ const NO_TAB_BAR = [/^\/checkout/, /^\/build-box/, /^\/shop\/[^/]+$/];
 /**
  * Logo, menu and button come from admin → Page Builder → Header & Footer.
  *
- * Desktop: logo, the four main pages, then language, bell, basket,
- * the "me" pill (sign in, or your initial and name) and Subscribe.
+ * Desktop, signed in: logo, the four main pages, then bell, basket, your
+ * avatar and Subscribe. The avatar opens a menu with your account, the
+ * language and sign out. Signed out: language, sign in and Subscribe.
  * Phones and tablets: a slim top bar, a tab bar at the bottom with the four
  * main pages + "More", and "More" opens a plain side menu with the rest.
  */
 export default function Header({ site }: { site: StoredContent | null }) {
-  const { lang, setLang, t } = useLanguage();
+  const { t } = useLanguage();
   const { cart } = useCart();
   const c = usePage(sitePage, site);
   const nav: { label: string; href: string }[] = c.header.links.filter((n: any) => n.label);
@@ -55,7 +56,7 @@ export default function Header({ site }: { site: StoredContent | null }) {
   const [drawer, setDrawer] = useState(false);
   const [askOut, setAskOut] = useState(false);
   const [signedIn, setSignedIn] = useState(false);
-  const [me, setMe] = useState<{ initial: string; name: string }>({ initial: '', name: '' });
+  const [me, setMe] = useState<Me>({ initial: '', name: '', email: '' });
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
@@ -72,11 +73,11 @@ export default function Header({ site }: { site: StoredContent | null }) {
   }, [pathname]);
 
   useEffect(() => {
-    if (!signedIn) { setMe({ initial: '', name: '' }); return; }
+    if (!signedIn) { setMe({ initial: '', name: '', email: '' }); return; }
     const token = localStorage.getItem('pupbox_token');
     fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1'}/users/me`, { headers: { Authorization: `Bearer ${token}` } })
       .then((r) => (r.ok ? r.json() : null))
-      .then((u) => setMe({ initial: (u?.firstName?.[0] || u?.email?.[0] || '').toUpperCase(), name: [u?.firstName, u?.lastName].filter(Boolean).join(' ') }))
+      .then((u) => setMe({ initial: (u?.firstName?.[0] || u?.email?.[0] || '').toUpperCase(), name: [u?.firstName, u?.lastName].filter(Boolean).join(' '), email: u?.email || '' }))
       .catch(() => {});
   }, [signedIn]);
 
@@ -132,18 +133,10 @@ export default function Header({ site }: { site: StoredContent | null }) {
             ))}
           </nav>
 
-          {/* Right side, quietest to loudest: language, bell, basket, the "me" button, Subscribe — all with the same soft round corners. */}
+          {/* Right side, quietest to loudest, all with the same soft round corners. */}
           <div className="flex items-center gap-1 sm:gap-2">
-            {/* Language: a two-part switch with the same corners as the buttons */}
-            <div role="radiogroup" aria-label={t('nav.language')} className="hidden lg:grid grid-cols-2 h-10 p-1 rounded-[16px] bg-gray-100">
-              {([['ka', 'ქა', 'ქართული'], ['en', 'EN', 'English']] as const).map(([code, short, full]) => (
-                <button key={code} type="button" role="radio" aria-checked={lang === code} aria-label={full} title={full}
-                  onClick={() => setLang(code)}
-                  className={`h-8 min-w-[36px] px-2 rounded-[12px] text-[12px] font-bold transition-colors ${lang === code ? 'bg-white text-teal-700 shadow-[0_1px_3px_rgba(36,48,58,0.12)]' : 'text-gray-500 hover:text-gray-800'}`}>
-                  {short}
-                </button>
-              ))}
-            </div>
+            {/* Signed in, the language lives in the avatar menu. */}
+            {!signedIn && <LangSwitch className="hidden lg:grid h-10 rounded-[16px]" />}
 
             {signedIn && <NotificationBell />}
 
@@ -152,16 +145,15 @@ export default function Header({ site }: { site: StoredContent | null }) {
 
             {signedIn ? (
               <>
+                {/* Phones and tablets: straight to the account; the side menu has the rest. */}
                 <Link href="/account" aria-label={t('nav.account')} title={t('nav.account')}
-                  className={`inline-flex items-center gap-2 h-10 pl-1 pr-1 sm:pr-3.5 rounded-[16px] transition-colors ${pathname.startsWith('/account') ? 'bg-teal-50' : 'bg-gray-100 hover:bg-gray-200/70'}`}>
+                  className={`lg:hidden inline-flex items-center gap-2 h-10 pl-1 pr-1 sm:pr-3.5 rounded-[16px] transition-colors ${pathname.startsWith('/account') ? 'bg-teal-50' : 'bg-gray-100 hover:bg-gray-200/70'}`}>
                   <span className="w-8 h-8 rounded-[12px] bg-teal-600 text-white inline-flex items-center justify-center text-[13px] font-bold">
                     {me.initial || <Icon name="paw" className="w-4 h-4" />}
                   </span>
                   <span className="hidden sm:inline max-w-[120px] truncate text-[13px] font-semibold text-gray-900">{me.name || t('nav.account')}</span>
                 </Link>
-                <span className="hidden lg:inline-flex">
-                  <IconButton icon="logout" size="sm" tip="bottom" label={t('acc.signOut')} onClick={() => setAskOut(true)} />
-                </span>
+                <AccountMenu me={me} onSignOut={() => setAskOut(true)} />
               </>
             ) : (
               <SignInButton />
@@ -284,14 +276,7 @@ export default function Header({ site }: { site: StoredContent | null }) {
                 </ul>
 
                 <div className="px-5 py-4 border-t border-gray-100">
-                  <div className="grid grid-cols-2 gap-1 p-1 rounded-full bg-gray-100" role="radiogroup" aria-label={t('nav.language')}>
-                    {([['ka', 'ქართული'], ['en', 'English']] as const).map(([code, label]) => (
-                      <button key={code} type="button" role="radio" onClick={() => setLang(code)} aria-checked={lang === code} tabIndex={f}
-                        className={`h-8 rounded-full text-[12.5px] font-semibold transition-colors ${lang === code ? 'bg-white text-teal-700 ring-1 ring-gray-200/80' : 'text-gray-500'}`}>
-                        {label}
-                      </button>
-                    ))}
-                  </div>
+                  <LangSwitch full tabIndex={f} className="grid rounded-full" />
                   {signedIn && (
                     <div className="mt-3 flex justify-center">
                       <IconButton icon="power" tone="danger" label={t('acc.signOut')} onClick={() => { setDrawer(false); setAskOut(true); }} />
@@ -323,5 +308,110 @@ function SignInButton() {
       </span>
       <span className="hidden sm:inline text-[13px] font-semibold text-gray-900"><Caps text={t('nav.signIn')} /></span>
     </Link>
+  );
+}
+
+type Me = { initial: string; name: string; email: string };
+
+/**
+ * Language as a two-part switch: "ქა | EN" on the bar, the full names in
+ * menus. Corners come from the caller so it matches what sits beside it.
+ */
+function LangSwitch({ full = false, tabIndex, className = '' }: { full?: boolean; tabIndex?: number; className?: string }) {
+  const { lang, setLang, t } = useLanguage();
+  return (
+    <div role="radiogroup" aria-label={t('nav.language')} className={`grid-cols-2 gap-1 p-1 bg-gray-100 ${className}`}>
+      {([['ka', 'ქა', 'ქართული'], ['en', 'EN', 'English']] as const).map(([code, short, name]) => (
+        <button key={code} type="button" role="radio" aria-checked={lang === code} aria-label={name} title={name} tabIndex={tabIndex}
+          onClick={() => setLang(code)}
+          className={`h-8 min-w-[36px] px-2 ${full ? 'rounded-full' : 'rounded-[12px]'} font-semibold transition-colors ${full ? 'text-[12.5px]' : 'text-[12px] font-bold'} ${lang === code ? 'bg-white text-teal-700 shadow-[0_1px_3px_rgba(36,48,58,0.12)]' : 'text-gray-500 hover:text-gray-800'}`}>
+          {full ? name : short}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * Desktop, signed in: just your avatar on the bar. It opens a small card —
+ * who you are, the main account pages, the language and sign out — so the
+ * bar itself stays calm. Closes on outside click, Escape or navigation.
+ */
+function AccountMenu({ me, onSignOut }: { me: Me; onSignOut: () => void }) {
+  const { t } = useLanguage();
+  const pathname = usePath();
+  const [open, setOpen] = useState(false);
+  const box = useRef<HTMLDivElement>(null);
+
+  useEffect(() => { setOpen(false); }, [pathname]);
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => { if (!box.current?.contains(e.target as Node)) setOpen(false); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => { document.removeEventListener('mousedown', onDown); document.removeEventListener('keydown', onKey); };
+  }, [open]);
+
+  const links = [
+    { href: '/account/orders', icon: 'box', label: t('acc.ordersPlans') },
+    { href: '/account/dogs', icon: 'paw', label: t('acc.dogs') },
+  ];
+  const row = 'flex items-center gap-3 h-10 px-3 rounded-xl text-[13px] font-medium text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors';
+
+  return (
+    <div ref={box} className="relative hidden lg:block">
+      {/* On hover the avatar tilts up with a soft mint glow and a paw peeks out. */}
+      <button type="button" onClick={() => setOpen((o) => !o)} aria-haspopup="dialog" aria-expanded={open}
+        aria-label={t('nav.account')} title={me.name || t('nav.account')}
+        className={`group relative inline-flex items-center justify-center w-10 h-10 rounded-[16px] transition-colors duration-200 ${open || pathname.startsWith('/account') ? 'bg-teal-50' : 'hover:bg-teal-50'}`}>
+        <span className={`w-8 h-8 rounded-[12px] bg-gradient-to-br from-teal-500 to-teal-700 text-white inline-flex items-center justify-center text-[13px] font-bold transition-all duration-300 ease-[cubic-bezier(.34,1.56,.64,1)] motion-safe:group-hover:-rotate-[8deg] motion-safe:group-hover:scale-110 group-hover:shadow-[0_6px_14px_-4px_rgba(34,163,139,0.65)] ${open ? 'motion-safe:-rotate-[8deg] motion-safe:scale-110 shadow-[0_6px_14px_-4px_rgba(34,163,139,0.65)]' : ''}`}>
+          {me.initial || <Icon name="paw" className="w-4 h-4" />}
+        </span>
+        <span aria-hidden="true" className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-white text-teal-600 ring-1 ring-teal-100 flex items-center justify-center opacity-0 scale-50 transition-all duration-300 ease-[cubic-bezier(.34,1.56,.64,1)] group-hover:opacity-100 group-hover:scale-100">
+          <Icon name="paw" className="w-2.5 h-2.5" strokeWidth={2.4} />
+        </span>
+      </button>
+
+      {open && (
+        <div role="dialog" aria-label={t('nav.account')}
+          className="absolute right-0 top-full mt-2 z-50 w-[272px] rounded-3xl bg-white ring-1 ring-gray-200/80 shadow-[0_12px_40px_-12px_rgba(36,48,58,0.25)] p-2 animate-[fadeUp_0.15s_ease-out]">
+          {/* Who you are, then "My account" as a plain, obvious first row. */}
+          <div className="flex items-center gap-3 p-2">
+            <span className="w-10 h-10 rounded-[14px] bg-gradient-to-br from-teal-500 to-teal-700 text-white inline-flex items-center justify-center text-[15px] font-bold shrink-0">
+              {me.initial || <Icon name="paw" className="w-4 h-4" />}
+            </span>
+            <span className="flex-1 min-w-0">
+              <span className="block text-[14px] font-semibold text-gray-900 truncate capitalize">{me.name || t('nav.account')}</span>
+              {me.email && <span className="block text-[12px] text-gray-500 truncate">{me.email}</span>}
+            </span>
+          </div>
+          <Link href="/account" className="mt-1 flex items-center gap-3 h-11 px-3 rounded-xl bg-teal-50 text-[13.5px] font-semibold text-teal-800 hover:bg-teal-100 transition-colors">
+            <Icon name="user" className="w-[18px] h-[18px] text-teal-600" />
+            <span className="flex-1">{t('nav.account')}</span>
+            <Icon name="arrow" className="w-4 h-4 text-teal-600" />
+          </Link>
+
+          <div className="my-2 mx-2 h-px bg-gray-100" role="separator" />
+          {links.map((l) => (
+            <Link key={l.href} href={l.href} className={row}>
+              <Icon name={l.icon} className="w-[18px] h-[18px] text-gray-400" />{l.label}
+            </Link>
+          ))}
+
+          <div className="my-2 mx-2 h-px bg-gray-100" role="separator" />
+          <div className="flex items-center justify-between gap-3 pl-3 pr-1 py-1">
+            <span className="text-[13px] font-medium text-gray-700">{t('nav.language')}</span>
+            <LangSwitch className="grid rounded-[16px]" />
+          </div>
+
+          <div className="my-2 mx-2 h-px bg-gray-100" role="separator" />
+          <button type="button" onClick={() => { setOpen(false); onSignOut(); }}
+            className="w-full flex items-center gap-3 h-10 px-3 rounded-xl text-[13px] font-medium text-gray-700 hover:bg-red-50 hover:text-red-600 transition-colors">
+            <Icon name="logout" className="w-[18px] h-[18px] text-gray-400" />{t('acc.signOut')}
+          </button>
+        </div>
+      )}
+    </div>
   );
 }

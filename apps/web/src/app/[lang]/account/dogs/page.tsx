@@ -4,12 +4,10 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/context/LanguageContext';
 import { fill } from '@/context/strings/purchase';
-import DogProfileForm, { emptyDogProfile, toDogPayload, type DogProfile } from '@/components/DogProfileForm';
+import DogEditor from '@/components/DogEditor';
 import { authFetch, loginUrl, SessionExpiredError } from '@/lib/authFetch';
-import { FormAlert, revealFirstError } from '@/components/ui/FormError';
 import { Heading } from '@/components/ui/Heading';
 import IconButton from '@/components/ui/IconButton';
-import Modal from '@/components/ui/Modal';
 import { Icon } from '@/components/ui/icons';
 import PawTrail from '@/components/PawTrail';
 import { birthdayLine, dogAge, SIZE_SHORT } from '@/lib/dog';
@@ -29,10 +27,6 @@ export default function MyDogsPage() {
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<'all' | 'mine' | 'gift'>('all');
   const [adding, setAdding] = useState(false);
-  const [draft, setDraft] = useState<DogProfile>(emptyDogProfile);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
-  const [nameError, setNameError] = useState('');
 
   const expired = () => router.replace(loginUrl('/account/dogs'));
 
@@ -43,22 +37,7 @@ export default function MyDogsPage() {
       .finally(() => setLoading(false));
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const openAdd = () => { setDraft(emptyDogProfile); setError(''); setNameError(''); setAdding(true); };
-
-  async function add() {
-    if (!draft.name.trim()) { setNameError(t('co.e.dogName')); return revealFirstError(); }
-    setSaving(true); setError('');
-    try {
-      const res = await authFetch('/me/dogs', { method: 'POST', body: JSON.stringify(toDogPayload(draft)) });
-      if (!res.ok) throw new Error();
-      const dog = await res.json();
-      router.push(`/account/dogs/${dog.id}?new=1`);
-    } catch (e) {
-      if (e instanceof SessionExpiredError) return expired();
-      setError(t('co.e.generic'));
-      setSaving(false);
-    }
-  }
+  const openAdd = () => setAdding(true);
 
   const mine = dogs.filter((d) => !d.forGift);
   const gifts = dogs.filter((d) => d.forGift);
@@ -140,15 +119,9 @@ export default function MyDogsPage() {
         </ul>
       )}
 
-      {/* Adding a dog: a pop-up, then straight to the new dog's profile */}
-      <Modal open={adding} onClose={() => setAdding(false)} title={t('dogs.add')} size="lg"
-        footer={<>
-          <IconButton icon="close" label={t('dogs.cancel')} onClick={() => setAdding(false)} />
-          <IconButton icon="check" label={t('acc.save')} tone="primary" onClick={add} disabled={saving} />
-        </>}>
-        <FormAlert message={error} className="mb-4" />
-        <DogProfileForm value={draft} onChange={(d) => { setDraft(d); setNameError(''); }} nameError={nameError} />
-      </Modal>
+      {/* Adding a dog: the step-by-step pop-up, then straight to the new dog's profile */}
+      <DogEditor open={adding} onClose={() => setAdding(false)} onExpired={expired}
+        onSaved={(dog) => router.push(`/account/dogs/${dog.id}?new=1`)} />
     </div>
   );
 }

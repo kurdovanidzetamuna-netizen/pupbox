@@ -70,7 +70,7 @@ export function toDogPayload(d: DogProfile) {
 
 
 // Values are what the API stores; labels come from translations (dog.size.*, dog.opt.*).
-const SIZES = [
+export const SIZES = [
   { value: 'EXTRA_SMALL', emoji: '🐕' },
   { value: 'SMALL', emoji: '🐕' },
   { value: 'MEDIUM', emoji: '🐕‍🦺' },
@@ -78,18 +78,18 @@ const SIZES = [
   { value: 'EXTRA_LARGE', emoji: '🐕‍🦺' },
 ];
 
-const CHEW_LEVELS = [
+export const CHEW_LEVELS = [
   { value: 'GENTLE', emoji: '🪶' },
   { value: 'AVERAGE', emoji: '🦴' },
   { value: 'POWER', emoji: '💪' },
 ];
 
 // The same list products' allergens use, so boxes can be checked against the dog.
-const COMMON_ALLERGIES: string[] = ALLERGENS.map((a) => a.key);
-const FOOD_LIKES = ['Chicken', 'Beef', 'Lamb', 'Fish', 'Peanut butter', 'Cheese', 'Grain-free', 'Dental chews'];
-const TOY_LIKES = ['Squeaky', 'Plush', 'Rope', 'Ball', 'Puzzle', 'Tug', 'Fetch', 'Chew'];
+export const COMMON_ALLERGIES: string[] = ALLERGENS.map((a) => a.key);
+export const FOOD_LIKES = ['Chicken', 'Beef', 'Lamb', 'Fish', 'Peanut butter', 'Cheese', 'Grain-free', 'Dental chews'];
+export const TOY_LIKES = ['Squeaky', 'Plush', 'Rope', 'Ball', 'Puzzle', 'Tug', 'Fetch', 'Chew'];
 
-function Section({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
+export function Section({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
   return (
     <div>
       <p className="mb-2 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
@@ -102,7 +102,7 @@ function Section({ title, hint, children }: { title: string; hint?: string; chil
 }
 
 /** Tap-to-toggle chip. Used for every multi-select so they behave identically. */
-function Chip({ active, onClick, children, tone = 'teal' }: { active: boolean; onClick: () => void; children: React.ReactNode; tone?: 'teal' | 'red' }) {
+export function Chip({ active, onClick, children, tone = 'teal' }: { active: boolean; onClick: () => void; children: React.ReactNode; tone?: 'teal' | 'red' }) {
   const on = tone === 'red'
     ? 'bg-red-50 text-red-700 ring-red-300'
     : 'bg-teal-50 text-teal-700 ring-teal-400';
@@ -119,7 +119,7 @@ function Chip({ active, onClick, children, tone = 'teal' }: { active: boolean; o
 }
 
 /** Chips plus a free-text field, so an unlisted answer is still possible. */
-function ChipGroup({ options, selected, onChange, tone = 'teal', addLabel }: {
+export function ChipGroup({ options, selected, onChange, tone = 'teal', addLabel }: {
   options: string[]; selected: string[]; onChange: (v: string[]) => void; tone?: 'teal' | 'red'; addLabel: string;
 }) {
   const { t } = useLanguage();
@@ -151,6 +151,46 @@ function ChipGroup({ options, selected, onChange, tone = 'teal', addLabel }: {
         <button type="button" onClick={addCustom} disabled={!custom.trim()} aria-label={t('dog.add')} title={t('dog.add')}
           className="w-9 h-9 shrink-0 rounded-full bg-teal-50 text-teal-700 hover:bg-teal-100 disabled:opacity-40 flex items-center justify-center"><Icon name="plus" className="w-4 h-4" strokeWidth={2.4} /></button>
       </div>
+    </div>
+  );
+}
+
+
+/** Five soft tiles, the pup growing with each; the weight range under each name. */
+export function SizePicker({ value, onChange, error }: { value: string; onChange: (v: string) => void; error?: string }) {
+  const { t } = useLanguage();
+  return (
+    <div className={`grid grid-cols-3 sm:grid-cols-5 gap-1.5 rounded-xl ${error ? 'ring-2 ring-red-200 ring-offset-2' : ''}`} aria-invalid={!!error} tabIndex={error ? -1 : undefined}>
+      {SIZES.map((s, k) => {
+        const active = value === s.value;
+        return (
+          <button key={s.value} type="button" onClick={() => onChange(active ? '' : s.value)} aria-pressed={active} title={t(`dog.sizeHint.${s.value}`)}
+            className={`relative rounded-[14px] px-2 py-2 flex flex-col items-center text-center ring-1 ring-inset transition ${active ? 'bg-teal-50 ring-teal-400 text-teal-800' : 'bg-gray-100/80 ring-transparent text-gray-700 hover:bg-gray-100'}`}>
+            <span aria-hidden="true" className="leading-none" style={{ fontSize: `${14 + k * 2.5}px` }}>{s.emoji}</span>
+            <span className="mt-1 text-[12px] font-bold leading-tight">{t(`dog.size.${s.value}`)}</span>
+            <span className="text-[10.5px] text-gray-500 leading-tight">{t(`dog.sizeHint.${s.value}`)}</span>
+            {active && <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-teal-600 text-white flex items-center justify-center"><Icon name="check" className="w-2.5 h-2.5" strokeWidth={3.2} /></span>}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/** Gentle, average or power chewer, as three emoji pills. */
+export function ChewPicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const { t } = useLanguage();
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {CHEW_LEVELS.map((c) => {
+        const active = value === c.value;
+        return (
+          <button key={c.value} type="button" onClick={() => onChange(active ? '' : c.value)} aria-pressed={active} title={t(`dog.chewHint.${c.value}`)}
+            className={`h-9 pl-2 pr-3 rounded-full inline-flex items-center gap-1.5 text-[12.5px] font-semibold ring-1 ring-inset transition ${active ? 'bg-teal-50 text-teal-700 ring-teal-400' : 'bg-gray-100/80 text-gray-700 ring-transparent hover:bg-gray-100'}`}>
+            <span className="text-[16px] leading-none" aria-hidden="true">{c.emoji}</span>{t(`dog.chew.${c.value}`)}
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -187,21 +227,7 @@ export default function DogProfileForm({ value, onChange, showOptional = true, c
       </div>
 
       <Section title={t('dog.size')} hint={t('dog.sizeHint')}>
-        {/* Soft tiles that wrap into a neat grid on phones; the weight range under each name */}
-        <div className={`grid grid-cols-3 sm:grid-cols-5 gap-1.5 rounded-xl ${sizeError ? 'ring-2 ring-red-200 ring-offset-2' : ''}`} aria-invalid={!!sizeError} tabIndex={sizeError ? -1 : undefined}>
-          {SIZES.map((s, k) => {
-            const active = value.size === s.value;
-            return (
-              <button key={s.value} type="button" onClick={() => set('size', active ? '' : s.value)} aria-pressed={active} title={t(`dog.sizeHint.${s.value}`)}
-                className={`relative rounded-[14px] px-2 py-2 flex flex-col items-center text-center ring-1 ring-inset transition ${active ? 'bg-teal-50 ring-teal-400 text-teal-800' : 'bg-gray-100/80 ring-transparent text-gray-700 hover:bg-gray-100'}`}>
-                <span aria-hidden="true" className="leading-none" style={{ fontSize: `${14 + k * 2.5}px` }}>{s.emoji}</span>
-                <span className="mt-1 text-[12px] font-bold leading-tight">{t(`dog.size.${s.value}`)}</span>
-                <span className="text-[10.5px] text-gray-500 leading-tight">{t(`dog.sizeHint.${s.value}`)}</span>
-                {active && <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-teal-600 text-white flex items-center justify-center"><Icon name="check" className="w-2.5 h-2.5" strokeWidth={3.2} /></span>}
-              </button>
-            );
-          })}
-        </div>
+        <SizePicker value={value.size} onChange={(v) => set('size', v)} error={sizeError} />
         <FieldError message={sizeError} />
       </Section>
 
@@ -269,17 +295,7 @@ export default function DogProfileForm({ value, onChange, showOptional = true, c
           </Section>
 
           <Section title={t('dog.chew')} hint={t('dog.chewHint')}>
-            <div className="flex flex-wrap gap-1.5">
-              {CHEW_LEVELS.map((c) => {
-                const active = value.chewingStrength === c.value;
-                return (
-                  <button key={c.value} type="button" onClick={() => set('chewingStrength', active ? '' : c.value)} aria-pressed={active} title={t(`dog.chewHint.${c.value}`)}
-                    className={`h-9 pl-2 pr-3 rounded-full inline-flex items-center gap-1.5 text-[12.5px] font-semibold ring-1 ring-inset transition ${active ? 'bg-teal-50 text-teal-700 ring-teal-400' : 'bg-gray-100/80 text-gray-700 ring-transparent hover:bg-gray-100'}`}>
-                    <span className="text-[16px] leading-none" aria-hidden="true">{c.emoji}</span>{t(`dog.chew.${c.value}`)}
-                  </button>
-                );
-              })}
-            </div>
+            <ChewPicker value={value.chewingStrength} onChange={(v) => set('chewingStrength', v)} />
           </Section>
 
           <Section title={t('dog.notes')} hint={t('dog.optional')}>
