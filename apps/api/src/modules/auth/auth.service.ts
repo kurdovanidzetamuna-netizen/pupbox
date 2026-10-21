@@ -85,6 +85,9 @@ export class AuthService {
       },
     });
 
+    // A short code to share (the database default is a long random id).
+    user.referralCode = await this.referrals.assignShortCode(user.id, user.firstName).catch(() => user.referralCode);
+
     // Apply referral code if provided
     if (dto.referralCode) {
       try { await this.referrals.applyReferralCode(user.id, dto.referralCode); } catch { /* ignore invalid codes */ }

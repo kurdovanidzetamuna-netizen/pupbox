@@ -12,6 +12,20 @@ const REWARD_GEL = 10;
 /** Payment states where the money was taken. */
 const COLLECTED = ['PAID', 'PARTIALLY_REFUNDED'] as const;
 
+// Georgian letters as Latin, so ნინო's code reads NINO.
+const KA_LATIN: Record<string, string> = {
+  ა: 'a', ბ: 'b', გ: 'g', დ: 'd', ე: 'e', ვ: 'v', ზ: 'z', თ: 't', ი: 'i', კ: 'k', ლ: 'l', მ: 'm', ნ: 'n', ო: 'o', პ: 'p', ჟ: 'zh',
+  რ: 'r', ს: 's', ტ: 't', უ: 'u', ფ: 'p', ქ: 'k', ღ: 'gh', ყ: 'q', შ: 'sh', ჩ: 'ch', ც: 'ts', ძ: 'dz', წ: 'ts', ჭ: 'ch', ხ: 'kh', ჯ: 'j', ჰ: 'h',
+};
+// No 0/O, 1/I/L: a code is often read out or typed from a message.
+const CODE_CHARS = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
+/** A short code a friend can read and type: NINO-4K7P. */
+function codeFor(firstName?: string | null) {
+  const latin = [...(firstName ?? '')].map((c) => KA_LATIN[c] ?? c).join('').normalize('NFD').replace(/[^A-Za-z]/g, '').toUpperCase().slice(0, 8);
+  const tail = [...randomBytes(4)].map((b) => CODE_CHARS[b % CODE_CHARS.length]).join('');
+  return `${latin.length >= 2 ? latin : 'PUPBOX'}-${tail}`;
+}
+
 @Injectable()
 export class ReferralsService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(ReferralsService.name);
@@ -20,6 +34,8 @@ export class ReferralsService implements OnModuleInit, OnModuleDestroy {
   constructor(private prisma: PrismaService, private email: EmailService) {}
 
   onModuleInit() {
+    // Older accounts got a long random id as their code; give them a short one.
+    setTimeout(() => this.shortenOldCodes().catch((e) => this.logger.error(`Referral codes not shortened: ${e.message}`)), 5_000).unref();
     const run = () =>
       this.grantDueRewards()
         .then((n) => { if (n) this.logger.log(`Granted ${n} referral reward(s)`); })
@@ -31,6 +47,28 @@ export class ReferralsService implements OnModuleInit, OnModuleDestroy {
 
   onModuleDestroy() {
     clearInterval(this.timer);
+  }
+
+  /** Gives a user a short, readable code (NINO-4K7P); tries again on the rare clash. */
+  async assignShortCode(userId: string, firstName?: string | null): Promise<string> {
+    for (let i = 0; i < 6; i++) {
+      const code = codeFor(firstName);
+      try {
+        await this.prisma.user.update({ where: { id: userId }, data: { referralCode: code } });
+        return code;
+      } catch (e) {
+        if (!(e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002')) throw e;
+      }
+    }
+    throw new Error('Could not find a free referral code');
+  }
+
+  /** Long codes (cuids, no dash) become short ones. Safe to run on every start. */
+  async shortenOldCodes() {
+    const old = await this.prisma.user.findMany({ where: { NOT: { referralCode: { contains: '-' } } }, select: { id: true, firstName: true } });
+    for (const u of old) await this.assignShortCode(u.id, u.firstName);
+    if (old.length) this.logger.log(`Gave ${old.length} account(s) a short referral code`);
+    return old.length;
   }
 
   // Customer: get my referral code & stats
@@ -50,7 +88,8 @@ export class ReferralsService implements OnModuleInit, OnModuleDestroy {
       rewarded: referrals.filter(r => r.status === 'REWARD_GRANTED').length,
     };
 
-    return { referralCode: user.referralCode, stats, referrals };
+    // What one friend's first order earns, so the page never hard-codes the amount.
+    return { referralCode: user.referralCode, reward: REWARD_GEL, stats, referrals };
   }
 
   /**
@@ -60,7 +99,8 @@ export class ReferralsService implements OnModuleInit, OnModuleDestroy {
    */
   async applyReferralCode(newUserId: string, code: string) {
     if (typeof code !== 'string' || !code.trim() || code.length > 40) throw new BadRequestException('Invalid referral code');
-    const inviter = await this.prisma.user.findUnique({ where: { referralCode: code.trim() } });
+    // Typed by hand it may come in lower case: codes are stored in capitals.
+    const inviter = await this.prisma.user.findUnique({ where: { referralCode: code.trim().toUpperCase() } });
     if (!inviter || inviter.deletedAt) throw new BadRequestException('Invalid referral code');
     if (inviter.id === newUserId) throw new BadRequestException('Cannot refer yourself');
 
