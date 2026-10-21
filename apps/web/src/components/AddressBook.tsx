@@ -36,6 +36,7 @@ export default function AddressBook({ onExpired, addTick = 0, onCount }: {
   const [list, setList] = useState<Address[]>([]);
   const [editing, setEditing] = useState<Address | 'new' | null>(null);
   const [form, setForm] = useState(EMPTY);
+  const [start, setStart] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [toRemove, setToRemove] = useState<Address | null>(null);
@@ -56,7 +57,8 @@ export default function AddressBook({ onExpired, addTick = 0, onCount }: {
     setEditing(a); setError(''); setErrs({}); setTried(false);
     setPhoneOk(a !== 'new' && isValidPhone(a.phone));
     setPin(a !== 'new' && a.latitude != null && a.longitude != null ? { lat: a.latitude, lng: a.longitude } : null);
-    setForm(a === 'new' ? EMPTY : { label: a.label ?? '', firstName: a.firstName, lastName: a.lastName, phone: a.phone, city: a.city, addressLine1: a.addressLine1, addressLine2: a.addressLine2 ?? '' });
+    const f = a === 'new' ? EMPTY : { label: a.label ?? '', firstName: a.firstName, lastName: a.lastName, phone: a.phone, city: a.city, addressLine1: a.addressLine1, addressLine2: a.addressLine2 ?? '' };
+    setForm(f); setStart(JSON.stringify(f));
   }
 
   async function save(e: React.FormEvent) {
@@ -134,10 +136,8 @@ export default function AddressBook({ onExpired, addTick = 0, onCount }: {
       )}
 
       <Modal open={editing !== null} onClose={() => !busy && setEditing(null)} title={editing === 'new' ? t('addr.add') : t('addr.edit')} size="lg"
-        footer={<>
-          <button type="button" onClick={() => setEditing(null)} className="px-4 sm:px-5 py-2.5 rounded-full text-[13px] font-semibold text-gray-600 hover:bg-gray-100">{t('ui.cancel')}</button>
-          <button type="submit" form="address-form" disabled={busy} className="bg-teal-600 text-white text-[13px] font-semibold px-5 sm:px-6 py-2.5 hover:bg-teal-700">{busy ? t('ui.wait') : t(editing === 'new' ? 'addr.saveNew' : 'acc.save')}</button>
-        </>}>
+        dirty={!busy && JSON.stringify(form) !== start} cancelLabel={t('ui.cancel')}
+        footer={<button type="submit" form="address-form" disabled={busy} className="bg-teal-600 text-white text-[13px] font-semibold px-5 sm:px-6 py-2.5 hover:bg-teal-700">{busy ? t('ui.wait') : t(editing === 'new' ? 'addr.saveNew' : 'acc.save')}</button>}>
         {/* Phones: one column, map first. Tablets and up: where (map) | who. */}
         {/* Phones: one column, map first. Tablets and up: the map fills the
             left side; every field sits on the right, so both end together. */}

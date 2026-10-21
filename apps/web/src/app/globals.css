@@ -69,6 +69,42 @@ a.border-gray-200.rounded-lg:hover, button.border-gray-200.rounded-lg:hover { ba
 .cms-prose .legal-note { background: #fffbeb; border: 1px solid #fde68a; color: #92400e; border-radius: 0.75rem; padding: 0.7rem 1rem; font-size: 0.85rem; font-weight: 600; }
 
 /* Small playful motion. Everything below switches off for people who ask for less motion. */
+/* Before React starts, the header is drawn both signed in and out; <html data-auth> (set by a tiny script in the layout) hides the wrong one. */
+html:not([data-auth="in"]) .when-in, html[data-auth="in"] .when-out { display: none !important; }
+.me-initial:empty::before { content: var(--me-initial, ''); }
+.me-name:empty::before { content: var(--me-name, ''); }
+
+/* Header entrance on a page load, one sweep left to right: the logo slides in
+   (its paw wags once), the page links and then the right-side items rise in one
+   by one, the avatar (or Sign in) with a little bounce; the phone tab bar slides up. */
+@keyframes logoIn { from { opacity: 0; transform: translateX(-12px); } to { opacity: 1; transform: none; } }
+.hdr-logo { animation: logoIn .45s cubic-bezier(.2,.9,.3,1) backwards; }
+.hdr-logo > span:first-child { display: inline-block; transform-origin: 70% 90%; animation: wag .7s ease-in-out .35s 1 backwards; }
+@keyframes hdrIn { from { opacity: 0; transform: translateY(8px) scale(.9); } to { opacity: 1; transform: none; } }
+@keyframes hdrPop { 0% { opacity: 0; transform: scale(.6) rotate(-8deg); } 60% { opacity: 1; transform: scale(1.08) rotate(3deg); } 100% { transform: none; } }
+@keyframes tabUp { from { transform: translateY(100%); } to { transform: none; } }
+/* "backwards", not "both": a finished animation must let go of the element, or it
+   would trap the bell's and basket's fixed phone panels inside the tiny icon box. */
+.hdr-item { animation: hdrIn .45s cubic-bezier(.2,.9,.3,1.2) backwards; }
+.hdr-pop { animation: hdrPop .55s cubic-bezier(.34,1.56,.64,1) backwards; }
+.hdr-d0 { animation-delay: 220ms; } .hdr-d1 { animation-delay: 265ms; } .hdr-d2 { animation-delay: 310ms; } .hdr-d3 { animation-delay: 355ms; } .hdr-d4 { animation-delay: 420ms; }
+.hdr-tabbar { animation: tabUp .45s cubic-bezier(.2,.9,.3,1) backwards; }
+@media (prefers-reduced-motion: reduce) { .hdr-logo, .hdr-logo > span:first-child, .hdr-item, .hdr-pop, .hdr-tabbar { animation: none; } }
+
+/* Scroll reveal (components/ScrollReveal): blocks rise and fade in, cards in a
+   grid or list come one after another with a slight grow. Phones move less. */
+:root { --rv-y: 18px; --rv-item-y: 14px; }
+@media (min-width: 768px) { :root { --rv-y: 28px; --rv-item-y: 20px; } }
+@keyframes rvBlock { from { opacity: 0; transform: translateY(var(--rv-y)); } to { opacity: 1; transform: none; } }
+@keyframes rvItem { from { opacity: 0; transform: translateY(var(--rv-item-y)) scale(.96); } to { opacity: 1; transform: none; } }
+.rv { opacity: 0; }
+.rv-go.rv-block { animation: rvBlock .7s cubic-bezier(.2,.8,.2,1) var(--rv-delay, 0ms) backwards; }
+.rv-go.rv-item { animation: rvItem .6s cubic-bezier(.2,.8,.2,1.05) var(--rv-delay, 0ms) backwards; }
+@media (prefers-reduced-motion: reduce) { .rv { opacity: 1; } .rv-go { animation: none !important; } }
+
+/* No spinner arrows on number fields anywhere. */
+input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+input[type=number] { -moz-appearance: textfield; appearance: textfield; }
 @keyframes pop { 0% { transform: scale(0.6); opacity: 0; } 70% { transform: scale(1.15); } 100% { transform: scale(1); opacity: 1; } }
 @keyframes fadeUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }

@@ -132,6 +132,11 @@ export const ACCOUNT_STRINGS: Record<string, { en: string; ka: string }> = {
   // ── Shared pop-ups & compact account ──
   'ui.cancel':              { en: 'Cancel',                      ka: 'გაუქმება' },
   'ui.close':               { en: 'Close',                       ka: 'დახურვა' },
+  'ui.discardQ':           { en: 'Discard your changes?',       ka: 'ცვლილებები არ შეინახოს?' },
+  'ui.discardInfo':         { en: 'What you’ve entered here will be lost.', ka: 'აქ შეყვანილი ინფორმაცია დაიკარგება.' },
+  'ui.keepEditing':         { en: 'Keep editing',                ka: 'რედაქტირების გაგრძელება' },
+  'ui.discard':             { en: 'Discard',                     ka: 'არ შეინახოს' },
+  'ui.clear':               { en: 'Clear',                       ka: 'გასუფთავება' },
   'ui.wait':                { en: 'Please wait…',                ka: 'მოითმინე…' },
   'ui.back':                { en: 'Back',                        ka: 'უკან' },
   'ui.next':                { en: 'Continue',                    ka: 'გაგრძელება' },

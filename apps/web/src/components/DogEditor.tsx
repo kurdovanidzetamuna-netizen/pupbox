@@ -4,10 +4,12 @@ import { useLanguage } from '@/context/LanguageContext';
 import { fill } from '@/context/strings/purchase';
 import {
   emptyDogProfile, fromDog, toDogPayload, type DogProfile,
-  Section, ChipGroup, SizePicker, ChewPicker, COMMON_ALLERGIES, FOOD_LIKES, TOY_LIKES, SIZES,
+  Section, ChipGroup, SizePicker, ChewPicker, COMMON_ALLERGIES, FOOD_LIKES, TOY_LIKES, SIZES, cleanWeight, KgTag,
 } from '@/components/DogProfileForm';
 import Modal from '@/components/ui/Modal';
 import Field from '@/components/ui/Field';
+import IconButton from '@/components/ui/IconButton';
+import DatePicker from '@/components/ui/DatePicker';
 import Button from '@/components/ui/Button';
 import { FormAlert } from '@/components/ui/FormError';
 import { Icon } from '@/components/ui/icons';
@@ -17,22 +19,24 @@ import { dogAge } from '@/lib/dog';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 const STEPS = [
-  { key: 'hello', icon: 'paw' },
-  { key: 'body', icon: 'sliders' },
-  { key: 'health', icon: 'shield' },
-  { key: 'likes', icon: 'heart' },
+  { key: 'hello', emoji: '🐶' },
+  { key: 'body', emoji: '📏' },
+  { key: 'health', emoji: '🛡️' },
+  { key: 'likes', emoji: '💚' },
 ] as const;
+
 
 /**
  * The one way to add or edit a dog — from My dogs, a dog's profile, and
  * straight after sign-up. Four short steps instead of one long form: hello
  * (photo, name, gender, breed), size and age, health, favourites. The dog
- * sits at the top and "talks", reacting as you fill things in, so telling
- * us about them feels like meeting them. The photo is part of the form:
- * nothing is saved until Save, and Cancel throws it all away.
+ * sits at the top and "talks" — it says what to do now, then reacts — so
+ * telling us about them feels like meeting them. The photo is part of the
+ * form: nothing is saved until Save, and closing with changes asks first.
  *
- * Adding walks the steps with Next; editing can jump to any step and save
- * from anywhere.
+ * Adding: one screen at a time with a thin progress bar — Cancel, ← back,
+ * Next, and "Add to the family" at the end. Editing: everything on one page
+ * in four labelled groups — Cancel and Save.
  */
 export default function DogEditor({ open, onClose, dog, onSaved, onExpired, welcome = false, startStep = 0 }: {
   open: boolean;
@@ -57,9 +61,11 @@ export default function DogEditor({ open, onClose, dog, onSaved, onExpired, welc
   const [bump, setBump] = useState(0);
   const body = useRef<HTMLDivElement>(null);
 
+  const [start, setStart] = useState('');
   useEffect(() => {
     if (!open) return;
     setDraft(dog ? fromDog(dog) : emptyDogProfile);
+    setStart(JSON.stringify(dog ? fromDog(dog) : emptyDogProfile));
     setPhoto({ file: null, url: dog?.photoUrl ?? null });
     setStep(startStep); setError(''); setNameError(''); setSaving(false);
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -80,6 +86,7 @@ export default function DogEditor({ open, onClose, dog, onSaved, onExpired, welc
   }
 
   const named = !!draft.name.trim();
+  const dirty = JSON.stringify(draft) !== start || !!photo.file || (photo.url ?? null) !== (dog?.photoUrl ?? null);
   const last = step === STEPS.length - 1;
   function go(to: number) {
     if (to > 0 && !named) { setStep(0); setNameError(t('co.e.dogName')); return; }
@@ -114,9 +121,18 @@ export default function DogEditor({ open, onClose, dog, onSaved, onExpired, welc
   // What the dog says: a question until it's answered, then a happy reply.
   const answered = [named, !!draft.size, draft.allergies.length > 0,
     draft.foodPreferences.length + draft.toyPreferences.length > 0 || !!draft.chewingStrength][step];
-  const bubble = fill(t(`dogEd.b.${STEPS[step].key}${answered ? 1 : 0}`), { name: draft.name.trim() });
+  const bubble = editing
+    ? fill(t('dogEd.b.hello1'), { name: draft.name.trim() || dog.name })
+    : fill(t(`dogEd.b.${STEPS[step].key}${answered ? 1 : 0}`), { name: draft.name.trim() });
   const sizeAt = SIZES.findIndex((s) => s.value === draft.size);
   const age = dogAge(draft.birthday, t);
+  // Adding shows one step; editing shows all four, each under a small heading.
+  const show = (i: number) => editing || step === i;
+  const group = (i: number) => editing && (
+    <p className={`flex items-center gap-2 text-[11.5px] font-bold uppercase tracking-wider text-gray-400 ${i ? 'pt-5 border-t border-gray-100' : ''}`}>
+      <span className="text-[15px] not-italic" aria-hidden="true">{STEPS[i].emoji}</span>{t(`dogEd.s.${STEPS[i].key}`)}
+    </p>
+  );
 
   const header = (
     <div className="relative overflow-hidden bg-gradient-to-br from-teal-50 via-teal-50/70 to-lilac-50 px-5 sm:px-7 pt-6 sm:pt-7 pb-4">
@@ -140,47 +156,36 @@ export default function DogEditor({ open, onClose, dog, onSaved, onExpired, welc
         </div>
       </div>
 
-      {/* Steps as paw tabs: where you are, and a way back to any of them */}
-      <ol className="relative mt-4 grid grid-cols-4 gap-1.5" aria-label={t('dogs.add')}>
-        {STEPS.map((s, i) => {
-          const on = i === step, done = i < step;
-          return (
-            <li key={s.key}>
-              <button type="button" onClick={() => go(i)} aria-current={on ? 'step' : undefined}
-                className={`w-full h-9 rounded-xl inline-flex items-center justify-center gap-1.5 text-[12px] font-bold transition-all ${
-                  on ? 'bg-white text-teal-700 shadow-[0_2px_8px_-4px_rgba(36,48,58,0.3)]' : done ? 'text-teal-700 hover:bg-white/60' : 'text-gray-500 hover:bg-white/60 hover:text-gray-800'}`}>
-                <Icon name={done ? 'check' : s.icon} className="w-4 h-4 shrink-0" strokeWidth={done ? 2.6 : 2} />
-                <span className="hidden sm:inline truncate">{t(`dogEd.s.${s.key}`)}</span>
-              </button>
-            </li>
-          );
-        })}
-      </ol>
-    </div>
-  );
-
-  const footer = (
-    <div className="w-full flex items-center gap-2">
-      {step === 0
-        ? <Button tone="ghost" label={welcome ? t('wel.skip') : t('dogs.cancel')} onClick={onClose} />
-        : <Button tone="ghost" icon="undo" label={t('dogEd.back')} onClick={() => setStep(step - 1)} />}
-      <span className="flex-1" />
-      {/* Adding: Next until the last step. Editing: save from any step. */}
-      {!last && <Button tone={editing ? 'soft' : 'primary'} icon="arrow" label={t('dogEd.next')} onClick={() => go(step + 1)} />}
-      {(editing || last) && (
-        <Button icon="check" onClick={save} disabled={saving}
-          label={saving ? t('co.saving') : editing ? t('dogEd.save') : welcome ? t('wel.save') : t('dogEd.add')} />
+      {/* Adding: a thin bar of four, filling as you go — no tabs to puzzle over */}
+      {!editing && (
+        <div className="relative mt-4 grid grid-cols-4 gap-1.5" role="progressbar" aria-valuemin={1} aria-valuemax={STEPS.length} aria-valuenow={step + 1}>
+          {STEPS.map((s, i) => <span key={s.key} className={`h-1.5 rounded-full transition-colors duration-300 ${i <= step ? 'bg-teal-500' : 'bg-white/80'}`} />)}
+        </div>
       )}
     </div>
   );
 
+  // Cancel (guarded) comes from Modal; back is a plain ← icon, the rest have words.
+  const footer = editing ? (
+    <Button icon="check" label={saving ? t('co.saving') : t('dogEd.save')} onClick={save} disabled={saving} />
+  ) : (
+    <>
+      {step > 0 && <IconButton icon="back" label={t('dogEd.back')} onClick={() => setStep(step - 1)} />}
+      {last
+        ? <Button icon="check" label={saving ? t('co.saving') : welcome ? t('wel.save') : t('dogEd.add')} onClick={save} disabled={saving} />
+        : <Button icon="arrow" label={t('dogEd.next')} onClick={() => go(step + 1)} />}
+    </>
+  );
+
   return (
-    <Modal open={open} onClose={onClose} title={editing ? dog.name : t('dogs.add')} header={header} footer={footer} size="lg">
-      <div ref={body} key={step} className="space-y-6 pt-1 pb-2 motion-safe:animate-[fadeUp_0.25s_ease-out]">
+    <Modal open={open} onClose={onClose} title={editing ? dog.name : t('dogs.add')} header={header} footer={footer} size="lg"
+      dirty={dirty} cancelLabel={welcome ? t('wel.skip') : t('dogs.cancel')}>
+      <div ref={body} key={editing ? 'all' : step} className="space-y-6 pt-1 pb-2 motion-safe:animate-[fadeUp_0.25s_ease-out]">
         <FormAlert message={error} />
 
-        {step === 0 && (
+        {show(0) && (
           <>
+            {group(0)}
             {/* The photo: tap the circle; change or remove it once there */}
             <div className="flex items-center gap-4">
               <label className="group relative w-24 h-24 shrink-0 rounded-[28px] cursor-pointer overflow-hidden bg-teal-50 border-2 border-dashed border-teal-200 hover:border-teal-400 hover:bg-teal-100/60 transition-colors focus-within:ring-2 focus-within:ring-teal-400">
@@ -204,7 +209,7 @@ export default function DogEditor({ open, onClose, dog, onSaved, onExpired, welc
               </div>
             </div>
 
-            <Field id="dog-name" label={t('dog.name')} required value={draft.name} onChange={(v) => set('name', v)} error={nameError} hint={!nameError ? t('dog.namePh') : undefined} />
+            <Field id="dog-name" autoComplete="off" label={t('dog.name')} required value={draft.name} onChange={(v) => set('name', v)} error={nameError} hint={!nameError ? t('dog.namePh') : undefined} />
 
             <Section title={t('dog.gender')}>
               <div className="grid grid-cols-2 gap-2">
@@ -222,28 +227,31 @@ export default function DogEditor({ open, onClose, dog, onSaved, onExpired, welc
               </div>
             </Section>
 
-            <Field id="dog-breed" label={t('dog.breed')} value={draft.breed} onChange={(v) => set('breed', v)} hint={t('dog.breedPh')} />
+            <Field id="dog-breed" autoComplete="off" label={t('dog.breed')} value={draft.breed} onChange={(v) => set('breed', v)} hint={t('dog.breedPh')} />
           </>
         )}
 
-        {step === 1 && (
+        {show(1) && (
           <>
+            {group(1)}
             <Section title={t('dog.size')} hint={t('dog.sizeHint')}>
               <SizePicker value={draft.size} onChange={(v) => set('size', v)} />
             </Section>
             <div className="grid sm:grid-cols-2 gap-4">
-              <Field id="dog-weight" type="number" inputMode="decimal" label={t('dog.weight')} value={draft.weightKg} onChange={(v) => set('weightKg', v)}
-                hint={t('dog.weightHint')} trailing={<span className="text-[12px] text-gray-400">{t('dog.kg')}</span>} />
+              <Field id="dog-weight" inputMode="decimal" autoComplete="off" label={t('dog.weight')} value={draft.weightKg} onChange={(v) => set('weightKg', cleanWeight(v))}
+                hint={t('dog.weightHint')} trailing={<KgTag />} />
               <div>
-                <Field id="dog-birthday" type="date" label={t('dog.birthday')} value={draft.birthday} onChange={(v) => set('birthday', v)}
-                  hint={age ? undefined : t('dog.birthdayHint')} />
+                <DatePicker id="dog-birthday" label={t('dog.birthday')} value={draft.birthday} onChange={(v) => set('birthday', v)}
+                  max={new Date().toISOString().slice(0, 10)} startView="years" hint={age ? undefined : t('dog.birthdayHint')} />
                 {age && <p className="mt-1 px-1 text-[12px] font-semibold text-teal-700 motion-safe:animate-[fadeUp_0.2s_ease-out]">{fill(t('dogEd.age'), { age })}</p>}
               </div>
             </div>
           </>
         )}
 
-        {step === 2 && (
+        {show(2) && (
+          <>
+          {group(2)}
           <Section title={t('dog.allergies')} hint={t('dog.allergiesHint')}>
             <ChipGroup options={COMMON_ALLERGIES} selected={draft.allergies} tone="red" addLabel={t('dog.allergiesAdd')}
               onChange={(allergies) => {
@@ -253,12 +261,14 @@ export default function DogEditor({ open, onClose, dog, onSaved, onExpired, welc
               }} />
             {!draft.allergies.length && <p className="mt-3 text-[12.5px] font-semibold text-teal-700">{t('dogEd.noAllergy')}</p>}
           </Section>
+          </>
         )}
 
-        {step === 3 && (() => {
+        {show(3) && (() => {
           const blocked = new Set(draft.allergies.map((a) => a.toLowerCase()));
           return (
             <>
+              {group(3)}
               <Section title={t('dog.food')} hint={t('dog.foodHint')}>
                 <ChipGroup options={FOOD_LIKES.filter((f) => !blocked.has(f.toLowerCase()))} selected={draft.foodPreferences} addLabel={t('dog.foodAdd')}
                   onChange={(v) => set('foodPreferences', v.filter((f) => !blocked.has(f.toLowerCase())))} />
@@ -280,3 +290,4 @@ export default function DogEditor({ open, onClose, dog, onSaved, onExpired, welc
     </Modal>
   );
 }
+

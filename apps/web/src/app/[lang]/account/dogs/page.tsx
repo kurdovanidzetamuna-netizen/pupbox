@@ -1,6 +1,6 @@
 'use client';
 import Link from '@/components/LangLink';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/context/LanguageContext';
 import { fill } from '@/context/strings/purchase';
@@ -81,8 +81,7 @@ export default function MyDogsPage() {
                   className="group block bg-white rounded-3xl p-2 ring-1 ring-gray-200/60 hover:ring-teal-200 hover:-translate-y-0.5 transition-all">
                   <div className={`relative aspect-square rounded-[20px] overflow-hidden ${gift ? 'bg-lilac-50' : TINTS[i % TINTS.length]}`}>
                     {d.photoUrl
-                      // eslint-disable-next-line @next/next/no-img-element
-                      ? <img src={d.photoUrl} alt={d.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                      ? <DogPhoto src={d.photoUrl} alt={d.name} />
                       : <span className="absolute inset-0 flex items-center justify-center text-[52px]" aria-hidden="true"><span className="inline-block animate-[bob_2.6s_ease-in-out_infinite]"><span className="inline-block group-hover:animate-[wag_0.5s_ease-in-out_infinite]">{gift ? '🐕' : '🐶'}</span></span></span>}
                     <span className="absolute left-1/2 bottom-5 pointer-events-none" aria-hidden="true">
                       {[0, 1].map((k) => <span key={k} className="absolute opacity-0 text-[15px] group-hover:animate-[heartUp_1.3s_ease-out_infinite]" style={{ left: `${(k ? 1 : -1) * 12}px`, animationDelay: `${k * 0.35}s` }}>{gift ? '💜' : '💚'}</span>)}
@@ -123,5 +122,25 @@ export default function MyDogsPage() {
       <DogEditor open={adding} onClose={() => setAdding(false)} onExpired={expired}
         onSaved={(dog) => router.push(`/account/dogs/${dog.id}?new=1`)} />
     </div>
+  );
+}
+
+/**
+ * A dog's photo on its card: a smaller rounded tile with a white edge in the
+ * middle, so the card's soft colour shows around it like the emoji cards.
+ * Fades in once loaded; on hover it grows a touch and tilts.
+ */
+function DogPhoto({ src, alt }: { src: string; alt: string }) {
+  const [loaded, setLoaded] = useState(false);
+  const img = useRef<HTMLImageElement>(null);
+  // An image already in the cache may finish before React is listening.
+  useEffect(() => { if (img.current?.complete) setLoaded(true); }, []);
+  return (
+    <span className="absolute inset-0 flex items-center justify-center">
+      <span className={`relative w-[64%] aspect-square rounded-[30%] overflow-hidden bg-white/70 ring-[5px] ring-white transition-all duration-500 ease-out group-hover:scale-[1.06] group-hover:-rotate-3 ${loaded ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img ref={img} src={src} alt={alt} onLoad={() => setLoaded(true)} className="w-full h-full object-cover" />
+      </span>
+    </span>
   );
 }

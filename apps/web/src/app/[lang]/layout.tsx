@@ -12,6 +12,7 @@ import { CartProvider } from '@/context/CartContext';
 import { LanguageProvider } from '@/context/LanguageContext';
 import Header from '@/components/Header';
 import PromoPopup from '@/components/PromoPopup';
+import ScrollReveal from '@/components/ScrollReveal';
 import Footer from '@/components/Footer';
 import { sitePage } from '@pupbox/content';
 import { getStoredContent } from '@/lib/content';
@@ -68,13 +69,31 @@ if(n&&n.type==='reload'&&!location.hash)scrollTo(0,0);
 addEventListener('load',function(){setTimeout(function(){h.scrollRestoration='auto'},0)});
 }catch(e){}})();`;
 
+/**
+ * Signed in or not is only known in the browser (the token is in
+ * localStorage), so the server draws the header both ways. This runs before
+ * the first paint and marks <html> so CSS shows the right one at once — no
+ * "Sign in" flashing on refresh — and puts the remembered initial and name
+ * where the avatar can show them before React starts.
+ */
+const AUTH_HINT = `(function(){try{
+var d=document.documentElement;
+var t=localStorage.getItem('pupbox_token');
+if(!t){d.dataset.auth='out';return;}
+d.dataset.auth='in';
+var m=JSON.parse(localStorage.getItem('pupbox_me')||'null');
+if(m&&m.t===t.slice(-16)){if(m.initial)d.style.setProperty('--me-initial',JSON.stringify(m.initial));if(m.name)d.style.setProperty('--me-name',JSON.stringify(m.name));}
+}catch(e){}})();`;
+
 export default async function RootLayout({ children, modal, params }: Props) {
   // Only /ka and /en exist; anything else in the first place is not a page.
   if (params.lang !== 'ka' && params.lang !== 'en') notFound();
   const site = await getStoredContent(sitePage);
   return (
-    <html lang={params.lang === 'en' ? 'en' : 'ka'} className={sans.variable}>
+    // The auth hint script adds data-auth and two CSS variables to <html> before React hydrates.
+    <html lang={params.lang === 'en' ? 'en' : 'ka'} className={sans.variable} suppressHydrationWarning>
       <body className="font-sans bg-gray-50 text-gray-800">
+        <script dangerouslySetInnerHTML={{ __html: AUTH_HINT }} />
         <script dangerouslySetInnerHTML={{ __html: REFRESH_TO_TOP }} />
         <LanguageProvider>
           <CartProvider>
@@ -85,6 +104,7 @@ export default async function RootLayout({ children, modal, params }: Props) {
             {children}
             {modal}
             <Footer site={site} />
+            <ScrollReveal />
           </CartProvider>
         </LanguageProvider>
       </body>

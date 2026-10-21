@@ -46,6 +46,7 @@ export default function PlansList({ subs, setSubs, toast, view = 'list' }: {
   const [cancelPlan, setCancelPlan] = useState<any>(null);
   const [addrFor, setAddrFor] = useState<any>(null);
   const [addr, setAddr] = useState({ firstName: '', lastName: '', phone: '', city: '', addressLine1: '', addressLine2: '' });
+  const [addrStart, setAddrStart] = useState('');
   const [addrSaving, setAddrSaving] = useState(false);
   const [addrError, setAddrError] = useState('');
   const [addrErrs, setAddrErrs] = useState<Record<string, string>>({});
@@ -72,7 +73,8 @@ export default function PlansList({ subs, setSubs, toast, view = 'list' }: {
 
   function openAddress(sub: any) {
     const a = sub.address ?? {};
-    setAddr({ firstName: a.firstName ?? '', lastName: a.lastName ?? '', phone: a.phone ?? '', city: a.city ?? '', addressLine1: a.addressLine1 ?? '', addressLine2: a.addressLine2 ?? '' });
+    const f = { firstName: a.firstName ?? '', lastName: a.lastName ?? '', phone: a.phone ?? '', city: a.city ?? '', addressLine1: a.addressLine1 ?? '', addressLine2: a.addressLine2 ?? '' };
+    setAddr(f); setAddrStart(JSON.stringify(f));
     setAddrError(''); setAddrErrs({}); setAddrPhoneOk(isValidPhone(a.phone ?? ''));
     setAddrFor(sub);
   }
@@ -400,8 +402,8 @@ export default function PlansList({ subs, setSubs, toast, view = 'list' }: {
       </ul>
 
       <Modal open={!!addrFor} onClose={() => setAddrFor(null)} title={t('op.address')} size="md"
+        dirty={!addrSaving && JSON.stringify(addr) !== addrStart} cancelLabel={t('dogs.cancel')} cancelIcon
         footer={<>
-          <IconButton icon="close" label={t('dogs.cancel')} onClick={() => setAddrFor(null)} />
           <IconButton icon="check" label={addrSaving ? t('co.saving') : t('addr.save')} tone="primary" onClick={saveAddress} disabled={addrSaving} />
         </>}>
         {addrFor && (

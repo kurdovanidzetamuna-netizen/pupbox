@@ -9,6 +9,7 @@ import VerifyCodes from '@/components/VerifyCodes';
 import PhoneInput from '@/components/ui/PhoneInput';
 import { Icon } from '@/components/ui/icons';
 import DogEditor from '@/components/DogEditor';
+import { useModalDirty } from '@/components/ui/Modal';
 import { API_URL } from '@/lib/api';
 import { forgetReferral, rememberReferral, storedReferral } from '@/lib/referral';
 import { FormAlert, countErrors, revealFirstError } from '@/components/ui/FormError';
@@ -54,6 +55,9 @@ export function RegisterForm({ inModal = false }: { inModal?: boolean }) {
     const code = fromUrl || storedReferral();
     if (code) { setForm(f => ({ ...f, referralCode: f.referralCode || code })); setFromLink(true); }
   }, [params]);
+
+  // Half-way through sign-up in the pop-up, Esc or × asks before throwing it away.
+  useModalDirty(inModal && (step === 'about' || step === 'account') && !!(form.firstName || form.lastName || form.email || form.phone || form.password));
 
   const set = (key: keyof typeof form, value: string) => {
     setForm(f => ({ ...f, [key]: value }));

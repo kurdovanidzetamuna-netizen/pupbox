@@ -18,6 +18,7 @@ import { forgetReferral, storedReferral } from '@/lib/referral';
 import { FieldError, FormAlert, countErrors, revealFirstError } from '@/components/ui/FormError';
 import { Heading } from '@/components/ui/Heading';
 import TextField from '@/components/ui/Field';
+import DatePicker from '@/components/ui/DatePicker';
 import Button from '@/components/ui/Button';
 import Segmented from '@/components/ui/Segmented';
 import EmptyState from '@/components/ui/EmptyState';
@@ -536,8 +537,8 @@ export default function CheckoutPage() {
                     </div>
                     {giftLater && (
                       <div className="mt-2">
-                        <TextField id="giftSendOn" type="date" required label={t('co.gift.date')} hint={t('co.gift.dateHint')} error={errs.giftSendOn}
-                          value={form.giftSendOn} onChange={v => update('giftSendOn', v)} />
+                        <DatePicker id="giftSendOn" required label={t('co.gift.date')} hint={t('co.gift.dateHint')} error={errs.giftSendOn}
+                          value={form.giftSendOn} onChange={v => update('giftSendOn', v)} min={todayTbilisi()} max={inAYear()} />
                       </div>
                     )}
                   </fieldset>

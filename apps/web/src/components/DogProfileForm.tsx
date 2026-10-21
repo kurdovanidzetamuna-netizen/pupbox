@@ -6,6 +6,7 @@ import { ALLERGENS } from '@pupbox/content';
 import { FieldError } from '@/components/ui/FormError';
 import Field from '@/components/ui/Field';
 import { Icon } from '@/components/ui/icons';
+import DatePicker from '@/components/ui/DatePicker';
 
 /**
  * Tell-us-about-your-dog, as tappable choices rather than a form.
@@ -177,6 +178,15 @@ export function SizePicker({ value, onChange, error }: { value: string; onChange
   );
 }
 
+/** Weight as typed: digits and one decimal point (a comma counts too). */
+export const cleanWeight = (v: string) => v.replace(',', '.').replace(/[^\d.]/g, '').replace(/(\..*)\./g, '$1').slice(0, 5);
+
+/** The unit at the end of the weight field: a small, clearly readable tag. */
+export function KgTag() {
+  const { t } = useLanguage();
+  return <span className="h-6 px-2 rounded-md bg-white ring-1 ring-gray-200/80 text-[11.5px] font-bold text-gray-600 inline-flex items-center">{t('dog.kg')}</span>;
+}
+
 /** Gentle, average or power chewer, as three emoji pills. */
 export function ChewPicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   const { t } = useLanguage();
@@ -220,9 +230,9 @@ export default function DogProfileForm({ value, onChange, showOptional = true, c
   return (
     <div className="space-y-5">
       <div className={`grid gap-4 ${showDetails ? 'sm:grid-cols-2' : ''}`}>
-        <Field id="dog-name" label={t('dog.name')} required value={value.name} onChange={(v) => set('name', v)} error={nameError} hint={!nameError ? t('dog.namePh') : undefined} />
+        <Field id="dog-name" autoComplete="off" label={t('dog.name')} required value={value.name} onChange={(v) => set('name', v)} error={nameError} hint={!nameError ? t('dog.namePh') : undefined} />
         {showDetails && (
-          <Field id="dog-breed" label={t('dog.breed')} value={value.breed} onChange={(v) => set('breed', v)} hint={t('dog.breedPh')} />
+          <Field id="dog-breed" autoComplete="off" label={t('dog.breed')} value={value.breed} onChange={(v) => set('breed', v)} hint={t('dog.breedPh')} />
         )}
       </div>
 
@@ -267,9 +277,9 @@ export default function DogProfileForm({ value, onChange, showOptional = true, c
               ))}
             </div>
           </Section>
-          <Field id="dog-weight" type="number" inputMode="decimal" label={t('dog.weight')} value={value.weightKg} onChange={(v) => set('weightKg', v)}
-            trailing={<span className="text-[12px] text-gray-400">{t('dog.kg')}</span>} />
-          <Field id="dog-birthday" type="date" label={t('dog.birthday')} value={value.birthday} onChange={(v) => set('birthday', v)} />
+          <Field id="dog-weight" inputMode="decimal" autoComplete="off" label={t('dog.weight')} value={value.weightKg} onChange={(v) => set('weightKg', cleanWeight(v))}
+            trailing={<KgTag />} />
+          <DatePicker id="dog-birthday" label={t('dog.birthday')} value={value.birthday} onChange={(v) => set('birthday', v)} max={new Date().toISOString().slice(0, 10)} startView="years" />
         </div>
       )}
 
