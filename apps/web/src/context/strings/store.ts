@@ -240,6 +240,7 @@ export const STORE_STRINGS: Record<string, { en: string; ka: string }> = {
   'sub.status.PAYMENT_FAILED': { en: 'Payment failed',          ka: 'გადახდა ვერ შესრულდა' },
 
   // ── Referrals ──
+  'shop.allOf':             { en: 'All {name}',                 ka: 'ყველა: {name}' },
   'tier.morePlans':         { en: 'More plans',                 ka: 'სხვა გეგმები' },
   'tier.length':            { en: 'How long',                   ka: 'ხანგრძლივობა' },
   'tier.month1':            { en: '1 month',                    ka: '1 თვე' },

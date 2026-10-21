@@ -17,6 +17,8 @@ class CreateCategoryDto {
 }
 
 class UpdateCategoryDto {
+  /** Move under another category; null makes it a main category again. */
+  @IsOptional() @IsString() parentId?: string | null;
   @IsOptional() @IsString() name?: string;
   @IsOptional() @IsString() slug?: string;
   @IsOptional() @IsString() description?: string;

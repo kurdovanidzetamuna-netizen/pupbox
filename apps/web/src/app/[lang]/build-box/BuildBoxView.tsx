@@ -76,12 +76,14 @@ export default function BuildBoxView({ products, config: raw }: { products: any[
   // The photo admin marked as main, else the first.
   const imgOf = (p: any): string | undefined => (p.images?.find((x: any) => x.isPrimary) ?? p.images?.[0])?.url;
 
+  // Grouped by main category (Treats, Toys…), so subcategories don't crowd the row.
+  const mainOf = (p: any) => p.category?.parent ?? p.category;
   const cats = useMemo(() => {
     const m = new Map<string, any>();
-    for (const p of products) if (p.category) m.set(p.category.slug, p.category);
-    return [...m.values()];
+    for (const p of products) { const c = mainOf(p); if (c) m.set(c.slug, c); }
+    return [...m.values()].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
   }, [products]);
-  const shown = cat ? products.filter((p) => p.category?.slug === cat) : products;
+  const shown = cat ? products.filter((p) => mainOf(p)?.slug === cat) : products;
 
   // What's in the box, priced.
   const lines = products.filter((p) => picks[p.id] > 0).map((p) => ({ p, q: picks[p.id], total: r2(off(shopUnit(p)) * picks[p.id]) }));

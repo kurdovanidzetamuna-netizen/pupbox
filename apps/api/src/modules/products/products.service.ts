@@ -88,7 +88,11 @@ export class ProductsService {
 
     if (categorySlug) {
       const cat = await this.prisma.productCategory.findUnique({ where: { slug: categorySlug } });
-      if (cat) where.categoryId = cat.id;
+      // A main category shows its subcategories' products too (Toys → Chew toys).
+      if (cat) {
+        const kids = await this.prisma.productCategory.findMany({ where: { parentId: cat.id, deletedAt: null }, select: { id: true } });
+        where.categoryId = kids.length ? { in: [cat.id, ...kids.map((k) => k.id)] } : cat.id;
+      }
     }
 
     if (includedInBox !== undefined) where.includedInBox = includedInBox;
