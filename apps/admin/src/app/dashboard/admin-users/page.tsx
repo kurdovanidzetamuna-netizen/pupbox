@@ -1,4 +1,5 @@
 'use client';
+import { Select } from '@/components/Dropdown';
 import { useEffect, useState } from 'react';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
@@ -207,19 +208,19 @@ export default function AdminUsersPage() {
             </div>
             <div>
               <label style={labelStyle}>Role</label>
-              <select value={form.roleId} onChange={e => setForm(f => ({ ...f, roleId: e.target.value }))} style={inputStyle}>
+              <Select value={form.roleId} onChange={e => setForm(f => ({ ...f, roleId: e.target.value }))} style={inputStyle}>
                 <option value="">— Select role —</option>
                 {roles.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
-              </select>
+              </Select>
             </div>
             {editing && (
               <div>
                 <label style={labelStyle}>Status</label>
-                <select value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))} style={inputStyle}>
+                <Select value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))} style={inputStyle}>
                   <option value="ACTIVE">Active</option>
                   <option value="INACTIVE">Inactive</option>
                   <option value="SUSPENDED">Suspended</option>
-                </select>
+                </Select>
               </div>
             )}
             {error && <p style={{ margin: 0, color: 'var(--red-500)', fontSize: 13 }}>{error}</p>}

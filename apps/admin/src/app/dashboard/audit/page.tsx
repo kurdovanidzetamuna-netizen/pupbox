@@ -1,4 +1,5 @@
 'use client';
+import { Select } from '@/components/Dropdown';
 import { useState, useEffect, useCallback } from 'react';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
@@ -50,14 +51,14 @@ export default function AuditLogPage() {
           <p style={{ fontSize: 13, color: 'var(--slate-400)', marginTop: 4 }}>{total.toLocaleString()} events recorded</p>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
-          <select
+          <Select
             value={module}
             onChange={e => { setModule(e.target.value); setPage(1); }}
             style={{ fontSize: 13, border: '1px solid var(--slate-200)', borderRadius: 10, padding: '9px 14px', background: 'var(--white)', cursor: 'pointer', outline: 'none' }}
           >
             <option value="">All modules</option>
             {modules.map(m => <option key={m} value={m}>{m.charAt(0).toUpperCase() + m.slice(1)}</option>)}
-          </select>
+          </Select>
           <button onClick={load} style={{ fontSize: 13, border: '1px solid var(--slate-200)', borderRadius: 10, padding: '9px 14px', background: 'var(--white)', cursor: 'pointer', color: 'var(--slate-600)', fontWeight: 600 }}>
             ↻ Refresh
           </button>

@@ -1,4 +1,5 @@
 'use client';
+import { Select } from '@/components/Dropdown';
 import { useEffect, useState } from 'react';
 import FormField, { inputClass } from '@/components/FormField';
 import LangTabs, { type Lang } from '@/components/LangTabs';
@@ -97,10 +98,10 @@ export default function AdminCmsPage() {
               {lang === 'en' && (
                 <div style={{ marginBottom: 12 }}>
                   <FormField label="Status">
-                    <select value={editing.status} onChange={e => setEditing({ ...editing, status: e.target.value })} style={inputClass()}>
+                    <Select value={editing.status} onChange={e => setEditing({ ...editing, status: e.target.value })} style={inputClass()}>
                       <option value="DRAFT">Draft</option>
                       <option value="PUBLISHED">Published</option>
-                    </select>
+                    </Select>
                   </FormField>
                 </div>
               )}

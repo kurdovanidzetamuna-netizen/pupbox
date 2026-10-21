@@ -1,4 +1,6 @@
 'use client';
+import { Select } from '@/components/Dropdown';
+import { categoryOptions } from '@/components/categoryOptions';
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import FormField, { inputClass, parseFieldErrors } from '@/components/FormField';
@@ -407,10 +409,10 @@ export default function EditProductPage() {
             />
             <div style={{ marginTop: 14 }}>
               <FormField label="Category">
-                <select style={inputClass()} value={form.categoryId} onChange={e => set('categoryId', e.target.value)}>
+                <Select style={inputClass()} value={form.categoryId} onChange={e => set('categoryId', e.target.value)}>
                   <option value="">No category</option>
-                  {categories.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                </select>
+                  {categoryOptions(categories).map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
+                </Select>
               </FormField>
             </div>
             <div style={{ display: 'flex', gap: 20, marginTop: 14, flexWrap: 'wrap' }}>

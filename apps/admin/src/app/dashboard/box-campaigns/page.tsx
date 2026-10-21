@@ -1,4 +1,5 @@
 'use client';
+import { Select } from '@/components/Dropdown';
 import { useEffect, useState } from 'react';
 import FormField, { inputClass } from '@/components/FormField';
 import LangTabs, { type Lang } from '@/components/LangTabs';
@@ -159,18 +160,18 @@ export default function BoxCampaignsPage() {
             {lang === 'en' && (
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
                 <FormField label="Month">
-                  <select value={form.month} onChange={e => setForm({ ...form, month: +e.target.value })} style={inputClass()}>
+                  <Select value={form.month} onChange={e => setForm({ ...form, month: +e.target.value })} style={inputClass()}>
                     {MONTHS.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
-                  </select>
+                  </Select>
                 </FormField>
                 <FormField label="Year">
                   <input type="number" value={form.year} onChange={e => setForm({ ...form, year: +e.target.value })} style={inputClass()} />
                 </FormField>
                 <FormField label="Dog Size">
-                  <select value={form.dogSize} onChange={e => setForm({ ...form, dogSize: e.target.value })} style={inputClass()}>
+                  <Select value={form.dogSize} onChange={e => setForm({ ...form, dogSize: e.target.value })} style={inputClass()}>
                     <option value="">All sizes</option>
                     {DOG_SIZES.filter(Boolean).map(s => <option key={s} value={s}>{s}</option>)}
-                  </select>
+                  </Select>
                 </FormField>
               </div>
             )}

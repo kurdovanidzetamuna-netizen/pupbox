@@ -1,4 +1,6 @@
 'use client';
+import { Select } from '@/components/Dropdown';
+import { categoryOptions } from '@/components/categoryOptions';
 import { useEffect, useState } from 'react';
 import FormField, { inputClass } from '@/components/FormField';
 import ErrorPopup from '@/components/ErrorPopup';
@@ -120,9 +122,9 @@ export default function CustomBoxItemsPage() {
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14, marginBottom: 14 }}>
             <FormField label="Category">
-              <select style={inputClass()} value={form.categoryId} onChange={(e) => set('categoryId', e.target.value)}>
-                {cats.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
+              <Select style={inputClass()} value={form.categoryId} onChange={(e) => set('categoryId', e.target.value)}>
+                {categoryOptions(cats).map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
+              </Select>
             </FormField>
             <FormField label="Price ₾" required error={errors.price}><input style={inputClass(errors.price)} type="number" min={0} step="0.5" value={form.price} onChange={(e) => set('price', e.target.value)} /></FormField>
             <FormField label="In stock" error={errors.stock}><input style={inputClass(errors.stock)} type="number" min={0} value={form.stock} onChange={(e) => set('stock', e.target.value)} /></FormField>

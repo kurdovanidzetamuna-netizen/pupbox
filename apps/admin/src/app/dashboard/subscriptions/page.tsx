@@ -1,4 +1,5 @@
 'use client';
+import { Select } from '@/components/Dropdown';
 import MapLink from '@/components/MapLink';
 import { useState, useEffect, useRef } from 'react';
 import { ALLERGENS } from '@pupbox/content';
@@ -74,10 +75,10 @@ function DogEditor({ sub, onSaved, onDone }: { sub: any; onSaved: () => void; on
     <div style={{ padding: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
         <input value={v.name} onChange={e => setV({ ...v, name: e.target.value })} placeholder="Name" style={field} />
-        <select value={v.size} onChange={e => setV({ ...v, size: e.target.value })} style={field}>
+        <Select value={v.size} onChange={e => setV({ ...v, size: e.target.value })} style={field}>
           <option value="">Size not given</option>
           {SIZES.map(z => <option key={z} value={z}>{z.replace('_', ' ').toLowerCase()}</option>)}
-        </select>
+        </Select>
       </div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
         {[...ALLERGENS.map(a => a.key as string), ...custom].map(k => (

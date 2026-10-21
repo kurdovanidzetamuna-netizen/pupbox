@@ -1,4 +1,5 @@
 'use client';
+import { Select } from '@/components/Dropdown';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import QuickAddBoxItemModal from '@/components/QuickAddBoxItemModal';
@@ -300,14 +301,14 @@ export default function AdminProductsPage() {
             {s.label}
           </button>
         ))}
-        <select
+        <Select
           value={category}
           onChange={e => setCategory(e.target.value)}
           style={{ padding: '5px 28px 5px 10px', borderRadius: 9, fontSize: 12, fontWeight: 600, cursor: 'pointer', border: `1.5px solid ${category ? 'var(--teal-600)' : 'var(--slate-200)'}`, background: category ? 'var(--teal-50)' : 'var(--white)', color: category ? 'var(--teal-600)' : 'var(--slate-500)', outline: 'none', appearance: 'none', backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='M1 1l4 4 4-4'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 8px center' }}
         >
           <option value="">All Categories</option>
           {allCategories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-        </select>
+        </Select>
 
         {/* Sort controls */}
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 4, background: 'var(--slate-100)', borderRadius: 10, padding: '3px 4px' }}>

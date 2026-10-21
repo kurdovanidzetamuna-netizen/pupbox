@@ -1,4 +1,5 @@
 'use client';
+import { Select } from '@/components/Dropdown';
 import { useEffect, useState } from 'react';
 import { ActionButton, RowActions } from '../../../components/Toolbar';
 
@@ -391,9 +392,9 @@ export default function AdminTranslationsPage() {
             <div style={{ padding: '20px 28px', display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div>
                 <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--slate-600)', marginBottom: 5, display: 'block' }}>Section</label>
-                <select value={form.section} onChange={e => setForm(f => ({ ...f, section: e.target.value }))} style={{ ...inp }}>
+                <Select value={form.section} onChange={e => setForm(f => ({ ...f, section: e.target.value }))} style={{ ...inp }}>
                   {SECTIONS.map(s => <option key={s.key} value={s.key}>{s.icon} {s.label}</option>)}
-                </select>
+                </Select>
               </div>
               <div>
                 <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--slate-600)', marginBottom: 5, display: 'block' }}>Key <span style={{ color: 'var(--red-600)' }}>*</span></label>

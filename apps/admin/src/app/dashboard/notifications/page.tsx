@@ -1,4 +1,5 @@
 'use client';
+import { Select } from '@/components/Dropdown';
 import { useCallback, useEffect, useState } from 'react';
 import CustomerDrawer from '@/components/CustomerDrawer';
 
@@ -98,12 +99,12 @@ export default function NotificationsPage() {
 
       <form onSubmit={(e) => { e.preventDefault(); setQuery(search.trim()); setPage(1); }} style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginBottom: 14 }}>
         <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Name, email or phone…" style={{ ...sel, minWidth: 240 }} />
-        <select value={channel} onChange={(e) => { setChannel(e.target.value as Channel); setPage(1); }} style={sel}>
+        <Select value={channel} onChange={(e) => { setChannel(e.target.value as Channel); setPage(1); }} style={sel}>
           <option value="">Any channel</option><option value="email">Email</option><option value="sms">SMS</option>
-        </select>
-        <select value={status} onChange={(e) => { setStatus(e.target.value as any); setPage(1); }} style={sel}>
+        </Select>
+        <Select value={status} onChange={(e) => { setStatus(e.target.value as any); setPage(1); }} style={sel}>
           <option value="">On or off</option><option value="on">Switched on</option><option value="off">Switched off</option>
-        </select>
+        </Select>
         <button type="submit" style={{ background: 'var(--slate-900)', color: 'var(--white)', border: 'none', borderRadius: 10, padding: '8px 14px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Search</button>
         <span style={{ fontSize: 12, color: 'var(--slate-400)', marginLeft: 'auto' }}>{total} customers</span>
       </form>

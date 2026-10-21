@@ -1,4 +1,5 @@
 'use client';
+import { Select } from '@/components/Dropdown';
 import { useEffect, useState } from 'react';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
@@ -244,9 +245,9 @@ export default function PromoPopupsPage() {
           <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 14, maxHeight: 'calc(100vh - 220px)', overflowY: 'auto' }}>
             {/* Type */}
             <Field label="Type">
-              <select value={form.type} onChange={f('type')} style={selectStyle}>
+              <Select value={form.type} onChange={f('type')} style={selectStyle}>
                 {TYPE_OPTIONS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-              </select>
+              </Select>
             </Field>
 
             {/* Title */}
@@ -280,9 +281,9 @@ export default function PromoPopupsPage() {
 
             {/* Trigger */}
             <Field label="Show trigger">
-              <select value={form.trigger} onChange={f('trigger')} style={selectStyle}>
+              <Select value={form.trigger} onChange={f('trigger')} style={selectStyle}>
                 {TRIGGER_OPTIONS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-              </select>
+              </Select>
             </Field>
 
             {form.trigger === 'after_delay' && (
@@ -293,9 +294,9 @@ export default function PromoPopupsPage() {
 
             {/* Pages */}
             <Field label="Show on pages">
-              <select value={form.showOnPages?.[0] || 'all'} onChange={e => setForm(p => ({ ...p, showOnPages: [e.target.value] }))} style={selectStyle}>
+              <Select value={form.showOnPages?.[0] || 'all'} onChange={e => setForm(p => ({ ...p, showOnPages: [e.target.value] }))} style={selectStyle}>
                 {PAGE_OPTIONS.map(pg => <option key={pg.value} value={pg.value}>{pg.label}</option>)}
-              </select>
+              </Select>
             </Field>
 
             {/* Frequency */}

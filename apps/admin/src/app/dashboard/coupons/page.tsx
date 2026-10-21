@@ -1,4 +1,5 @@
 'use client';
+import { Select } from '@/components/Dropdown';
 import { useEffect, useState } from 'react';
 import FormField, { inputClass, parseFieldErrors } from '@/components/FormField';
 import ErrorPopup from '@/components/ErrorPopup';
@@ -100,10 +101,10 @@ export default function CouponsPage() {
               <input required value={form.code} onChange={e => setForm({ ...form, code: e.target.value.toUpperCase() })} style={{ ...inputClass(), fontFamily: 'monospace', textTransform: 'uppercase' }} placeholder="SUMMER20" />
             </FormField>
             <FormField label="Type" required>
-              <select value={form.discountType} onChange={e => setForm({ ...form, discountType: e.target.value })} style={inputClass()}>
+              <Select value={form.discountType} onChange={e => setForm({ ...form, discountType: e.target.value })} style={inputClass()}>
                 <option value="PERCENTAGE">Percentage (%)</option>
                 <option value="FIXED">Fixed (₾)</option>
-              </select>
+              </Select>
             </FormField>
             <FormField label="Value" required>
               <input required type="number" min="0" value={form.discountValue} onChange={e => setForm({ ...form, discountValue: e.target.value })} style={inputClass()} placeholder={form.discountType === 'PERCENTAGE' ? '20' : '10'} />
