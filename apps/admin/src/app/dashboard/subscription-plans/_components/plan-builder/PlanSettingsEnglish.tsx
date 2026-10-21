@@ -11,7 +11,7 @@ import type { PlanBuilderState } from './usePlanBuilder';
 /** English side of Plan Settings: the four numbered steps that define a plan. */
 export default function PlanSettingsEnglish({ b }: { b: PlanBuilderState }) {
   const {
-    plan, badges, addBadge, formErrors, setFormErrors, showNewBadge, setShowNewBadge,
+    plan, badges, addBadge, tiers, formErrors, setFormErrors, showNewBadge, setShowNewBadge,
     slugTouched, setSlugTouched, newBadgeInput, setNewBadgeInput, form, setForm, boxCount,
     boxesLinked, setMonths, setBoxes, pricingMonths, pricingTotal, pricingEffectiveMonthly,
     pricingSavings, cfg, setCfg, totalCost
@@ -146,6 +146,29 @@ export default function PlanSettingsEnglish({ b }: { b: PlanBuilderState }) {
         <NumberField min={0} value={form.sortOrder ?? ''} placeholder="0"
           onChange={v => setForm((x: any) => ({ ...x, sortOrder: v }))} />
       </FormField>
+    </div>
+
+    {/* Box type: which box this plan sends. One plan = one box type + one
+        length, so Mini 3 months and Premium 3 months are separate plans. */}
+    <div style={{ marginBottom: 12 }}>
+      <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--slate-700b)', marginBottom: 6 }}>Box type</label>
+      <div role="radiogroup" aria-label="Box type" style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+        {[{ id: '', name: 'None', emoji: '—', itemCount: null, isActive: true }, ...tiers].map((t: any) => {
+          const on = (form.tierId || '') === t.id;
+          return (
+            <button key={t.id || 'none'} type="button" role="radio" aria-checked={on}
+              onClick={() => setForm((x: any) => ({ ...x, tierId: t.id }))}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 12px', borderRadius: 10, fontSize: 12.5, fontWeight: 700, cursor: 'pointer',
+                border: `1.5px solid ${on ? 'var(--teal-500)' : 'var(--slate-200)'}`, background: on ? 'var(--teal-50)' : 'var(--white)', color: on ? 'var(--teal-700)' : 'var(--slate-600)', opacity: t.isActive ? 1 : 0.6 }}>
+              <span aria-hidden="true">{t.emoji || '📦'}</span>{t.name}
+              {t.itemCount != null && <span style={{ fontWeight: 500, color: 'var(--slate-400)' }}>· {t.itemCount} items</span>}
+            </button>
+          );
+        })}
+      </div>
+      <p style={{ fontSize: 10.5, color: 'var(--slate-400)', margin: '4px 0 0' }}>
+        The site groups plans by box type. A plan with no box type is listed under “More plans”, below the box types.
+      </p>
     </div>
 
     {/* Derived from the name; only shown as a reminder of the URL. */}

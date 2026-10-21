@@ -11,6 +11,7 @@ import { CategoriesModule } from './modules/categories/categories.module';
 import { TagsModule } from './modules/tags/tags.module';
 import { ProductsModule } from './modules/products/products.module';
 import { SubscriptionPlansModule } from './modules/subscription-plans/subscription-plans.module';
+import { BoxTiersModule } from './modules/box-tiers/box-tiers.module';
 import { DogsModule } from './modules/dogs/dogs.module';
 import { SubscriptionsModule } from './modules/subscriptions/subscriptions.module';
 import { CartModule } from './modules/cart/cart.module';
@@ -56,6 +57,7 @@ import { UploadModule } from './modules/upload/upload.module';
     TagsModule,
     ProductsModule,
     SubscriptionPlansModule,
+    BoxTiersModule,
     DogsModule,
     SubscriptionsModule,
     CartModule,

@@ -5,7 +5,7 @@ import QuickAddBoxItemModal from '@/components/QuickAddBoxItemModal';
 import Link from 'next/link';
 import { EMPTY_FORM } from './_lib/constants';
 import { isSuperAdmin as currentUserIsSuperAdmin } from './_lib/auth';
-import { fetchPlans, fetchPlanOrderCount, togglePlanActive, deletePlan as deletePlanRequest } from './_lib/api';
+import { fetchPlans, fetchPlanOrderCount, fetchTiers, togglePlanActive, deletePlan as deletePlanRequest } from './_lib/api';
 import { useBadges } from './_hooks/useBadges';
 import PlanBuilder from './_components/plan-builder/PlanBuilder';
 import PlanStats from './_components/PlanStats';
@@ -50,6 +50,19 @@ export default function AdminSubscriptionPlansPage() {
   }
 
   useEffect(() => { load(); }, []);
+  // From Box types → "+ Add": a new plan with the box type and length filled in.
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search);
+    if (q.get('new') !== '1') return;
+    const months = Math.max(1, Number(q.get('months')) || 1);
+    const tierId = q.get('tier') || '';
+    (async () => {
+      const tier = tierId ? (await fetchTiers()).find((t: any) => t.id === tierId) : null;
+      const name = tier ? `${tier.name} · ${months} month${months === 1 ? '' : 's'}` : '';
+      setBuilderPlan({ ...EMPTY_FORM, tierId, durationValue: months, boxCount: months, name, slug: name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') });
+    })();
+    window.history.replaceState(null, '', window.location.pathname);
+  }, []);
   useEffect(() => {
     const h = (e: KeyboardEvent) => {
       if (e.key === 'Escape') { setViewPlan(null); setShowBadgeManager(false); }

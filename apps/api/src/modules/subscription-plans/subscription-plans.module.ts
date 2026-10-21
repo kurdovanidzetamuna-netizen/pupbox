@@ -31,6 +31,8 @@ class CreatePlanDto {
   @IsOptional() @IsString() seoTitle?: string;
   @IsOptional() @IsString() seoDesc?: string;
   @IsOptional() translations?: Record<string, any>;
+  /** The box type (Mini, Standard, Premium); null takes it out of every tier. */
+  @IsOptional() @IsString() tierId?: string | null;
 }
 
 /** Validated like create, every field optional (a bare Partial<> isn't checked at all). */

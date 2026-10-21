@@ -15,6 +15,7 @@ const NAV_GROUPS = [
   {
     label: 'Subscriptions',
     items: [
+      { href: '/dashboard/box-tiers', label: 'Box types', icon: 'M4 7h16M4 12h16M4 17h10' },
       { href: '/dashboard/subscription-plans', label: 'Plans', icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4' },
       { href: '/dashboard/subscriptions', label: 'Subscriptions', icon: 'M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15' },
       { href: '/dashboard/box-items', label: 'Box Items', icon: 'M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z' },
@@ -132,7 +133,7 @@ const NEEDS: [prefix: string, perm: string][] = [
   ['/dashboard/reports', 'reports.view'], ['/dashboard/orders', 'orders.view'], ['/dashboard/customers', 'users.view'],
   ['/dashboard/referrals', 'users.view'], ['/dashboard/crm', 'crm.view'], ['/dashboard/notifications', 'crm.view'], ['/dashboard/coupons', 'coupons.manage'], ['/dashboard/sellers', 'sellers.view'], ['/dashboard/seller-payouts', 'sellers.payouts'],
   ['/dashboard/products', 'products.view'], ['/dashboard/categories', 'products.view'], ['/dashboard/box-items', 'products.view'], ['/dashboard/custom-box-items', 'products.view'],
-  ['/dashboard/subscription-plans', 'subscriptions.view'], ['/dashboard/subscriptions', 'subscriptions.view'],
+  ['/dashboard/box-tiers', 'subscriptions.view'], ['/dashboard/subscription-plans', 'subscriptions.view'], ['/dashboard/subscriptions', 'subscriptions.view'],
   ['/dashboard/monthly-boxes', 'subscriptions.view'], ['/dashboard/box-campaigns', 'subscriptions.view'],
   ['/dashboard/page-builder', 'cms.view'], ['/dashboard/blog', 'cms.view'], ['/dashboard/cms', 'cms.view'], ['/dashboard/faq', 'cms.view'],
   ['/dashboard/promo-popups', 'cms.view'], ['/dashboard/translations', 'cms.view'], ['/dashboard/admin-translations', 'cms.view'],
@@ -148,6 +149,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   useEffect(() => { setDenied(''); }, [pathname]);
   const router = useRouter();
   const { theme, toggleTheme } = useTheme();
+  // Phones and small tablets: the menu slides in from the left.
+  const [menu, setMenu] = useState(false);
+  useEffect(() => { setMenu(false); }, [pathname]);
 
   useEffect(() => {
     function signOut() {
@@ -200,7 +204,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh' }}>
-      <aside style={S.sidebar}>
+      {/* Small screens: a bar with the menu button; the sidebar is a drawer */}
+      <div className="adm-topbar">
+        <button type="button" onClick={() => setMenu(true)} aria-label="Open menu" aria-expanded={menu} className="adm-burger">
+          <svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16" /></svg>
+        </button>
+        <div style={S.logoIcon}>🐾</div>
+        <div style={S.logoText}>Pupbox</div>
+      </div>
+      {menu && <div className="adm-backdrop" onClick={() => setMenu(false)} aria-hidden="true" />}
+      <aside style={S.sidebar} className="adm-sidebar" data-open={menu || undefined}>
         <div style={S.logo}>
           <div style={S.logoIcon}>🐾</div>
           <div>
@@ -241,7 +254,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
       </aside>
 
-      <main style={S.main}>
+      <main style={S.main} className="adm-main">
         {denied && (
           <div role="alert" style={{ margin: '16px 28px 0', padding: '10px 14px', borderRadius: 10, background: 'var(--amber-50)', border: '1px solid var(--amber-200)', color: 'var(--amber-800)', fontSize: 13, display: 'flex', justifyContent: 'space-between', gap: 12 }}>
             <span>{denied}</span>

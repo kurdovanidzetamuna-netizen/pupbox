@@ -485,6 +485,10 @@ model SubscriptionPlan {
   /// The built-in plan behind monthly custom boxes: never listed or sold on
   /// its own; its price comes from each customer's box.
   isCustomBox         Boolean      @default(false)
+  /// The box this plan sends (Mini, Standard, Premium). One plan = one tier
+  /// + one length. Empty for the custom-box plan and older plans.
+  tierId              String?
+  tier                BoxTier?     @relation(fields: [tierId], references: [id])
   seoTitle            String?
   seoDesc             String?
   createdAt           DateTime     @default(now())
@@ -494,6 +498,37 @@ model SubscriptionPlan {
   subscriptions       CustomerSubscription[]
   orderItems          OrderItem[]
   cartItems           CartItem[]
+}
+
+// ─── BOX TIERS ───────────────────────────────────────────────────────────────
+
+/// A kind of monthly box — Mini, Standard, Premium. Customers choose by
+/// budget: more and better items as the tier goes up. Each plan belongs to
+/// one tier and sets the length (1, 3, 6 months) and price.
+model BoxTier {
+  id           String   @id @default(cuid())
+  name         String
+  slug         String   @unique
+  /// { ka: { name, tagline, description, highlights[] } }
+  translations Json?
+  tagline      String?
+  description  String?
+  /// What sets this box apart, shown as ticks on the tier card.
+  highlights   String[]
+  /// How many items go in each box.
+  itemCount    Int
+  /// What the products in one box may cost us (without VAT), for planning.
+  budgetMin    Decimal? @db.Decimal(10, 2)
+  budgetMax    Decimal? @db.Decimal(10, 2)
+  emoji        String?
+  /// Marks the tier most people should start with.
+  featured     Boolean  @default(false)
+  isActive     Boolean  @default(true)
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  plans        SubscriptionPlan[]
 }
 
 // ─── CUSTOMER SUBSCRIPTIONS ──────────────────────────────────────────────────

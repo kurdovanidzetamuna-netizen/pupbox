@@ -239,3 +239,22 @@ body {
   from { opacity: 0; transform: translateX(-50%) translateY(16px); }
   to   { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
+
+/* ── Admin shell on phones and small tablets ──
+   The sidebar becomes a drawer behind a menu button, and the page takes the
+   full width (the sidebar's fixed 224px pushed every page off the screen). */
+.adm-topbar, .adm-backdrop { display: none; }
+@media (max-width: 900px) {
+  .adm-topbar {
+    display: flex; align-items: center; gap: 10px; position: fixed; top: 0; left: 0; right: 0; z-index: 45; height: 56px;
+    padding: 0 12px; background: var(--white); border-bottom: 1px solid var(--slate-200b);
+  }
+  .adm-burger { width: 40px; height: 40px; border: none; border-radius: 10px; background: transparent; color: var(--slate-700); display: flex; align-items: center; justify-content: center; cursor: pointer; }
+  .adm-burger:hover { background: var(--slate-100); }
+  .adm-sidebar { transform: translateX(-100%); transition: transform .25s ease; z-index: 60 !important; box-shadow: none; }
+  .adm-sidebar[data-open] { transform: none; box-shadow: 0 0 40px rgba(15, 23, 42, .25); }
+  .adm-backdrop { display: block; position: fixed; inset: 0; z-index: 55; background: rgba(15, 23, 42, .35); }
+  /* A wide table still swipes sideways inside the page, never the whole screen. */
+  .adm-main { margin-left: 0 !important; width: 100% !important; min-width: 0; padding-top: 56px; overflow-x: auto; }
+}
+@media (max-width: 900px) and (prefers-reduced-motion: reduce) { .adm-sidebar { transition: none; } }

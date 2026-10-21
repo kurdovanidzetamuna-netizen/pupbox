@@ -47,6 +47,9 @@ export const api = {
   categories: {
     list: () => fetchAPI<any[]>('/categories'),
   },
+  tiers: {
+    list: () => fetchAPI<any[]>('/box-tiers', { cache: 'no-store' }),
+  },
   plans: {
     list: () => fetchAPI<any[]>('/subscription-plans', { cache: 'no-store' }),
     get: (slug: string) => fetchAPI<any>(`/subscription-plans/${slug}`, { cache: 'no-store' }),

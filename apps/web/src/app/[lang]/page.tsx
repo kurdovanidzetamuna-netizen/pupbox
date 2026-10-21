@@ -12,6 +12,7 @@ export default async function HomePage({ params }: { params: { lang: string } })
   const lang = asLang(params.lang);
   let plans: any[] = [];
   try { plans = await api.plans.list(); } catch {}
+  const tiers = await api.tiers.list().catch(() => []);
   const [content, pricing] = await Promise.all([getStoredContent(homePage), getStoredContent(pricingPage)]);
 
   return (
@@ -32,7 +33,7 @@ export default async function HomePage({ params }: { params: { lang: string } })
           potentialAction: { '@type': 'SearchAction', target: `${SITE_URL}${atLang('/shop', lang)}?search={search_term_string}`, 'query-input': 'required name=search_term_string' },
         },
       ]} />
-      <HomePageClient plans={plans} content={content} pricing={pricing} />
+      <HomePageClient plans={plans} tiers={tiers} content={content} pricing={pricing} />
     </>
   );
 }
