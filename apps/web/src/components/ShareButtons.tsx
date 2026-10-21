@@ -16,12 +16,20 @@ const BRAND = {
  * button, and direct links for WhatsApp, Telegram, Facebook, Messenger and
  * Viber. Icons only; each says what it does on hover and to screen readers.
  */
-export default function ShareButtons({ title, className = '' }: { title: string; className?: string }) {
+export default function ShareButtons({ title, url: given, className = '', size = 'w-10 h-10', appsOnly = false }: {
+  title: string;
+  /** What to share; this page when left out. */
+  url?: string;
+  className?: string;
+  size?: string;
+  /** Just the app links, when the page has its own Share and Copy buttons. */
+  appsOnly?: boolean;
+}) {
   const { lang } = useLanguage();
   const [url, setUrl] = useState('');
   const [copied, setCopied] = useState(false);
   const [native, setNative] = useState(false);
-  useEffect(() => { setUrl(window.location.href.split('#')[0]); setNative(typeof navigator.share === 'function'); }, []);
+  useEffect(() => { setUrl(given || window.location.href.split('#')[0]); setNative(typeof navigator.share === 'function'); }, [given]);
 
   const L = (ka: string, en: string) => (lang === 'en' ? en : ka);
   const u = encodeURIComponent(url);
@@ -38,7 +46,7 @@ export default function ShareButtons({ title, className = '' }: { title: string;
     try { await navigator.clipboard.writeText(url); setCopied(true); setTimeout(() => setCopied(false), 1800); } catch {}
   }
 
-  const btn = 'group/tip relative w-10 h-10 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center transition-colors hover:text-white';
+  const btn = `group/tip relative ${size} rounded-full bg-gray-100 text-gray-600 flex items-center justify-center transition-colors hover:text-white`;
   const tip = (label: string) => (
     <span role="tooltip" className="pointer-events-none absolute bottom-full mb-1.5 left-1/2 -translate-x-1/2 hidden [@media(hover:hover)]:group-hover/tip:block whitespace-nowrap rounded-lg bg-gray-800 text-white text-[11px] font-medium px-2 py-1 z-30">{label}</span>
   );
@@ -46,14 +54,14 @@ export default function ShareButtons({ title, className = '' }: { title: string;
   if (!url) return null;
   return (
     <div className={`flex flex-wrap items-center gap-2 ${className}`} aria-label={L('გაზიარება', 'Share')}>
-      {native && (
+      {native && !appsOnly && (
         <button type="button" onClick={() => navigator.share({ title, url }).catch(() => {})} aria-label={L('გაზიარება', 'Share')} className={`${btn} hover:bg-teal-600`}>
           <Icon name="send" className="w-[18px] h-[18px]" />{tip(L('გაზიარება', 'Share'))}
         </button>
       )}
-      <button type="button" onClick={copy} aria-label={L('ბმულის კოპირება', 'Copy link')} className={`${btn} ${copied ? '!bg-teal-600 !text-white' : 'hover:bg-teal-600'}`}>
+      {!appsOnly && <button type="button" onClick={copy} aria-label={L('ბმულის კოპირება', 'Copy link')} className={`${btn} ${copied ? '!bg-teal-600 !text-white' : 'hover:bg-teal-600'}`}>
         <Icon name={copied ? 'check' : 'link'} className="w-[18px] h-[18px]" />{tip(copied ? L('დაკოპირდა', 'Copied') : L('ბმულის კოპირება', 'Copy link'))}
-      </button>
+      </button>}
       {links.map((l) => (
         <a key={l.key} href={l.href} target="_blank" rel="noopener noreferrer" aria-label={l.label} className={`${btn} ${l.color}`}>
           <svg className="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d={BRAND[l.key]} /></svg>{tip(l.label)}

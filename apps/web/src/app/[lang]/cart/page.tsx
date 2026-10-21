@@ -18,8 +18,8 @@ import IconButton from '@/components/ui/IconButton';
 /**
  * The cart, mobile first: item cards with a pill quantity stepper, a promo
  * code "ticket" that opens into a field, the total with the one main button,
- * and on phones a sticky bar (above the tab bar) with the total and Checkout
- * always in reach.
+ * and on phones a dock at the bottom with the total and Checkout always in
+ * reach (the tab bar steps aside here, so the two never fight).
  */
 export default function CartPage() {
   const { t, lang } = useLanguage();
@@ -62,7 +62,7 @@ export default function CartPage() {
 
   return (
     <main className="min-h-screen bg-pastel-grey">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-6 sm:pt-10 pb-36 md:pb-14">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-6 sm:pt-10 pb-28 md:pb-14">
         <div className="flex items-end justify-between gap-3">
           <Heading title={<>{t('cart.title')} <span className="align-middle inline-flex items-center justify-center min-w-[28px] h-7 px-2 rounded-full bg-teal-600 text-white text-[14px] font-bold">{cart.itemCount}</span></>} className="!mb-5 sm:!mb-7" />
           <Link href="/shop" className="hidden sm:inline-flex mb-7 items-center gap-1.5 text-[13px] font-semibold text-teal-700 hover:text-teal-800">
@@ -192,14 +192,20 @@ export default function CartPage() {
         </div>
       </div>
 
-      {/* Phones: total + Checkout always in reach, above the tab bar */}
-      <div className="md:hidden fixed inset-x-0 bottom-16 z-30 px-3 pb-[env(safe-area-inset-bottom)]">
-        <div className="flex items-center gap-3 rounded-[20px] bg-white ring-1 ring-gray-200/80 shadow-[0_12px_30px_-12px_rgba(36,48,58,0.35)] p-2 pl-4">
-          <span className="min-w-0">
-            <span className="block text-[11px] text-gray-500">{t('co.sum.total')}</span>
-            <span className="block text-[17px] font-extrabold text-gray-900 leading-tight">{gel(cart.total)}</span>
+      {/* Phones: a dock at the bottom (the tab bar steps aside on this page) —
+          what's in the basket as little stacked pictures, the total, and Checkout. */}
+      <div className="md:hidden fixed inset-x-0 bottom-0 z-40 bg-white/95 backdrop-blur border-t border-gray-100 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] hdr-tabbar">
+        <div className="flex items-center gap-3">
+          <span className="flex -space-x-3 shrink-0" aria-hidden="true">
+            {cart.items.slice(0, 3).map((item: any, i: number) => (
+              <ProductThumb key={item.id} item={item} className="w-10 h-10 rounded-[14px] text-lg ring-[3px] ring-white" />
+            ))}
           </span>
-          <Button href="/checkout" size="lg" icon="lock" label={checkoutLabel} className="!w-auto flex-1 !h-11" />
+          <span className="min-w-0 flex-1">
+            <span className="block text-[11.5px] font-semibold text-gray-500 truncate">{fill(t('cart.dockItems'), { n: cart.itemCount })}</span>
+            <span key={String(cart.total)} className="block text-[18px] font-extrabold text-gray-900 leading-tight tabular-nums motion-safe:animate-[fadeUp_0.25s_ease-out]">{gel(cart.total)}</span>
+          </span>
+          <Button href="/checkout" size="lg" icon="lock" label={checkoutLabel} className="!w-auto shrink-0 !h-12 !px-5" />
         </div>
       </div>
     </main>

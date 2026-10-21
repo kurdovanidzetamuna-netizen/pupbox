@@ -1,6 +1,6 @@
 'use client';
 import Link from '@/components/LangLink';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/context/LanguageContext';
 import { fill } from '@/context/strings/purchase';
@@ -10,6 +10,7 @@ import { Heading } from '@/components/ui/Heading';
 import IconButton from '@/components/ui/IconButton';
 import { Icon } from '@/components/ui/icons';
 import PawTrail from '@/components/PawTrail';
+import DogPhoto from '@/components/DogPhoto';
 import { birthdayLine, dogAge, SIZE_SHORT } from '@/lib/dog';
 
 const TINTS = ['bg-teal-50', 'bg-lilac-50', 'bg-sky-50', 'bg-teal-50/60'];
@@ -122,25 +123,5 @@ export default function MyDogsPage() {
       <DogEditor open={adding} onClose={() => setAdding(false)} onExpired={expired}
         onSaved={(dog) => router.push(`/account/dogs/${dog.id}?new=1`)} />
     </div>
-  );
-}
-
-/**
- * A dog's photo on its card: a smaller rounded tile with a white edge in the
- * middle, so the card's soft colour shows around it like the emoji cards.
- * Fades in once loaded; on hover it grows a touch and tilts.
- */
-function DogPhoto({ src, alt }: { src: string; alt: string }) {
-  const [loaded, setLoaded] = useState(false);
-  const img = useRef<HTMLImageElement>(null);
-  // An image already in the cache may finish before React is listening.
-  useEffect(() => { if (img.current?.complete) setLoaded(true); }, []);
-  return (
-    <span className="absolute inset-0 flex items-center justify-center">
-      <span className={`relative w-[64%] aspect-square rounded-[30%] overflow-hidden bg-white/70 ring-[5px] ring-white transition-all duration-500 ease-out group-hover:scale-[1.06] group-hover:-rotate-3 ${loaded ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img ref={img} src={src} alt={alt} onLoad={() => setLoaded(true)} className="w-full h-full object-cover" />
-      </span>
-    </span>
   );
 }

@@ -10,7 +10,8 @@ import { fill } from '@/context/strings/purchase';
 import { gel } from '@/lib/format';
 import { itemName } from '@/lib/localize';
 import LegalNotice from '@/components/LegalNotice';
-import DogProfileForm, { emptyDogProfile, toDogPayload, fromDog, type DogProfile } from '@/components/DogProfileForm';
+import DogProfileForm, { emptyDogProfile, toDogPayload, type DogProfile } from '@/components/DogProfileForm';
+import DogChooser from '@/components/DogChooser';
 import ChoiceNote from '@/components/ChoiceNote';
 import VerifyCodes from '@/components/VerifyCodes';
 import PhoneInput from '@/components/ui/PhoneInput';
@@ -23,8 +24,8 @@ import Button from '@/components/ui/Button';
 import Segmented from '@/components/ui/Segmented';
 import EmptyState from '@/components/ui/EmptyState';
 import { Icon } from '@/components/ui/icons';
-import { GlossyPaw } from '@/components/Glossy3D';
 import { PwEye } from '@/app/[lang]/login/LoginForm';
+import { loginUrl } from '@/lib/authFetch';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -117,7 +118,6 @@ export default function CheckoutPage() {
   // The buyer's own phone, prefilled for themselves; not the friend's.
   const [profilePhone, setProfilePhone] = useState('');
   const [giftLater, setGiftLater] = useState(false);
-  const [dog, setDog] = useState<DogProfile>(emptyDogProfile);
   const [dogId, setDogId] = useState<string | null>(null);
   // A returning customer picks one of their dogs instead of re-entering it;
   // otherwise every purchase (or a reload mid-checkout) created a duplicate.
@@ -190,17 +190,13 @@ export default function CheckoutPage() {
         if (!Array.isArray(dogs)) return;
         setMyDogs(dogs);
         // One dog is the obvious answer; with several, let them choose.
-        if (dogs.length === 1) {
-          setDogId(cur => cur ?? dogs[0].id);
-          setDog(cur => (cur.name.trim() ? cur : fromDog(dogs[0])));
-        }
+        if (dogs.length === 1) setDogId(cur => cur ?? dogs[0].id);
       })
       .catch(() => {});
   }
 
-  function chooseDog(d: any | null) {
-    setDogId(d ? d.id : null);
-    setDog(d ? fromDog(d) : emptyDogProfile);
+  function chooseDog(id: string) {
+    setDogId(id);
     setErrs(e => ({ ...e, dogName: '' }));
   }
 
@@ -270,24 +266,11 @@ export default function CheckoutPage() {
     next();
   }
 
-  async function submitDog() {
-    if (fail(dog.name.trim() ? {} : { dogName: t('co.e.dogName') })) return;
-    setError(''); setLoading(true);
-    try {
-      // Saved once: going Back and Continue again updates the same dog
-      // instead of creating a duplicate. Its id goes on the order, so the
-      // subscription knows which dog it is for.
-      const res = await fetch(dogId ? `${API_URL}/me/dogs/${dogId}` : `${API_URL}/me/dogs`, {
-        method: dogId ? 'PUT' : 'POST',
-        headers: { Authorization: `Bearer ${getToken()}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify(toDogPayload(dog)),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(apiMessage(data, t('co.e.generic')));
-      if (data?.id) setDogId(data.id);
-      next();
-    } catch (err: any) { setError(err.message); }
-    finally { setLoading(false); }
+  // The dog is saved by its own pop-up (the same one as My dogs); here we
+  // only need to know which one, so the subscription is for the right dog.
+  function submitDog() {
+    if (!myDogs.some(d => d.id === dogId)) { setErrs({ dogName: t('co.e.pickDog') }); return; }
+    next();
   }
 
   async function pay() {
@@ -552,27 +535,11 @@ export default function CheckoutPage() {
             {/* ── Dog ── */}
             {step === 'dog' && (
               <section className={card}>
-                <Heading kind="form" as="h1" title={t('co.dog.title')} subtitle={t('co.dog.sub')} />
-                {myDogs.length > 0 && (
-                  <div className="mb-6">
-                    <p className="px-1 text-[12.5px] font-semibold text-gray-700 mb-2">{t('co.dog.which')}</p>
-                    <div className="flex gap-2 overflow-x-auto -mx-1 px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" role="radiogroup" aria-label={t('co.dog.which')}>
-                      {myDogs.map(d => (
-                        <button key={d.id} type="button" role="radio" aria-checked={dogId === d.id} onClick={() => chooseDog(d)}
-                          className={`shrink-0 h-10 pl-1.5 pr-3.5 rounded-full inline-flex items-center gap-2 text-[13px] font-semibold ring-1 ring-inset transition ${dogId === d.id ? 'bg-teal-50 text-teal-700 ring-teal-400' : 'bg-gray-100/80 text-gray-700 ring-transparent hover:bg-gray-100'}`}>
-                          <GlossyPaw className="w-7 h-7" />{d.name}
-                        </button>
-                      ))}
-                      <button type="button" role="radio" aria-checked={!dogId} onClick={() => chooseDog(null)}
-                        className={`shrink-0 h-10 px-3.5 rounded-full inline-flex items-center gap-1.5 text-[13px] font-semibold ring-1 ring-inset transition ${!dogId ? 'bg-teal-50 text-teal-700 ring-teal-400' : 'bg-gray-100/80 text-gray-700 ring-transparent hover:bg-gray-100'}`}>
-                        <Icon name="plus" className="w-4 h-4" strokeWidth={2.4} />{t('co.dog.another').replace(/^\+\s*/, '')}
-                      </button>
-                    </div>
-                  </div>
-                )}
-                <DogProfileForm value={dog} onChange={d => { setDog(d); setErrs(e => ({ ...e, dogName: '' })); }} compact nameError={errs.dogName} />
-                <FormAlert message={error} missing={countErrors(errs)} className="mt-4" />
-                {actions(<Button size="lg" icon="arrow" onClick={submitDog} disabled={loading} label={loading ? t('co.saving') : t('co.continue').replace(/\s*→\s*$/, '')} />)}
+                <Heading kind="form" as="h1" title={t(myDogs.length ? 'co.dog.which' : 'co.dog.title')} subtitle={t('co.dog.sub')} />
+                <DogChooser dogs={myDogs} value={dogId} onChange={chooseDog} onDogsChange={setMyDogs} error={errs.dogName}
+                  onExpired={() => router.replace(loginUrl('/checkout'))} />
+                <FormAlert message={error} className="mt-4" />
+                {actions(<Button size="lg" icon="arrow" onClick={submitDog} label={t('co.continue').replace(/\s*→\s*$/, '')} />)}
               </section>
             )}
 

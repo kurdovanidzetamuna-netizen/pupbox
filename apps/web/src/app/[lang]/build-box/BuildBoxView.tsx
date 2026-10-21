@@ -18,10 +18,10 @@ const DRAFT = 'pupbox_box_draft';
 const MYSTERY = '__mystery__';
 
 /**
- * Build-your-own box, as it always looked: a catalogue of box items (its
- * own, from admin → Custom box items — not the shop) as small emoji cards
- * with "+ Add", and beside it the box: how full it is, what's in it, the
- * price and the order button. Once or every month (with a discount), and a
+ * Build-your-own box: a catalogue of box items (its own, from admin →
+ * Custom box items — not the shop) as photo cards with "+ Add", and
+ * beside it the box: how full it is, what's in it, the price and the order
+ * button. Once or every month (with a discount), and a
  * mystery surprise admin picks when packing. Editing from the basket
  * replaces that box.
  */
@@ -73,6 +73,8 @@ export default function BuildBoxView({ products, config: raw }: { products: any[
   const lineOf = (p: any) => (lang === 'ka' && p.translations?.ka?.shortDescription?.trim()) || p.shortDescription || '';
   const off = (n: number) => (monthly ? r2(n * (1 - config.monthlyDiscount / 100)) : n);
   const shopUnit = (p: any) => Number(p.salePrice ?? p.price);
+  // The photo admin marked as main, else the first.
+  const imgOf = (p: any): string | undefined => (p.images?.find((x: any) => x.isPrimary) ?? p.images?.[0])?.url;
 
   const cats = useMemo(() => {
     const m = new Map<string, any>();
@@ -116,47 +118,66 @@ export default function BuildBoxView({ products, config: raw }: { products: any[
     }
   }
 
-  /** One catalogue card: emoji, name, line, price; − and "+ Add". */
-  const card = (o: { id: string; emoji: string; name: string; line: string; price: number; was?: number; q: number; max: number; popular?: boolean; mystery?: boolean }) => {
+  /**
+   * One catalogue card, photo first: the product's picture (or its emoji on a
+   * soft tile when there's none yet), name, price, then "+ Add" — which turns
+   * into a − n + stepper once it's in the box. Every badge sits inside the
+   * card, so nothing pokes out past the edge of the screen or the list.
+   */
+  const card = (o: { id: string; emoji: string; img?: string; name: string; line: string; price: number; was?: number; q: number; max: number; popular?: boolean; mystery?: boolean }, i = 0) => {
     const inBox = o.q > 0;
     const out = o.max === 0;
+    const amount = (n: number) => `₾${n % 1 ? n.toFixed(2) : n}`;
+    const addWord = t('cb.addBtn').replace(/^\+\s*/, '');
     return (
-      <div key={o.id} className={`relative rounded-2xl p-4 transition-all ${
-        o.mystery ? 'bg-peach-50/60 ring-2 ring-peach-200' : out ? 'bg-gray-50 ring-1 ring-gray-100' : inBox ? 'bg-white ring-2 ring-teal-300' : 'bg-white ring-1 ring-gray-100 hover:ring-gray-200'}`}>
-        {inBox ? (
-          <span key={o.q} className={`absolute -top-2 -right-2 text-white text-[11px] font-bold px-2 py-0.5 rounded-full animate-[pop_0.3s_ease-out] ${o.mystery ? 'bg-peach-400' : 'bg-teal-600'}`}>{fill(t('cb.added'), { n: o.q })}</span>
-        ) : o.mystery ? (
-          <span className="absolute -top-2 -right-2 bg-peach-400 text-white text-[11px] font-bold px-2 py-0.5 rounded-full">{t('cb.secret')}</span>
-        ) : o.popular ? (
-          <span className="absolute -top-2 -right-2 bg-amber-400 text-white text-[11px] font-bold px-2 py-0.5 rounded-full">{t('cb.popular')}</span>
-        ) : null}
-        <div className="flex items-start gap-3">
-          <span className={`w-11 h-11 rounded-xl flex items-center justify-center text-[22px] shrink-0 transition-colors ${o.mystery ? 'bg-white' : inBox ? 'bg-teal-50' : 'bg-gray-50'} ${out ? 'grayscale opacity-50' : ''}`} aria-hidden="true">{o.emoji}</span>
-          <div className="flex-1 min-w-0">
-            <p className={`font-bold text-[13.5px] leading-tight ${out ? 'text-gray-400' : 'text-gray-900'}`}>{o.name}</p>
-            {o.line && <p className="text-gray-400 text-[12px] mt-0.5 leading-snug">{o.line}</p>}
-            <p className="mt-1.5 flex items-baseline gap-1.5">
-              <span className={`font-extrabold text-[13.5px] ${o.mystery ? 'text-peach-600' : 'text-teal-600'}`}>₾{o.price % 1 ? o.price.toFixed(2) : o.price}</span>
-              {o.was != null && o.was > o.price && <span className="text-[11px] text-gray-400 line-through">₾{o.was % 1 ? o.was.toFixed(2) : o.was}</span>}
-            </p>
-          </div>
+      <div key={o.id} className={`group relative flex flex-col rounded-[22px] p-1.5 sm:p-2 transition-all duration-200 motion-safe:animate-[fadeUp_0.35s_ease-out_both] ${
+        o.mystery ? 'bg-peach-50 ring-2 ring-peach-200' : out ? 'bg-gray-50 ring-1 ring-gray-100' : inBox ? 'bg-teal-50/60 ring-2 ring-teal-400' : 'bg-white ring-1 ring-gray-200/70 hover:ring-teal-200 hover:-translate-y-0.5'}`}
+        style={{ animationDelay: `${Math.min(i, 9) * 35}ms` }}>
+        <div className={`relative aspect-square rounded-[16px] overflow-hidden ${o.mystery ? 'bg-gradient-to-br from-peach-100 to-lilac-100' : 'bg-gradient-to-br from-teal-50 to-gray-50'}`}>
+          {o.img
+            // eslint-disable-next-line @next/next/no-img-element
+            ? <img src={o.img} alt="" loading="lazy" className={`w-full h-full object-cover transition-transform duration-500 ${out ? 'grayscale opacity-50' : 'group-hover:scale-[1.06]'}`} />
+            : <span className={`absolute inset-0 flex items-center justify-center text-[48px] sm:text-[56px] transition-transform duration-500 ${out ? 'grayscale opacity-40' : 'group-hover:scale-110 group-hover:-rotate-6'} ${o.mystery ? 'motion-safe:animate-[wiggle_2.4s_ease-in-out_infinite]' : ''}`} aria-hidden="true">{o.emoji}</span>}
+          {/* Badges, inside the picture */}
+          {o.mystery ? (
+            <span className="absolute top-2 left-2 h-6 px-2 rounded-full bg-peach-400 text-white text-[10.5px] font-bold inline-flex items-center">{t('cb.secret')}</span>
+          ) : o.popular && !out ? (
+            <span className="absolute top-2 left-2 h-6 px-2 rounded-full bg-amber-400 text-white text-[10.5px] font-bold inline-flex items-center">★ {t('cb.popular')}</span>
+          ) : null}
+          {inBox && (
+            <span key={o.q} className={`absolute top-2 right-2 min-w-[28px] h-7 px-1.5 rounded-full text-white text-[12.5px] font-extrabold inline-flex items-center justify-center ring-2 ring-white motion-safe:animate-[pop_0.3s_ease-out] ${o.mystery ? 'bg-peach-400' : 'bg-teal-600'}`} aria-label={fill(t('cb.added'), { n: o.q })}>×{o.q}</span>
+          )}
+          {out && <span className="absolute inset-x-0 bottom-0 py-1.5 bg-gray-700/75 text-white text-[11px] font-bold text-center">{t('shop.outOfStock')}</span>}
         </div>
-        <div className="flex items-center justify-end gap-2 mt-3">
-          {out ? (
-            <span className="text-[12px] font-semibold text-gray-400">{t('shop.outOfStock')}</span>
-          ) : (<>
-            {inBox && (
-              <button type="button" onClick={() => less(o.id)} aria-label={`${t('cb.remove')}: ${o.name}`}
-                className="w-7 h-7 rounded-full bg-gray-100 hover:bg-red-50 hover:text-red-500 text-gray-500 font-bold text-base flex items-center justify-center transition-colors">−</button>
+
+        <div className="flex-1 flex flex-col px-1 sm:px-1.5 pt-2">
+          <p className={`font-bold text-[13px] sm:text-[13.5px] leading-snug line-clamp-2 ${out ? 'text-gray-400' : 'text-gray-900'}`}>{o.name}</p>
+          {o.line && <p className="hidden sm:block mt-0.5 text-[11.5px] text-gray-500 leading-snug line-clamp-2">{o.line}</p>}
+          <p className="mt-auto pt-1.5 flex items-baseline gap-1.5">
+            <span className={`font-extrabold text-[15px] ${o.mystery ? 'text-peach-600' : 'text-teal-700'}`}>{amount(o.price)}</span>
+            {o.was != null && o.was > o.price && <span className="text-[11px] text-gray-400 line-through">{amount(o.was)}</span>}
+          </p>
+        </div>
+
+        {!out && (
+          <div className="px-0.5 sm:px-1 pt-2 pb-0.5">
+            {inBox ? (
+              <div className={`flex items-center justify-between h-10 rounded-full p-1 ${o.mystery ? 'bg-peach-400' : 'bg-teal-600'}`}>
+                <button type="button" onClick={() => less(o.id)} aria-label={`${t('cb.remove')}: ${o.name}`}
+                  className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/35 text-white flex items-center justify-center transition-colors"><Icon name="minus" className="w-4 h-4" strokeWidth={2.6} /></button>
+                <span key={o.q} className="text-white text-[14px] font-extrabold tabular-nums motion-safe:animate-[pop_0.25s_ease-out]" aria-live="polite">{o.q}</span>
+                <button type="button" onClick={() => add(o.id, o.max)} disabled={o.q >= o.max} aria-label={`${addWord}: ${o.name}`}
+                  className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/35 text-white flex items-center justify-center transition-colors disabled:opacity-40"><Icon name="plus" className="w-4 h-4" strokeWidth={2.6} /></button>
+              </div>
+            ) : (
+              <button type="button" onClick={() => add(o.id, o.max)} aria-label={`${addWord}: ${o.name}`}
+                className={`w-full h-10 rounded-full text-[12.5px] font-bold inline-flex items-center justify-center gap-1 transition-colors ${
+                  o.mystery ? 'bg-white text-peach-600 hover:bg-peach-400 hover:text-white' : 'bg-teal-50 text-teal-700 hover:bg-teal-600 hover:text-white'}`}>
+                {t('cb.addBtn')}
+              </button>
             )}
-            <button type="button" onClick={() => add(o.id, o.max)} disabled={o.q >= o.max}
-              className={`px-3 py-1.5 rounded-full text-[12px] font-bold transition-colors disabled:opacity-40 ${
-                o.mystery ? (inBox ? 'bg-peach-400 text-white hover:bg-peach-500' : 'bg-white text-peach-600 hover:bg-peach-400 hover:text-white')
-                  : inBox ? 'bg-teal-600 text-white hover:bg-teal-700' : 'bg-teal-50 text-teal-700 hover:bg-teal-600 hover:text-white'}`}>
-              {t('cb.addBtn')}
-            </button>
-          </>)}
-        </div>
+          </div>
+        )}
       </div>
     );
   };
@@ -211,13 +232,15 @@ export default function BuildBoxView({ products, config: raw }: { products: any[
             {products.length === 0 && !mysteryOn ? (
               <EmptyState art="build" tint="bg-pastel-lilac" title={t('cb.none')} />
             ) : (
-              /* Computers: the list scrolls inside its own area so the box stays beside it */
-              <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-3 lg:max-h-[calc(100vh-8rem)] lg:overflow-y-auto lg:overscroll-contain lg:pr-2 lg:-mr-2 lg:pt-3 lg:-mt-3 [scrollbar-width:thin] [scrollbar-color:#BBEDE0_transparent]">
+              /* Two across on phones, three on tablets and computers. The page
+                 itself scrolls (the box beside it is sticky), so no card edge is
+                 ever clipped by an inner scroll area. */
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 gap-2.5 sm:gap-3">
                 {mysteryOn && !cat && card({ id: MYSTERY, emoji: '🎁', name: t('cb.mystery'), line: t('cb.mysterySub'), price: mysteryUnit, was: monthly ? config.mystery.price : undefined, q: mystery, max: config.mystery.max, mystery: true })}
-                {shown.map((p) => card({
-                  id: p.id, emoji: p.boxEmoji || '🐾', name: nameOf(p), line: lineOf(p), price: off(shopUnit(p)), was: monthly ? shopUnit(p) : undefined,
+                {shown.map((p, i) => card({
+                  id: p.id, emoji: p.boxEmoji || '🐾', img: imgOf(p), name: nameOf(p), line: lineOf(p), price: off(shopUnit(p)), was: monthly ? shopUnit(p) : undefined,
                   q: picks[p.id] ?? 0, max: available(p.inventory), popular: p.boxPopular,
-                }))}
+                }, i + 1))}
               </div>
             )}
           </div>
@@ -252,11 +275,14 @@ export default function BuildBoxView({ products, config: raw }: { products: any[
                   </div>
                 ) : (
                   <div className="space-y-2 mb-5 max-h-56 overflow-y-auto pr-1">
-                    {[...lines.map((l) => ({ id: l.p.id, emoji: l.p.boxEmoji || '🐾', name: nameOf(l.p), q: l.q, total: l.total })),
-                      ...(mystery ? [{ id: MYSTERY, emoji: '🎁', name: t('cb.mystery'), q: mystery, total: r2(mysteryUnit * mystery) }] : [])].map((x) => (
+                    {[...lines.map((l) => ({ id: l.p.id, emoji: l.p.boxEmoji || '🐾', img: imgOf(l.p), name: nameOf(l.p), q: l.q, total: l.total })),
+                      ...(mystery ? [{ id: MYSTERY, emoji: '🎁', img: undefined as string | undefined, name: t('cb.mystery'), q: mystery, total: r2(mysteryUnit * mystery) }] : [])].map((x) => (
                       <div key={x.id} className="flex items-center justify-between gap-2 text-[13px] animate-[fadeUp_0.2s_ease-out]">
                         <div className="flex items-center gap-2 min-w-0">
-                          <span className="text-base shrink-0" aria-hidden="true">{x.emoji}</span>
+                          <span className="w-9 h-9 shrink-0 rounded-[10px] overflow-hidden bg-teal-50 flex items-center justify-center text-base" aria-hidden="true">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            {x.img ? <img src={x.img} alt="" className="w-full h-full object-cover" /> : x.emoji}
+                          </span>
                           <span className="text-gray-700 font-medium truncate">{x.name}</span>
                           {x.q > 1 && <span className="text-[11.5px] text-gray-400 shrink-0">×{x.q}</span>}
                         </div>

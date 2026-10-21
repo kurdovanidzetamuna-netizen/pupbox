@@ -31,7 +31,8 @@ const iconFor = (href: string) =>
  * Pages with their own sticky action bar at the bottom (buy, build) or a
  * focused flow (checkout) don't get the tab bar on phones.
  */
-const NO_TAB_BAR = [/^\/checkout/, /^\/build-box/, /^\/shop\/[^/]+$/];
+// Pages with their own bottom bar (pay, build, add to basket) keep the bottom of the screen to themselves.
+const NO_TAB_BAR = [/^\/cart/, /^\/checkout/, /^\/build-box/, /^\/shop\/[^/]+$/];
 
 /**
  * Logo, menu and button come from admin → Page Builder → Header & Footer.

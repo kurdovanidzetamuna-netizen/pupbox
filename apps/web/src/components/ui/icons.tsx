@@ -57,6 +57,7 @@ const P: Record<string, string> = {
   user: 'M12 12a4 4 0 100-8 4 4 0 000 8zM4.5 20a7.5 7.5 0 0115 0',
   send: 'M4 12l16-8-6 16-2.5-6.5L4 12zM11.5 13.5L20 4',
   flag: 'M5 21V4M5 4h11l-2 4 2 4H5',
+  copy: 'M9 9h10v10H9zM5 15V5h10',
 };
 
 export function Icon({ name, className = 'w-[18px] h-[18px]', strokeWidth = 1.8 }: { name: keyof typeof P | string; className?: string; strokeWidth?: number }) {

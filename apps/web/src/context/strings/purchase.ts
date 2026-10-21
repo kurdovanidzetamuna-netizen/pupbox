@@ -60,9 +60,17 @@ export const PURCHASE_STRINGS: Record<string, { en: string; ka: string }> = {
 
   // ── Dog step ──
   'co.dog.title':           { en: 'Tell us about your dog',     ka: 'გვიამბე შენი ძაღლის შესახებ' },
-  'co.dog.which':          { en: 'Which dog is this box for?', ka: 'რომელი ძაღლისთვისაა ეს ყუთი?' },
+  'co.dog.which':          { en: 'Which dog is this box for?', ka: 'რომელი ძაღლისთვისაა ეს კოლოფი?' },
   'co.dog.another':        { en: '+ Another dog',              ka: '+ სხვა ძაღლი' },
-  'co.dog.sub':             { en: 'Every box is picked for your dog. Name and size are all we need to start.', ka: 'ყოველი ყუთი შენი ძაღლისთვის ირჩევა. დასაწყებად მხოლოდ სახელი და ზომა გვჭირდება.' },
+  'co.dog.sub':             { en: 'Every box is picked for one dog — their size, age and what they love.', ka: 'ყოველი კოლოფი ერთი ძაღლისთვის ირჩევა — მისი ზომის, ასაკისა და გემოვნების მიხედვით.' },
+  'co.dog.add':             { en: 'Add a new dog',              ka: 'ახალი ძაღლის დამატება' },
+  'co.dog.edit':            { en: 'Edit',                       ka: 'შეცვლა' },
+  'co.dog.addSize':         { en: 'Add size',                   ka: 'ზომის დამატება' },
+  'co.dog.picked':          { en: "Lovely! We'll pick {name}'s box to fit them just right.", ka: 'მშვენიერია! {name}-ის კოლოფს ზუსტად მასზე მოვარგებთ.' },
+  'co.dog.needSize':        { en: "What size is {name}? Then the toys and treats will fit.", ka: 'რა ზომისაა {name}? ასე სათამაშოები და ლაკომკები ზუსტად მოერგება.' },
+  'co.dog.emptyTitle':      { en: "Who's the lucky pup?",       ka: 'ვინაა იღბლიანი ლეკვი?' },
+  'co.dog.emptySub':        { en: 'Tell us about your dog in four quick steps — we pick every box for them.', ka: 'მოგვიყევი შენს ძაღლზე ოთხ მოკლე ნაბიჯად — ყოველ კოლოფს მისთვის შევარჩევთ.' },
+  'co.e.pickDog':           { en: 'Pick the dog this box is for, or add one', ka: 'აირჩიე ძაღლი, ვისთვისაც არის კოლოფი, ან დაამატე ახალი' },
 
   // ── Gift step ──
   'co.gift.title':          { en: '🎁 Who is it for?',          ka: '🎁 ვისთვისაა?' },
@@ -138,6 +146,7 @@ export const PURCHASE_STRINGS: Record<string, { en: string; ka: string }> = {
   'cart.trustCancel':       { en: 'Cancel anytime',              ka: 'გაუქმება ნებისმიერ დროს' },
   'cart.title':             { en: 'Your cart',                  ka: 'შენი კალათა' },
   'cart.subscription':      { en: 'Subscription box',           ka: 'გამოწერის ყუთი' },
+  'cart.dockItems':         { en: '{n} items · total',          ka: '{n} ნივთი · სულ' },
   'cart.qty':               { en: 'Qty: {n}',                   ka: 'რაოდ.: {n}' },
   'cart.remove':            { en: 'Remove',                     ka: 'წაშლა' },
   'cart.decrease':          { en: 'Decrease quantity',          ka: 'რაოდენობის შემცირება' },
