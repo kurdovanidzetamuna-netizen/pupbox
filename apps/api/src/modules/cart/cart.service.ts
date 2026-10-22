@@ -5,7 +5,7 @@ import { checkChoice, sameChoice } from '../products/personalisation';
 import { quoteBox, quoteSavedBox, tidy, type BoxLine } from '../custom-box/custom-box';
 import { shopSettings } from '../settings/settings';
 import { checkReferralCode, referralDiscount } from '../referrals/referral-promo';
-import { couponDiscount, couponFit, hasPaidBefore, meetsMinimum } from '../coupons/coupon-discount';
+import { couponDiscount, couponFit, couponGap, hasPaidBefore, meetsMinimum } from '../coupons/coupon-discount';
 
 const cartInclude = {
   items: {
@@ -97,7 +97,7 @@ export class CartService {
 
     if (subscriptionPlanId) {
       // The monthly custom box plan is only bought by building a box.
-      const plan = await this.prisma.subscriptionPlan.findFirst({ where: { id: subscriptionPlanId, isActive: true, deletedAt: null, isCustomBox: false } });
+      const plan = await this.prisma.subscriptionPlan.findFirst({ where: { id: subscriptionPlanId, isActive: true, listed: true, deletedAt: null, isCustomBox: false } });
       if (!plan) throw new NotFoundException('Subscription plan not found');
       if (await this.prisma.cartItem.count({ where: { cartId, customBox: { monthly: true } } })) {
         throw new BadRequestException('Your basket already has a monthly box. Check that one out first, or remove it, then add a plan.');
@@ -347,13 +347,15 @@ export class CartService {
 
     // A coupon: off the things it covers (its delivery part comes off at checkout).
     if (cart.coupon) discountAmount = couponDiscount(cart.coupon, cart.items).items;
+    // When the code takes nothing off (under its minimum, gift-only…), why — the basket says so instead of "applied".
+    const couponIssue = cart.coupon ? couponGap(cart.coupon, cart.items) : null;
 
     const total = Math.max(0, subtotal - discountAmount);
     // A monthly box is a subscription with delivery included, like a plan.
     const hasSubscription = cart.items.some((i: any) => i.subscriptionPlanId || i.customBox?.monthly);
     const deliveryIncluded = cart.items.some((i: any) => i.subscriptionPlan?.deliveryIncluded || i.customBox?.monthly);
 
-    return { ...cart, referral, subtotal: +subtotal.toFixed(2), discountAmount: +discountAmount.toFixed(2), total: +total.toFixed(2), hasSubscription, deliveryIncluded, itemCount: cart.items.reduce((s: number, i: any) => s + i.quantity, 0) };
+    return { ...cart, referral, couponIssue, subtotal: +subtotal.toFixed(2), discountAmount: +discountAmount.toFixed(2), total: +total.toFixed(2), hasSubscription, deliveryIncluded, itemCount: cart.items.reduce((s: number, i: any) => s + i.quantity, 0) };
   }
 }
 

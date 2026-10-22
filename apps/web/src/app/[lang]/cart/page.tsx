@@ -28,6 +28,8 @@ export default function CartPage() {
   const [couponError, setCouponError] = useState('');
   const [couponLoading, setCouponLoading] = useState(false);
   const [promoOpen, setPromoOpen] = useState(false);
+  // A code on the basket that takes nothing off yet (under its minimum, gift-only…), and why.
+  const issue: { reason: 'MIN' | 'GIFT' | 'NONE'; short?: number } | null = cart?.coupon && !cart?.referral ? cart.couponIssue ?? null : null;
   // Which line a quantity change failed on, and why.
   const [qtyError, setQtyError] = useState<{ id: string; message: string } | null>(null);
 
@@ -133,10 +135,10 @@ export default function CartPage() {
               <span aria-hidden="true" className="absolute left-0 top-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-pastel-grey z-10" />
               <span aria-hidden="true" className="absolute right-0 top-1/2 translate-x-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-pastel-grey z-10" />
               {cart.coupon || cart.referral ? (
-                <div className="rounded-[20px] bg-teal-50 ring-1 ring-inset ring-teal-300 border-dashed px-4 py-3.5 flex items-center gap-3">
-                  <span className="w-10 h-10 shrink-0 rounded-[12px] bg-white text-teal-600 flex items-center justify-center"><Icon name={cart.referral ? 'heart' : 'check'} className="w-5 h-5" strokeWidth={2.6} /></span>
+                <div className={`rounded-[20px] ring-1 ring-inset px-4 py-3.5 flex items-center gap-3 ${issue ? 'bg-pastel-sun ring-amber-200' : 'bg-teal-50 ring-teal-300'}`}>
+                  <span className={`w-10 h-10 shrink-0 rounded-[12px] bg-white flex items-center justify-center ${issue ? 'text-[#D98A00]' : 'text-teal-600'}`}><Icon name={cart.referral ? 'heart' : issue ? 'info' : 'check'} className="w-5 h-5" strokeWidth={2.6} /></span>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[12px] font-semibold text-teal-700">{cart.referral ? fill(t('cart.friendOn'), { name: cart.referral.inviterName || t('ref.friend') }) : t('cart.promoOn')}</p>
+                    <p className={`text-[12px] font-semibold ${issue ? 'text-[#A86A00]' : 'text-teal-700'}`}>{cart.referral ? fill(t('cart.friendOn'), { name: cart.referral.inviterName || t('ref.friend') }) : issue ? t('cart.promoWaiting') : t('cart.promoOn')}</p>
                     <p className="text-[15px] font-extrabold tracking-wider text-gray-900 font-mono truncate">{cart.referral?.code ?? cart.coupon.code}</p>
                     <p className="text-[12px] text-teal-700">
                       {cart.referral
@@ -158,7 +160,9 @@ export default function CartPage() {
                           ].filter(Boolean).map((x) => ` · ${x}`).join('')}
                         </>}
                     </p>
-                    {cart.coupon?.scopes?.includes('DELIVERY') && !cart.referral && <p className="text-[11.5px] text-teal-700/80">{t('cart.couponDelivery')}</p>}
+                    {/* Takes nothing off yet: say what would make it work */}
+                    {issue && <p className="mt-0.5 text-[12px] font-bold text-[#A86A00]">{issue.reason === 'MIN' ? fill(t('cart.cpnShort'), { v: gel(issue.short) }) : issue.reason === 'GIFT' ? t('cart.cpnGift') : t('cart.cpnNone')}</p>}
+                    {cart.coupon?.scopes?.includes('DELIVERY') && !cart.referral && !issue && <p className="text-[11.5px] text-teal-700/80">{t('cart.couponDelivery')}</p>}
                   </div>
                   <IconButton icon="close" tone="danger" size="sm" label={t('cart.removeCoupon')} onClick={removeCoupon} />
                 </div>
