@@ -67,10 +67,14 @@ export async function createDueRenewals(prisma: PrismaService, email: EmailServi
       continue;
     }
     const price = term.price;
+    // A saved card is charged on the renewal date (payments/auto-renew.ts);
+    // without one, the customer pays the emailed link.
+    const hasCard = (await prisma.savedCard.count({ where: { userId: s.userId } })) > 0;
     const order = await prisma.order.create({
       data: {
         userId: s.userId, subscriptionId: s.id, addressId: s.addressId, dogId: s.dogId,
         type: 'RENEWAL', status: 'PENDING', renewalFor: s.nextRenewalAt,
+        ...(hasCard ? { nextChargeAt: s.nextRenewalAt! > now ? s.nextRenewalAt! : now } : {}),
         subtotal: price, deliveryCost: 0, discountAmount: 0, total: price,
         items: { create: [term.item] },
       },
@@ -157,14 +161,18 @@ export async function extendAfterRenewal(prisma: PrismaService, orderId: string)
 export async function endUnpaidRenewals(prisma: PrismaService, now = new Date()) {
   const { renewalGraceDays } = await shopSettings(prisma);
   const overdue = await prisma.customerSubscription.findMany({
-    where: { status: 'ACTIVE', autoRenewal: true, cancelledAt: null, nextRenewalAt: { lte: new Date(now.getTime() - renewalGraceDays * DAY) } },
+    where: { status: { in: ['ACTIVE', 'PAYMENT_FAILED'] }, autoRenewal: true, cancelledAt: null, nextRenewalAt: { lte: new Date(now.getTime() - renewalGraceDays * DAY) } },
     select: { id: true, nextRenewalAt: true },
   });
+  let ended = 0;
   for (const s of overdue) {
+    // A saved card still being retried (auto-renew.ts) decides for itself when to stop.
+    if (await prisma.order.count({ where: { subscriptionId: s.id, type: 'RENEWAL', status: 'PENDING', nextChargeAt: { not: null } } })) continue;
     const open = await prisma.order.findMany({ where: { subscriptionId: s.id, type: 'RENEWAL', status: 'PENDING' }, select: { id: true } });
     for (const o of open) await cancelUnpaidOrder(prisma, o.id, 'Renewal not paid in time; the plan ended.');
     await prisma.customerSubscription.update({ where: { id: s.id }, data: { status: 'EXPIRED', autoRenewal: false, nextRenewalAt: null } });
+    ended++;
   }
-  if (overdue.length) logger.log(`Ended ${overdue.length} plan(s) whose renewal wasn't paid`);
-  return overdue.length;
+  if (ended) logger.log(`Ended ${ended} plan(s) whose renewal wasn't paid`);
+  return ended;
 }

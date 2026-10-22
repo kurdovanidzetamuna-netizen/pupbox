@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useRef, useEffect } from 'react';
+import Dropdown, { Select } from './Dropdown';
 
 // ── CustomSelect ──────────────────────────────────────────────────────────────
 
@@ -16,115 +17,10 @@ export function CustomSelect({ value, onChange, options, placeholder = 'Select�
   placeholder?: string;
   style?: React.CSSProperties;
 }) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    function handler(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    }
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [open]);
-
-  const selected = options.find(o => o.value === value);
-  const active = !!value;
-
-  return (
-    <div ref={ref} style={{ position: 'relative', ...style }}>
-      <button
-        type="button"
-        aria-haspopup="listbox"
-        aria-expanded={open}
-        onClick={() => setOpen(o => !o)}
-        style={{
-          width: '100%',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 8,
-          padding: '8px 10px 8px 12px',
-          fontSize: 13,
-          fontWeight: active ? 600 : 400,
-          borderRadius: 8,
-          // Borderless filled field. Opening lifts it with a focus ring
-          // instead of drawing a permanent box around it.
-          border: 'none',
-          background: active ? 'var(--teal-50)' : 'var(--slate-100)',
-          color: active ? 'var(--teal-600)' : 'var(--slate-400)',
-          boxShadow: open ? '0 0 0 2px var(--teal-200)' : 'none',
-          cursor: 'pointer',
-          outline: 'none',
-          textAlign: 'left',
-          transition: 'box-shadow 0.12s, background 0.12s',
-        }}
-      >
-        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {selected ? selected.label : placeholder}
-        </span>
-        {/* Chevron in its own subtle well, so the control reads as openable
-            without an outline around the whole field. */}
-        <span style={{
-          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-          width: 18, height: 18, borderRadius: 5, flexShrink: 0,
-          background: open ? 'var(--teal-100)' : 'transparent',
-          transition: 'transform 0.15s, background 0.12s',
-          transform: open ? 'rotate(180deg)' : 'none',
-        }}>
-          <svg width="10" height="6" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 10 6">
-            <path d="M1 1l4 4 4-4"/>
-          </svg>
-        </span>
-      </button>
-
-      {open && (
-        <div style={{
-          position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, zIndex: 200,
-          background: 'var(--white)', borderRadius: 12, border: '1px solid var(--slate-200b)',
-          boxShadow: '0 10px 34px rgba(0,0,0,0.18)', overflow: 'hidden', padding: 4,
-          // Slides down on open rather than appearing abruptly.
-          animation: 'csFade 0.12s ease-out',
-        }}>
-          <style>{'@keyframes csFade{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}'}</style>
-          <div style={{ maxHeight: 220, overflowY: 'auto' }}>
-            {options.map((opt, i) => (
-              <React.Fragment key={opt.value}>
-                {opt.dividerBefore && <div style={{ height: 1, background: 'var(--slate-100)', margin: '2px 0' }} />}
-                <button
-                  type="button"
-                  onClick={() => { onChange(opt.value); setOpen(false); }}
-                  style={{
-                    width: '100%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 8,
-                    padding: '8px 10px',
-                    fontSize: 13,
-                    fontWeight: opt.value === value ? 600 : 400,
-                    border: 'none',
-                    borderRadius: 8,
-                    background: opt.value === value ? 'var(--teal-50)' : 'transparent',
-                    color: opt.value === value ? 'var(--teal-600)' : 'var(--slate-800)',
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                  }}
-                  onMouseEnter={e => { if (opt.value !== value) (e.currentTarget as HTMLButtonElement).style.background = 'var(--slate-100)'; }}
-                  onMouseLeave={e => { if (opt.value !== value) (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
-                >
-                  {opt.value === value && (
-                    <svg width="12" height="12" fill="none" stroke="var(--teal-600)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-                  )}
-                  {opt.value !== value && <span style={{ width: 12, flexShrink: 0 }} />}
-                  {opt.label}
-                </button>
-              </React.Fragment>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
+  // The shared Dropdown; a divider here starts a new unnamed group there.
+  let g = 0;
+  const opts = options.map((o) => { if (o.dividerBefore) g++; return { value: o.value, label: o.label, group: g ? ' ' : undefined }; });
+  return <Dropdown value={value} onChange={onChange} options={opts} placeholder={placeholder} block style={style} />;
 }
 
 // ── ActionButton ──────────────────────────────────────────────────────────────
@@ -181,33 +77,7 @@ export function FilterSelect({ value, onChange, children, style }: {
   children: React.ReactNode;
   style?: React.CSSProperties;
 }) {
-  const active = !!value;
-  return (
-    <select
-      value={value}
-      onChange={e => onChange(e.target.value)}
-      style={{
-        padding: '5px 28px 5px 10px',
-        borderRadius: 9,
-        fontSize: 12,
-        fontWeight: 600,
-        cursor: 'pointer',
-        border: `1.5px solid ${active ? 'var(--teal-600)' : 'var(--slate-200)'}`,
-        background: active
-          ? 'var(--teal-50)'
-          : `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='M1 1l4 4 4-4'/%3E%3C/svg%3E") no-repeat right 8px center var(--white)`,
-        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='M1 1l4 4 4-4'/%3E%3C/svg%3E")`,
-        backgroundRepeat: 'no-repeat',
-        backgroundPosition: 'right 8px center',
-        color: active ? 'var(--teal-600)' : 'var(--slate-500)',
-        outline: 'none',
-        appearance: 'none' as any,
-        ...style,
-      }}
-    >
-      {children}
-    </select>
-  );
+  return <Select value={value} onChange={(e) => onChange(e.target.value)} style={{ width: 'auto', ...style }}>{children}</Select>;
 }
 
 // ── SortBar ───────────────────────────────────────────────────────────────────
@@ -534,20 +404,8 @@ export function Pagination({
       {/* Per-page */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <span style={{ fontSize: 12, color: 'var(--slate-400)' }}>Show</span>
-        <select
-          value={pageSize}
-          onChange={e => onPageSizeChange(Number(e.target.value))}
-          style={{
-            height: 32, padding: '0 28px 0 10px', borderRadius: 8,
-            border: '1px solid var(--slate-200)', background: 'var(--slate-50)',
-            color: 'var(--slate-700b)', fontSize: 13, fontWeight: 600,
-            cursor: 'pointer', outline: 'none', appearance: 'none' as any,
-            backgroundImage: `url("data:image/svg+xml,%3Csvg width='10' height='6' fill='none' stroke='%2394a3b8' strokeWidth='2' viewBox='0 0 10 6' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4'/%3E%3C/svg%3E")`,
-            backgroundRepeat: 'no-repeat', backgroundPosition: 'right 10px center',
-          }}
-        >
-          {pageSizeOptions.map(n => <option key={n} value={n}>{n}</option>)}
-        </select>
+        <Dropdown aria-label="Per page" value={String(pageSize)} onChange={(v) => onPageSizeChange(Number(v))}
+          options={pageSizeOptions.map((n) => ({ value: String(n), label: String(n) }))} />
         <span style={{ fontSize: 12, color: 'var(--slate-400)' }}>per page</span>
       </div>
 

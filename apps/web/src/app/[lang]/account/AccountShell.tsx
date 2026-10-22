@@ -57,7 +57,7 @@ export default function AccountShell({ children }: { children: React.ReactNode }
             <div className="hidden lg:block mt-6 space-y-2">
               <Button href="/prices" icon="box" label={t('acc.subscribe').replace(/^\+\s*/, '')} className="w-full" />
               <div className="flex justify-center">
-                <IconButton icon="power" tone="danger" label={t('acc.signOut')} onClick={() => setAskOut(true)} />
+                <IconButton icon="logout" size="sm" label={t('acc.signOut')} onClick={() => setAskOut(true)} />
               </div>
             </div>
           </nav>

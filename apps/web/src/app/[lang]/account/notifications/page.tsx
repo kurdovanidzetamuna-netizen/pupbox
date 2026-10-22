@@ -15,7 +15,7 @@ import { markRead, setUnread, useUnread, type Notice } from '@/lib/notifications
 const FILTERS: { key: string; icon: string; label: string; types?: string[] }[] = [
   { key: 'all', icon: 'bell', label: 'ntf.all' },
   { key: 'unread', icon: 'sparkle', label: 'ntf.unread' },
-  { key: 'orders', icon: 'bag', label: 'ntf.c.orders', types: ['ORDER_PAID', 'PAYMENT_FAILED', 'ORDER_SHIPPED', 'ORDER_DELIVERED', 'REFUNDED'] },
+  { key: 'orders', icon: 'bag', label: 'ntf.c.orders', types: ['ORDER_PAID', 'PAYMENT_FAILED', 'ORDER_SHIPPED', 'ORDER_DELIVERED', 'REFUNDED', 'EXTRA_CHARGE'] },
   { key: 'boxes', icon: 'box', label: 'ntf.c.boxes', types: ['BOX_SHIPPED', 'BOX_DELIVERED', 'RENEWAL_DUE'] },
   { key: 'gifts', icon: 'gift', label: 'ntf.c.gifts', types: ['GIFT_SENT', 'REFERRAL_REWARD', 'WELCOME'] },
 ];

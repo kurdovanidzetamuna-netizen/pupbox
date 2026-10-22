@@ -3,6 +3,9 @@ import { PrismaService } from '../prisma/prisma.service';
 import { Prisma } from '@prisma/client';
 import { checkChoice, sameChoice } from '../products/personalisation';
 import { quoteBox, quoteSavedBox, tidy, type BoxLine } from '../custom-box/custom-box';
+import { shopSettings } from '../settings/settings';
+import { checkReferralCode, referralDiscount } from '../referrals/referral-promo';
+import { couponDiscount, couponFit, hasPaidBefore, meetsMinimum } from '../coupons/coupon-discount';
 
 const cartInclude = {
   items: {
@@ -34,7 +37,7 @@ export class CartService {
     // that guest cart into the account cart, or everything they added before
     // signing in silently disappears and checkout finds an empty cart.
     if (userId && sessionId) cart = await this.mergeGuestCart(cart, sessionId);
-    return this.withTotals(await this.refresh(cart));
+    return this.withTotals(await this.refresh(cart), await this.offer(cart));
   }
 
   private async mergeGuestCart(userCart: any, sessionId: string) {
@@ -57,8 +60,8 @@ export class CartService {
       }
       // The same plan already in the account cart: one subscription per plan.
     }
-    if (guest.couponId && !userCart.couponId) {
-      await this.prisma.cart.update({ where: { id: userCart.id }, data: { couponId: guest.couponId } });
+    if ((guest.couponId || guest.referralCode) && !userCart.couponId && !userCart.referralCode) {
+      await this.prisma.cart.update({ where: { id: userCart.id }, data: { couponId: guest.couponId, referralCode: guest.referralCode } });
     }
     await this.prisma.cartItem.deleteMany({ where: { cartId: guest.id } });
     await this.prisma.cart.delete({ where: { id: guest.id } });
@@ -75,13 +78,15 @@ export class CartService {
     if (productId) {
       const product = await this.prisma.product.findFirst({ where: { id: productId, status: 'ACTIVE', deletedAt: null }, include: { inventory: true } });
       if (!product) throw new NotFoundException('Product not found or unavailable');
-      // What's free to sell: stock minus what unpaid orders are holding.
-      if (product.inventory && product.inventory.quantity - product.inventory.reservedQty < quantity) throw new BadRequestException('Insufficient stock');
+      // A bowl engraved "Rex" and one engraved "Luna" are two lines, not quantity 2.
+      const lines = await this.prisma.cartItem.findMany({ where: { cartId, productId } });
+      // What's free to sell (stock minus what unpaid orders are holding),
+      // against everything of this product already in the basket.
+      const inBasket = lines.reduce((n, l) => n + l.quantity, 0);
+      if (product.inventory && product.inventory.quantity - product.inventory.reservedQty < inBasket + quantity) throw new BadRequestException('Insufficient stock');
       price = Number(product.salePrice ?? product.price);
       const personalisation = checkChoice(product.personalisation, data.personalisation);
 
-      // A bowl engraved "Rex" and one engraved "Luna" are two lines, not quantity 2.
-      const lines = await this.prisma.cartItem.findMany({ where: { cartId, productId } });
       const existing = lines.find((l) => sameChoice(l.personalisation, personalisation));
       if (existing) {
         await this.prisma.cartItem.update({ where: { id: existing.id }, data: { quantity: existing.quantity + quantity } });
@@ -142,6 +147,14 @@ export class CartService {
     if (!item) throw new NotFoundException('Cart item not found');
     // A box is one box; its contents change in the builder.
     if (item.customBoxId && quantity > 1) throw new BadRequestException('To change a box, edit what’s in it.');
+    // One subscription per plan.
+    if (item.subscriptionPlanId && quantity > 1) throw new BadRequestException('A plan can be added once.');
+    // Only check stock when adding more, so a basket over stock can still go down.
+    if (item.productId && quantity > item.quantity) {
+      const inv = await this.prisma.inventory.findUnique({ where: { productId: item.productId } });
+      const others = await this.prisma.cartItem.aggregate({ where: { cartId, productId: item.productId, id: { not: itemId } }, _sum: { quantity: true } });
+      if (inv && inv.quantity - inv.reservedQty < quantity + (others._sum.quantity ?? 0)) throw new BadRequestException('Insufficient stock');
+    }
     if (quantity <= 0) {
       await this.prisma.cartItem.delete({ where: { id: itemId } });
     } else {
@@ -167,29 +180,49 @@ export class CartService {
         ],
       },
     });
-    if (!coupon) throw new BadRequestException('Invalid or expired coupon code');
+    if (!coupon) {
+      // Not a coupon: maybe a friend's referral code (NINO-4K7P).
+      const offer = (await shopSettings(this.prisma)).referral;
+      const inviter = await checkReferralCode(this.prisma, offer, code, userId);
+      if (!inviter) throw new BadRequestException('Invalid or expired promo code');
+      await this.prisma.cart.update({ where: { id: cartId }, data: { referralCode: inviter.referralCode, couponId: null } });
+      return this.getCart(cartId);
+    }
 
     if (coupon.usageLimit && coupon.usedCount >= coupon.usageLimit) {
-      throw new BadRequestException('Coupon usage limit reached');
+      throw new BadRequestException('This promo code has run out');
     }
 
     if (userId && coupon.perUserLimit) {
       const used = await this.prisma.couponUsage.count({ where: { couponId: coupon.id, userId } });
-      if (used >= coupon.perUserLimit) throw new BadRequestException('You have already used this coupon');
+      if (used >= coupon.perUserLimit) throw new BadRequestException('You have already used this promo code');
     }
 
-    await this.prisma.cart.update({ where: { id: cartId }, data: { couponId: coupon.id } });
+    // Only for some things (say gift boxes, or delivery): say so now rather
+    // than apply a code that takes nothing off.
+    if (coupon.firstOrderOnly && userId && (await hasPaidBefore(this.prisma, userId))) throw new BadRequestException('This promo code is for a first order only');
+    const items = await this.prisma.cartItem.findMany({ where: { cartId }, select: { price: true, quantity: true, productId: true, subscriptionPlanId: true, customBoxId: true, subscriptionPlan: { select: { durationValue: true, durationUnit: true, tierId: true } } } });
+    const fit = couponFit(coupon, items);
+    if (fit === 'scope') throw new BadRequestException(`This promo code is only for ${scopeText(coupon.scopes)}`);
+    if (fit === 'months') throw new BadRequestException(`This promo code is for plans of ${coupon.minPlanMonths} months or longer`);
+    if (fit === 'tier') {
+      const tiers = await this.prisma.boxTier.findMany({ where: { id: { in: coupon.boxTierIds } }, select: { name: true } });
+      throw new BadRequestException(`This promo code is only for ${tiers.map((t) => t.name).join(' or ')} boxes`);
+    }
+    if (!meetsMinimum(coupon, items)) throw new BadRequestException(`This promo code needs an order of at least ₾${Number(coupon.minOrderAmount)}`);
+
+    await this.prisma.cart.update({ where: { id: cartId }, data: { couponId: coupon.id, referralCode: null } });
     return this.getCart(cartId);
   }
 
   async removeCoupon(cartId: string) {
-    await this.prisma.cart.update({ where: { id: cartId }, data: { couponId: null } });
+    await this.prisma.cart.update({ where: { id: cartId }, data: { couponId: null, referralCode: null } });
     return this.getCart(cartId);
   }
 
   async clear(cartId: string) {
     await this.prisma.cartItem.deleteMany({ where: { cartId } });
-    await this.prisma.cart.update({ where: { id: cartId }, data: { couponId: null } });
+    await this.prisma.cart.update({ where: { id: cartId }, data: { couponId: null, referralCode: null } });
   }
 
   /**
@@ -210,14 +243,27 @@ export class CartService {
     return Number(agg._min.price ?? 0);
   }
 
-  async getDeliveryMethods(cart: { subtotal: number; deliveryIncluded?: boolean }) {
+  /**
+   * Delivery options for this cart, each with what the order then comes to:
+   * a coupon may cover delivery, and a plan bought as a gift prices as GIFT.
+   */
+  async getDeliveryMethods(cart: { subtotal: number; deliveryIncluded?: boolean; coupon?: any; items?: any[]; discountAmount?: number; referral?: any }, o: { gift?: boolean } = {}) {
     const methods = await this.prisma.deliveryMethod.findMany({ where: { isActive: true }, orderBy: { sortOrder: 'asc' } });
     const cheapest = Math.min(...methods.map(m => Number(m.price)));
+    // A friend's code on a plan bought as a gift prices as a gift, as checkout will charge it.
+    const friendOff = cart.referral && cart.items && o.gift ? referralDiscount((await shopSettings(this.prisma)).referral, cart.items, o) : null;
     return methods.map(m => {
       const effectivePrice = this.deliveryCostFor(m, cart, cheapest);
+      const off = cart.coupon && cart.items ? couponDiscount(cart.coupon, cart.items, effectivePrice, o) : null;
+      const itemsOff = off ? off.items : friendOff ?? cart.discountAmount ?? 0;
+      const couponOff = off?.delivery ?? 0;
       return {
         ...m,
         effectivePrice,
+        // Taken off this delivery fee by the coupon, and the order's discount and total with it.
+        couponOff,
+        discount: +(itemsOff + couponOff).toFixed(2),
+        total: +(Math.max(0, cart.subtotal - itemsOff) + effectivePrice - couponOff).toFixed(2),
         isFree: effectivePrice === 0,
         // "Included with your plan" only where the plan fully covers it.
         includedWithPlan: !!cart.deliveryIncluded && effectivePrice === 0,
@@ -229,7 +275,7 @@ export class CartService {
   private async getCart(cartId: string) {
     const cart = await this.prisma.cart.findUnique({ where: { id: cartId }, include: cartInclude });
     if (!cart) throw new NotFoundException('Cart not found');
-    return this.withTotals(await this.refresh(cart));
+    return this.withTotals(await this.refresh(cart), await this.offer(cart));
   }
 
   /**
@@ -279,24 +325,41 @@ export class CartService {
     return { ...fresh, pricesUpdated: true };
   }
 
-  private withTotals(cart: any) {
+  /** The referral offer, when this cart carries a friend's code that still holds. */
+  private async offer(cart: any) {
+    if (!cart.referralCode) return null;
+    const offer = (await shopSettings(this.prisma)).referral;
+    try {
+      const inviter = await checkReferralCode(this.prisma, offer, cart.referralCode, cart.userId);
+      if (inviter) return { offer, inviterName: inviter.firstName };
+    } catch { /* no longer valid (e.g. they've ordered since): dropped below */ }
+    await this.prisma.cart.update({ where: { id: cart.id }, data: { referralCode: null } });
+    cart.referralCode = null;
+    return null;
+  }
+
+  private withTotals(cart: any, ref: Awaited<ReturnType<CartService['offer']>> = null) {
     const subtotal = cart.items.reduce((sum: number, item: any) => sum + Number(item.price) * item.quantity, 0);
     let discountAmount = 0;
+    // A friend's code: their first-order discount on the parts of the order it covers.
+    const referral = ref ? { code: cart.referralCode, inviterName: ref.inviterName, discount: referralDiscount(ref.offer, cart.items), offer: { type: ref.offer.friendType, value: ref.offer.friendValue, minOrder: ref.offer.minOrder } } : null;
+    if (referral) discountAmount = referral.discount;
 
-    if (cart.coupon) {
-      const c = cart.coupon;
-      if (c.discountType === 'PERCENTAGE') {
-        discountAmount = subtotal * (Number(c.discountValue) / 100);
-      } else {
-        discountAmount = Math.min(Number(c.discountValue), subtotal);
-      }
-    }
+    // A coupon: off the things it covers (its delivery part comes off at checkout).
+    if (cart.coupon) discountAmount = couponDiscount(cart.coupon, cart.items).items;
 
     const total = Math.max(0, subtotal - discountAmount);
     // A monthly box is a subscription with delivery included, like a plan.
     const hasSubscription = cart.items.some((i: any) => i.subscriptionPlanId || i.customBox?.monthly);
     const deliveryIncluded = cart.items.some((i: any) => i.subscriptionPlan?.deliveryIncluded || i.customBox?.monthly);
 
-    return { ...cart, subtotal: +subtotal.toFixed(2), discountAmount: +discountAmount.toFixed(2), total: +total.toFixed(2), hasSubscription, deliveryIncluded, itemCount: cart.items.reduce((s: number, i: any) => s + i.quantity, 0) };
+    return { ...cart, referral, subtotal: +subtotal.toFixed(2), discountAmount: +discountAmount.toFixed(2), total: +total.toFixed(2), hasSubscription, deliveryIncluded, itemCount: cart.items.reduce((s: number, i: any) => s + i.quantity, 0) };
   }
 }
+
+const SCOPE_TEXT: Record<string, string> = { SHOP: 'shop products', BOX: 'subscription boxes', CUSTOM_BOX: 'boxes you build', GIFT: 'gift boxes', DELIVERY: 'delivery' };
+/** "gift boxes and delivery" */
+const scopeText = (scopes: string[]) => {
+  const t = scopes.map((x) => SCOPE_TEXT[x]);
+  return t.length > 1 ? `${t.slice(0, -1).join(', ')} and ${t[t.length - 1]}` : t[0] ?? 'some items';
+};

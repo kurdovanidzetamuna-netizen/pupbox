@@ -31,8 +31,10 @@ export class AdminProductsController {
     @Query('status') status?: string,
     @Query('search') search?: string,
     @Query('includedInBox') includedInBox?: string,
+    @Query('category') category?: string,
   ) {
     return this.service.findAll({
+      categorySlug: category || undefined,
       page: page ? +page : 1,
       limit: limit ? +limit : 100,
       status,

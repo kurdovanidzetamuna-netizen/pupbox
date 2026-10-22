@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useLanguage } from '@/context/LanguageContext';
+import { fill } from '@/context/strings/purchase';
 import { authFetch, SessionExpiredError } from '@/lib/authFetch';
 import Modal from '@/components/ui/Modal';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
@@ -16,10 +17,13 @@ import { FormAlert, countErrors, revealFirstError } from '@/components/ui/FormEr
 /** +995 599 11 12 22 rather than +995599111222. */
 const prettyPhone = (p: string) => parsePhoneNumberFromString(p, 'GE')?.formatInternational() ?? p;
 
-const iconFor = (label: string | null) => /სახლ|home|ბინა/i.test(label ?? '') ? 'home' : /სამსახ|work|ოფის|office/i.test(label ?? '') ? 'work' : 'pin';
+const iconFor = (label: string | null) => /სახლ|home|ბინა/i.test(label ?? '') ? 'home' : /სამსახ|work|ოფის|office/i.test(label ?? '') ? 'work' : /მეგობ|friend|დედ|მამ|mum|mom|dad|ბებ|gran/i.test(label ?? '') ? 'heart' : 'pin';
 
-type Address = { id: string; label: string | null; firstName: string; lastName: string; phone: string; city: string; addressLine1: string; addressLine2: string | null; latitude: number | null; longitude: number | null; isDefault: boolean };
-const EMPTY = { label: '', firstName: '', lastName: '', phone: '', city: '', addressLine1: '', addressLine2: '' };
+/** One-tap names for an address; any other name can be typed. */
+const NAME_IDEAS = ['addr.n.home', 'addr.n.work', 'addr.n.country', 'addr.n.family', 'addr.n.friend'];
+
+type Address = { id: string; label: string | null; firstName: string; lastName: string; phone: string; city: string; addressLine1: string; addressLine2: string | null; latitude: number | null; longitude: number | null; isDefault: boolean; isGift?: boolean };
+const EMPTY = { label: '', firstName: '', lastName: '', phone: '', city: '', addressLine1: '', addressLine2: '', isDefault: false };
 const msg = async (res: Response, fallback: string) => {
   const d = await res.json().catch(() => ({}));
   return (Array.isArray(d?.message) ? d.message[0] : d?.message) || fallback;
@@ -36,6 +40,7 @@ export default function AddressBook({ onExpired, addTick = 0, onCount }: {
   const [list, setList] = useState<Address[]>([]);
   const [editing, setEditing] = useState<Address | 'new' | null>(null);
   const [form, setForm] = useState(EMPTY);
+  const [start, setStart] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [toRemove, setToRemove] = useState<Address | null>(null);
@@ -56,7 +61,8 @@ export default function AddressBook({ onExpired, addTick = 0, onCount }: {
     setEditing(a); setError(''); setErrs({}); setTried(false);
     setPhoneOk(a !== 'new' && isValidPhone(a.phone));
     setPin(a !== 'new' && a.latitude != null && a.longitude != null ? { lat: a.latitude, lng: a.longitude } : null);
-    setForm(a === 'new' ? EMPTY : { label: a.label ?? '', firstName: a.firstName, lastName: a.lastName, phone: a.phone, city: a.city, addressLine1: a.addressLine1, addressLine2: a.addressLine2 ?? '' });
+    const f = a === 'new' ? EMPTY : { label: a.label ?? '', firstName: a.firstName, lastName: a.lastName, phone: a.phone, city: a.city, addressLine1: a.addressLine1, addressLine2: a.addressLine2 ?? '', isDefault: a.isDefault };
+    setForm(f); setStart(JSON.stringify(f));
   }
 
   async function save(e: React.FormEvent) {
@@ -101,32 +107,67 @@ export default function AddressBook({ onExpired, addTick = 0, onCount }: {
     } finally { setBusy(false); }
   }
 
-  const set = (k: keyof typeof EMPTY) => (v: string) => { setForm((f) => ({ ...f, [k]: v })); setError(''); setErrs((e) => ({ ...e, [k]: '' })); };
+  // A friend's address from a gift order sits apart and is never the default.
+  const own = list.filter((a) => !a.isGift), gifts = list.filter((a) => a.isGift);
+  const giftName = (a: Address) => (a.label ?? '').replace(/^Gift · /, '') || `${a.firstName} ${a.lastName}`;
+  const set = (k: Exclude<keyof typeof EMPTY, 'isDefault'>) => (v: string) => { setForm((f) => ({ ...f, [k]: v })); setError(''); setErrs((e) => ({ ...e, [k]: '' })); };
 
   return (
     <>
       <ul className="divide-y divide-gray-100">
-        {list.map((a) => (
+        {own.map((a) => (
           <li key={a.id} className="flex items-center gap-3 py-2.5 first:pt-0">
-            <span className={`w-9 h-9 shrink-0 rounded-xl flex items-center justify-center ${a.isDefault ? 'bg-teal-50 text-teal-600' : 'bg-gray-100 text-gray-500'}`}>
-              <Icon name={iconFor(a.label)} className="w-[18px] h-[18px]" />
+            <span className={`w-9 h-9 shrink-0 rounded-xl flex items-center justify-center ${a.isGift ? 'bg-lilac-50 text-lilac-600' : a.isDefault ? 'bg-teal-50 text-teal-600' : 'bg-gray-100 text-gray-500'}`}>
+              <Icon name={a.isGift ? 'gift' : iconFor(a.label)} className="w-[18px] h-[18px]" />
             </span>
             <button type="button" onClick={() => open(a)} className="flex-1 min-w-0 text-left">
               <p className="text-[13px] font-semibold text-gray-900 truncate flex items-center gap-1.5">
-                {a.label || `${a.firstName} ${a.lastName}`}
+                {a.isGift ? fill(t('addr.giftFor'), { name: giftName(a) }) : a.label || `${a.firstName} ${a.lastName}`}
+                {a.isDefault && <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-teal-700 bg-teal-50 rounded-full px-1.5 py-0.5"><Icon name="star" className="w-2.5 h-2.5" strokeWidth={2.8} />{t('addr.default')}</span>}
+              </p>
+              <p className="text-[12px] text-gray-500 truncate">{a.city}, {a.addressLine1} · {prettyPhone(a.phone)}</p>
+            </button>
+            {/* The main address: one tap on the star. It comes first here and at checkout. */}
+            <button type="button" onClick={() => !a.isDefault && makeDefault(a)} aria-pressed={a.isDefault}
+              aria-label={a.isDefault ? t('addr.isMain') : t('addr.makeDefault')} title={a.isDefault ? t('addr.isMain') : t('addr.makeDefault')}
+              className={`w-9 h-9 shrink-0 rounded-xl flex items-center justify-center transition-colors ${a.isDefault ? 'text-amber-500 cursor-default' : 'text-gray-300 hover:text-amber-500 hover:bg-amber-50'}`}>
+              <Icon name="star" className={`w-[19px] h-[19px] ${a.isDefault ? '[&_path]:fill-current' : ''}`} strokeWidth={2} />
+            </button>
+            <Menu label={t('addr.actions')} items={[
+              { icon: 'edit', label: t('dogs.edit'), onClick: () => open(a) },
+              ...(!a.isDefault && !a.isGift ? [{ icon: 'star', label: t('addr.makeDefault'), onClick: () => makeDefault(a) }] : []),
+              { icon: 'trash', label: t('dogs.remove'), tone: 'danger' as const, onClick: () => { setRemoveError(''); setToRemove(a); } },
+            ]} />
+          </li>
+        ))}
+      </ul>
+      {gifts.length > 0 && (
+        <div className="mt-4">
+          <p className="flex items-center gap-1.5 text-[11.5px] font-bold uppercase tracking-wider text-lilac-600 mb-1.5"><Icon name="gift" className="w-3.5 h-3.5" />{t('addr.gifts')}</p>
+          <ul className="divide-y divide-gray-100">
+            {gifts.map((a) => (
+          <li key={a.id} className="flex items-center gap-3 py-2.5 first:pt-0">
+            <span className={`w-9 h-9 shrink-0 rounded-xl flex items-center justify-center ${a.isGift ? 'bg-lilac-50 text-lilac-600' : a.isDefault ? 'bg-teal-50 text-teal-600' : 'bg-gray-100 text-gray-500'}`}>
+              <Icon name={a.isGift ? 'gift' : iconFor(a.label)} className="w-[18px] h-[18px]" />
+            </span>
+            <button type="button" onClick={() => open(a)} className="flex-1 min-w-0 text-left">
+              <p className="text-[13px] font-semibold text-gray-900 truncate flex items-center gap-1.5">
+                {a.isGift ? fill(t('addr.giftFor'), { name: giftName(a) }) : a.label || `${a.firstName} ${a.lastName}`}
                 {a.isDefault && <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-teal-700 bg-teal-50 rounded-full px-1.5 py-0.5"><Icon name="star" className="w-2.5 h-2.5" strokeWidth={2.8} />{t('addr.default')}</span>}
               </p>
               <p className="text-[12px] text-gray-500 truncate">{a.city}, {a.addressLine1} · {prettyPhone(a.phone)}</p>
             </button>
             <Menu label={t('addr.actions')} items={[
               { icon: 'edit', label: t('dogs.edit'), onClick: () => open(a) },
-              ...(!a.isDefault ? [{ icon: 'star', label: t('addr.makeDefault'), onClick: () => makeDefault(a) }] : []),
+              ...(!a.isDefault && !a.isGift ? [{ icon: 'star', label: t('addr.makeDefault'), onClick: () => makeDefault(a) }] : []),
               { icon: 'trash', label: t('dogs.remove'), tone: 'danger' as const, onClick: () => { setRemoveError(''); setToRemove(a); } },
             ]} />
           </li>
-        ))}
-      </ul>
-      {list.length === 0 && (
+            ))}
+          </ul>
+        </div>
+      )}
+      {own.length === 0 && (
         <button type="button" onClick={() => open('new')}
           className="w-full flex items-center gap-3 rounded-2xl border-2 border-dashed border-gray-200 px-4 py-3 text-gray-400 hover:border-teal-300 hover:text-teal-600 hover:bg-teal-50/40 transition-colors">
           <Icon name="pin" className="w-5 h-5" /><span className="text-[12.5px] font-medium">{t('addr.add')}</span>
@@ -134,10 +175,8 @@ export default function AddressBook({ onExpired, addTick = 0, onCount }: {
       )}
 
       <Modal open={editing !== null} onClose={() => !busy && setEditing(null)} title={editing === 'new' ? t('addr.add') : t('addr.edit')} size="lg"
-        footer={<>
-          <button type="button" onClick={() => setEditing(null)} className="px-4 sm:px-5 py-2.5 rounded-full text-[13px] font-semibold text-gray-600 hover:bg-gray-100">{t('ui.cancel')}</button>
-          <button type="submit" form="address-form" disabled={busy} className="bg-teal-600 text-white text-[13px] font-semibold px-5 sm:px-6 py-2.5 hover:bg-teal-700">{busy ? t('ui.wait') : t(editing === 'new' ? 'addr.saveNew' : 'acc.save')}</button>
-        </>}>
+        dirty={!busy && JSON.stringify(form) !== start} cancelLabel={t('ui.cancel')}
+        footer={<button type="submit" form="address-form" disabled={busy} className="bg-teal-600 text-white text-[13px] font-semibold px-5 sm:px-6 py-2.5 hover:bg-teal-700">{busy ? t('ui.wait') : t(editing === 'new' ? 'addr.saveNew' : 'acc.save')}</button>}>
         {/* Phones: one column, map first. Tablets and up: where (map) | who. */}
         {/* Phones: one column, map first. Tablets and up: the map fills the
             left side; every field sits on the right, so both end together. */}
@@ -154,6 +193,21 @@ export default function AddressBook({ onExpired, addTick = 0, onCount }: {
               }} />
           </div>
           <div className="space-y-3 min-w-0">
+            {/* What to call it: Home, Work, Granny's… shown on the list and at checkout */}
+            <div>
+              <Field id="a-label" label={t('addr.label')} value={form.label} onChange={set('label')} maxLength={40} hint={t('addr.labelHint')} />
+              <div className="mt-2 flex flex-wrap gap-1.5" role="group" aria-label={t('addr.label')}>
+                {NAME_IDEAS.map((k) => {
+                  const name = t(k), on = form.label.trim() === name;
+                  return (
+                    <button key={k} type="button" onClick={() => set('label')(on ? '' : name)} aria-pressed={on}
+                      className={`h-8 px-3 rounded-full text-[12px] font-semibold transition-colors ${on ? 'bg-teal-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200/80'}`}>
+                      {name}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
             <Field id="a-city" label={t('co.f.city')} value={form.city} onChange={set('city')} error={errs.city} autoComplete="address-level2" required />
             <Field id="a-line1" label={t('co.f.address')} value={form.addressLine1} onChange={set('addressLine1')} error={errs.addressLine1} autoComplete="address-line1" required />
             <Field id="a-line2" label={t('co.f.address2')} value={form.addressLine2} onChange={set('addressLine2')} autoComplete="address-line2" />
@@ -164,7 +218,20 @@ export default function AddressBook({ onExpired, addTick = 0, onCount }: {
             </div>
             <PhoneInput floatLabel key={editing === 'new' ? 'new' : editing?.id ?? 'none'} id="a-phone" label={t('co.f.phone')} value={form.phone} required
               onChange={(v, valid) => { set('phone')(v); setPhoneOk(valid); }} error={errs.phone} />
-            <Field id="a-label" label={t('addr.label')} value={form.label} onChange={set('label')} maxLength={40} hint={t('addr.labelHint')} />
+            {!(editing !== 'new' && editing?.isGift) && (
+              <label className="flex items-center gap-3 rounded-2xl bg-gray-100/70 px-4 py-3 cursor-pointer">
+                <span className="relative inline-flex shrink-0">
+                  <input type="checkbox" checked={form.isDefault} disabled={editing !== 'new' && !!editing?.isDefault}
+                    onChange={(e) => setForm((f) => ({ ...f, isDefault: e.target.checked }))} className="peer sr-only" />
+                  <span className="w-10 h-6 rounded-full bg-gray-300 peer-checked:bg-teal-600 transition-colors" />
+                  <span className="absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform peer-checked:translate-x-4" />
+                </span>
+                <span className="min-w-0">
+                  <span className="flex items-center gap-1 text-[13px] font-semibold text-gray-800"><Icon name="star" className="w-3.5 h-3.5 text-amber-500 [&_path]:fill-current" />{t('addr.mainSwitch')}</span>
+                  <span className="block text-[11.5px] text-gray-500">{t('addr.mainHint')}</span>
+                </span>
+              </label>
+            )}
           </div>
         </form>
       </Modal>

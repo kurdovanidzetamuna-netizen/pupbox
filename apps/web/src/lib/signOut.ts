@@ -4,5 +4,7 @@
  */
 export function signOut() {
   localStorage.removeItem('pupbox_token');
+  localStorage.removeItem('pupbox_me');
+  document.documentElement.dataset.auth = 'out';
   window.dispatchEvent(new Event('pupbox:signed-out'));
 }

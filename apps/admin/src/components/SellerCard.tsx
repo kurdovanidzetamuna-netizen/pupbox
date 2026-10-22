@@ -1,5 +1,7 @@
 'use client';
+import { Select } from '@/components/Dropdown';
 import { useEffect, useState } from 'react';
+import { NumInput } from '@/components/NumberField';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 
@@ -55,10 +57,10 @@ export default function SellerCard({ value, onChange, salePrice, error, style }:
     <div style={style}>
       <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--slate-900)', margin: '0 0 4px' }}>Sold by</p>
       <p style={{ fontSize: 11, color: 'var(--slate-400)', margin: '0 0 14px' }}>Our own product, or one we sell for a seller. For a seller, the shop price is their price plus our margin. Their price and our margin are never shown on the site.</p>
-      <select value={value.sellerId} onChange={(e) => onChange(e.target.value ? { ...value, sellerId: e.target.value } : OURS)} style={{ ...input, maxWidth: 360 }}>
+      <Select value={value.sellerId} onChange={(e) => onChange(e.target.value ? { ...value, sellerId: e.target.value } : OURS)} style={{ ...input, maxWidth: 360 }}>
         <option value="">Pupbox (our own product)</option>
         {sellers.filter((s) => s.isActive || s.id === value.sellerId).map((s) => <option key={s.id} value={s.id}>{s.name}{s.isActive ? '' : ' (off)'}</option>)}
-      </select>
+      </Select>
       {sellers.length === 0 && <p style={{ fontSize: 11, color: 'var(--slate-400)', margin: '8px 0 0' }}>No sellers yet — add them in Sellers.</p>}
 
       {value.sellerId && (
@@ -66,7 +68,7 @@ export default function SellerCard({ value, onChange, salePrice, error, style }:
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginTop: 14 }}>
             <div>
               <label style={lbl}>Seller’s price (₾) *</label>
-              <input style={input} type="number" step="0.01" min="0" value={value.sellerPrice} onChange={(e) => set('sellerPrice', e.target.value)} placeholder="What they charge us" />
+              <NumInput style={input} step="0.01" min="0" value={value.sellerPrice} onChange={(e) => set('sellerPrice', e.target.value)} placeholder="What they charge us" />
             </div>
             <div>
               <label style={lbl}>Our margin</label>
@@ -77,7 +79,7 @@ export default function SellerCard({ value, onChange, salePrice, error, style }:
             </div>
             <div>
               <label style={lbl}>{value.marginType === 'PERCENT' ? 'Margin (%)' : 'Margin (₾)'}</label>
-              <input style={input} type="number" step="0.01" min="0" value={value.marginValue} onChange={(e) => set('marginValue', e.target.value)} placeholder="0" />
+              <NumInput style={input} step="0.01" min="0" value={value.marginValue} onChange={(e) => set('marginValue', e.target.value)} placeholder="0" />
             </div>
           </div>
           {error && <p style={{ fontSize: 12, color: 'var(--red-600)', margin: '8px 0 0' }}>{error}</p>}

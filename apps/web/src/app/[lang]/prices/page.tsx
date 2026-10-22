@@ -15,6 +15,7 @@ export default async function PricesPage() {
   } catch {
     plans = [];
   }
+  const tiers = await api.tiers.list().catch(() => []);
   const boxConfig = await api.customBox.config().catch(() => null);
   const content = await getStoredContent(pricingPage);
 
@@ -23,7 +24,7 @@ export default async function PricesPage() {
       <section id="plans" className="pt-8 sm:pt-10 pb-14 sm:pb-14 scroll-mt-20">
         <div className="max-w-7xl mx-auto px-6 text-center">
           <PricesHeader content={content} />
-          <PlanSection plans={plans} content={content} />
+          <PlanSection plans={plans} tiers={tiers} content={content} />
           {boxConfig && <BuildBoxPromo monthlyDiscount={boxConfig.monthlyDiscount} />}
         </div>
       </section>

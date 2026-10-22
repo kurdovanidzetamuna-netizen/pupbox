@@ -4,6 +4,7 @@ import { num } from '../../_lib/plan-config';
 import GiftBoxesSection from './GiftBoxesSection';
 import CostBreakdown from './CostBreakdown';
 import type { PlanBuilderState } from './usePlanBuilder';
+import { NumInput } from '@/components/NumberField';
 
 export default function BoxBuilderTab({ b }: { b: PlanBuilderState }) {
   const {
@@ -85,8 +86,7 @@ export default function BoxBuilderTab({ b }: { b: PlanBuilderState }) {
                     <td style={{ padding: '10px 12px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                         <span style={{ color: 'var(--slate-400)', fontSize: 12 }}>₾</span>
-                        <input
-                          type="number" min="0" step="0.01"
+                        <NumInput min="0" step="0.01"
                           value={item.price}
                           onChange={e => setItemPrice(item.productId, num(e.target.value))}
                           style={{ width: 70, border: '1px solid var(--slate-200)', borderRadius: 7, padding: '5px 8px', fontSize: 12, outline: 'none', textAlign: 'right' }}

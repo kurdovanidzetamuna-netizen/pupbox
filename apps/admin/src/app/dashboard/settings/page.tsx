@@ -1,6 +1,8 @@
 'use client';
 import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
+import Link from 'next/link';
 import { ActionButton } from '../../../components/Toolbar';
+import { NumInput } from '@/components/NumberField';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 const SLUG = 'config-settings';
@@ -63,8 +65,11 @@ export default function SettingsPage() {
     const orderEmail = v.orderEmail.trim();
     if (orderEmail && !/^\S+@\S+\.\S+$/.test(orderEmail)) return setMsg({ ok: false, text: 'Enter a valid email address, or leave it empty.' });
     setSaving(true); setMsg(null);
+    // Start from what's saved now: other pages (friend codes) keep their parts in the same record.
+    const latest = await fetch(`${API}/cms/admin/${SLUG}`, { headers: { Authorization: `Bearer ${localStorage.getItem('admin_token')}` } }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
     const next = {
       ...content,
+      ...(latest?.content ?? {}),
       cancellation: { ...(content.cancellation ?? {}), freeHours },
       renewal: { ...(content.renewal ?? {}), noticeDays, graceDays },
       notifications: { ...(content.notifications ?? {}), orderEmail },
@@ -89,7 +94,7 @@ export default function SettingsPage() {
         <>
           <Card title="Cancelling a subscription" intro="Within the free window after paying, and before any box ships, a customer can cancel for free and gets everything back. After it, they keep the box for the month they cancel in; later months stop and are refunded at the plan’s monthly price.">
             <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 14, color: 'var(--slate-700)' }}>
-              Free cancellation window: <input type="number" min={0} max={720} value={v.freeHours} onChange={set('freeHours')} style={numInput} /> hours after paying
+              Free cancellation window: <NumInput min={0} max={720} value={v.freeHours} onChange={set('freeHours')} style={numInput} /> hours after paying
             </label>
             <p style={{ fontSize: 12, color: 'var(--slate-400)', margin: '10px 0 0' }}>
               Example — a 6-month plan for ₾255: cancelling {hours ? `within the first ${hours} hour${hours === 1 ? '' : 's'}` : '(no free window)'} gives ₾255 back and no box;
@@ -99,22 +104,22 @@ export default function SettingsPage() {
 
           <Card title="Renewing a subscription" intro="Customers who chose to renew get an email with a link to pay for the next term. Paying adds the next term’s boxes; not paying in time lets the plan end.">
             <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 14, color: 'var(--slate-700)', marginBottom: 10 }}>
-              Send the payment link <input type="number" min={1} max={60} value={v.noticeDays} onChange={set('noticeDays')} style={numInput} /> days before the term ends
+              Send the payment link <NumInput min={1} max={60} value={v.noticeDays} onChange={set('noticeDays')} style={numInput} /> days before the term ends
             </label>
             <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 14, color: 'var(--slate-700)' }}>
-              End the plan if unpaid <input type="number" min={0} max={60} value={v.graceDays} onChange={set('graceDays')} style={numInput} /> days after the term ends
+              End the plan if unpaid <NumInput min={0} max={60} value={v.graceDays} onChange={set('graceDays')} style={numInput} /> days after the term ends
             </label>
           </Card>
 
           <Card title="Build-your-own box" intro="Customers fill a box with products marked “Can go in a custom box” (on each product’s page), and buy it once or every month. Its price is the products’ shop prices plus the packing fee; a monthly box gets the discount on the products.">
             <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 14, color: 'var(--slate-700)', marginBottom: 10 }}>
-              At least <input type="number" min={1} max={50} value={v.boxMin} onChange={set('boxMin')} style={numInput} /> items in a box
+              At least <NumInput min={1} max={50} value={v.boxMin} onChange={set('boxMin')} style={numInput} /> items in a box
             </label>
             <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 14, color: 'var(--slate-700)', marginBottom: 10 }}>
-              Packing fee ₾ <input type="number" min={0} max={500} step="0.5" value={v.boxFee} onChange={set('boxFee')} style={numInput} /> per box
+              Packing fee ₾ <NumInput min={0} max={500} step="0.5" value={v.boxFee} onChange={set('boxFee')} style={numInput} /> per box
             </label>
             <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 14, color: 'var(--slate-700)' }}>
-              Monthly box: <input type="number" min={0} max={90} value={v.boxMonthly} onChange={set('boxMonthly')} style={numInput} /> % off the products
+              Monthly box: <NumInput min={0} max={90} value={v.boxMonthly} onChange={set('boxMonthly')} style={numInput} /> % off the products
             </label>
             <div style={{ borderTop: '1px solid var(--slate-200b)', margin: '16px 0 12px' }} />
             <p style={{ fontWeight: 700, color: 'var(--slate-800)', fontSize: 13.5, margin: '0 0 4px' }}>🎁 Mystery item</p>
@@ -123,10 +128,10 @@ export default function SettingsPage() {
               <input type="checkbox" checked={v.mysteryOn} onChange={(e) => { setV(x => ({ ...x, mysteryOn: e.target.checked })); setMsg(null); }} /> Offer a mystery item
             </label>
             <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 14, color: 'var(--slate-700)', marginBottom: 10, opacity: v.mysteryOn ? 1 : 0.5 }}>
-              Price ₾ <input type="number" min={0} max={500} step="0.5" value={v.mysteryPrice} onChange={set('mysteryPrice')} disabled={!v.mysteryOn} style={numInput} /> each
+              Price ₾ <NumInput min={0} max={500} step="0.5" value={v.mysteryPrice} onChange={set('mysteryPrice')} disabled={!v.mysteryOn} style={numInput} /> each
             </label>
             <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 14, color: 'var(--slate-700)', opacity: v.mysteryOn ? 1 : 0.5 }}>
-              At most <input type="number" min={1} max={10} value={v.mysteryMax} onChange={set('mysteryMax')} disabled={!v.mysteryOn} style={numInput} /> per box
+              At most <NumInput min={1} max={10} value={v.mysteryMax} onChange={set('mysteryMax')} disabled={!v.mysteryOn} style={numInput} /> per box
             </label>
           </Card>
 
@@ -134,6 +139,15 @@ export default function SettingsPage() {
             <input type="email" value={v.orderEmail} onChange={set('orderEmail')} placeholder="orders@pupbox.ge"
               style={{ ...numInput, width: '100%', boxSizing: 'border-box' }} />
           </Card>
+
+          <Link href="/dashboard/sms" style={{ ...card, display: 'flex', alignItems: 'center', gap: 14, textDecoration: 'none' }}>
+            <span style={{ fontSize: 24 }}>📱</span>
+            <span style={{ flex: 1, minWidth: 0 }}>
+              <span style={{ display: 'block', fontWeight: 700, color: 'var(--slate-900)', fontSize: 15 }}>Text messages (SMS)</span>
+              <span style={{ fontSize: 13, color: 'var(--slate-500)' }}>Team numbers, which messages go out, quiet hours, codes and renewal retries — on their own page.</span>
+            </span>
+            <span style={{ color: 'var(--teal-700)', fontWeight: 800, fontSize: 13 }}>Open →</span>
+          </Link>
 
           {msg && <p style={{ fontSize: 13, margin: '0 0 12px', color: msg.ok ? 'var(--teal-700)' : 'var(--red-600)' }}>{msg.text}</p>}
           <ActionButton onClick={save} disabled={saving}>{saving ? 'Saving…' : 'Save settings'}</ActionButton>

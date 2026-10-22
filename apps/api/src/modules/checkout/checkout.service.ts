@@ -5,6 +5,9 @@ import { Prisma } from '@prisma/client';
 import { releaseStock, reserveStock } from '../products/stock';
 import { cancelUnpaidOrder } from '../orders/order-lifecycle';
 import { customBoxPlan, quoteSavedBox } from '../custom-box/custom-box';
+import { shopSettings } from '../settings/settings';
+import { checkReferralCode, referralDiscount } from '../referrals/referral-promo';
+import { couponDiscount, hasPaidBefore } from '../coupons/coupon-discount';
 
 export interface GiftDetails {
   recipientName: string;
@@ -14,7 +17,7 @@ export interface GiftDetails {
   deliverOn?: string;
   dog: {
     name: string; size: any; allergies?: string[]; breed?: string; gender?: any; weightKg?: number;
-    foodPreferences?: string[]; toyPreferences?: string[]; chewingStrength?: string; specialNotes?: string; birthday?: string | null;
+    foodPreferences?: string[]; toyPreferences?: string[]; chewingStrength?: string; likedCategoryIds?: string[]; specialNotes?: string; birthday?: string | null;
   };
 }
 
@@ -48,10 +51,11 @@ export class CheckoutService {
       : c.startsAt && c.startsAt > now ? 'is not valid yet'
       : c.usageLimit && c.usedCount >= c.usageLimit ? 'has been used up'
       : c.perUserLimit && (await this.prisma.couponUsage.count({ where: { couponId, userId } })) >= c.perUserLimit ? 'was already used on your account'
+      : c.firstOrderOnly && (await hasPaidBefore(this.prisma, userId)) ? 'is for a first order only'
       : null;
     if (problem) {
       await this.prisma.cart.update({ where: { id: cartId }, data: { couponId: null } });
-      throw new BadRequestException(`Your coupon ${problem}, so we removed it. Check the new total and try again.`);
+      throw new BadRequestException(`Your promo code ${problem}, so we removed it. Check the new total and try again.`);
     }
   }
 
@@ -65,12 +69,13 @@ export class CheckoutService {
     if (!deliveryMethod) throw new BadRequestException('Invalid delivery method');
 
     const deliveryCost = this.cartService.deliveryCostFor(deliveryMethod, cart, await this.cartService.cheapestDeliveryPrice());
-    const total = cart.total + deliveryCost;
+    const off = cart.coupon ? couponDiscount(cart.coupon, cart.items, deliveryCost) : { items: cart.discountAmount, delivery: 0 };
+    const total = Math.max(0, cart.subtotal - off.items) + deliveryCost - off.delivery;
 
     return {
       cart,
       deliveryMethod: { ...deliveryMethod, effectivePrice: deliveryCost },
-      totals: { subtotal: cart.subtotal, discount: cart.discountAmount, delivery: deliveryCost, total: +total.toFixed(2) },
+      totals: { subtotal: cart.subtotal, discount: +(off.items + off.delivery).toFixed(2), delivery: deliveryCost, total: +total.toFixed(2) },
     };
   }
 
@@ -84,6 +89,8 @@ export class CheckoutService {
     city: string;
     addressLine1: string;
     addressLine2?: string;
+    addressLabel?: string;
+    makeMainAddress?: boolean;
     latitude?: number;
     longitude?: number;
     autoRenewal?: boolean;
@@ -119,7 +126,7 @@ export class CheckoutService {
     if (!deliveryMethod) throw new BadRequestException('Invalid delivery method');
 
     const deliveryCost = this.cartService.deliveryCostFor(deliveryMethod, cart, await this.cartService.cheapestDeliveryPrice());
-    const total = +(cart.total + deliveryCost).toFixed(2);
+    let total = +(cart.total + deliveryCost).toFixed(2);
 
     // Built boxes, priced and checked once more: a one-time box becomes its
     // products (stock held, sellers paid) plus the packing fee; a monthly box
@@ -138,6 +145,31 @@ export class CheckoutService {
     // added before signing in (when the once-per-customer limit couldn't apply).
     if (cart.couponId) await this.assertCouponStillValid(cart.couponId, cart.id, userId);
 
+    // A friend's code, checked again now we know who's ordering (first order,
+    // not their own code) and priced for what this order is (a plan as a gift
+    // counts as a gift).
+    let discountAmount = cart.discountAmount;
+    // The coupon priced for what this order is: a plan as a gift counts as a
+    // gift, and a coupon that covers delivery takes its part off the fee.
+    if (cart.coupon) {
+      const off = couponDiscount(cart.coupon, cart.items, deliveryCost, { gift: !!gift });
+      discountAmount = +(off.items + off.delivery).toFixed(2);
+      total = +(Math.max(0, cart.subtotal - off.items) + deliveryCost - off.delivery).toFixed(2);
+    }
+    let referral: { inviterId: string; code: string; discount: number } | null = null;
+    if (cart.referralCode) {
+      const offer = (await shopSettings(this.prisma)).referral;
+      const drop = async (why: string) => {
+        await this.prisma.cart.update({ where: { id: cart.id }, data: { referralCode: null } });
+        throw new BadRequestException(`${why} We removed the code — check the new total and try again.`);
+      };
+      const inviter = await checkReferralCode(this.prisma, offer, cart.referralCode, userId).catch((e) => drop(e.message));
+      if (!inviter) await drop('That friend code no longer works.');
+      discountAmount = referralDiscount(offer, cart.items, { gift: !!gift });
+      referral = { inviterId: inviter!.id, code: inviter!.referralCode, discount: discountAmount };
+      total = +(Math.max(0, cart.subtotal - discountAmount) + deliveryCost).toFixed(2);
+    }
+
     // Hold the stock first: if something sold out meanwhile, stop before any
     // order, address or subscription is created.
     const productLines = [
@@ -149,9 +181,28 @@ export class CheckoutService {
     // Create or find address — only one of this customer's own. For a gift
     // these are the friend's delivery details, entered by the buyer.
     let address = data.addressId ? await this.prisma.address.findFirst({ where: { id: data.addressId, userId, deletedAt: null } }) : null;
+    // The same address typed again: use the saved one, so "My addresses" doesn't fill with copies.
+    if (!address && !data.addressId) {
+      address = await this.prisma.address.findFirst({
+        where: { userId, deletedAt: null, isGift: !!gift, firstName: data.firstName, lastName: data.lastName, phone: data.phone, city: data.city, addressLine1: data.addressLine1, ...(data.addressLine2 ? { addressLine2: data.addressLine2 } : { OR: [{ addressLine2: null }, { addressLine2: '' }] }) },
+        orderBy: { createdAt: 'desc' },
+      });
+    }
+    // Their own address, named if they named it; the first one (or one they
+    // ask for) becomes their main address, shown first next time.
+    const makeMain = !gift && (!!data.makeMainAddress || !(await this.prisma.address.count({ where: { userId, deletedAt: null, isGift: false } })));
+    if (makeMain && !(address?.isDefault)) await this.prisma.address.updateMany({ where: { userId }, data: { isDefault: false } });
+    if (address && !gift && (makeMain || (data.addressLabel && !address.label))) {
+      address = await this.prisma.address.update({ where: { id: address.id }, data: { ...(makeMain ? { isDefault: true } : {}), ...(data.addressLabel && !address.label ? { label: data.addressLabel } : {}) } });
+    }
     if (!address) {
       address = await this.prisma.address.create({
-        data: { userId, firstName: data.firstName, lastName: data.lastName, phone: data.phone, city: data.city, addressLine1: data.addressLine1, addressLine2: data.addressLine2, latitude: data.latitude ?? null, longitude: data.longitude ?? null },
+        data: {
+          ...(!gift ? { label: data.addressLabel || null, isDefault: makeMain } : {}),
+          userId, firstName: data.firstName, lastName: data.lastName, phone: data.phone, city: data.city, addressLine1: data.addressLine1, addressLine2: data.addressLine2, latitude: data.latitude ?? null, longitude: data.longitude ?? null,
+          // A friend's address for a gift: tagged and kept apart in the buyer's list.
+          ...(gift ? { isGift: true, label: `Gift · ${gift.recipientName.trim()}`.slice(0, 40) } : {}),
+        },
       });
     }
 
@@ -165,6 +216,7 @@ export class CheckoutService {
             allergies: [...new Set((gift.dog.allergies ?? []).map((a) => a.trim()).filter(Boolean))],
             breed: gift.dog.breed || null, gender: gift.dog.gender ?? null, weightKg: gift.dog.weightKg ?? null,
             foodPreferences: gift.dog.foodPreferences ?? [], toyPreferences: gift.dog.toyPreferences ?? [],
+            likedCategoryIds: gift.dog.likedCategoryIds?.length ? (await this.prisma.productCategory.findMany({ where: { id: { in: gift.dog.likedCategoryIds }, deletedAt: null }, select: { id: true } })).map((c) => c.id) : [],
             chewingStrength: gift.dog.chewingStrength || null, specialNotes: gift.dog.specialNotes?.trim() || null,
             birthday: gift.dog.birthday ? new Date(gift.dog.birthday) : null,
           },
@@ -202,7 +254,9 @@ export class CheckoutService {
           giftDeliverOn,
           subtotal: cart.subtotal,
           deliveryCost,
-          discountAmount: cart.discountAmount,
+          discountAmount,
+          referralCode: referral?.code ?? null,
+          referralDiscount: referral?.discount ?? null,
           total,
           items: {
             create: [...cart.items.filter((item: any) => !item.customBoxId).map((item: any) => ({
@@ -286,6 +340,12 @@ export class CheckoutService {
       }
     }
 
+    // A friend's code links this customer to the friend (once): when this
+    // first order sticks, the friend gets their reward.
+    if (referral && !(await this.prisma.referral.findFirst({ where: { invitedId: userId }, select: { id: true } }))) {
+      await this.prisma.referral.create({ data: { inviterId: referral.inviterId, invitedId: userId, status: 'REGISTERED' } });
+    }
+
     // Record coupon usage. The count only goes up while under the limit, so
     // two shoppers at once can't take a coupon past its last use.
     if (cart.couponId) {
@@ -296,7 +356,7 @@ export class CheckoutService {
       });
       if (!count) {
         await cancelUnpaidOrder(this.prisma, order.id, 'Coupon ran out while ordering.');
-        throw new BadRequestException('That coupon has just been used up. Remove it from your cart and try again.');
+        throw new BadRequestException('That promo code has just been used up. Remove it from your cart and try again.');
       }
       await this.prisma.couponUsage.create({ data: { couponId: cart.couponId, userId, orderId: order.id } });
     }

@@ -4,7 +4,7 @@ import type { Lang } from '@/components/LangTabs';
 import type { PlanItem, BoxConfig, GiftBox } from '../../_lib/types';
 import { EMPTY_FORM, EMPTY_KA, EMPTY_CONFIG } from '../../_lib/constants';
 import { migrateConfig, num } from '../../_lib/plan-config';
-import { savePlan, clearBadgeFromOtherPlans, fetchBoxItems, fetchActiveCoupons } from '../../_lib/api';
+import { savePlan, clearBadgeFromOtherPlans, fetchBoxItems, fetchActiveCoupons, fetchTiers } from '../../_lib/api';
 
 export type BuilderTab = 'builder' | 'form' | 'discounts';
 
@@ -25,6 +25,8 @@ export function usePlanBuilder({ plan, onClose, onSaved, badges, addBadge }: Pla
   const [lang, setLang] = useState<Lang>('en');
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [toast, setToast] = useState<{ msg: string; type: 'error' | 'success' } | null>(null);
+  const [tiers, setTiers] = useState<any[]>([]);
+  useEffect(() => { fetchTiers().then(setTiers).catch(() => {}); }, []);
 
   useEffect(() => {
     if (!toast) return;
@@ -55,6 +57,7 @@ export function usePlanBuilder({ plan, onClose, onSaved, badges, addBadge }: Pla
     benefits: (plan.benefits || []).join('\n'),
     discountPercent: plan.discountPercent || '',
     monthlyPrice: initMonthlyPrice,
+    tierId: plan.tierId || '',
   });
   const [ka, setKa] = useState<any>(() => {
     const d = plan.translations?.ka;
@@ -100,7 +103,7 @@ export function usePlanBuilder({ plan, onClose, onSaved, badges, addBadge }: Pla
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
 
   // Track initial state to detect unsaved changes
-  const initForm = JSON.stringify({ ...EMPTY_FORM, ...plan, benefits: (plan.benefits || []).join('\n'), discountPercent: plan.discountPercent || '', monthlyPrice: initMonthlyPrice });
+  const initForm = JSON.stringify({ ...EMPTY_FORM, ...plan, benefits: (plan.benefits || []).join('\n'), discountPercent: plan.discountPercent || '', monthlyPrice: initMonthlyPrice, tierId: plan.tierId || '' });
   const initCfg = JSON.stringify(migrateConfig(plan.translations?.config, Number(plan.boxCount) || 1));
   const isDirty = JSON.stringify(form) !== initForm || JSON.stringify(cfg) !== initCfg;
 
@@ -298,6 +301,7 @@ export function usePlanBuilder({ plan, onClose, onSaved, badges, addBadge }: Pla
         deliveryIncluded: form.deliveryIncluded,
         autoRenewal: form.autoRenewal,
         giftable: form.giftable,
+        tierId: form.tierId || null,
         translations: {
           ...(hasKa ? { ka: { ...ka, benefits: ka.benefits ? ka.benefits.split('\n').filter(Boolean) : [] } } : {}),
           config: syncedCfg,
@@ -332,7 +336,7 @@ export function usePlanBuilder({ plan, onClose, onSaved, badges, addBadge }: Pla
   const unaddedItems = boxItems.filter(b => !activeItems.find(i => i.productId === b.id));
 
   return {
-    plan, onClose, badges, addBadge, tab, setTab, boxItems, coupons, saving, lang, setLang,
+    plan, onClose, badges, addBadge, tiers, tab, setTab, boxItems, coupons, saving, lang, setLang,
     formErrors, setFormErrors, toast, setToast, showNewBadge, setShowNewBadge, slugTouched,
     setSlugTouched, newBadgeInput, setNewBadgeInput, form, setForm, ka, setKa, boxCount,
     boxesLinked, setMonths, setBoxes, pricingMonths, pricingMonthly, pricingDiscount,

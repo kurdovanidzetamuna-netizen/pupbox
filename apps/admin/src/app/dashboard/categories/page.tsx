@@ -1,14 +1,22 @@
 'use client';
+import { Select } from '@/components/Dropdown';
 import { useState, useEffect } from 'react';
 import FormField, { inputClass, parseFieldErrors } from '@/components/FormField';
 import LangTabs, { type Lang } from '@/components/LangTabs';
 import ErrorPopup from '@/components/ErrorPopup';
+import { NumInput } from '@/components/NumberField';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 
-const EMPTY_FORM = { name: '', slug: '', description: '', seoTitle: '', seoDesc: '', sortOrder: '0' };
+const EMPTY_FORM = { name: '', slug: '', description: '', seoTitle: '', seoDesc: '', sortOrder: '0', parentId: '' };
 const EMPTY_KA = { name: '', description: '', seoTitle: '', seoDesc: '' };
 
+/**
+ * Categories, two levels deep: main ones (Treats, Toys) and their
+ * subcategories (Chicken, Chew toys). The list reads as a tree; "+ Sub" on a
+ * main category starts a subcategory inside it. Shop and order filters treat
+ * a main category as "all of it, subcategories included".
+ */
 export default function AdminCategoriesPage() {
   const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -48,9 +56,9 @@ export default function AdminCategoriesPage() {
     });
   }
 
-  function openCreate() {
+  function openCreate(parentId = '') {
     setEditId(null);
-    setForm({ ...EMPTY_FORM });
+    setForm({ ...EMPTY_FORM, parentId });
     setKa({ ...EMPTY_KA });
     setLang('en');
     setError('');
@@ -60,7 +68,7 @@ export default function AdminCategoriesPage() {
 
   function openEdit(cat: any) {
     setEditId(cat.id);
-    setForm({ name: cat.name || '', slug: cat.slug || '', description: cat.description || '', seoTitle: cat.seoTitle || '', seoDesc: cat.seoDesc || '', sortOrder: String(cat.sortOrder ?? 0) });
+    setForm({ name: cat.name || '', slug: cat.slug || '', description: cat.description || '', seoTitle: cat.seoTitle || '', seoDesc: cat.seoDesc || '', sortOrder: String(cat.sortOrder ?? 0), parentId: cat.parentId || '' });
     const kaData = cat.translations?.ka;
     setKa(kaData ? { name: kaData.name || '', description: kaData.description || '', seoTitle: kaData.seoTitle || '', seoDesc: kaData.seoDesc || '' } : { ...EMPTY_KA });
     setLang('en');
@@ -86,6 +94,7 @@ export default function AdminCategoriesPage() {
     const token = localStorage.getItem('admin_token');
     const hasKa = Object.values(ka).some(v => v.trim() !== '');
     const body: any = { name: form.name, slug: form.slug, description: form.description || undefined, seoTitle: form.seoTitle || undefined, seoDesc: form.seoDesc || undefined, sortOrder: Number(form.sortOrder) };
+    if (editId) body.parentId = form.parentId || null; else if (form.parentId) body.parentId = form.parentId;
     if (hasKa) body.translations = { ka: { ...ka } };
     const url = editId ? `${API}/admin/categories/${editId}` : `${API}/admin/categories`;
     const res = await fetch(url, {
@@ -115,14 +124,21 @@ export default function AdminCategoriesPage() {
     load();
   }
 
+  // Main categories, each followed by its subcategories.
+  const live = categories.filter((c: any) => !c.deletedAt);
+  const mains = live.filter((c: any) => !c.parentId || !live.some((m: any) => m.id === c.parentId));
+  const rows = mains.flatMap((m: any) => [{ cat: m, depth: 0 }, ...live.filter((c: any) => c.parentId === m.id).map((c: any) => ({ cat: c, depth: 1 }))]);
+  const editing = live.find((c: any) => c.id === editId);
+  const hasKids = !!editId && live.some((c: any) => c.parentId === editId);
+
   return (
-    <div style={{ padding: 32 }}>
+    <div style={{ padding: 'clamp(16px, 4vw, 32px)' }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 28 }}>
         <div>
           <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--slate-900)', margin: 0 }}>Categories</h1>
-          <p style={{ fontSize: 13, color: 'var(--slate-400)', marginTop: 4 }}>{categories.length} categories</p>
+          <p style={{ fontSize: 13, color: 'var(--slate-400)', marginTop: 4 }}>{mains.length} main · {categories.length - mains.length} subcategories</p>
         </div>
-        <button onClick={openCreate} style={{ background: 'var(--teal-600)', color: 'var(--white)', borderRadius: 10, padding: '9px 16px', fontSize: 13, fontWeight: 600, border: 'none', cursor: 'pointer' }}>
+        <button onClick={() => openCreate()} style={{ background: 'var(--teal-600)', color: 'var(--white)', borderRadius: 10, padding: '9px 16px', fontSize: 13, fontWeight: 600, border: 'none', cursor: 'pointer' }}>
           + Add Category
         </button>
       </div>
@@ -131,11 +147,11 @@ export default function AdminCategoriesPage() {
       {/* Form panel */}
       {showForm && (
         <div style={{ background: 'var(--white)', border: '1px solid var(--slate-200b)', borderRadius: 16, padding: 24, marginBottom: 24 }}>
-          <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--slate-900)', margin: '0 0 18px' }}>{editId ? 'Edit Category' : 'New Category'}</p>
+          <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--slate-900)', margin: '0 0 18px' }}>{editId ? `Edit ${editing?.name ?? 'category'}` : form.parentId ? `New subcategory in ${mains.find((m: any) => m.id === form.parentId)?.name ?? ''}` : 'New Category'}</p>
           {error && <div style={{ background: 'var(--red-50)', color: 'var(--red-600)', border: '1px solid var(--red-200)', borderRadius: 8, padding: '8px 12px', marginBottom: 14, fontSize: 12 }}>{error}</div>}
           <form onSubmit={handleSubmit}>
             <LangTabs lang={lang} onChange={setLang} />
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 240px), 1fr))', gap: 14, marginBottom: 14 }}>
               <div>
                 <FormField label="Name" required error={lang === 'en' ? fieldErrors.name : fieldErrors.kaName}>
                   <input style={inputClass(lang === 'en' ? fieldErrors.name : fieldErrors.kaName)} value={lang === 'en' ? form.name : ka.name} onChange={e => lang === 'en' ? set('name', e.target.value) : setKa(k => ({ ...k, name: e.target.value }))} />
@@ -155,8 +171,18 @@ export default function AdminCategoriesPage() {
               </div>
               {lang === 'en' && (
                 <div>
+                  <FormField label="Main category" hint={hasKids ? 'It has subcategories, so it stays a main category.' : 'Leave empty for a main category.'}>
+                    <Select style={inputClass()} value={form.parentId} disabled={hasKids} onChange={e => set('parentId', e.target.value)}>
+                      <option value="">— None (main category) —</option>
+                      {mains.filter((m: any) => m.id !== editId).map((m: any) => <option key={m.id} value={m.id}>{m.name}</option>)}
+                    </Select>
+                  </FormField>
+                </div>
+              )}
+              {lang === 'en' && (
+                <div>
                   <FormField label="Sort Order">
-                    <input style={inputClass()} type="number" value={form.sortOrder} onChange={e => set('sortOrder', e.target.value)} />
+                    <NumInput style={inputClass()} value={form.sortOrder} onChange={e => set('sortOrder', e.target.value)} />
                   </FormField>
                 </div>
               )}
@@ -195,7 +221,8 @@ export default function AdminCategoriesPage() {
             <p style={{ fontSize: 13 }}>No categories yet</p>
           </div>
         ) : (
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+          <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, minWidth: 640 }}>
             <thead>
               <tr>
                 {['Name', 'Slug', 'Description', 'Sort', 'Status', 'Actions'].map(h => (
@@ -204,9 +231,12 @@ export default function AdminCategoriesPage() {
               </tr>
             </thead>
             <tbody>
-              {categories.map((cat: any) => (
-                <tr key={cat.id} style={{ borderBottom: '1px solid var(--slate-50)' }}>
-                  <td style={{ padding: '14px 18px', fontWeight: 600, color: 'var(--slate-800)' }}>{cat.name}</td>
+              {rows.map(({ cat, depth }: any) => (
+                <tr key={cat.id} style={{ borderBottom: '1px solid var(--slate-50)', background: depth ? 'var(--white)' : 'var(--slate-50)' }}>
+                  <td style={{ padding: '14px 18px', paddingLeft: depth ? 44 : 18, fontWeight: depth ? 500 : 700, color: 'var(--slate-800)' }}>
+                    {depth ? <span style={{ color: 'var(--slate-300)', marginRight: 6 }}>└</span> : null}{cat.name}
+                    {!depth && live.some((c: any) => c.parentId === cat.id) && <span style={{ marginLeft: 6, fontSize: 11, fontWeight: 600, color: 'var(--slate-400)' }}>{live.filter((c: any) => c.parentId === cat.id).length} sub</span>}
+                  </td>
                   <td style={{ padding: '14px 18px' }}>
                     <span style={{ fontFamily: 'monospace', fontSize: 11, color: 'var(--slate-500)', background: 'var(--slate-100)', padding: '3px 8px', borderRadius: 6 }}>{cat.slug}</span>
                   </td>
@@ -222,6 +252,7 @@ export default function AdminCategoriesPage() {
                   <td style={{ padding: '14px 18px' }}>
                     <div style={{ display: 'flex', gap: 6 }}>
                       <button onClick={() => openEdit(cat)} style={{ fontSize: 12, padding: '5px 10px', borderRadius: 8, background: 'var(--blue-50)', color: 'var(--blue-600)', border: 'none', cursor: 'pointer', fontWeight: 600 }}>Edit</button>
+                      {!depth && <button onClick={() => openCreate(cat.id)} title={`Add a subcategory to ${cat.name}`} style={{ fontSize: 12, padding: '5px 10px', borderRadius: 8, background: 'var(--teal-50)', color: 'var(--teal-700)', border: 'none', cursor: 'pointer', fontWeight: 600, whiteSpace: 'nowrap' }}>+ Sub</button>}
                       {deleteConfirm === cat.id ? (
                         <>
                           <button onClick={() => handleDelete(cat.id)} style={{ fontSize: 12, padding: '5px 10px', borderRadius: 8, background: 'var(--red-50)', color: 'var(--red-600)', border: 'none', cursor: 'pointer', fontWeight: 600 }}>Confirm</button>
@@ -236,6 +267,7 @@ export default function AdminCategoriesPage() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
     </div>

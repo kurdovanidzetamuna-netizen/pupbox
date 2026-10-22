@@ -36,6 +36,8 @@ export default function VerifyCodes({ onDone }: { onDone: () => void }) {
   const [editingPhone, setEditingPhone] = useState(false);
   const [newPhone, setNewPhone] = useState('');
   const [phoneValid, setPhoneValid] = useState(false);
+  // A corrected number gets its own code; it becomes the account's once confirmed.
+  const [pendingPhone, setPendingPhone] = useState('');
 
   useEffect(() => {
     // Not signed in (or the session ended): sign in first, then come back here.
@@ -60,6 +62,13 @@ export default function VerifyCodes({ onDone }: { onDone: () => void }) {
     if (code.length !== 6) { setErrors(e => ({ ...e, [channel]: t('ver.code') })); return; }
     setBusy(channel); setErrors(e => ({ ...e, [channel]: '' }));
     try {
+      if (channel === 'PHONE' && pendingPhone) {
+        const res = await authFetch('/auth/phone/change/verify', { method: 'POST', body: JSON.stringify({ phone: pendingPhone, code }) });
+        if (!res.ok) throw new Error(await message(res, 'Error'));
+        setMe(m => (m ? { ...m, phone: pendingPhone, phoneVerified: true } : m));
+        setPendingPhone('');
+        return;
+      }
       const res = await authFetch('/auth/verify', { method: 'POST', body: JSON.stringify({ channel, code }) });
       if (!res.ok) throw new Error(await message(res, 'Error'));
       const state = await res.json();
@@ -73,7 +82,9 @@ export default function VerifyCodes({ onDone }: { onDone: () => void }) {
   async function resend(channel: Channel) {
     setBusy(channel); setErrors(e => ({ ...e, [channel]: '' })); setNotes(n => ({ ...n, [channel]: '' }));
     try {
-      const res = await authFetch('/auth/verify/send', { method: 'POST', body: JSON.stringify({ channel }) });
+      const res = channel === 'PHONE' && pendingPhone
+        ? await authFetch('/auth/phone/change/send', { method: 'POST', body: JSON.stringify({ phone: pendingPhone }) })
+        : await authFetch('/auth/verify/send', { method: 'POST', body: JSON.stringify({ channel }) });
       if (!res.ok) throw new Error(await message(res, 'Error'));
       setNotes(n => ({ ...n, [channel]: t('ver.sent') }));
       setWait(w => ({ ...w, [channel]: 60 }));
@@ -85,13 +96,14 @@ export default function VerifyCodes({ onDone }: { onDone: () => void }) {
   async function savePhone() {
     setBusy('PHONE'); setErrors(e => ({ ...e, PHONE: '' }));
     try {
-      const res = await authFetch('/users/me', { method: 'PATCH', body: JSON.stringify({ phone: newPhone }) });
+      // The new number gets a code; it replaces the old one once that code is typed in.
+      const res = await authFetch('/auth/phone/change/send', { method: 'POST', body: JSON.stringify({ phone: newPhone }) });
       if (!res.ok) throw new Error(await message(res, t('reg.e.phone')));
-      const u = await res.json();
-      setMe(m => (m ? { ...m, phone: u.phone, phoneVerified: u.phoneVerified } : m));
+      setPendingPhone(newPhone);
       setEditingPhone(false);
+      setWait(w => ({ ...w, PHONE: 60 }));
+      setNotes(n => ({ ...n, PHONE: t('ver.sent') }));
       setBusy(null);
-      await resend('PHONE');
     } catch (e: any) {
       setErrors(er => ({ ...er, PHONE: e.message }));
       setBusy(null);
@@ -102,7 +114,7 @@ export default function VerifyCodes({ onDone }: { onDone: () => void }) {
 
   const row = (channel: Channel) => {
     const done = channel === 'PHONE' ? me.phoneVerified : me.emailVerified;
-    const to = channel === 'PHONE' ? mask(me.phone) : me.email;
+    const to = channel === 'PHONE' ? mask(pendingPhone || me.phone) : me.email;
     const title = channel === 'PHONE' ? 'SMS' : t('acc.notifEmail');
     if (done) {
       return (

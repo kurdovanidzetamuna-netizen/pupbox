@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
+import DogLikes from './DogLikes';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 const SIZE: Record<string, string> = { EXTRA_SMALL: 'XS', SMALL: 'S', MEDIUM: 'M', LARGE: 'L', EXTRA_LARGE: 'XL' };
@@ -22,6 +23,20 @@ const badge = (ok: boolean, yes: string, no: string) => (
 export default function CustomerDrawer({ id, onClose }: { id: string; onClose: () => void }) {
   const [c, setC] = useState<any>(null);
   const [error, setError] = useState('');
+  const [busy, setBusy] = useState('');
+  const [note, setNote] = useState('');
+
+  // Confirm (or un-confirm) a phone or email by hand; kept in the audit log.
+  async function setVerified(channel: 'PHONE' | 'EMAIL', verified: boolean) {
+    if (!verified && !confirm(`Remove the ${channel === 'PHONE' ? 'phone' : 'email'} confirmation? The customer will be asked to confirm it again.`)) return;
+    setBusy(channel); setNote('');
+    const r = await fetch(`${API}/admin/customers/${id}/verify`, { method: 'PATCH', headers: { Authorization: `Bearer ${localStorage.getItem('admin_token')}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ channel, verified }) });
+    const d = await r.json().catch(() => ({}));
+    setBusy('');
+    if (!r.ok) { setNote((Array.isArray(d.message) ? d.message[0] : d.message) || 'Not saved.'); return; }
+    setC((x: any) => ({ ...x, ...d }));
+    setNote(verified ? `✓ ${channel === 'PHONE' ? 'Phone' : 'Email'} marked as confirmed` : 'Confirmation removed');
+  }
 
   useEffect(() => {
     setC(null); setError('');
@@ -52,9 +67,30 @@ export default function CustomerDrawer({ id, onClose }: { id: string; onClose: (
           <>
             <h2 style={{ fontSize: 20, fontWeight: 800, color: 'var(--slate-900)', margin: '4px 0 2px' }}>{c.firstName} {c.lastName}</h2>
             <p style={{ fontSize: 13, color: 'var(--slate-500)', margin: 0 }}>{c.email} · {c.phone || 'no phone'}</p>
+            {/* Phone and email: confirmed or not, when and how — and a button to change it by hand */}
+            <div style={{ display: 'grid', gap: 8, marginTop: 14 }}>
+              {([
+                ['PHONE', '📱 Phone', c.phone || 'no phone', c.phoneVerified, c.phoneVerified ? `${c.phoneVerifiedVia === 'ADMIN' ? 'by admin' : 'by SMS code'}${c.phoneVerifiedAt ? ` · ${day(c.phoneVerifiedAt)}` : ''}` : 'not confirmed'],
+                ['EMAIL', '✉️ Email', c.email, c.emailVerified, c.emailVerified ? 'confirmed' : 'not confirmed'],
+              ] as const).map(([ch, label, value, ok, how]) => (
+                <div key={ch} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 12, background: ok ? 'var(--green-50)' : 'var(--amber-50)' }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--slate-500)' }}>{label}</div>
+                    <div style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--slate-900)', overflow: 'hidden', textOverflow: 'ellipsis' }}>{value}</div>
+                    <div style={{ fontSize: 11.5, fontWeight: 600, color: ok ? 'var(--green-800)' : 'var(--amber-700)' }}>{ok ? '✓ ' : '• '}{how}</div>
+                  </div>
+                  {(ch === 'EMAIL' || c.phone) && (
+                    <button onClick={() => setVerified(ch, !ok)} disabled={!!busy}
+                      style={{ flexShrink: 0, padding: '7px 11px', borderRadius: 9, fontSize: 12, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap',
+                        border: ok ? '1px solid var(--slate-200)' : 'none', background: ok ? 'var(--white)' : 'var(--teal-600)', color: ok ? 'var(--slate-600)' : 'var(--white)' }}>
+                      {busy === ch ? '…' : ok ? 'Un-verify' : 'Mark verified'}
+                    </button>
+                  )}
+                </div>
+              ))}
+              {note && <p role="status" style={{ margin: 0, fontSize: 12.5, color: note.startsWith('✓') || note.startsWith('Confirmation') ? 'var(--teal-700)' : 'var(--red-600)' }}>{note}</p>}
+            </div>
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 10 }}>
-              {badge(c.emailVerified, 'Email confirmed', 'Email not confirmed')}
-              {badge(c.phoneVerified, 'Phone confirmed', 'Phone not confirmed')}
               {badge(c.marketingEmail, `Email offers${c.marketingEmailAt ? ` since ${day(c.marketingEmailAt)}` : ''}`, 'No email offers')}
               {badge(c.marketingSms, `SMS offers${c.marketingSmsAt ? ` since ${day(c.marketingSmsAt)}` : ''}`, 'No SMS offers')}
               <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 999, background: 'var(--slate-100)', color: 'var(--slate-600)' }}>{c.status}</span>
@@ -86,9 +122,7 @@ export default function CustomerDrawer({ id, onClose }: { id: string; onClose: (
                     <div>{[d.breed, d.gender?.toLowerCase(), age(d.birthday), d.weightKg ? `${d.weightKg} kg` : null].filter(Boolean).join(' · ') || '—'}</div>
                     {d.birthday && <div>🎂 {day(d.birthday)}</div>}
                     <div style={{ color: d.allergies?.length ? 'var(--red-600)' : 'var(--slate-400)', fontWeight: d.allergies?.length ? 700 : 400 }}>{d.allergies?.length ? `⚠ Allergic: ${d.allergies.join(', ')}` : 'No allergies'}</div>
-                    {d.foodPreferences?.length > 0 && <div>Food: {d.foodPreferences.join(', ')}</div>}
-                    {d.toyPreferences?.length > 0 && <div>Toys: {d.toyPreferences.join(', ')}</div>}
-                    {d.chewingStrength && <div>Chewer: {d.chewingStrength.toLowerCase()}</div>}
+                    <div><DogLikes dog={d} /></div>
                     {d.specialNotes && <div style={{ fontStyle: 'italic' }}>“{d.specialNotes}”</div>}
                     <div style={{ color: 'var(--slate-400)', fontSize: 11, marginTop: 2 }}>Added {day(d.createdAt)}</div>
                   </div>
@@ -114,7 +148,7 @@ export default function CustomerDrawer({ id, onClose }: { id: string; onClose: (
 
             {h('Addresses')}
             {c.addresses.map((a: any) => (
-              <p key={a.id} style={{ fontSize: 13, color: 'var(--slate-600)', margin: '0 0 6px' }}>{a.firstName} {a.lastName} · {a.phone} — {a.city}, {[a.addressLine1, a.addressLine2].filter(Boolean).join(', ')}{a.isDefault ? ' (default)' : ''}</p>
+              <p key={a.id} style={{ fontSize: 13, color: 'var(--slate-600)', margin: '0 0 6px' }}>{a.firstName} {a.lastName} · {a.phone} — {a.city}, {[a.addressLine1, a.addressLine2].filter(Boolean).join(', ')}{a.isDefault ? ' (default)' : ''}{a.isGift && <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--violet-700)', background: 'var(--violet-50)', borderRadius: 99, padding: '1px 7px', marginLeft: 6 }}>🎁 {(a.label || 'Gift').replace(/^Gift · /, 'Gift for ')}</span>}</p>
             ))}
           </>
         )}

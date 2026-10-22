@@ -7,7 +7,8 @@ import { useLanguage } from '@/context/LanguageContext';
 import { authFetch, loginUrl, SessionExpiredError } from '@/lib/authFetch';
 import AccountSecurity from '@/components/AccountSecurity';
 import Field from '@/components/ui/Field';
-import PhoneInput from '@/components/ui/PhoneInput';
+import PhoneOtpField from '@/components/PhoneOtpField';
+import { formatDate } from '@/lib/dates';
 import AddressesAndCards from '@/components/AddressesAndCards';
 import Modal from '@/components/ui/Modal';
 import IconButton from '@/components/ui/IconButton';
@@ -17,7 +18,7 @@ import { FormAlert, countErrors, revealFirstError } from '@/components/ui/FormEr
 
 export default function AccountPage() {
   const router = useRouter();
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -25,9 +26,9 @@ export default function AccountPage() {
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-  const [phoneOk, setPhoneOk] = useState(true);
-  // Bumped to put the phone field back to the saved number.
-  const [phoneKey, setPhoneKey] = useState(0);
+  // Changing (or confirming) the number: a pop-up with the SMS code.
+  const [phoneOpen, setPhoneOpen] = useState(false);
+  const [newPhone, setNewPhone] = useState('');
 
   useEffect(() => {
     authFetch('/users/me')
@@ -45,22 +46,15 @@ export default function AccountPage() {
     const errs: Record<string, string> = {};
     if (!form.firstName.trim()) errs.firstName = t('co.e.firstName');
     if (!form.lastName.trim()) errs.lastName = t('co.e.lastName');
-    if (form.phone !== (user?.phone || '') && !phoneOk) errs.phone = t('reg.e.phone');
     setFieldErrors(errs);
     if (countErrors(errs)) return revealFirstError();
     setSaving(true); setError(''); setSuccess('');
     try {
-      const res = await authFetch('/users/me', { method: 'PATCH', body: JSON.stringify(form) });
+      // The number changes only through its SMS code (the pop-up), never here.
+      const res = await authFetch('/users/me', { method: 'PATCH', body: JSON.stringify({ firstName: form.firstName, lastName: form.lastName }) });
       const u = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error((Array.isArray(u.message) ? u.message[0] : u.message) || t('acc.saveFailed'));
       setUser(u);
-      setForm(f => ({ ...f, phone: u.phone || '' }));
-      setPhoneKey(k => k + 1);
-      // A new number has to be confirmed with an SMS code.
-      if (!u.phoneVerified) {
-        await authFetch('/auth/verify/send', { method: 'POST', body: JSON.stringify({ channel: 'PHONE' }) }).catch(() => {});
-        return router.push('/verify?redirect=/account');
-      }
       setSuccess(t('acc.saved'));
     } catch (err: any) {
       if (err instanceof SessionExpiredError) return router.replace(loginUrl('/account'));
@@ -84,7 +78,15 @@ export default function AccountPage() {
       autoComplete={key === 'phone' ? 'tel' : key === 'firstName' ? 'given-name' : 'family-name'} error={fieldErrors[key]}
       onChange={v => { setForm({ ...form, [key]: v }); setFieldErrors(f => ({ ...f, [key]: '' })); setSuccess(''); }} />
   );
-  const changed = !!user && (form.firstName !== (user.firstName || '') || form.lastName !== (user.lastName || '') || form.phone !== (user.phone || ''));
+  const changed = !!user && (form.firstName !== (user.firstName || '') || form.lastName !== (user.lastName || ''));
+
+  // The number became the account's, confirmed: show it at once.
+  async function phoneConfirmed() {
+    const u = await authFetch('/users/me').then((r) => r.json()).catch(() => null);
+    if (u) { setUser(u); setForm((f) => ({ ...f, phone: u.phone || '' })); }
+    setPhoneOpen(false);
+    setSuccess(t('otp.saved'));
+  }
 
   async function toggleChannel(channel: 'marketingEmail' | 'marketingSms') {
     const next = !user?.[channel];
@@ -160,14 +162,28 @@ export default function AccountPage() {
                   {field('lastName', t('co.f.lastName'), true)}
                 </div>
                 <Field id="email" label={t('acc.email')} value={user?.email || ''} disabled trailing={badge(!!user?.emailVerified)} />
-                <PhoneInput floatLabel key={phoneKey} id="phone" label={t('co.f.phone')} value={form.phone} error={fieldErrors.phone}
-                  trailing={form.phone === (user?.phone || '') ? <span className="px-2">{badge(!!user?.phoneVerified)}</span> : undefined}
-                  onChange={(v, valid) => { setForm(f => ({ ...f, phone: v })); setPhoneOk(valid); setFieldErrors(f => ({ ...f, phone: '' })); setSuccess(''); }} />
+                {/* The number: confirmed when and how; changing it goes through an SMS code */}
+                <div className="rounded-xl bg-gray-100/80 pl-3.5 pr-2 py-2.5 flex items-center gap-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10.5px] font-medium text-gray-500 leading-none">{t('co.f.phone')}</p>
+                    <p className="mt-1 text-[13.5px] text-gray-900 truncate">{user?.phone || '—'}</p>
+                    <p className={`mt-0.5 text-[11.5px] font-semibold flex items-center gap-1 ${user?.phoneVerified ? 'text-teal-700' : 'text-amber-700'}`}>
+                      {badge(!!user?.phoneVerified)}
+                      {user?.phoneVerified
+                        ? <>{user.phoneVerifiedAt ? t('otp.verifiedOn').replace('{date}', formatDate(new Date(user.phoneVerifiedAt), lang)) : t('otp.verified')}{user.phoneVerifiedVia === 'ADMIN' ? ` · ${t('otp.byAdmin')}` : ''}</>
+                        : t('otp.notVerified')}
+                    </p>
+                  </div>
+                  <button type="button" onClick={() => { setNewPhone(user?.phoneVerified ? '' : user?.phone || ''); setPhoneOpen(true); }}
+                    className={`shrink-0 h-9 px-3.5 rounded-full text-[12.5px] font-bold transition-colors ${user?.phoneVerified ? 'bg-white text-gray-700 ring-1 ring-gray-200 hover:ring-teal-300 hover:text-teal-700' : 'bg-teal-600 text-white hover:bg-teal-700'}`}>
+                    {user?.phoneVerified ? t('otp.change') : t('otp.verifyNow')}
+                  </button>
+                </div>
                 {/* Buttons appear only once something was changed; Cancel puts it back. */}
                 {changed ? (
                   <div className="flex items-center justify-end gap-2 pt-1 animate-[fadeUp_0.15s_ease-out]">
                     <button type="button" disabled={saving}
-                      onClick={() => { setForm({ firstName: user.firstName || '', lastName: user.lastName || '', phone: user.phone || '' }); setPhoneKey(k => k + 1); setFieldErrors({}); setError(''); }}
+                      onClick={() => { setForm({ firstName: user.firstName || '', lastName: user.lastName || '', phone: user.phone || '' }); setFieldErrors({}); setError(''); }}
                       className="px-4 py-2 rounded-full text-[13px] font-semibold text-gray-600 hover:bg-gray-100 transition">{t('ui.cancel')}</button>
                     <button type="submit" disabled={saving} className="bg-teal-600 text-white text-[13px] font-semibold px-5 py-2 hover:bg-teal-700">
                       {saving ? t('co.saving') : t('acc.save')}
@@ -177,6 +193,11 @@ export default function AccountPage() {
                   <p className="text-right text-[13px] text-teal-700 pt-1" role="status">✓ {success}</p>
                 ) : null}
               </form>
+              <Modal open={phoneOpen} onClose={() => setPhoneOpen(false)} title={t('otp.changeTitle')} size="sm" dirty={!!newPhone && newPhone !== (user?.phone || '')}>
+                <p className="text-[13px] text-gray-600 mb-4">{t('otp.changeSub')}</p>
+                <PhoneOtpField id="newPhone" mode="change" label={t('co.f.phone')} value={newPhone} autoFocus
+                  onChange={(v) => setNewPhone(v)} onConfirmed={(c) => { if (c) phoneConfirmed(); }} />
+              </Modal>
             </section>
 
             <div className="lg:col-span-2 space-y-5">

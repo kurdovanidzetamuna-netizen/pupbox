@@ -1,6 +1,9 @@
 'use client';
+import { Select } from '@/components/Dropdown';
+import { categoryOptions } from '@/components/categoryOptions';
 import { useState, useEffect, useRef } from 'react';
 import LangTabs, { type Lang } from '@/components/LangTabs';
+import { NumInput } from '@/components/NumberField';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/svg+xml', 'image/webp'];
@@ -262,7 +265,7 @@ export default function QuickAddBoxItemModal({ onClose, onCreated }: Props) {
               <label style={{ fontSize: 12, fontWeight: 600, color: errors.price ? 'var(--red-600)' : 'var(--slate-600)', marginBottom: 5, display: 'flex', alignItems: 'center' }}>
                 Price (₾) <span style={{ color: 'var(--red-600)', marginLeft: 2 }}>*</span>{isKa && <DisabledBadge />}
               </label>
-              <input type="number" min="0" step="0.01" value={form.price} onChange={e => set('price', e.target.value)} placeholder="0.00" style={inp(errors.price, isKa)} disabled={isKa} />
+              <NumInput min="0" step="0.01" value={form.price} onChange={e => set('price', e.target.value)} placeholder="0.00" style={inp(errors.price, isKa)} disabled={isKa} />
               {errors.price && <p style={{ fontSize: 11, color: 'var(--red-600)', marginTop: 3 }}>⚠ {errors.price}</p>}
             </div>
           </div>
@@ -273,16 +276,16 @@ export default function QuickAddBoxItemModal({ onClose, onCreated }: Props) {
               <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--slate-600)', marginBottom: 5, display: 'flex', alignItems: 'center' }}>
                 Category{isKa && <DisabledBadge />}
               </label>
-              <select value={form.categoryId} onChange={e => set('categoryId', e.target.value)} disabled={isKa} style={{ ...inp(undefined, isKa), color: form.categoryId && !isKa ? 'var(--slate-900)' : 'var(--slate-400)' }}>
+              <Select value={form.categoryId} onChange={e => set('categoryId', e.target.value)} disabled={isKa} style={{ ...inp(undefined, isKa), color: form.categoryId && !isKa ? 'var(--slate-900)' : 'var(--slate-400)' }}>
                 <option value="">No category</option>
-                {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
+                {categoryOptions(categories).map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
+              </Select>
             </div>
             <div>
               <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--slate-600)', marginBottom: 5, display: 'flex', alignItems: 'center' }}>
                 Stock (units){isKa && <DisabledBadge />}
               </label>
-              <input type="number" min="0" value={form.stockQuantity} onChange={e => set('stockQuantity', e.target.value)} disabled={isKa} style={inp(undefined, isKa)} />
+              <NumInput min="0" value={form.stockQuantity} onChange={e => set('stockQuantity', e.target.value)} disabled={isKa} style={inp(undefined, isKa)} />
             </div>
           </div>
 

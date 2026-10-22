@@ -10,20 +10,23 @@ import { fill } from '@/context/strings/purchase';
 import { gel } from '@/lib/format';
 import { itemName } from '@/lib/localize';
 import LegalNotice from '@/components/LegalNotice';
-import DogProfileForm, { emptyDogProfile, toDogPayload, fromDog, type DogProfile } from '@/components/DogProfileForm';
+import DogProfileForm, { emptyDogProfile, toDogPayload, type DogProfile } from '@/components/DogProfileForm';
+import DogChooser from '@/components/DogChooser';
 import ChoiceNote from '@/components/ChoiceNote';
 import VerifyCodes from '@/components/VerifyCodes';
 import PhoneInput from '@/components/ui/PhoneInput';
-import { forgetReferral, storedReferral } from '@/lib/referral';
+import PhoneOtpField, { type PhoneConfirmed } from '@/components/PhoneOtpField';
+import { storedReferral } from '@/lib/referral';
 import { FieldError, FormAlert, countErrors, revealFirstError } from '@/components/ui/FormError';
 import { Heading } from '@/components/ui/Heading';
 import TextField from '@/components/ui/Field';
+import DatePicker from '@/components/ui/DatePicker';
 import Button from '@/components/ui/Button';
 import Segmented from '@/components/ui/Segmented';
 import EmptyState from '@/components/ui/EmptyState';
 import { Icon } from '@/components/ui/icons';
-import { GlossyPaw } from '@/components/Glossy3D';
 import { PwEye } from '@/app/[lang]/login/LoginForm';
+import { loginUrl } from '@/lib/authFetch';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -34,6 +37,16 @@ function apiMessage(data: any, fallback: string) {
 }
 
 type StepKey = 'account' | 'dog' | 'gift' | 'delivery';
+
+type SavedAddress = { id: string; label: string | null; firstName: string; lastName: string; phone: string; city: string; addressLine1: string; addressLine2: string | null; latitude: number | null; longitude: number | null; isDefault: boolean; isGift: boolean };
+
+/** The form (and pin) still say exactly what this saved address says. */
+function sameAddress(a: SavedAddress, f: { firstName: string; lastName: string; phone: string; city: string; addressLine1: string; addressLine2: string }, pin: Pin | null) {
+  const eq = (x: string | null | undefined, y: string) => (x ?? '').trim() === y.trim();
+  return eq(a.firstName, f.firstName) && eq(a.lastName, f.lastName) && eq(a.phone, f.phone) && eq(a.city, f.city)
+    && eq(a.addressLine1, f.addressLine1) && eq(a.addressLine2, f.addressLine2)
+    && (!pin || (pin.lat === a.latitude && pin.lng === a.longitude));
+}
 
 /**
  * Label, control and its message. Defined at module level on purpose: a
@@ -101,12 +114,16 @@ export default function CheckoutPage() {
   const [showPw, setShowPw] = useState(false);
   const [signupPhone, setSignupPhone] = useState('');
   const [signupPhoneOk, setSignupPhoneOk] = useState(false);
+  // Confirmed by SMS code in the form; the proof goes with the new account.
+  const [signupProof, setSignupProof] = useState<PhoneConfirmed | null>(null);
   // Delivery phone: any country; valid unless it was typed and isn't.
   const [deliveryPhoneOk, setDeliveryPhoneOk] = useState(true);
   const [signedInEmail, setSignedInEmail] = useState('');
   const [form, setForm] = useState({
     email: '', password: '', firstName: '', lastName: '', phone: '',
     city: '', addressLine1: '', addressLine2: '',
+    // A new address's name (Home, Granny's…), saved with it.
+    addressLabel: '',
     giftRecipientName: '', giftRecipientEmail: '', giftMessage: '',
     // Empty = the gift starts as soon as payment clears.
     giftSendOn: '',
@@ -116,11 +133,17 @@ export default function CheckoutPage() {
   // The buyer's own phone, prefilled for themselves; not the friend's.
   const [profilePhone, setProfilePhone] = useState('');
   const [giftLater, setGiftLater] = useState(false);
-  const [dog, setDog] = useState<DogProfile>(emptyDogProfile);
   const [dogId, setDogId] = useState<string | null>(null);
   // A returning customer picks one of their dogs instead of re-entering it;
   // otherwise every purchase (or a reload mid-checkout) created a duplicate.
   const [myDogs, setMyDogs] = useState<any[]>([]);
+  // A returning customer picks a saved address instead of typing it again.
+  const [savedAddrs, setSavedAddrs] = useState<SavedAddress[]>([]);
+  const [addrPicked, setAddrPicked] = useState(false);
+  // A new address becomes their main one (the first one always does).
+  const [makeMain, setMakeMain] = useState(false);
+  // Bumped when a saved address fills the form, so the phone field shows its country.
+  const [phoneKey, setPhoneKey] = useState(0);
   const [deliveryMethods, setDeliveryMethods] = useState<any[]>([]);
   const [selectedDelivery, setSelectedDelivery] = useState('');
   // No default on purpose: Georgian consumer law voids a term that renews a
@@ -155,16 +178,27 @@ export default function CheckoutPage() {
   // Priced against this cart on the server, so a plan with delivery included
   // shows as free here exactly as it will be charged. The first option is
   // pre-selected: a sensible default beats an error for not choosing.
+  // Each option comes with the order's discount and total: a coupon may
+  // cover delivery, and a plan bought as a gift is priced as a gift.
   useEffect(() => {
-    if (cart?.subtotal === undefined) return;
-    fetch(`${API_URL}/cart/delivery-methods`, { headers: cartHeaders() })
+    if (cart?.subtotal === undefined || !arrival) return;
+    fetch(`${API_URL}/cart/delivery-methods${arrival.gift ? '?gift=true' : ''}`, { headers: cartHeaders() })
       .then(r => r.json())
       .then((methods: any[]) => {
         setDeliveryMethods(methods);
         setSelectedDelivery(cur => (methods.some(m => m.id === cur) ? cur : methods[0]?.id || ''));
       })
       .catch(() => {});
-  }, [cart?.subtotal, cart?.deliveryIncluded]);
+  }, [cart?.subtotal, cart?.deliveryIncluded, cart?.discountAmount, cart?.coupon?.id, arrival]);
+
+  // Their own default address, ready to go (a gift goes to the friend's, so not there).
+  useEffect(() => {
+    if (addrPicked || !arrival || arrival.gift || !savedAddrs.length) return;
+    const own = savedAddrs.filter(a => !a.isGift);
+    const a = own.find(x => x.isDefault) ?? own[0];
+    if (a && !form.addressLine1) fillAddress(a);
+    setAddrPicked(true);
+  }, [savedAddrs, arrival]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // A signed-in customer shouldn't retype what their profile already holds.
   function prefillFromProfile() {
@@ -177,6 +211,7 @@ export default function CheckoutPage() {
         setSignedInEmail(u.email || '');
         setProfilePhone(u.phone || '');
         loadMyDogs(token);
+        loadAddresses(token);
         setForm(f => ({ ...f, firstName: f.firstName || u.firstName || '', lastName: f.lastName || u.lastName || '', phone: f.phone || u.phone || '' }));
       })
       .catch(() => {});
@@ -189,17 +224,29 @@ export default function CheckoutPage() {
         if (!Array.isArray(dogs)) return;
         setMyDogs(dogs);
         // One dog is the obvious answer; with several, let them choose.
-        if (dogs.length === 1) {
-          setDogId(cur => cur ?? dogs[0].id);
-          setDog(cur => (cur.name.trim() ? cur : fromDog(dogs[0])));
-        }
+        if (dogs.length === 1) setDogId(cur => cur ?? dogs[0].id);
       })
       .catch(() => {});
   }
 
-  function chooseDog(d: any | null) {
-    setDogId(d ? d.id : null);
-    setDog(d ? fromDog(d) : emptyDogProfile);
+  function loadAddresses(token: string) {
+    fetch(`${API_URL}/me/addresses`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => (r.ok ? r.json() : []))
+      .then((list: SavedAddress[]) => Array.isArray(list) && setSavedAddrs(list))
+      .catch(() => {});
+  }
+
+  function fillAddress(a: SavedAddress | null) {
+    setForm(f => a
+      ? { ...f, firstName: a.firstName, lastName: a.lastName, phone: a.phone, city: a.city, addressLine1: a.addressLine1, addressLine2: a.addressLine2 ?? '' }
+      : { ...f, city: '', addressLine1: '', addressLine2: '' });
+    setPin(a && a.latitude != null && a.longitude != null ? { lat: a.latitude, lng: a.longitude } : null);
+    if (a) { setDeliveryPhoneOk(true); setPhoneKey(k => k + 1); }
+    setErrs(e => ({ ...e, firstName: '', lastName: '', phone: '', city: '', addressLine1: '' }));
+  }
+
+  function chooseDog(id: string) {
+    setDogId(id);
     setErrs(e => ({ ...e, dogName: '' }));
   }
 
@@ -227,6 +274,7 @@ export default function CheckoutPage() {
     if (!form.password) e.password = t('co.e.passwordReq');
     else if (isNewAccount && form.password.length < 8) e.password = t('co.e.passwordLen');
     if (isNewAccount && !signupPhoneOk) e.signupPhone = t(signupPhone ? 'reg.e.phone' : 'ui.e.phone');
+    else if (isNewAccount && !signupProof?.proof) e.signupPhone = t('otp.e.confirm');
     if (fail(e)) return;
 
     setError(''); setLoading(true);
@@ -234,7 +282,7 @@ export default function CheckoutPage() {
       const body = isNewAccount
         ? {
             email: form.email.trim(), password: form.password, firstName: form.firstName.trim(), lastName: form.lastName.trim(),
-            phone: signupPhone.trim(), referralCode: storedReferral() || undefined, marketingConsent: consent, language: lang,
+            phone: signupPhone.trim(), referralCode: storedReferral() || undefined, marketingConsent: consent, language: lang, phoneProof: signupProof?.proof,
           }
         : { email: form.email.trim(), password: form.password };
       const res = await fetch(`${API_URL}${isNewAccount ? '/auth/register' : '/auth/login'}`, {
@@ -243,7 +291,6 @@ export default function CheckoutPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(apiMessage(data, t('co.e.generic')));
       localStorage.setItem('pupbox_token', data.token);
-      if (isNewAccount) forgetReferral();
       // Moves what they added as a guest into the account cart; without this
       // the order would be placed against an empty account cart.
       await refresh();
@@ -269,24 +316,11 @@ export default function CheckoutPage() {
     next();
   }
 
-  async function submitDog() {
-    if (fail(dog.name.trim() ? {} : { dogName: t('co.e.dogName') })) return;
-    setError(''); setLoading(true);
-    try {
-      // Saved once: going Back and Continue again updates the same dog
-      // instead of creating a duplicate. Its id goes on the order, so the
-      // subscription knows which dog it is for.
-      const res = await fetch(dogId ? `${API_URL}/me/dogs/${dogId}` : `${API_URL}/me/dogs`, {
-        method: dogId ? 'PUT' : 'POST',
-        headers: { Authorization: `Bearer ${getToken()}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify(toDogPayload(dog)),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(apiMessage(data, t('co.e.generic')));
-      if (data?.id) setDogId(data.id);
-      next();
-    } catch (err: any) { setError(err.message); }
-    finally { setLoading(false); }
+  // The dog is saved by its own pop-up (the same one as My dogs); here we
+  // only need to know which one, so the subscription is for the right dog.
+  function submitDog() {
+    if (!myDogs.some(d => d.id === dogId)) { setErrs({ dogName: t('co.e.pickDog') }); return; }
+    next();
   }
 
   async function pay() {
@@ -310,6 +344,8 @@ export default function CheckoutPage() {
         body: JSON.stringify({
           deliveryMethodId: selectedDelivery,
           ...(dogId && !isGift ? { dogId } : {}),
+          // Unchanged saved address: use it as it is (else the typed one is saved).
+          ...(chosenAddr ? { addressId: chosenAddr.id } : !isGift ? { addressLabel: form.addressLabel.trim() || undefined, makeMainAddress: makeMain } : {}),
           firstName: form.firstName,
           lastName: form.lastName,
           phone: form.phone,
@@ -358,7 +394,12 @@ export default function CheckoutPage() {
   // ── derived ──
   const selectedMethod = deliveryMethods.find(m => m.id === selectedDelivery);
   const deliveryCost = selectedMethod ? Number(selectedMethod.effectivePrice ?? 0) : 0;
-  const total = (cart?.total ?? 0) + deliveryCost;
+  // The server's figures for this option (coupon on delivery, gift pricing); the cart's until they arrive.
+  const discount = selectedMethod?.discount ?? cart?.discountAmount ?? 0;
+  const total = selectedMethod?.total ?? (cart?.total ?? 0) + deliveryCost;
+  // A gift goes to a friend's saved address; anything else to one of their own.
+  const addrChoices = savedAddrs.filter(a => a.isGift === isGift);
+  const chosenAddr = addrChoices.find(a => sameAddress(a, form, pin)) ?? null;
   const plan = cart?.items?.find((i: any) => i.subscriptionPlan)?.subscriptionPlan;
   // A plan set in admin not to renew offers no choice: it simply ends.
   const offersRenewal = hasSubscription && !isGift && plan?.autoRenewal !== false;
@@ -368,7 +409,7 @@ export default function CheckoutPage() {
   const field = (key: string) =>
     `w-full rounded-xl px-3.5 py-3 text-[13px] text-gray-900 outline-none transition-colors ${errs[key] ? 'bg-red-50 focus:bg-white focus:ring-2 focus:ring-red-300' : 'bg-gray-100/80 hover:bg-gray-100 focus:bg-white focus:ring-2 focus:ring-teal-300'}`;
   // Every field is required unless it's one of these.
-  const OPTIONAL = new Set<keyof typeof form>(['addressLine2', 'giftRecipientEmail', 'giftMessage']);
+  const OPTIONAL = new Set<keyof typeof form>(['addressLine2', 'addressLabel', 'giftRecipientEmail', 'giftMessage']);
   // The shared field: label inside, moving up as you type; examples go in the hint.
   const input = (id: keyof typeof form, label: string, opts: { type?: string; placeholder?: string; hint?: string; autoComplete?: string; trailing?: React.ReactNode } = {}) => (
     <TextField id={id} label={label} type={opts.type} value={form[id]} onChange={v => update(id, v)} error={errs[id]}
@@ -400,7 +441,7 @@ export default function CheckoutPage() {
       </ul>
       <dl className="border-t border-gray-100 pt-3 text-[13px] space-y-1.5">
         <div className="flex justify-between text-gray-500"><dt>{t('co.sum.subtotal')}</dt><dd>{gel(cart?.subtotal)}</dd></div>
-        {cart?.discountAmount > 0 && <div className="flex justify-between text-teal-700"><dt>{t('co.sum.discount')}</dt><dd>−{gel(cart.discountAmount)}</dd></div>}
+        {discount > 0 && <div className="flex justify-between text-teal-700"><dt>{cart.referral ? t('co.sum.friend') : t('co.sum.discount')}</dt><dd>−{gel(discount)}</dd></div>}
         <div className="flex justify-between text-gray-500">
           <dt>{t('co.sum.delivery')}</dt>
           <dd>{selectedMethod ? (deliveryCost === 0 ? (cart?.deliveryIncluded ? t('co.delivery.included') : t('co.delivery.free')) : gel(deliveryCost)) : cart?.deliveryIncluded ? t('co.delivery.included') : t('co.sum.deliveryLater')}</dd>
@@ -489,9 +530,10 @@ export default function CheckoutPage() {
                   {input('email', t('co.f.email'), { type: 'email', autoComplete: 'email' })}
                   {isNewAccount && (
                     <div>
-                      <PhoneInput id="signupPhone" label={t('reg.phone')} value={signupPhone} required floatLabel error={errs.signupPhone}
-                        onChange={(v, ok) => { setSignupPhone(v); setSignupPhoneOk(ok); setErrs(er => ({ ...er, signupPhone: '' })); }} />
-                      {!errs.signupPhone && <p className="mt-1 px-1 text-[11.5px] text-gray-500">{t('reg.phoneHint')}</p>}
+                      <PhoneOtpField id="signupPhone" mode="signup" label={t('reg.phone')} value={signupPhone} error={errs.signupPhone}
+                        confirmed={!!signupProof && signupProof.phone === signupPhone}
+                        onChange={(v, ok) => { setSignupPhone(v); setSignupPhoneOk(ok); setErrs(er => ({ ...er, signupPhone: '' })); }}
+                        onConfirmed={(c) => { setSignupProof(c); if (c) setErrs(er => ({ ...er, signupPhone: '' })); }} />
                     </div>
                   )}
                   {input('password', t('co.f.password'), { type: showPw ? 'text' : 'password', hint: isNewAccount ? t('co.f.passwordHint') : undefined, autoComplete: isNewAccount ? 'new-password' : 'current-password',
@@ -536,8 +578,8 @@ export default function CheckoutPage() {
                     </div>
                     {giftLater && (
                       <div className="mt-2">
-                        <TextField id="giftSendOn" type="date" required label={t('co.gift.date')} hint={t('co.gift.dateHint')} error={errs.giftSendOn}
-                          value={form.giftSendOn} onChange={v => update('giftSendOn', v)} />
+                        <DatePicker id="giftSendOn" required label={t('co.gift.date')} hint={t('co.gift.dateHint')} error={errs.giftSendOn}
+                          value={form.giftSendOn} onChange={v => update('giftSendOn', v)} min={todayTbilisi()} max={inAYear()} />
                       </div>
                     )}
                   </fieldset>
@@ -551,27 +593,11 @@ export default function CheckoutPage() {
             {/* ── Dog ── */}
             {step === 'dog' && (
               <section className={card}>
-                <Heading kind="form" as="h1" title={t('co.dog.title')} subtitle={t('co.dog.sub')} />
-                {myDogs.length > 0 && (
-                  <div className="mb-6">
-                    <p className="px-1 text-[12.5px] font-semibold text-gray-700 mb-2">{t('co.dog.which')}</p>
-                    <div className="flex gap-2 overflow-x-auto -mx-1 px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" role="radiogroup" aria-label={t('co.dog.which')}>
-                      {myDogs.map(d => (
-                        <button key={d.id} type="button" role="radio" aria-checked={dogId === d.id} onClick={() => chooseDog(d)}
-                          className={`shrink-0 h-10 pl-1.5 pr-3.5 rounded-full inline-flex items-center gap-2 text-[13px] font-semibold ring-1 ring-inset transition ${dogId === d.id ? 'bg-teal-50 text-teal-700 ring-teal-400' : 'bg-gray-100/80 text-gray-700 ring-transparent hover:bg-gray-100'}`}>
-                          <GlossyPaw className="w-7 h-7" />{d.name}
-                        </button>
-                      ))}
-                      <button type="button" role="radio" aria-checked={!dogId} onClick={() => chooseDog(null)}
-                        className={`shrink-0 h-10 px-3.5 rounded-full inline-flex items-center gap-1.5 text-[13px] font-semibold ring-1 ring-inset transition ${!dogId ? 'bg-teal-50 text-teal-700 ring-teal-400' : 'bg-gray-100/80 text-gray-700 ring-transparent hover:bg-gray-100'}`}>
-                        <Icon name="plus" className="w-4 h-4" strokeWidth={2.4} />{t('co.dog.another').replace(/^\+\s*/, '')}
-                      </button>
-                    </div>
-                  </div>
-                )}
-                <DogProfileForm value={dog} onChange={d => { setDog(d); setErrs(e => ({ ...e, dogName: '' })); }} compact nameError={errs.dogName} />
-                <FormAlert message={error} missing={countErrors(errs)} className="mt-4" />
-                {actions(<Button size="lg" icon="arrow" onClick={submitDog} disabled={loading} label={loading ? t('co.saving') : t('co.continue').replace(/\s*→\s*$/, '')} />)}
+                <Heading kind="form" as="h1" title={t(myDogs.length ? 'co.dog.which' : 'co.dog.title')} subtitle={t('co.dog.sub')} />
+                <DogChooser dogs={myDogs} value={dogId} onChange={chooseDog} onDogsChange={setMyDogs} error={errs.dogName}
+                  onExpired={() => router.replace(loginUrl('/checkout'))} />
+                <FormAlert message={error} className="mt-4" />
+                {actions(<Button size="lg" icon="arrow" onClick={submitDog} label={t('co.continue').replace(/\s*→\s*$/, '')} />)}
               </section>
             )}
 
@@ -590,13 +616,38 @@ export default function CheckoutPage() {
                 )}
                 <Heading kind="form" as="h1" title={isGift ? t('co.delivery.giftTitle') : t('co.delivery.title')}
                   subtitle={signedInEmail ? fill(t('co.signedInAs'), { email: signedInEmail }) : undefined} />
+                {/* Saved addresses: one tap instead of typing it all again */}
+                {addrChoices.length > 0 && (
+                  <fieldset className="mb-5">
+                    <legend className="block px-1 text-[12.5px] font-semibold text-gray-700 mb-2">{isGift ? t('co.addr.giftSaved') : t('co.addr.saved')}</legend>
+                    <div className="grid sm:grid-cols-2 gap-2">
+                      {addrChoices.map(a => (
+                        <OptionCard key={a.id} name="savedAddress" checked={chosenAddr?.id === a.id} onChange={() => fillAddress(a)}>
+                          <span className="min-w-0 flex-1">
+                            <span className="flex items-center gap-1.5 text-[13.5px] font-semibold text-gray-900 min-w-0">
+                              <span className="truncate">{a.isGift ? `${a.firstName} ${a.lastName}` : a.label || `${a.firstName} ${a.lastName}`}</span>
+                              {a.isDefault && <span className="shrink-0 inline-flex items-center gap-0.5 text-[10px] font-bold text-amber-700 bg-amber-50 rounded-full px-1.5 py-0.5"><Icon name="star" className="w-2.5 h-2.5 [&_path]:fill-current" strokeWidth={2.4} />{t('addr.default')}</span>}
+                            </span>
+                            <span className="block text-[12px] text-gray-500 truncate">{[a.city, a.addressLine1, a.addressLine2].filter(Boolean).join(', ')}</span>
+                          </span>
+                        </OptionCard>
+                      ))}
+                      <OptionCard name="savedAddress" checked={!chosenAddr} onChange={() => { if (chosenAddr) fillAddress(null); }}>
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-[13.5px] font-semibold text-gray-900 flex items-center gap-1.5"><Icon name="plus" className="w-3.5 h-3.5" strokeWidth={2.6} />{t('co.addr.new')}</span>
+                          <span className="block text-[12px] text-gray-500">{t('co.addr.newSub')}</span>
+                        </span>
+                      </OptionCard>
+                    </div>
+                  </fieldset>
+                )}
                 <div className="space-y-3">
                   <div className="grid grid-cols-2 gap-3">
                     {input('firstName', t('co.f.firstName'), { autoComplete: 'given-name' })}
                     {input('lastName', t('co.f.lastName'), { autoComplete: 'family-name' })}
                   </div>
                   {/* Mounts with the step, after any prefill, so the picker shows that number's country. */}
-                  <PhoneInput id="phone" label={t('co.f.phone')} value={form.phone} required floatLabel error={errs.phone}
+                  <PhoneInput key={phoneKey} id="phone" label={t('co.f.phone')} value={form.phone} required floatLabel error={errs.phone}
                     onChange={(v, ok) => { setForm(f => ({ ...f, phone: v })); setDeliveryPhoneOk(ok || !v); setErrs(er => ({ ...er, phone: '' })); }} />
                   <MapPicker value={pin} onPick={p => {
                     setPin({ lat: p.lat, lng: p.lng });
@@ -608,6 +659,31 @@ export default function CheckoutPage() {
                     {input('addressLine1', t('co.f.address'), { hint: t('co.f.addressPh'), autoComplete: 'address-line1' })}
                   </div>
                   {input('addressLine2', t('co.f.address2'), { autoComplete: 'address-line2' })}
+                  {/* A new address of their own: name it, and make it the main one */}
+                  {!chosenAddr && !isGift && signedInEmail && (
+                    <div className="rounded-[18px] bg-gray-50 p-3.5 space-y-3">
+                      <div>
+                        {input('addressLabel', t('co.addr.name'), { hint: t('addr.labelHint') })}
+                        <div className="mt-2 flex flex-wrap gap-1.5" role="group" aria-label={t('co.addr.name')}>
+                          {['addr.n.home', 'addr.n.work', 'addr.n.country', 'addr.n.family', 'addr.n.friend'].map(k => {
+                            const name = t(k), on = form.addressLabel.trim() === name;
+                            return (
+                              <button key={k} type="button" aria-pressed={on} onClick={() => update('addressLabel', on ? '' : name)}
+                                className={`h-8 px-3 rounded-full text-[12px] font-semibold transition-colors ${on ? 'bg-teal-600 text-white' : 'bg-white ring-1 ring-gray-200 text-gray-600 hover:bg-gray-100'}`}>
+                                {name}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                      {addrChoices.length > 0 && (
+                        <label className="flex items-center gap-3 cursor-pointer">
+                          <input type="checkbox" checked={makeMain} onChange={e => setMakeMain(e.target.checked)} className="accent-teal-600 w-4 h-4" />
+                          <span className="flex items-center gap-1 text-[13px] font-semibold text-gray-800"><Icon name="star" className="w-3.5 h-3.5 text-amber-500 [&_path]:fill-current" />{t('co.addr.makeMain')}</span>
+                        </label>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <h2 className="text-[15px] font-extrabold text-gray-900 mt-7 mb-3">{t('co.delivery.method')}</h2>
@@ -623,14 +699,21 @@ export default function CheckoutPage() {
                             {days && <span className="block text-xs text-gray-400">{days === '1' ? t('co.delivery.day') : fill(t('co.delivery.days'), { n: days })}</span>}
                           </span>
                         <span className="text-right">
-                          {m.includedWithPlan
+                          {m.couponOff > 0
+                            ? <span className="block">
+                                <span className="text-xs text-gray-400 line-through mr-1.5">{gel(m.effectivePrice)}</span>
+                                {m.couponOff >= m.effectivePrice
+                                  ? <span className="text-teal-700 font-semibold text-sm">{t('co.delivery.couponFree')}</span>
+                                  : <span className="font-bold text-sm text-teal-700">{gel((m.effectivePrice - m.couponOff).toFixed(2))}</span>}
+                              </span>
+                          : m.includedWithPlan
                             ? <span className="text-teal-700 font-semibold text-sm">{t('co.delivery.included')}</span>
                             : m.upgradeFromPlan
                               ? <span className="font-semibold text-sm text-gray-900">{fill(t('co.delivery.upgrade'), { amount: gel(m.effectivePrice) })}</span>
                             : m.isFree
                               ? <span className="text-teal-700 font-semibold text-sm">{t('co.delivery.free')}</span>
                               : <span className="font-bold text-sm">{gel(m.price)}</span>}
-                          {m.freeThreshold && !m.isFree && (
+                          {m.freeThreshold && !m.isFree && !m.couponOff && (
                             <span className="block text-xs text-gray-400">{fill(t('co.delivery.freeOver'), { amount: gel(m.freeThreshold) })}</span>
                           )}
                         </span>

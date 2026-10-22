@@ -35,6 +35,12 @@ export class RegisterDto {
   @IsString()
   referralCode?: string;
 
+  /** Proof the phone was confirmed by SMS code before signing up (POST /auth/phone/verify). */
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  phoneProof?: string;
+
   /** The site language at sign-up; emails are written in it. */
   @IsOptional()
   @IsIn(['ka', 'en'])

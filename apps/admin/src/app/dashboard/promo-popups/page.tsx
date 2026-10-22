@@ -1,5 +1,7 @@
 'use client';
+import { Select } from '@/components/Dropdown';
 import { useEffect, useState } from 'react';
+import { NumInput } from '@/components/NumberField';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 const SLUG = 'config-promo-popups';
@@ -244,9 +246,9 @@ export default function PromoPopupsPage() {
           <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 14, maxHeight: 'calc(100vh - 220px)', overflowY: 'auto' }}>
             {/* Type */}
             <Field label="Type">
-              <select value={form.type} onChange={f('type')} style={selectStyle}>
+              <Select value={form.type} onChange={f('type')} style={selectStyle}>
                 {TYPE_OPTIONS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-              </select>
+              </Select>
             </Field>
 
             {/* Title */}
@@ -269,7 +271,7 @@ export default function PromoPopupsPage() {
             </Field>
 
             {/* Coupon */}
-            <Field label="Coupon code (optional)">
+            <Field label="Promo code (optional)">
               <input value={form.couponCode} onChange={f('couponCode')} style={inputStyle} placeholder="WELCOME10" />
             </Field>
 
@@ -280,22 +282,22 @@ export default function PromoPopupsPage() {
 
             {/* Trigger */}
             <Field label="Show trigger">
-              <select value={form.trigger} onChange={f('trigger')} style={selectStyle}>
+              <Select value={form.trigger} onChange={f('trigger')} style={selectStyle}>
                 {TRIGGER_OPTIONS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-              </select>
+              </Select>
             </Field>
 
             {form.trigger === 'after_delay' && (
               <Field label="Delay (seconds)">
-                <input type="number" min={1} max={60} value={form.delaySeconds} onChange={e => setForm(p => ({ ...p, delaySeconds: +e.target.value }))} style={inputStyle} />
+                <NumInput min={1} max={60} value={form.delaySeconds} onChange={e => setForm(p => ({ ...p, delaySeconds: +e.target.value }))} style={inputStyle} />
               </Field>
             )}
 
             {/* Pages */}
             <Field label="Show on pages">
-              <select value={form.showOnPages?.[0] || 'all'} onChange={e => setForm(p => ({ ...p, showOnPages: [e.target.value] }))} style={selectStyle}>
+              <Select value={form.showOnPages?.[0] || 'all'} onChange={e => setForm(p => ({ ...p, showOnPages: [e.target.value] }))} style={selectStyle}>
                 {PAGE_OPTIONS.map(pg => <option key={pg.value} value={pg.value}>{pg.label}</option>)}
-              </select>
+              </Select>
             </Field>
 
             {/* Frequency */}

@@ -108,7 +108,7 @@ export default function PlanDetails({ open, onClose, onChoose, loading, plan, na
           const { emoji, tile } = iconFor(b);
           return (
             <li key={i} style={{ animationDelay: `${60 + i * 45}ms` }}
-              className="flex items-center gap-3 rounded-2xl ring-1 ring-gray-100 bg-white px-3 py-2.5 opacity-0 animate-[fadeUp_0.3s_ease-out_forwards]">
+              className="flex items-center gap-3 rounded-2xl ring-1 ring-gray-100 bg-white px-3 py-2.5 animate-[fadeUp_0.3s_ease-out_both]">
               <span className={`w-9 h-9 shrink-0 rounded-xl flex items-center justify-center text-lg ${tile}`} aria-hidden="true">{emoji}</span>
               <span className="text-[13px] font-medium text-gray-800 leading-snug">{b}</span>
             </li>

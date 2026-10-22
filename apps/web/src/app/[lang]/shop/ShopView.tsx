@@ -86,6 +86,10 @@ export default function ShopView({ products, total, pages, page, categories, bra
 
   const catName = (cat: any) => (lang === 'ka' && cat.translations?.ka?.name) || cat.name;
   const activeCat = categories.find((x) => x.slug === category);
+  // Main categories up top; the chosen one's subcategories in a row under them.
+  const mains = categories.filter((x) => !x.parentId || !categories.some((m) => m.id === x.parentId));
+  const openMain = activeCat ? (activeCat.parentId ? categories.find((m) => m.id === activeCat.parentId) : activeCat) : null;
+  const subs = openMain ? categories.filter((x) => x.parentId === openMain.id) : [];
   const active = [
     activeCat && { key: 'category', label: catName(activeCat) },
     brand && { key: 'brand', label: t(`collection.${brand}`, brand) },
@@ -130,16 +134,32 @@ export default function ShopView({ products, total, pages, page, categories, bra
           <Link href={hrefWith({ category: null })} scroll={false} className={chip(!category)} aria-current={!category ? 'page' : undefined}>
             <span className={chipIcon(!category)} aria-hidden="true">✨</span>{t('shop.allProducts')}
           </Link>
-          {categories.map((cat) => {
-            const on = cat.slug === category;
+          {mains.map((cat) => {
+            // A main category stays lit while one of its subcategories is chosen.
+            const on = cat.slug === category || cat.id === activeCat?.parentId;
             return (
-              <Link key={cat.id} href={hrefWith({ category: on ? null : cat.slug })} scroll={false} className={chip(on)} aria-current={on ? 'page' : undefined}>
+              <Link key={cat.id} href={hrefWith({ category: cat.slug === category ? null : cat.slug })} scroll={false} className={chip(on)} aria-current={on ? 'page' : undefined}>
                 <span className={chipIcon(on)} aria-hidden="true">{cat.imageUrl ? <img src={cat.imageUrl} alt="" className="w-full h-full object-cover" /> : categoryLook(cat).icon}</span>
                 {catName(cat)}
               </Link>
             );
           })}
         </nav>
+
+        {/* Subcategories of the chosen one (Toys → Chew toys, Plush…) */}
+        {openMain && subs.length > 0 && (
+          <nav aria-label={catName(openMain)} className="flex gap-1.5 overflow-x-auto -mt-2 pb-4 -mx-4 px-4 sm:mx-0 sm:px-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden motion-safe:animate-[fadeUp_0.2s_ease-out]">
+            {[openMain, ...subs].map((cat, i) => {
+              const on = cat.slug === category;
+              return (
+                <Link key={cat.id} href={hrefWith({ category: cat.slug })} scroll={false} aria-current={on ? 'page' : undefined}
+                  className={`shrink-0 h-8 px-3.5 rounded-full inline-flex items-center text-[12.5px] font-semibold transition-colors ${on ? 'bg-teal-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+                  {i ? catName(cat) : fill(t('shop.allOf'), { name: catName(cat) })}
+                </Link>
+              );
+            })}
+          </nav>
+        )}
 
         {/* ── Toolbar ── */}
         <div className="flex flex-wrap items-center gap-2 pb-4 mb-6 border-b border-gray-100">

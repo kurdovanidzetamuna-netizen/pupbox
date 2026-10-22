@@ -28,7 +28,9 @@ class UpdateCmsDto {
 }
 
 /** Rows only admin may read: shop settings hold internal addresses. */
-const PRIVATE_SLUGS = ['config-settings'];
+const PRIVATE_SLUGS = ['config-settings', 'config-sms'];
+/** Rows the CMS endpoints never touch, even for admin: the SMS settings hold an API key (admin/sms/settings only). */
+const SECRET_SLUGS = ['config-sms'];
 
 @ApiTags('cms')
 @Controller('cms')
@@ -47,8 +49,8 @@ export class CmsController {
   @ApiBearerAuth()
   @UseGuards(AdminJwtGuard)
   @AdminPerms({ read: 'cms.view' })
-  findAllAdmin() {
-    return this.cmsService.findAll();
+  async findAllAdmin() {
+    return (await this.cmsService.findAll()).filter((r) => !SECRET_SLUGS.includes(r.slug));
   }
 
   @Get('admin/:slug')
@@ -56,6 +58,7 @@ export class CmsController {
   @UseGuards(AdminJwtGuard)
   @AdminPerms({ read: 'cms.view' })
   findBySlugAdmin(@Param('slug') slug: string) {
+    if (SECRET_SLUGS.includes(slug)) throw new NotFoundException('Page not found');
     return this.cmsService.findBySlug(slug);
   }
 
@@ -71,6 +74,7 @@ export class CmsController {
   @UseGuards(AdminJwtGuard)
   @AdminPerms({ write: 'cms.edit' })
   upsert(@Body() body: UpsertCmsDto) {
+    if (SECRET_SLUGS.includes(body.slug) || SECRET_SLUGS.includes((body as any).key)) throw new NotFoundException('Page not found');
     return this.cmsService.upsert(body);
   }
 
@@ -79,6 +83,7 @@ export class CmsController {
   @UseGuards(AdminJwtGuard)
   @AdminPerms({ write: 'cms.edit' })
   update(@Param('slug') slug: string, @Body() body: UpdateCmsDto) {
+    if (SECRET_SLUGS.includes(slug)) throw new NotFoundException('Page not found');
     return this.cmsService.updateBySlug(slug, body);
   }
 }

@@ -1,4 +1,6 @@
 'use client';
+import { Select } from '@/components/Dropdown';
+import { categoryOptions } from '@/components/categoryOptions';
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import FormField, { inputClass, parseFieldErrors } from '@/components/FormField';
@@ -9,6 +11,7 @@ import PersonalisationCard, { EMPTY_PERSONALISATION, personalisationFromProduct,
 import AllergensCard from '@/components/AllergensCard';
 import SuitsCard, { EMPTY_SUITS, suitsFromProduct, type Suits } from '@/components/SuitsCard';
 import SellerCard, { OURS, shopPrice, termsFromProduct, termsPayload, type SellerTerms } from '@/components/SellerCard';
+import { NumInput } from '@/components/NumberField';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 
@@ -407,10 +410,10 @@ export default function EditProductPage() {
             />
             <div style={{ marginTop: 14 }}>
               <FormField label="Category">
-                <select style={inputClass()} value={form.categoryId} onChange={e => set('categoryId', e.target.value)}>
+                <Select style={inputClass()} value={form.categoryId} onChange={e => set('categoryId', e.target.value)}>
                   <option value="">No category</option>
-                  {categories.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                </select>
+                  {categoryOptions(categories).map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
+                </Select>
               </FormField>
             </div>
             <div style={{ display: 'flex', gap: 20, marginTop: 14, flexWrap: 'wrap' }}>
@@ -445,10 +448,10 @@ export default function EditProductPage() {
           {isKa && <p style={{ fontSize: 11, color: 'var(--slate-400)', margin: '0 0 14px' }}>Switch to English to edit inventory.</p>}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, ...(isKa ? disabledSection : {}) }}>
             <FormField label="Stock Quantity">
-              <input style={isKa ? disabledInput : inputClass()} type="number" min="0" value={form.stockQuantity} onChange={e => set('stockQuantity', e.target.value)} disabled={isKa} />
+              <NumInput style={isKa ? disabledInput : inputClass()} min="0" value={form.stockQuantity} onChange={e => set('stockQuantity', e.target.value)} disabled={isKa} />
             </FormField>
             <FormField label="Low Stock Alert">
-              <input style={isKa ? disabledInput : inputClass()} type="number" min="0" value={form.lowStockAlert} onChange={e => set('lowStockAlert', e.target.value)} disabled={isKa} />
+              <NumInput style={isKa ? disabledInput : inputClass()} min="0" value={form.lowStockAlert} onChange={e => set('lowStockAlert', e.target.value)} disabled={isKa} />
             </FormField>
           </div>
         </div>

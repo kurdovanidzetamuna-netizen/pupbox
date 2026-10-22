@@ -16,6 +16,7 @@ import Caps from '@/components/ui/Caps';
 
 interface Props {
   plans: any[];
+  tiers?: any[];
   content: StoredContent | null;
   /** Pricing Page content: the plan cards' words are edited there. */
   pricing: StoredContent | null;
@@ -273,7 +274,7 @@ function Steps({ steps }: { steps: any[] }) {
  * box as soft pastel cards, plans, the game and reviews as photo cards.
  * Words, pictures and lists are edited in admin → Page Builder → Home Page.
  */
-export default function HomePageClient({ plans, content, pricing }: Props) {
+export default function HomePageClient({ plans, tiers, content, pricing }: Props) {
   const { t } = useLanguage();
   const c = usePage(homePage, content);
   const { hero, whatsInBox: box, howItWorks: hiw, testimonials } = c;
@@ -326,7 +327,7 @@ export default function HomePageClient({ plans, content, pricing }: Props) {
         <section className="mt-12 sm:mt-20 py-12 sm:py-16 bg-pastel-grey" id="pricing">
           <div className="max-w-7xl mx-auto px-4 sm:px-6">
             <SectionHead title={c.plans.heading} />
-            <PlanSection plans={plans} content={pricing} />
+            <PlanSection plans={plans} tiers={tiers} content={pricing} />
             <BuildBoxPromo />
           </div>
         </section>

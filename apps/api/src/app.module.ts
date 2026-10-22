@@ -11,6 +11,7 @@ import { CategoriesModule } from './modules/categories/categories.module';
 import { TagsModule } from './modules/tags/tags.module';
 import { ProductsModule } from './modules/products/products.module';
 import { SubscriptionPlansModule } from './modules/subscription-plans/subscription-plans.module';
+import { BoxTiersModule } from './modules/box-tiers/box-tiers.module';
 import { DogsModule } from './modules/dogs/dogs.module';
 import { SubscriptionsModule } from './modules/subscriptions/subscriptions.module';
 import { CartModule } from './modules/cart/cart.module';
@@ -47,7 +48,8 @@ import { UploadModule } from './modules/upload/upload.module';
       isGlobal: true,
       envFilePath: [resolve(process.cwd(), '.env'), resolve(process.cwd(), '../../.env')],
     }),
-    ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }]),
+    // A plain sentence when someone hits a limit (the default reads "ThrottlerException: Too Many Requests").
+    ThrottlerModule.forRoot({ throttlers: [{ ttl: 60000, limit: 100 }], errorMessage: 'Too many tries in a short time. Please wait a few minutes and try again.' }),
     PrismaModule,
     AuthModule,
     UsersModule,
@@ -56,6 +58,7 @@ import { UploadModule } from './modules/upload/upload.module';
     TagsModule,
     ProductsModule,
     SubscriptionPlansModule,
+    BoxTiersModule,
     DogsModule,
     SubscriptionsModule,
     CartModule,

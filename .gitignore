@@ -11,3 +11,6 @@ coverage
 prisma/migrations/*.sql
 .claude/settings.local.json
 *.tsbuildinfo
+
+# Photos the API saves while running (customers' dogs, admin uploads): data, not code
+apps/api/public/uploads/*

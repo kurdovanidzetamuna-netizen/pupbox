@@ -67,6 +67,9 @@ TRUST_PROXY=1
 
 # Email (Resend) — paste the key from resend.com when you have it
 RESEND_API_KEY=""
+SMS_PROVIDER=""
+WIFISHER_API_KEY=""
+WIFISHER_SENDER="pupbox"
 EMAIL_FROM="noreply@${DOMAIN}"
 
 # Payments (Flitt) — paste from the Flitt merchant portal when you have them
@@ -91,4 +94,4 @@ echo "  Admin sign-in — save this in your password manager now, it is not show
 echo "    email:    ${ADMIN_EMAIL}"
 echo "    password: ${ADMIN_PASSWORD}"
 echo
-echo "  Still empty, fill in later: RESEND_API_KEY, FLITT_* keys, S3_* (optional)."
+echo "  Still empty, fill in later: RESEND_API_KEY, SMS_PROVIDER + WIFISHER_* (SMS), FLITT_* keys, S3_* (optional)."

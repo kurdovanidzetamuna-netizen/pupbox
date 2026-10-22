@@ -157,7 +157,7 @@ function OrderDetails({ order, onManagePlan, wide }: { order: any; onManagePlan?
   );
 }
 
-/** Only a PENDING order can be paid: a declined payment cancels the order and releases its stock. */
+/** A PENDING order can be paid, including again after a declined card (it stays open until it expires). */
 function PayRow({ orderId }: { orderId: string }) {
   const { t } = useLanguage();
   const [paying, setPaying] = useState(false);

@@ -7,7 +7,7 @@ import { Throttle } from '@nestjs/throttler';
 import { DOG_PHOTO_MAX_BYTES } from './dog-photo';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth, ApiTags, ApiOperation } from '@nestjs/swagger';
-import { IsString, IsOptional, IsArray, IsNumber, IsEnum, IsDateString } from 'class-validator';
+import { IsString, IsOptional, IsArray, IsNumber, IsEnum, IsDateString, ArrayMaxSize, MaxLength } from 'class-validator';
 import { Type } from 'class-transformer';
 import { PartialType } from '@nestjs/swagger';
 
@@ -25,6 +25,8 @@ class CreateDogDto {
   @IsOptional() @IsArray() toyPreferences?: string[];
   @IsOptional() @IsArray() foodPreferences?: string[];
   @IsOptional() @IsString() chewingStrength?: string;
+  /** Shop categories the dog loves (main ones and/or their kinds). */
+  @IsOptional() @IsArray() @ArrayMaxSize(40) @IsString({ each: true }) @MaxLength(40, { each: true }) likedCategoryIds?: string[];
   @IsOptional() @IsString() specialNotes?: string;
 }
 

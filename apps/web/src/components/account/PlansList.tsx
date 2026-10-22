@@ -46,6 +46,7 @@ export default function PlansList({ subs, setSubs, toast, view = 'list' }: {
   const [cancelPlan, setCancelPlan] = useState<any>(null);
   const [addrFor, setAddrFor] = useState<any>(null);
   const [addr, setAddr] = useState({ firstName: '', lastName: '', phone: '', city: '', addressLine1: '', addressLine2: '' });
+  const [addrStart, setAddrStart] = useState('');
   const [addrSaving, setAddrSaving] = useState(false);
   const [addrError, setAddrError] = useState('');
   const [addrErrs, setAddrErrs] = useState<Record<string, string>>({});
@@ -72,7 +73,8 @@ export default function PlansList({ subs, setSubs, toast, view = 'list' }: {
 
   function openAddress(sub: any) {
     const a = sub.address ?? {};
-    setAddr({ firstName: a.firstName ?? '', lastName: a.lastName ?? '', phone: a.phone ?? '', city: a.city ?? '', addressLine1: a.addressLine1 ?? '', addressLine2: a.addressLine2 ?? '' });
+    const f = { firstName: a.firstName ?? '', lastName: a.lastName ?? '', phone: a.phone ?? '', city: a.city ?? '', addressLine1: a.addressLine1 ?? '', addressLine2: a.addressLine2 ?? '' };
+    setAddr(f); setAddrStart(JSON.stringify(f));
     setAddrError(''); setAddrErrs({}); setAddrPhoneOk(isValidPhone(a.phone ?? ''));
     setAddrFor(sub);
   }
@@ -153,11 +155,25 @@ export default function PlansList({ subs, setSubs, toast, view = 'list' }: {
 
   function cancelText(p: any) {
     if (!p) return t('sub.cancelLoading');
+    if (p.kind === 'unpaid') return t('sub.cancelUnpaid');
     const money = gel(p.refund);
     if (p.kind === 'free') return fill(t('sub.cancelFree'), { hours: p.freeHours, money });
     const stopped = p.boxesTotal - p.keptBoxes;
     if (p.refund <= 0) return t(p.thisMonthBoxComing ? 'sub.cancelLastBox' : 'sub.cancelNoMore');
     return fill(t(p.thisMonthBoxComing ? 'sub.cancelKeep' : 'sub.cancelKeepSent'), { n: stopped, money });
+  }
+
+  async function resume(id: string) {
+    setPaying(id);
+    try {
+      const res = await authFetch(`/me/subscriptions/${id}/resume`, { method: 'PATCH' });
+      if (!res.ok) throw new Error();
+      setSubs(prev => prev.map(s => s.id === id ? { ...s, status: 'ACTIVE' } : s));
+      toast(t('sub.resumed'));
+    } catch (e) {
+      if (e instanceof SessionExpiredError) return expired();
+      toast(t('sub.resumeFailed'), false);
+    } finally { setPaying(null); }
   }
 
   async function cancelSubscription(id: string) {
@@ -182,7 +198,11 @@ export default function PlansList({ subs, setSubs, toast, view = 'list' }: {
           const live = !['CANCELLED', 'EXPIRED'].includes(sub.status);
           const isActive = sub.status === 'ACTIVE';
           const canToggle = ['ACTIVE', 'PENDING'].includes(sub.status) && !sub.cancelledAt && !sub.isGift;
-          const due = sub.orders?.[0];
+          // Still to pay: a pending plan's first order, or a renewal.
+          const toPay = sub.orders?.[0];
+          const due = toPay?.type === 'RENEWAL' ? toPay : null;
+          const unpaid = sub.status === 'PENDING' && toPay && !due ? toPay : null;
+          const canCancel = ['ACTIVE', 'PENDING', 'PAUSED'].includes(sub.status) && !sub.cancelledAt;
           const total = Number(sub.boxesTotal) || Number(sub.plan?.boxCount) || 1;
           const sent = Number(sub.boxesDelivered) || 0;
           const shipBy = new Map<number, any>((sub.shipments ?? []).map((b: any) => [b.boxNumber, b]));
@@ -222,10 +242,10 @@ export default function PlansList({ subs, setSubs, toast, view = 'list' }: {
                         {isActive && <span className="w-1.5 h-1.5 rounded-full bg-teal-500 animate-pulse" />}{t(`sub.status.${sub.status}`, sub.status)}
                       </span>
                     </span>
-                    {due && <span className="w-2 h-2 rounded-full bg-lilac-600 shrink-0" title={t('ord.status.PENDING')} />}
+                    {(due || unpaid) && <span className="w-2 h-2 rounded-full bg-lilac-600 shrink-0" title={t('ord.status.PENDING')} />}
                     <svg className={`w-4 h-4 shrink-0 text-gray-300 transition-transform ${open === sub.id ? 'rotate-180 text-teal-600' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
                   </button>
-                  {isActive && !sub.cancelledAt && (
+                  {canCancel && (
                     <Menu label={planText(sub.plan, 'name', lang)} items={[
                       { icon: 'pin', label: t('addr.change'), onClick: () => openAddress(sub) },
                       { icon: 'trash', label: t('sub.cancel'), tone: 'danger' as const, onClick: () => askCancel(sub.id) },
@@ -248,7 +268,7 @@ export default function PlansList({ subs, setSubs, toast, view = 'list' }: {
                     {isActive && <span className="w-1.5 h-1.5 rounded-full bg-teal-500 animate-pulse" />}
                     {t(`sub.status.${sub.status}`, sub.status)}
                   </span>
-                  {isActive && !sub.cancelledAt && (
+                  {canCancel && (
                     <Menu label={planText(sub.plan, 'name', lang)} items={[
                       { icon: 'pin', label: t('addr.change'), onClick: () => openAddress(sub) },
                       { icon: 'trash', label: t('sub.cancel'), tone: 'danger' as const, onClick: () => askCancel(sub.id) },
@@ -292,6 +312,22 @@ export default function PlansList({ subs, setSubs, toast, view = 'list' }: {
                     <Icon name="alert" className="w-5 h-5 text-lilac-600 shrink-0" />
                     <p className="flex-1 text-[12.5px] text-lilac-600">{fill(t('sub.renewalDue'), { date: due.renewalFor ? date(due.renewalFor) : '', money: gel(due.total) })}</p>
                     <IconButton icon="card" tone="primary" label={paying === due.id ? t('ty.redirecting') : fill(t('sub.renewalPay'), { money: gel(due.total) })} onClick={() => payRenewal(due.id)} disabled={paying === due.id} />
+                  </div>
+                )}
+
+                {unpaid && (
+                  <div className="flex items-center gap-3 rounded-2xl bg-lilac-50 px-4 py-3">
+                    <Icon name="alert" className="w-5 h-5 text-lilac-600 shrink-0" />
+                    <p className="flex-1 text-[12.5px] text-lilac-600">{t('sub.unpaid')}</p>
+                    <IconButton icon="card" tone="primary" label={paying === unpaid.id ? t('ty.redirecting') : fill(t('sub.renewalPay'), { money: gel(unpaid.total) })} onClick={() => payRenewal(unpaid.id)} disabled={paying === unpaid.id} />
+                  </div>
+                )}
+
+                {sub.status === 'PAUSED' && !sub.cancelledAt && (
+                  <div className="flex items-center gap-3 rounded-2xl bg-gray-50 px-4 py-3">
+                    <Icon name="info" className="w-5 h-5 text-gray-500 shrink-0" />
+                    <p className="flex-1 text-[12.5px] text-gray-600">{t('sub.pausedNote')}</p>
+                    <IconButton icon="refresh" tone="primary" label={t('sub.resume')} onClick={() => resume(sub.id)} disabled={paying === sub.id} />
                   </div>
                 )}
 
@@ -366,8 +402,8 @@ export default function PlansList({ subs, setSubs, toast, view = 'list' }: {
       </ul>
 
       <Modal open={!!addrFor} onClose={() => setAddrFor(null)} title={t('op.address')} size="md"
+        dirty={!addrSaving && JSON.stringify(addr) !== addrStart} cancelLabel={t('dogs.cancel')} cancelIcon
         footer={<>
-          <IconButton icon="close" label={t('dogs.cancel')} onClick={() => setAddrFor(null)} />
           <IconButton icon="check" label={addrSaving ? t('co.saving') : t('addr.save')} tone="primary" onClick={saveAddress} disabled={addrSaving} />
         </>}>
         {addrFor && (

@@ -6,12 +6,12 @@ import { useCart } from '@/context/CartContext';
 import { safeRedirect } from '@/lib/safeRedirect';
 import LegalNotice from '@/components/LegalNotice';
 import VerifyCodes from '@/components/VerifyCodes';
-import PhoneInput from '@/components/ui/PhoneInput';
+import PhoneOtpField, { type PhoneConfirmed } from '@/components/PhoneOtpField';
 import { Icon } from '@/components/ui/icons';
-import DogProfileForm, { emptyDogProfile, toDogPayload, type DogProfile } from '@/components/DogProfileForm';
+import DogEditor from '@/components/DogEditor';
+import { useModalDirty } from '@/components/ui/Modal';
 import { API_URL } from '@/lib/api';
-import { authFetch } from '@/lib/authFetch';
-import { forgetReferral, rememberReferral, storedReferral } from '@/lib/referral';
+import { rememberReferral, storedReferral } from '@/lib/referral';
 import { FormAlert, countErrors, revealFirstError } from '@/components/ui/FormError';
 import { Heading } from '@/components/ui/Heading';
 import IconButton from '@/components/ui/IconButton';
@@ -19,7 +19,6 @@ import Button from '@/components/ui/Button';
 import Field from '@/components/ui/Field';
 import AuthTabs from '@/components/AuthTabs';
 import { PwEye } from '@/app/[lang]/login/LoginForm';
-import Modal from '@/components/ui/Modal';
 import { GIFT } from '@/lib/gift';
 
 type Step = 'about' | 'account' | 'verify' | 'done';
@@ -43,11 +42,12 @@ export function RegisterForm({ inModal = false }: { inModal?: boolean }) {
   const [form, setForm] = useState({ firstName: '', lastName: '', email: '', password: '', phone: '', referralCode: '' });
   const [fromLink, setFromLink] = useState(false);
   const [phoneOk, setPhoneOk] = useState(false);
+  // Confirmed by SMS code right in the form; the proof goes with the new account.
+  const [phoneProof, setPhoneProof] = useState<PhoneConfirmed | null>(null);
   const [consent, setConsent] = useState(false);
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
-  const [dog, setDog] = useState<DogProfile>(emptyDogProfile);
   const [showPw, setShowPw] = useState(false);
 
   // The link's code wins; otherwise one remembered from an earlier visit.
@@ -57,6 +57,9 @@ export function RegisterForm({ inModal = false }: { inModal?: boolean }) {
     const code = fromUrl || storedReferral();
     if (code) { setForm(f => ({ ...f, referralCode: f.referralCode || code })); setFromLink(true); }
   }, [params]);
+
+  // Half-way through sign-up in the pop-up, Esc or × asks before throwing it away.
+  useModalDirty(inModal && (step === 'about' || step === 'account') && !!(form.firstName || form.lastName || form.email || form.phone || form.password));
 
   const set = (key: keyof typeof form, value: string) => {
     setForm(f => ({ ...f, [key]: value }));
@@ -70,6 +73,7 @@ export function RegisterForm({ inModal = false }: { inModal?: boolean }) {
     if (!form.lastName.trim()) errs.lastName = t('reg.e.lastName');
     if (!EMAIL_RE.test(form.email.trim())) errs.email = t('reg.e.email');
     if (!phoneOk) errs.phone = t(form.phone ? 'reg.e.phone' : 'ui.e.phone');
+    else if (!phoneProof?.proof) errs.phone = t('otp.e.confirm');
     if (countErrors(errs)) { setFieldErrors(errs); return revealFirstError(); }
     setFieldErrors({}); setError('');
     setStep('account');
@@ -90,7 +94,7 @@ export function RegisterForm({ inModal = false }: { inModal?: boolean }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           firstName: form.firstName.trim(), lastName: form.lastName.trim(), email: form.email.trim(), password: form.password, phone: form.phone.trim(),
-          referralCode: form.referralCode.trim() || undefined, marketingConsent: consent, language: lang,
+          referralCode: form.referralCode.trim() || undefined, marketingConsent: consent, language: lang, phoneProof: phoneProof?.proof,
         }),
       });
       const data = await res.json();
@@ -98,10 +102,11 @@ export function RegisterForm({ inModal = false }: { inModal?: boolean }) {
         const msg = (Array.isArray(data.message) ? data.message[0] : data.message) || t('co.e.generic');
         // A problem with the name, email or phone belongs to the first step.
         if (/email|phone|name/i.test(msg)) setStep('about');
+        // An expired phone proof means confirming the number again.
+        if (/phone code/i.test(msg)) setPhoneProof(null);
         throw new Error(msg);
       }
       localStorage.setItem('pupbox_token', data.token);
-      forgetReferral();
       await refreshCart(); // merges anything added as a guest into the account cart
       setStep('verify');
       window.scrollTo({ top: 0 });
@@ -113,17 +118,6 @@ export function RegisterForm({ inModal = false }: { inModal?: boolean }) {
   }
 
   const verified = useCallback(() => { setStep('done'); window.scrollTo({ top: 0 }); }, []);
-
-  async function saveDog() {
-    if (!dog.name.trim()) { setFieldErrors({ dogName: t('co.e.dogName') }); return revealFirstError(); }
-    setLoading(true); setError('');
-    try {
-      const res = await authFetch('/me/dogs', { method: 'POST', body: JSON.stringify(toDogPayload(dog)) });
-      if (!res.ok) throw new Error((await res.json().catch(() => ({})))?.message || t('co.e.generic'));
-      router.push(redirect);
-    } catch (e: any) { setError(e.message); }
-    finally { setLoading(false); }
-  }
 
   const steps: Step[] = ['about', 'account', 'verify'];
 
@@ -154,11 +148,9 @@ export function RegisterForm({ inModal = false }: { inModal?: boolean }) {
                 <Field id="lastName" label={t('register.lastName')} required autoComplete="family-name" value={form.lastName} error={fieldErrors.lastName} onChange={v => set('lastName', v)} />
               </div>
               <Field id="email" type="email" label={t('login.email')} required autoComplete="email" inputMode="email" value={form.email} error={fieldErrors.email} onChange={v => set('email', v)} />
-              <div>
-                <PhoneInput id="phone" label={t('reg.phone')} value={form.phone} required error={fieldErrors.phone} floatLabel
-                  onChange={(v, ok) => { set('phone', v); setPhoneOk(ok); }} />
-                {!fieldErrors.phone && <p className="mt-1 px-1 text-[11.5px] text-gray-500">{t('reg.phoneHint')}</p>}
-              </div>
+              <PhoneOtpField id="phone" mode="signup" label={t('reg.phone')} value={form.phone} error={fieldErrors.phone} confirmed={!!phoneProof && phoneProof.phone === form.phone}
+                onChange={(v, ok) => { set('phone', v); setPhoneOk(ok); }}
+                onConfirmed={(c) => { setPhoneProof(c); if (c) setFieldErrors((e) => ({ ...e, phone: '' })); }} />
               <Button type="submit" size="lg" icon="arrow" label={t('reg.next')} className="mt-2" />
             </form>
           </>
@@ -205,16 +197,8 @@ export function RegisterForm({ inModal = false }: { inModal?: boolean }) {
         )}
       </div>
 
-      {/* Straight after sign-up: the dog, in the same pop-up as everywhere else. */}
-      <Modal open={step === 'done'} onClose={() => router.push(redirect)} title={t('wel.title')} size="lg"
-        footer={<>
-          <IconButton icon="close" label={t('wel.skip')} onClick={() => router.push(redirect)} />
-          <IconButton icon="check" tone="primary" label={loading ? t('co.saving') : t('wel.save')} onClick={saveDog} disabled={loading} />
-        </>}>
-        <p className="text-[13px] text-gray-500 -mt-1 mb-4">{t('wel.sub')}</p>
-        <FormAlert message={error} className="mb-4" />
-        <DogProfileForm value={dog} onChange={d => { setDog(d); setFieldErrors({}); }} compact nameError={fieldErrors.dogName} />
-      </Modal>
+      {/* Straight after sign-up: meet the dog, in the same pop-up as everywhere else. */}
+      <DogEditor open={step === 'done'} welcome onClose={() => router.push(redirect)} onSaved={() => router.push(redirect)} />
     </main>
   );
 }

@@ -8,6 +8,7 @@ import { normalisePhone } from '../auth/verification';
 import { consentUpdate } from './consent';
 import { AdminPerms } from '../admin-auth/admin-permissions';
 import { AdminJwtGuard } from '../admin-auth/admin-jwt.guard';
+import { AuditService } from '../audit/audit.service';
 
 const USER_SELECT = {
   id: true,
@@ -19,6 +20,8 @@ const USER_SELECT = {
   status: true,
   emailVerified: true,
   phoneVerified: true,
+  phoneVerifiedAt: true,
+  phoneVerifiedVia: true,
   marketingConsent: true,
   marketingEmail: true,
   marketingSms: true,
@@ -27,6 +30,11 @@ const USER_SELECT = {
   dogs: { where: { deletedAt: null, forGift: false } },
   addresses: { where: { deletedAt: null } },
 } satisfies Prisma.UserSelect;
+
+class VerifyDto {
+  @IsIn(['PHONE', 'EMAIL']) channel: 'PHONE' | 'EMAIL';
+  @IsBoolean() verified: boolean;
+}
 
 class CustomerStatusDto {
   @IsIn(['ACTIVE', 'BLOCKED', 'UNVERIFIED']) status: 'ACTIVE' | 'BLOCKED' | 'UNVERIFIED';
@@ -69,7 +77,7 @@ export class UsersController {
     const [profile, addresses, dogs, orders, subscriptions] = await Promise.all([
       this.prisma.user.findUnique({ where: { id }, select: { email: true, firstName: true, lastName: true, phone: true, language: true, referralCode: true, emailVerified: true, phoneVerified: true, marketingConsent: true, marketingConsentAt: true, createdAt: true } }),
       this.prisma.address.findMany({ where: { userId: id, deletedAt: null }, select: { firstName: true, lastName: true, phone: true, city: true, addressLine1: true, addressLine2: true, postalCode: true, createdAt: true } }),
-      this.prisma.dog.findMany({ where: { userId: id, deletedAt: null }, select: { name: true, breed: true, birthday: true, gender: true, size: true, weightKg: true, allergies: true, toyPreferences: true, foodPreferences: true, chewingStrength: true, specialNotes: true, photoUrl: true, forGift: true } }),
+      this.prisma.dog.findMany({ where: { userId: id, deletedAt: null }, select: { name: true, breed: true, birthday: true, gender: true, size: true, weightKg: true, allergies: true, toyPreferences: true, foodPreferences: true, chewingStrength: true, likedCategoryIds: true, specialNotes: true, photoUrl: true, forGift: true } }),
       this.prisma.order.findMany({
         where: { userId: id }, orderBy: { createdAt: 'desc' },
         select: {
@@ -101,8 +109,11 @@ export class UsersController {
       if (!p) throw new BadRequestException('Enter a valid mobile number');
       phone = p;
     }
-    // A new number has to be confirmed again with an SMS code.
-    const phoneChanged = phone !== undefined && phone !== current?.phone;
+    // A new number only takes over once its SMS code is entered
+    // (POST /auth/phone/change/send → /verify), never straight from here.
+    if (phone !== undefined && phone !== current?.phone) {
+      throw new BadRequestException('Confirm your new number with the code we text you.');
+    }
     const email = body.marketingEmail ?? body.marketingConsent;
     const sms = body.marketingSms ?? body.marketingConsent;
     const consent = email !== undefined || sms !== undefined ? consentUpdate(current!, { email, sms }) : {};
@@ -110,7 +121,6 @@ export class UsersController {
       where: { id: req.user.id },
       data: {
         firstName: body.firstName, lastName: body.lastName, language: body.language,
-        ...(phoneChanged ? { phone, phoneVerified: false } : {}),
         ...consent,
       },
       select: USER_SELECT,
@@ -124,7 +134,7 @@ export class UsersController {
 @AdminPerms({ read: 'users.view', write: 'users.block' })
 @Controller('admin/customers')
 export class AdminCustomersController {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private audit: AuditService) {}
 
   @Get()
   @ApiOperation({ summary: 'List all customers' })
@@ -149,7 +159,7 @@ export class AdminCustomersController {
       where,
       select: {
         id: true, email: true, firstName: true, lastName: true, phone: true, status: true, referralCode: true, createdAt: true,
-        emailVerified: true, phoneVerified: true, marketingConsent: true, marketingEmail: true, marketingSms: true,
+        emailVerified: true, phoneVerified: true, phoneVerifiedAt: true, phoneVerifiedVia: true, marketingConsent: true, marketingEmail: true, marketingSms: true,
         _count: { select: { orders: true, dogs: { where: { deletedAt: null, forGift: false } } } },
       },
       orderBy: { createdAt: 'desc' },
@@ -164,10 +174,10 @@ export class AdminCustomersController {
       where: { id, deletedAt: null },
       select: {
         id: true, email: true, firstName: true, lastName: true, phone: true, status: true, language: true, referralCode: true, createdAt: true,
-        emailVerified: true, phoneVerified: true, marketingConsent: true, marketingConsentAt: true,
+        emailVerified: true, phoneVerified: true, phoneVerifiedAt: true, phoneVerifiedVia: true, marketingConsent: true, marketingConsentAt: true,
         marketingEmail: true, marketingSms: true, marketingEmailAt: true, marketingSmsAt: true,
         dogs: { where: { deletedAt: null }, orderBy: { createdAt: 'asc' } },
-        addresses: { where: { deletedAt: null }, select: { id: true, firstName: true, lastName: true, phone: true, city: true, addressLine1: true, addressLine2: true, isDefault: true } },
+        addresses: { where: { deletedAt: null }, select: { id: true, firstName: true, lastName: true, phone: true, city: true, addressLine1: true, addressLine2: true, isDefault: true, isGift: true, label: true } },
         subscriptions: {
           orderBy: { createdAt: 'desc' },
           select: { id: true, status: true, isGift: true, startDate: true, endDate: true, boxesTotal: true, boxesDelivered: true, autoRenewal: true, cancelledAt: true, plan: { select: { name: true } }, dog: { select: { name: true } } },
@@ -179,6 +189,36 @@ export class AdminCustomersController {
     if (!user) throw new NotFoundException('Customer not found');
     const spent = await this.prisma.payment.aggregate({ where: { userId: id, status: { in: ['PAID', 'PARTIALLY_REFUNDED'] } }, _sum: { amount: true } });
     return { ...user, totalPaid: Number(spent._sum.amount ?? 0), referrals: user.referralsSent.length };
+  }
+
+  /**
+   * Confirm (or un-confirm) a customer's phone or email by hand — e.g. they
+   * called from that number. Kept in the audit log with who did it.
+   */
+  @Patch(':id/verify')
+  @ApiOperation({ summary: 'Mark a phone or email as confirmed, or not' })
+  async verify(@Param('id') id: string, @Body() body: VerifyDto, @Request() req: any) {
+    const user = await this.prisma.user.findFirst({ where: { id, deletedAt: null }, select: { phone: true, phoneVerified: true, emailVerified: true, status: true } });
+    if (!user) throw new NotFoundException('Customer not found');
+    const data: Prisma.UserUpdateInput = {};
+    if (body.channel === 'PHONE') {
+      if (body.verified) {
+        if (!user.phone) throw new BadRequestException('This customer has no phone number.');
+        const taken = await this.prisma.user.findFirst({ where: { id: { not: id }, phone: user.phone, phoneVerified: true, deletedAt: null }, select: { email: true } });
+        if (taken) throw new BadRequestException(`This number is already confirmed on another account (${taken.email}).`);
+      }
+      Object.assign(data, body.verified ? { phoneVerified: true, phoneVerifiedAt: new Date(), phoneVerifiedVia: 'ADMIN' } : { phoneVerified: false, phoneVerifiedAt: null, phoneVerifiedVia: null });
+    } else {
+      data.emailVerified = body.verified;
+    }
+    const phoneOk = body.channel === 'PHONE' ? body.verified : user.phoneVerified;
+    const emailOk = body.channel === 'EMAIL' ? body.verified : user.emailVerified;
+    if (phoneOk && emailOk && user.status === 'UNVERIFIED') data.status = 'ACTIVE';
+    const updated = await this.prisma.user.update({ where: { id }, data, select: { id: true, status: true, emailVerified: true, phoneVerified: true, phoneVerifiedAt: true, phoneVerifiedVia: true } });
+    await this.audit.log({ adminUserId: req.user?.id, action: 'UPDATE', module: 'customers', entityType: 'User', entityId: id,
+      before: { [body.channel === 'PHONE' ? 'phoneVerified' : 'emailVerified']: body.channel === 'PHONE' ? user.phoneVerified : user.emailVerified },
+      after: { [body.channel === 'PHONE' ? 'phoneVerified' : 'emailVerified']: body.verified, by: 'admin' } });
+    return updated;
   }
 
   @Patch(':id/status')

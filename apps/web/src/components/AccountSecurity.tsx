@@ -102,7 +102,8 @@ export default function AccountSecurity() {
         <IconButton icon="trash" label={t('acc.delete')} tone="danger" onClick={() => { setDelPassword(''); setDelError(''); setDelFieldError(''); setDelOpen(true); }} />
       </div>
 
-      <Modal open={pwOpen} onClose={() => !pwSaving && setPwOpen(false)} title={step === 3 ? t('acc.pwDone') : t('acc.password')}>
+      <Modal open={pwOpen} onClose={() => !pwSaving && setPwOpen(false)} title={step === 3 ? t('acc.pwDone') : t('acc.password')}
+        dirty={step < 3 && !pwSaving && !!(pw.current || pw.next || pw.again)}>
         {step < 3 && (
           <div className="flex gap-1.5 mb-5" aria-hidden="true">
             <span className="h-1 flex-1 rounded-full bg-teal-400" />

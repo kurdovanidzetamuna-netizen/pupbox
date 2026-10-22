@@ -15,6 +15,7 @@ const NAV_GROUPS = [
   {
     label: 'Subscriptions',
     items: [
+      { href: '/dashboard/box-tiers', label: 'Box types', icon: 'M4 7h16M4 12h16M4 17h10' },
       { href: '/dashboard/subscription-plans', label: 'Plans', icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4' },
       { href: '/dashboard/subscriptions', label: 'Subscriptions', icon: 'M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15' },
       { href: '/dashboard/box-items', label: 'Box Items', icon: 'M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z' },
@@ -31,7 +32,7 @@ const NAV_GROUPS = [
       { href: '/dashboard/categories', label: 'Categories', icon: 'M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-5 5a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z' },
       { href: '/dashboard/sellers', label: 'Sellers', icon: 'M3 9l1.5-5h15L21 9M3 9h18M3 9v1a3 3 0 006 0 3 3 0 006 0 3 3 0 006 0V9M5 13v7h14v-7M10 20v-4h4v4' },
       { href: '/dashboard/seller-payouts', label: 'Seller payouts', icon: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
-      { href: '/dashboard/coupons', label: 'Coupons', icon: 'M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z' },
+      { href: '/dashboard/coupons', label: 'Promo codes', icon: 'M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z' },
     ],
   },
   {
@@ -62,6 +63,7 @@ const NAV_GROUPS = [
     label: 'System',
     items: [
       { href: '/dashboard/settings', label: 'Settings', icon: 'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z' },
+      { href: '/dashboard/sms', label: 'Text messages', icon: 'M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z' },
       { href: '/dashboard/admin-users', label: 'Admin Users', icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z' },
       { href: '/dashboard/admin-translations', label: 'Admin Translations', icon: 'M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129' },
       { href: '/dashboard/translations', label: 'Translations', icon: 'M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129' },
@@ -132,11 +134,12 @@ const NEEDS: [prefix: string, perm: string][] = [
   ['/dashboard/reports', 'reports.view'], ['/dashboard/orders', 'orders.view'], ['/dashboard/customers', 'users.view'],
   ['/dashboard/referrals', 'users.view'], ['/dashboard/crm', 'crm.view'], ['/dashboard/notifications', 'crm.view'], ['/dashboard/coupons', 'coupons.manage'], ['/dashboard/sellers', 'sellers.view'], ['/dashboard/seller-payouts', 'sellers.payouts'],
   ['/dashboard/products', 'products.view'], ['/dashboard/categories', 'products.view'], ['/dashboard/box-items', 'products.view'], ['/dashboard/custom-box-items', 'products.view'],
-  ['/dashboard/subscription-plans', 'subscriptions.view'], ['/dashboard/subscriptions', 'subscriptions.view'],
+  ['/dashboard/box-tiers', 'subscriptions.view'], ['/dashboard/subscription-plans', 'subscriptions.view'], ['/dashboard/subscriptions', 'subscriptions.view'],
   ['/dashboard/monthly-boxes', 'subscriptions.view'], ['/dashboard/box-campaigns', 'subscriptions.view'],
   ['/dashboard/page-builder', 'cms.view'], ['/dashboard/blog', 'cms.view'], ['/dashboard/cms', 'cms.view'], ['/dashboard/faq', 'cms.view'],
   ['/dashboard/promo-popups', 'cms.view'], ['/dashboard/translations', 'cms.view'], ['/dashboard/admin-translations', 'cms.view'],
   ['/dashboard/settings', 'cms.edit'],
+  ['/dashboard/sms', 'cms.edit'],
 ];
 const needFor = (href: string) => NEEDS.find(([p]) => href === p || href.startsWith(p + '/'))?.[1];
 
@@ -148,6 +151,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   useEffect(() => { setDenied(''); }, [pathname]);
   const router = useRouter();
   const { theme, toggleTheme } = useTheme();
+  // Phones and small tablets: the menu slides in from the left.
+  const [menu, setMenu] = useState(false);
+  useEffect(() => { setMenu(false); }, [pathname]);
 
   useEffect(() => {
     function signOut() {
@@ -200,7 +206,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh' }}>
-      <aside style={S.sidebar}>
+      {/* Small screens: a bar with the menu button; the sidebar is a drawer */}
+      <div className="adm-topbar">
+        <button type="button" onClick={() => setMenu(true)} aria-label="Open menu" aria-expanded={menu} className="adm-burger">
+          <svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16" /></svg>
+        </button>
+        <div style={S.logoIcon}>🐾</div>
+        <div style={S.logoText}>Pupbox</div>
+      </div>
+      {menu && <div className="adm-backdrop" onClick={() => setMenu(false)} aria-hidden="true" />}
+      <aside style={S.sidebar} className="adm-sidebar" data-open={menu || undefined}>
         <div style={S.logo}>
           <div style={S.logoIcon}>🐾</div>
           <div>
@@ -241,7 +256,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
       </aside>
 
-      <main style={S.main}>
+      <main style={S.main} className="adm-main">
         {denied && (
           <div role="alert" style={{ margin: '16px 28px 0', padding: '10px 14px', borderRadius: 10, background: 'var(--amber-50)', border: '1px solid var(--amber-200)', color: 'var(--amber-800)', fontSize: 13, display: 'flex', justifyContent: 'space-between', gap: 12 }}>
             <span>{denied}</span>

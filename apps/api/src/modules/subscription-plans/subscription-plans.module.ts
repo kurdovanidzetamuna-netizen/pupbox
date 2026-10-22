@@ -3,7 +3,7 @@ import { SubscriptionPlansService } from './subscription-plans.service';
 import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards } from '@nestjs/common';
 import { AdminJwtGuard } from '../admin-auth/admin-jwt.guard';
 import { ApiBearerAuth, ApiTags, ApiOperation } from '@nestjs/swagger';
-import { IsString, IsNumber, IsOptional, IsBoolean, IsArray, IsEnum, Min } from 'class-validator';
+import { IsString, IsNumber, IsInt, IsOptional, IsBoolean, IsArray, IsEnum, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 import { AdminPerms } from '../admin-auth/admin-permissions';
 import { PartialType } from '@nestjs/swagger';
@@ -13,9 +13,9 @@ enum DurationUnit { DAY = 'DAY', WEEK = 'WEEK', MONTH = 'MONTH', YEAR = 'YEAR' }
 class CreatePlanDto {
   @IsString() name: string;
   @IsString() slug: string;
-  @Type(() => Number) @IsNumber() @Min(1) durationValue: number;
+  @Type(() => Number) @IsInt() @Min(1) durationValue: number;
   @IsEnum(DurationUnit) durationUnit: DurationUnit;
-  @Type(() => Number) @IsNumber() @Min(1) boxCount: number;
+  @Type(() => Number) @IsInt() @Min(1) boxCount: number;
   @Type(() => Number) @IsNumber() @Min(0) price: number;
   @IsOptional() @Type(() => Number) @IsNumber() discountPercent?: number;
   @IsOptional() @Type(() => Number) @IsNumber() monthlyEquivPrice?: number;
@@ -31,6 +31,8 @@ class CreatePlanDto {
   @IsOptional() @IsString() seoTitle?: string;
   @IsOptional() @IsString() seoDesc?: string;
   @IsOptional() translations?: Record<string, any>;
+  /** The box type (Mini, Standard, Premium); null takes it out of every tier. */
+  @IsOptional() @IsString() tierId?: string | null;
 }
 
 /** Validated like create, every field optional (a bare Partial<> isn't checked at all). */

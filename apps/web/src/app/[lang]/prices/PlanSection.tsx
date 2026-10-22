@@ -2,14 +2,17 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import PlanCard from '@/components/PlanCard';
+import TierPicker from '@/components/TierPicker';
 import { Icon } from '@/components/ui/icons';
 import type { StoredContent } from '@pupbox/content';
 import { usePlanLabels } from '@/lib/planLabels';
+import { useLanguage } from '@/context/LanguageContext';
 
-function PlanSectionInner({ plans, content }: { plans: any[]; content: StoredContent | null }) {
+function PlanSectionInner({ plans, tiers, content }: { plans: any[]; tiers?: any[]; content: StoredContent | null }) {
   const params = useSearchParams();
   const [mode, setMode] = useState<'self' | 'gift'>(params.get('gift') === 'true' ? 'gift' : 'self');
   const L = usePlanLabels(content);
+  const { t } = useLanguage();
 
   useEffect(() => {
     if (params.get('gift') === 'true') setMode('gift');
@@ -28,6 +31,10 @@ function PlanSectionInner({ plans, content }: { plans: any[]; content: StoredCon
   }
 
   const gift = mode === 'gift';
+  // Box types in use: the site sells Mini / Standard / Premium, not a list of plans.
+  const boxes = (tiers ?? []).filter((tr: any) => tr.plans?.length);
+  // Plans admin made without a box type still sell, listed under the boxes.
+  const others = shown.filter((p: any) => !p.tierId);
 
   return (
     <div>
@@ -61,11 +68,15 @@ function PlanSectionInner({ plans, content }: { plans: any[]; content: StoredCon
 
       {/* Plans: the new set fades in gently, one after another. On phones they
           sit side by side and swipe, with the next card peeking in. */}
-      {shown.length === 0 ? (
+      {boxes.length > 0 && <TierPicker key={`tiers-${mode}`} tiers={boxes} gift={gift} />}
+      {boxes.length > 0 && others.length > 0 && (
+        <h3 className="mt-12 mb-1 text-[17px] sm:text-[19px] font-extrabold text-gray-900">{t('tier.morePlans')}</h3>
+      )}
+      {boxes.length > 0 && others.length === 0 ? null : (boxes.length ? others : shown).length === 0 ? (
         <p className="text-gray-400">{L.empty}</p>
       ) : (
         <div key={mode} className="flex sm:grid sm:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-5 items-stretch pt-5 max-w-5xl lg:max-w-6xl sm:mx-auto overflow-x-auto sm:overflow-visible snap-x snap-mandatory -mx-4 px-4 sm:px-0 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {shown.map((plan: any, i: number) => (
+          {(boxes.length ? others : shown).map((plan: any, i: number) => (
             <div key={plan.id} className="plan-in flex snap-center shrink-0 w-[76%] sm:w-auto" style={{ animationDelay: `${i * 50}ms` }}>
               <PlanCard plan={plan} isGift={gift} labels={L} />
             </div>
@@ -90,10 +101,10 @@ function PlanSectionInner({ plans, content }: { plans: any[]; content: StoredCon
  * prerender it. This component is rendered by both / and /prices — without the
  * wrapper the production build fails on both pages.
  */
-export default function PlanSection({ plans, content }: { plans: any[]; content: StoredContent | null }) {
+export default function PlanSection({ plans, tiers, content }: { plans: any[]; tiers?: any[]; content: StoredContent | null }) {
   return (
     <Suspense fallback={null}>
-      <PlanSectionInner plans={plans} content={content} />
+      <PlanSectionInner plans={plans} tiers={tiers} content={content} />
     </Suspense>
   );
 }

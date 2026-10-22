@@ -24,7 +24,8 @@ class CustomBoxController {
       orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
       include: {
         images: { orderBy: [{ isPrimary: 'desc' }, { sortOrder: 'asc' }] },
-        category: true,
+        // With its main category: the box builder groups items by Treats, Toys… not every subcategory.
+        category: { include: { parent: true } },
         inventory: { select: { quantity: true, reservedQty: true, lowStockAlert: true } },
         seller: { select: PUBLIC_SELLER },
       },

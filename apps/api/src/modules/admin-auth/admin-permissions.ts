@@ -37,7 +37,7 @@ export const PERMISSION_CATALOGUE: { key: string; group: string; name: string; d
   { key: 'orders.view', group: 'Orders & money', name: 'See orders', description: 'Order list and details, including addresses.' },
   { key: 'orders.manage', group: 'Orders & money', name: 'Work on orders', description: 'Change an order’s status, tracking and notes.' },
   { key: 'payments.refund', group: 'Orders & money', name: 'Record refunds', description: 'Mark money as returned to a customer.' },
-  { key: 'coupons.manage', group: 'Orders & money', name: 'Coupons', description: 'See, create, change and switch off coupons.' },
+  { key: 'coupons.manage', group: 'Orders & money', name: 'Promo codes', description: 'See, create, change and switch off promo codes.' },
   { key: 'products.view', group: 'Products', name: 'See products', description: 'Products, categories and box items.' },
   { key: 'products.create', group: 'Products', name: 'Add products', description: 'Add products and upload pictures.' },
   { key: 'products.edit', group: 'Products', name: 'Edit products', description: 'Prices, stock, descriptions, categories, tags.' },

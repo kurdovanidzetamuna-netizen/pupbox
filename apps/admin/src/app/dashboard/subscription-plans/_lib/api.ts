@@ -7,6 +7,12 @@ const token = () => localStorage.getItem('admin_token');
 const authHeaders = () => ({ Authorization: `Bearer ${token()}` });
 const jsonHeaders = () => ({ ...authHeaders(), 'Content-Type': 'application/json' });
 
+/** Box types (Mini, Standard, Premium) for the plan's "Box type" choice. */
+export async function fetchTiers(): Promise<any[]> {
+  const r = await fetch(`${API}/admin/box-tiers`, { headers: authHeaders() });
+  return r.ok ? r.json() : [];
+}
+
 export function fetchPlans() {
   return fetch(`${API}/admin/subscription-plans`, { headers: authHeaders() });
 }

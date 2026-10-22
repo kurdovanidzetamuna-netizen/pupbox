@@ -1,4 +1,5 @@
 'use client';
+import { Select } from '@/components/Dropdown';
 import { useCallback, useEffect, useState } from 'react';
 import CustomerDrawer from '@/components/CustomerDrawer';
 
@@ -128,13 +129,13 @@ export default function CrmPage() {
 
       <form onSubmit={e => { e.preventDefault(); apply(f); }} style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginBottom: 16 }}>
         <input value={f.search} onChange={e => setF({ ...f, search: e.target.value })} placeholder="Dog, owner, email or phone…" style={{ ...sel, minWidth: 220 }} />
-        <select value={f.size} onChange={e => setF({ ...f, size: e.target.value })} style={sel}><option value="">Any size</option>{Object.entries(SIZE).filter(([k]) => k !== 'UNKNOWN').map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
+        <Select value={f.size} onChange={e => setF({ ...f, size: e.target.value })} style={sel}><option value="">Any size</option>{Object.entries(SIZE).filter(([k]) => k !== 'UNKNOWN').map(([k, v]) => <option key={k} value={k}>{v}</option>)}</Select>
         <input value={f.breed} onChange={e => setF({ ...f, breed: e.target.value })} placeholder="Breed" style={{ ...sel, width: 120 }} />
-        <select value={f.allergy} onChange={e => setF({ ...f, allergy: e.target.value })} style={sel}><option value="">Any allergy</option>{ALLERGIES.map(a => <option key={a} value={a}>{a}</option>)}</select>
-        <select value={f.plan} onChange={e => setF({ ...f, plan: e.target.value })} style={sel}><option value="">Any plan status</option><option value="active">On a plan</option><option value="ended">Lapsed</option><option value="none">Never subscribed</option></select>
-        <select value={f.birthdayWithin} onChange={e => setF({ ...f, birthdayWithin: e.target.value })} style={sel}><option value="">Any birthday</option><option value="7">Birthday in 7 days</option><option value="30">in 30 days</option><option value="90">in 90 days</option></select>
-        <select value={f.consent} onChange={e => setF({ ...f, consent: e.target.value })} style={sel}><option value="">Any consent</option><option value="yes">Marketing OK</option><option value="no">No consent</option></select>
-        <select value={f.photo} onChange={e => setF({ ...f, photo: e.target.value })} style={sel}><option value="">Photo or not</option><option value="yes">Has photo</option><option value="no">No photo</option></select>
+        <Select value={f.allergy} onChange={e => setF({ ...f, allergy: e.target.value })} style={sel}><option value="">Any allergy</option>{ALLERGIES.map(a => <option key={a} value={a}>{a}</option>)}</Select>
+        <Select value={f.plan} onChange={e => setF({ ...f, plan: e.target.value })} style={sel}><option value="">Any plan status</option><option value="active">On a plan</option><option value="ended">Lapsed</option><option value="none">Never subscribed</option></Select>
+        <Select value={f.birthdayWithin} onChange={e => setF({ ...f, birthdayWithin: e.target.value })} style={sel}><option value="">Any birthday</option><option value="7">Birthday in 7 days</option><option value="30">in 30 days</option><option value="90">in 90 days</option></Select>
+        <Select value={f.consent} onChange={e => setF({ ...f, consent: e.target.value })} style={sel}><option value="">Any consent</option><option value="yes">Marketing OK</option><option value="no">No consent</option></Select>
+        <Select value={f.photo} onChange={e => setF({ ...f, photo: e.target.value })} style={sel}><option value="">Photo or not</option><option value="yes">Has photo</option><option value="no">No photo</option></Select>
         <button type="submit" style={{ background: 'var(--slate-900)', color: 'var(--white)', border: 'none', borderRadius: 10, padding: '8px 14px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Apply</button>
         <button type="button" onClick={() => apply(EMPTY)} style={{ background: 'none', border: 'none', color: 'var(--slate-400)', fontSize: 12, cursor: 'pointer' }}>Clear</button>
         <span style={{ fontSize: 12, color: 'var(--slate-400)', marginLeft: 'auto' }}>{total} dogs</span>

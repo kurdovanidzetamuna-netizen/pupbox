@@ -240,18 +240,19 @@ ${m.body.map(p).join('\n')}${button}${(m.after ?? []).map((a) => `<p style="marg
     });
   }
 
-  async sendReferralReward(d: { email: string; firstName: string; couponCode: string; language?: string | null }) {
+  async sendReferralReward(d: { email: string; firstName: string; couponCode: string; amount?: number; language?: string | null }) {
     const l = lang(d.language);
+    const n = `₾${Number(d.amount ?? 10).toFixed(2).replace(/\.00$/, '')}`;
     const url = `${this.siteUrl}/shop`;
     await this.deliver(d.email, 'referral_reward', l, { firstName: d.firstName, couponCode: d.couponCode, siteUrl: this.siteUrl }, l === 'ka' ? {
-      subject: 'შენ მიიღე ₾10-იანი კუპონი! 🎁',
+      subject: `შენ მიიღე ${n}-იანი პრომო კოდი! 🎁`,
       heading: 'მადლობა რეკომენდაციისთვის',
-      body: [hi(l, d.firstName), `შენმა მეგობარმა პირველი შეკვეთა გააკეთა — აი შენი ₾10-იანი კუპონი: <strong>${esc(d.couponCode)}</strong>. გამოიყენე შემდეგ შეკვეთაზე.`],
+      body: [hi(l, d.firstName), `შენმა მეგობარმა პირველი შეკვეთა გააკეთა — აი შენი ${n}-იანი პრომო კოდი: <strong>${esc(d.couponCode)}</strong>. გამოიყენე შემდეგ შეკვეთაზე.`],
       button: { text: 'მაღაზიაში გადასვლა', url },
     } : {
-      subject: 'You earned a ₾10 reward coupon! 🎁',
+      subject: `You earned a ${n} promo code! 🎁`,
       heading: 'Thanks for the recommendation',
-      body: [hi(l, d.firstName), `Your friend just placed their first order — here's your ₾10 coupon: <strong>${esc(d.couponCode)}</strong>. Use it on your next order.`],
+      body: [hi(l, d.firstName), `Your friend just placed their first order — here's your ${n} promo code: <strong>${esc(d.couponCode)}</strong>. Use it on your next order.`],
       button: { text: 'Shop now', url },
     });
   }

@@ -59,8 +59,9 @@ export class SubscriptionsService implements OnModuleInit, OnModuleDestroy {
         plan: true,
         dog: true,
         address: { select: { firstName: true, lastName: true, phone: true, city: true, addressLine1: true, addressLine2: true } },
-        // An open renewal to pay, shown as "renewal due" with a Pay button.
-        orders: { where: { type: 'RENEWAL', status: 'PENDING' }, select: { id: true, total: true, renewalFor: true }, take: 1 },
+        // An order still to pay: the first purchase of a pending plan, or a
+        // renewal ("renewal due"). Both get a Pay button.
+        orders: { where: { status: 'PENDING' }, select: { id: true, total: true, renewalFor: true, type: true }, orderBy: { createdAt: 'desc' }, take: 1 },
         // The customer's box history; tracking is theirs to see.
         shipments: {
           where: { status: { not: 'CANCELLED' } },
@@ -102,7 +103,19 @@ export class SubscriptionsService implements OnModuleInit, OnModuleDestroy {
   async cancelPreview(id: string, userId?: string) {
     const sub = await this.findOne(id, userId);
     if (['CANCELLED', 'EXPIRED'].includes(sub.status) || sub.cancelledAt) throw new BadRequestException('Subscription already cancelled');
+    // Never paid: nothing to refund; its unpaid order goes with it (see cancel).
+    if (sub.status === 'PENDING') return { kind: 'unpaid' as const, refund: 0, keptBoxes: 0, boxesTotal: sub.boxesTotal, thisMonthBoxComing: false };
     return (await planCancellation(this.prisma, id)).plan;
+  }
+
+  /**
+   * Resumes a paused plan (only older plans can be paused; pausing isn't
+   * offered). Same rule as admin's resume in adminUpdate.
+   */
+  async resume(id: string, userId: string) {
+    const sub = await this.findOne(id, userId);
+    if (sub.status !== 'PAUSED' || sub.cancelledAt) throw new BadRequestException('Only a paused plan can be resumed');
+    return this.prisma.customerSubscription.update({ where: { id }, data: { status: 'ACTIVE' } });
   }
 
   /**
