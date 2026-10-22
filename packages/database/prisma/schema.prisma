@@ -492,6 +492,10 @@ model SubscriptionPlan {
   benefits            String[]
   badge               String?      // "popular", "best_value", "new"
   isActive            Boolean      @default(true)
+  /// Shown on the site and open to new customers. Off hides the plan while
+  /// its current subscribers keep renewing (isActive off retires it: no
+  /// sales and no renewals).
+  listed              Boolean      @default(true)
   sortOrder           Int          @default(0)
   /// The built-in plan behind monthly custom boxes: never listed or sold on
   /// its own; its price comes from each customer's box.
