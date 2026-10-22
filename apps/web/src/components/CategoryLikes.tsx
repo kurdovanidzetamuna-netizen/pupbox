@@ -67,7 +67,7 @@ export default function CategoryLikes({ value, onChange, allergies = [] }: { val
           const active = on.has(m.id);
           return (
             <button key={m.id} type="button" onClick={() => toggleMain(m)} aria-pressed={active}
-              className={`inline-flex items-center gap-1.5 rounded-full pl-2.5 pr-3.5 py-2 text-[13px] font-bold transition-colors ${active ? 'bg-teal-600 text-white shadow-sm' : 'bg-gray-100 text-gray-700 hover:bg-teal-50 hover:text-teal-800'}`}>
+              className={`inline-flex items-center gap-1.5 rounded-full pl-2.5 pr-3.5 py-2 text-[13px] font-bold transition-colors ${active ? 'bg-teal-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-teal-50 hover:text-teal-800'}`}>
               <span className="text-[16px] leading-none" aria-hidden="true">{catEmoji(m)}</span>{catName(m, lang)}
             </button>
           );

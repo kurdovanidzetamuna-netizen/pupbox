@@ -22,7 +22,7 @@ export default function Segmented<T extends string>({ value, onChange, options, 
       className={`relative grid p-1 rounded-full bg-gray-200/80 ring-1 ring-inset ring-gray-300/60 ${className}`}
       style={{ gridTemplateColumns: `repeat(${n}, minmax(0, 1fr))` }}>
       <span aria-hidden="true"
-        className="absolute top-1 bottom-1 left-1 rounded-full bg-white shadow-[0_1px_4px_rgba(36,48,58,0.15)] transition-transform duration-300 ease-[cubic-bezier(.4,0,.2,1)]"
+        className="absolute top-1 bottom-1 left-1 rounded-full bg-white ring-1 ring-gray-200 transition-transform duration-300 ease-[cubic-bezier(.4,0,.2,1)]"
         style={{ width: `calc((100% - 8px) / ${n})`, transform: `translateX(${i * 100}%)` }} />
       {options.map((o) => (
         <button key={o.value} type="button" role="tab" aria-selected={o.value === value} onClick={() => onChange(o.value)}
