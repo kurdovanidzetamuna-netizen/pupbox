@@ -54,7 +54,7 @@ function Dots({ i, set, light = false }: { i: number; set: (n: number) => void; 
 }
 
 const Btn = ({ children }: { children: React.ReactNode }) => (
-  <span className="inline-flex items-center gap-2 h-12 px-7 rounded-full bg-[var(--brand)] text-white text-[15px] font-bold shadow-[0_10px_24px_-10px_var(--brand)]">
+  <span className="inline-flex items-center gap-2 h-12 px-7 rounded-full bg-[var(--brand)] text-white text-[15px] font-bold">
     {children}<Icon name="arrow" className="w-4 h-4" />
   </span>
 );

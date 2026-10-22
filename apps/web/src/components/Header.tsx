@@ -212,7 +212,7 @@ export default function Header({ site }: { site: StoredContent | null }) {
                 <li key={tab.href} className="relative">
                   <Link href={tab.href} aria-current={on ? 'page' : undefined}
                     className="absolute left-1/2 -translate-x-1/2 -top-5 flex flex-col items-center gap-1 text-[10.5px] font-bold text-teal-700">
-                    <span className={`w-14 h-14 rounded-[18px] text-white flex items-center justify-center ring-4 ring-white shadow-[0_8px_18px_-8px_rgba(34,163,139,0.8)] transition-transform active:scale-95 ${on ? 'bg-teal-700' : 'bg-teal-600'}`}>
+                    <span className={`w-14 h-14 rounded-[18px] text-white flex items-center justify-center ring-4 ring-white transition-transform active:scale-95 ${on ? 'bg-teal-700' : 'bg-teal-600'}`}>
                       <Icon name={tab.icon} className="w-6 h-6" strokeWidth={2.1} />
                     </span>
                     <span className="max-w-[80px] truncate"><Caps text={tab.label} /></span>
@@ -347,7 +347,7 @@ function LangSwitch({ full = false, tabIndex, className = '' }: { full?: boolean
       {([['ka', 'ქა', 'ქართული'], ['en', 'EN', 'English']] as const).map(([code, short, name]) => (
         <button key={code} type="button" role="radio" aria-checked={lang === code} aria-label={name} title={name} tabIndex={tabIndex}
           onClick={() => setLang(code)}
-          className={`h-8 min-w-[36px] px-2 ${full ? 'rounded-full' : 'rounded-[12px]'} font-semibold transition-colors ${full ? 'text-[12.5px]' : 'text-[12px] font-bold'} ${lang === code ? 'bg-white text-teal-700 shadow-[0_1px_3px_rgba(36,48,58,0.12)]' : 'text-gray-500 hover:text-gray-800'}`}>
+          className={`h-8 min-w-[36px] px-2 ${full ? 'rounded-full' : 'rounded-[12px]'} font-semibold transition-colors ${full ? 'text-[12.5px]' : 'text-[12px] font-bold'} ${lang === code ? 'bg-white text-teal-700 ring-1 ring-gray-200' : 'text-gray-500 hover:text-gray-800'}`}>
           {full ? name : short}
         </button>
       ))}
@@ -388,7 +388,7 @@ function AccountMenu({ me, mounted, onSignOut }: { me: Me; mounted: boolean; onS
       <button type="button" onClick={() => setOpen((o) => !o)} aria-haspopup="dialog" aria-expanded={open}
         aria-label={t('nav.account')} title={me.name || t('nav.account')}
         className={`group inline-flex items-center justify-center w-10 h-10 rounded-[16px] transition-colors ${open || pathname.startsWith('/account') ? 'bg-teal-50' : 'hover:bg-teal-50'}`}>
-        <span className={`me-initial w-8 h-8 rounded-[12px] text-white inline-flex items-center justify-center text-[13px] font-bold transition-all duration-200 ease-out motion-safe:group-hover:-translate-y-px group-hover:bg-teal-700 group-hover:shadow-[0_4px_10px_-4px_rgba(34,163,139,0.7)] ${open ? 'bg-teal-700' : 'bg-teal-600'}`}>
+        <span className={`me-initial w-8 h-8 rounded-[12px] text-white inline-flex items-center justify-center text-[13px] font-bold transition-all duration-200 ease-out motion-safe:group-hover:-translate-y-px group-hover:bg-teal-700 ${open ? 'bg-teal-700' : 'bg-teal-600'}`}>
           {me.initial || (mounted ? <Icon name="paw" className="w-4 h-4" /> : null)}
         </span>
       </button>

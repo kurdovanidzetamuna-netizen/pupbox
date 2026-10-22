@@ -7,7 +7,7 @@ export class SubscriptionPlansService {
 
   findAll(adminView = false) {
     return this.prisma.subscriptionPlan.findMany({
-      where: { deletedAt: null, isCustomBox: false, ...(adminView ? {} : { isActive: true }) },
+      where: { deletedAt: null, isCustomBox: false, ...(adminView ? {} : { isActive: true, listed: true }) },
       orderBy: [{ sortOrder: 'asc' }, { price: 'asc' }],
       include: { tier: { select: { id: true, name: true, slug: true, translations: true, emoji: true, sortOrder: true, isActive: true } } },
     });
@@ -29,7 +29,7 @@ export class SubscriptionPlansService {
     name: string; slug: string; durationValue: number; durationUnit: any;
     boxCount: number; price: number; discountPercent?: number; monthlyEquivPrice?: number;
     deliveryIncluded?: boolean; autoRenewal?: boolean; description?: string;
-    benefits?: string[]; badge?: string; isActive?: boolean; sortOrder?: number;
+    benefits?: string[]; badge?: string; isActive?: boolean; listed?: boolean; sortOrder?: number;
     seoTitle?: string; seoDesc?: string; tierId?: string | null;
   }) {
     const existing = await this.prisma.subscriptionPlan.findUnique({ where: { slug: data.slug } });
@@ -46,6 +46,19 @@ export class SubscriptionPlansService {
 
   private async checkTier(tierId?: string | null) {
     if (tierId && !(await this.prisma.boxTier.findUnique({ where: { id: tierId } }))) throw new NotFoundException('Box type not found');
+  }
+
+  /**
+   * Shows or hides a whole group on the site at once: the Mini / Standard /
+   * Premium plans, or the plans without a box type. Plans that are off stay
+   * as they are.
+   */
+  async setGroupListed(group: 'BOX_TYPES' | 'OTHER', listed: boolean) {
+    const { count } = await this.prisma.subscriptionPlan.updateMany({
+      where: { deletedAt: null, isCustomBox: false, tierId: group === 'BOX_TYPES' ? { not: null } : null },
+      data: { listed },
+    });
+    return { updated: count };
   }
 
   async remove(id: string) {

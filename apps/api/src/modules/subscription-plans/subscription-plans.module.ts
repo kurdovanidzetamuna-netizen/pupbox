@@ -3,7 +3,7 @@ import { SubscriptionPlansService } from './subscription-plans.service';
 import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards } from '@nestjs/common';
 import { AdminJwtGuard } from '../admin-auth/admin-jwt.guard';
 import { ApiBearerAuth, ApiTags, ApiOperation } from '@nestjs/swagger';
-import { IsString, IsNumber, IsInt, IsOptional, IsBoolean, IsArray, IsEnum, Min } from 'class-validator';
+import { IsString, IsNumber, IsInt, IsOptional, IsBoolean, IsArray, IsEnum, IsIn, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 import { AdminPerms } from '../admin-auth/admin-permissions';
 import { PartialType } from '@nestjs/swagger';
@@ -27,6 +27,8 @@ class CreatePlanDto {
   @IsOptional() @IsArray() benefits?: string[];
   @IsOptional() @IsString() badge?: string;
   @IsOptional() @IsBoolean() isActive?: boolean;
+  /** Shown on the site; off hides it while current subscribers keep renewing. */
+  @IsOptional() @IsBoolean() listed?: boolean;
   @IsOptional() @Type(() => Number) @IsNumber() sortOrder?: number;
   @IsOptional() @IsString() seoTitle?: string;
   @IsOptional() @IsString() seoDesc?: string;
@@ -37,6 +39,11 @@ class CreatePlanDto {
 
 /** Validated like create, every field optional (a bare Partial<> isn't checked at all). */
 class UpdatePlanDto extends PartialType(CreatePlanDto) {}
+
+class GroupListedDto {
+  @IsIn(['BOX_TYPES', 'OTHER']) group: 'BOX_TYPES' | 'OTHER';
+  @IsBoolean() listed: boolean;
+}
 
 @ApiTags('Subscription Plans')
 @Controller('subscription-plans')
@@ -56,6 +63,7 @@ class AdminSubscriptionPlansController {
   @Get() findAll() { return this.service.findAll(true); }
   @Get(':id') findOne(@Param('id') id: string) { return this.service.findById(id); }
   @Post() create(@Body() dto: CreatePlanDto) { return this.service.create(dto as any); }
+  @Post('show-on-site') showOnSite(@Body() dto: GroupListedDto) { return this.service.setGroupListed(dto.group, dto.listed); }
   @Put(':id') update(@Param('id') id: string, @Body() dto: UpdatePlanDto) { return this.service.update(id, dto); }
   @Delete(':id') remove(@Param('id') id: string) { return this.service.remove(id); }
 }

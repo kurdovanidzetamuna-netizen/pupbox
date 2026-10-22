@@ -183,7 +183,7 @@ export default function CostBreakdown({ b }: { b: PlanBuilderState }) {
             here, so the effect of those chips is visible. */}
         <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginTop: 10, paddingTop: 10, borderTop: '1px solid var(--teal-200)' }}>
           {[
-            { on: form.isActive, icon: '✅', label: 'Live on site', c: 'var(--green-800)', bg: 'var(--green-50)', b: 'var(--green-200)' },
+            { on: form.isActive && form.listed !== false, icon: '✅', label: 'Live on site', c: 'var(--green-800)', bg: 'var(--green-50)', b: 'var(--green-200)' },
             { on: form.autoRenewal, icon: '🔄', label: 'Auto renews', c: 'var(--teal-700)', bg: 'var(--teal-50)', b: 'var(--teal-200)' },
             { on: form.giftable, icon: '🎁', label: 'Giftable', c: 'var(--amber-700)', bg: 'var(--amber-50)', b: 'var(--amber-200)' },
             { on: form.deliveryIncluded, icon: '🚚', label: 'Delivery included', c: 'var(--teal-700)', bg: 'var(--teal-50)', b: 'var(--teal-200)' },

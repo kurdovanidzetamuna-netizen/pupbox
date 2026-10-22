@@ -112,7 +112,7 @@ export default function ReferralsPage() {
             </button>
           </div>
           <button type="button" onClick={share}
-            className="mt-2.5 w-full h-12 rounded-[16px] bg-teal-600 hover:bg-teal-700 text-white text-[14.5px] font-bold inline-flex items-center justify-center gap-2 shadow-[0_10px_24px_-12px_rgba(13,148,136,0.9)] transition-colors active:scale-[0.99]">
+            className="mt-2.5 w-full h-12 rounded-[16px] bg-teal-600 hover:bg-teal-700 text-white text-[14.5px] font-bold inline-flex items-center justify-center gap-2 transition-colors active:scale-[0.99]">
             <Icon name={copied === 'link' ? 'check' : 'send'} className="w-[18px] h-[18px]" />
             {copied === 'link' ? t('ref.copied') : native ? t('ref.share') : t('ref.copy')}
           </button>

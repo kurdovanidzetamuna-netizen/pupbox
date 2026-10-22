@@ -52,7 +52,7 @@ export default function DogChooser({ dogs, value, onChange, onDogsChange, onExpi
           <span className="relative inline-block text-6xl motion-safe:animate-[bob_2s_ease-in-out_infinite]" aria-hidden="true"><span className="inline-block motion-safe:animate-[wag_1.4s_ease-in-out_infinite]">🐶</span></span>
           <span className="relative block mt-3 text-[17px] font-extrabold text-gray-900">{t('co.dog.emptyTitle')}</span>
           <span className="relative block mt-1 text-[13px] text-gray-600 max-w-xs mx-auto">{t('co.dog.emptySub')}</span>
-          <span className="relative mt-5 inline-flex items-center gap-2 h-12 px-6 rounded-full bg-teal-600 text-white text-[14px] font-bold shadow-[0_10px_24px_-12px_rgba(13,148,136,0.9)] group-hover:bg-teal-700 transition-colors">
+          <span className="relative mt-5 inline-flex items-center gap-2 h-12 px-6 rounded-full bg-teal-600 text-white text-[14px] font-bold group-hover:bg-teal-700 transition-colors">
             <Icon name="plus" className="w-5 h-5" strokeWidth={2.6} />{t('co.dog.add')}
           </span>
         </button>
@@ -72,7 +72,7 @@ export default function DogChooser({ dogs, value, onChange, onDogsChange, onExpi
             <li key={d.id} className="motion-safe:animate-[fadeUp_0.35s_ease-out_both]" style={{ animationDelay: `${Math.min(i, 6) * 45}ms` }}>
               <button type="button" role="radio" aria-checked={on} onClick={() => onChange(d.id)}
                 className={`group relative w-full text-left rounded-3xl p-2 transition-all duration-200 ${on
-                  ? 'bg-teal-50 ring-2 ring-teal-500 shadow-[0_12px_28px_-16px_rgba(13,148,136,0.8)]'
+                  ? 'bg-teal-50 ring-2 ring-teal-500'
                   : 'bg-white ring-1 ring-gray-200/70 hover:ring-teal-200 hover:-translate-y-0.5'}`}>
                 <span className={`relative block aspect-[5/4] rounded-[20px] overflow-hidden ${TINTS[i % TINTS.length]}`}>
                   {d.photoUrl

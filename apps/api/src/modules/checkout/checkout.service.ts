@@ -7,7 +7,7 @@ import { cancelUnpaidOrder } from '../orders/order-lifecycle';
 import { customBoxPlan, quoteSavedBox } from '../custom-box/custom-box';
 import { shopSettings } from '../settings/settings';
 import { checkReferralCode, referralDiscount } from '../referrals/referral-promo';
-import { couponDiscount, hasPaidBefore } from '../coupons/coupon-discount';
+import { couponDiscount, couponGap, hasPaidBefore } from '../coupons/coupon-discount';
 
 export interface GiftDetails {
   recipientName: string;
@@ -152,6 +152,15 @@ export class CheckoutService {
     // The coupon priced for what this order is: a plan as a gift counts as a
     // gift, and a coupon that covers delivery takes its part off the fee.
     if (cart.coupon) {
+      // A code that takes nothing off isn't used up on this order: take it out and say why.
+      const gap = couponGap(cart.coupon, cart.items, { delivery: deliveryCost, gift: !!gift });
+      if (gap) {
+        await this.prisma.cart.update({ where: { id: cart.id }, data: { couponId: null } });
+        const why = gap.reason === 'MIN' ? `needs an order of at least ₾${Number(cart.coupon.minOrderAmount)}`
+          : gap.reason === 'GIFT' ? 'only works on a box sent as a gift'
+          : 'doesn’t cover anything in this order';
+        throw new BadRequestException(`Your promo code ${why}, so we removed it. Check the new total and try again.`);
+      }
       const off = couponDiscount(cart.coupon, cart.items, deliveryCost, { gift: !!gift });
       discountAmount = +(off.items + off.delivery).toFixed(2);
       total = +(Math.max(0, cart.subtotal - off.items) + deliveryCost - off.delivery).toFixed(2);

@@ -6,7 +6,7 @@ export const EMPTY_FORM = {
   name: '', slug: '', durationValue: 1, durationUnit: 'MONTH', boxCount: 1,
   monthlyPrice: '', discountPercent: '',
   deliveryIncluded: true, autoRenewal: true, giftable: true, description: '', benefits: '',
-  badge: '', isActive: true, sortOrder: 0, tierId: '',
+  badge: '', isActive: true, listed: true, sortOrder: 0, tierId: '',
 };
 export const EMPTY_KA = { name: '', description: '', benefits: '' };
 

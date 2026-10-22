@@ -41,7 +41,7 @@ export class BoxTiersService {
       orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
       include: {
         plans: {
-          where: { isActive: true, deletedAt: null, isCustomBox: false },
+          where: { isActive: true, listed: true, deletedAt: null, isCustomBox: false },
           orderBy: [{ durationValue: 'asc' }, { sortOrder: 'asc' }],
           select: PLAN_FIELDS,
         },
@@ -53,7 +53,7 @@ export class BoxTiersService {
   async listAdmin() {
     const tiers = await this.prisma.boxTier.findMany({
       orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
-      include: { plans: { where: { deletedAt: null }, orderBy: { durationValue: 'asc' }, select: { ...PLAN_FIELDS, isActive: true } } },
+      include: { plans: { where: { deletedAt: null }, orderBy: { durationValue: 'asc' }, select: { ...PLAN_FIELDS, isActive: true, listed: true } } },
     });
     const counts = await this.prisma.customerSubscription.groupBy({
       by: ['planId'], where: { status: 'ACTIVE', plan: { tierId: { not: null } } }, _count: { _all: true },

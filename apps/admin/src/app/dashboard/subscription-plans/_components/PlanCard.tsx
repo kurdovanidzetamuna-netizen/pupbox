@@ -1,15 +1,18 @@
 import { summarisePlanCost } from '../_lib/plan-config';
+import { planStatus } from '../_lib/status';
 
-export default function PlanCard({ p, canDelete, onView, onConfigure, onToggle, onDelete }: {
+export default function PlanCard({ p, canDelete, onView, onConfigure, onToggle, onToggleListed, onDelete }: {
   p: any;
   canDelete: boolean;
   onView: () => void;
   onConfigure: () => void;
   onToggle: () => void;
+  onToggleListed: () => void;
   onDelete: () => void;
 }) {
   const { cfg, itemCount, productCost, opCost, delCost, margin, hasConfig } = summarisePlanCost(p);
   const isDisabled = !p.isActive;
+  const status = planStatus(p);
 
   return (
     <div key={p.id}
@@ -22,7 +25,7 @@ export default function PlanCard({ p, canDelete, onView, onConfigure, onToggle, 
           <h3 style={{ fontSize: 16, fontWeight: 800, color: isDisabled ? 'var(--slate-400)' : 'var(--slate-900)', margin: 0 }}>{p.name}</h3>
           <p style={{ fontSize: 11, color: 'var(--slate-400)', margin: '3px 0 0' }}>{p.durationValue} {p.durationUnit.toLowerCase()} · {p.boxCount} box{p.boxCount > 1 ? 'es' : ''}</p>
         </div>
-        <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 999, fontWeight: 600, background: isDisabled ? 'var(--slate-100)' : 'var(--green-50)', color: isDisabled ? 'var(--slate-400)' : 'var(--green-800)' }}>{isDisabled ? 'Off' : 'Live'}</span>
+        <span title={status.hint} style={{ fontSize: 11, padding: '2px 8px', borderRadius: 999, fontWeight: 600, background: status.bg, color: status.color }}>{status.label}</span>
       </div>
       <p style={{ fontSize: 26, fontWeight: 800, color: isDisabled ? 'var(--slate-400)' : 'var(--slate-900)', margin: '0 0 2px' }}>₾{Number(p.price).toFixed(0)}</p>
       {p.discountPercent && <p style={{ fontSize: 12, color: 'var(--teal-600)', fontWeight: 600, margin: '0 0 12px' }}>Save {p.discountPercent}%</p>}
@@ -56,6 +59,8 @@ export default function PlanCard({ p, canDelete, onView, onConfigure, onToggle, 
           onMouseUp={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)'; }}
           onMouseOut={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)'; }}
           style={{ flex: 1, fontSize: 11, padding: '6px 10px', borderRadius: 8, background: 'var(--teal-600)', color: 'var(--white)', border: 'none', cursor: 'pointer', fontWeight: 700, transition: 'background 0.15s, transform 0.1s' }}>Configure</button>
+        {!isDisabled && <button onClick={() => onToggleListed()} title={p.listed === false ? 'Show on the site' : 'Hide from the site — current subscribers still renew'}
+          style={{ flex: 1, fontSize: 11, padding: '6px 10px', borderRadius: 8, background: p.listed === false ? 'var(--teal-50)' : 'var(--slate-100)', color: p.listed === false ? 'var(--teal-700)' : 'var(--slate-500)', border: 'none', cursor: 'pointer', fontWeight: 600, transition: 'background 0.15s' }}>{p.listed === false ? 'Show' : 'Hide'}</button>}
         <button onClick={() => onToggle()}
           onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = isDisabled ? 'var(--green-100)' : 'var(--slate-200)'; }}
           onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = isDisabled ? 'var(--green-50)' : 'var(--slate-100)'; }}

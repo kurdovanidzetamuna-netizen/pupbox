@@ -4,7 +4,7 @@ import { Icon } from './icons';
 /**
  * The page's main call to action: a mint button with the cards' rounded
  * corners, a white icon, then the label. On hover it
- * grows a flowing green → sunny-yellow ring and glow (styles in globals.css).
+ * grows a flowing green → sunny-yellow ring, no shadow (styles in globals.css).
  * The wrapper gives the ring a layer to sit in behind the pill.
  */
 export default function CtaGlow({ href, label, icon = 'box', className = '' }: { href: string; label: string; icon?: string; className?: string }) {
