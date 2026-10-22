@@ -1,6 +1,7 @@
 'use client';
 import { Select } from '@/components/Dropdown';
 import { useEffect, useState } from 'react';
+import { NumInput } from '@/components/NumberField';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 const SLUG = 'config-promo-popups';
@@ -270,7 +271,7 @@ export default function PromoPopupsPage() {
             </Field>
 
             {/* Coupon */}
-            <Field label="Coupon code (optional)">
+            <Field label="Promo code (optional)">
               <input value={form.couponCode} onChange={f('couponCode')} style={inputStyle} placeholder="WELCOME10" />
             </Field>
 
@@ -288,7 +289,7 @@ export default function PromoPopupsPage() {
 
             {form.trigger === 'after_delay' && (
               <Field label="Delay (seconds)">
-                <input type="number" min={1} max={60} value={form.delaySeconds} onChange={e => setForm(p => ({ ...p, delaySeconds: +e.target.value }))} style={inputStyle} />
+                <NumInput min={1} max={60} value={form.delaySeconds} onChange={e => setForm(p => ({ ...p, delaySeconds: +e.target.value }))} style={inputStyle} />
               </Field>
             )}
 

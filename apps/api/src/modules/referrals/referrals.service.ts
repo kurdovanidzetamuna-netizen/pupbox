@@ -5,10 +5,8 @@ import { dateRange } from '../reports/reports.service';
 import { notify } from '../notifications/notify';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
-import { shopSettings } from '../settings/settings';
+import { shopSettings, cleanReferral, SETTINGS_SLUG } from '../settings/settings';
 
-/** What the inviter gets once their friend's first order sticks (the site says ₾10). */
-const REWARD_GEL = 10;
 /** Payment states where the money was taken. */
 const COLLECTED = ['PAID', 'PARTIALLY_REFUNDED'] as const;
 
@@ -89,7 +87,9 @@ export class ReferralsService implements OnModuleInit, OnModuleDestroy {
     };
 
     // What one friend's first order earns, so the page never hard-codes the amount.
-    return { referralCode: user.referralCode, reward: REWARD_GEL, stats, referrals };
+    // What the inviter gets, and what their friend gets with the code (set in admin).
+    const offer = (await shopSettings(this.prisma)).referral;
+    return { referralCode: user.referralCode, reward: offer.inviterReward, friend: offer.enabled ? { type: offer.friendType, value: offer.friendValue, minOrder: offer.minOrder } : null, stats, referrals };
   }
 
   /**
@@ -154,6 +154,7 @@ export class ReferralsService implements OnModuleInit, OnModuleDestroy {
   private async grant(referralId: string) {
     const { count } = await this.prisma.referral.updateMany({ where: { id: referralId, status: 'REGISTERED' }, data: { status: 'FIRST_ORDER_COMPLETED' } });
     if (!count) return false;
+    const REWARD_GEL = (await shopSettings(this.prisma)).referral.inviterReward;
     const referral = await this.prisma.referral.findUniqueOrThrow({
       where: { id: referralId },
       select: { inviterId: true, inviter: { select: { email: true, firstName: true, language: true } } },
@@ -184,7 +185,7 @@ export class ReferralsService implements OnModuleInit, OnModuleDestroy {
     }
     notify(this.prisma, referral.inviterId, 'REFERRAL_REWARD', { couponCode, amount: REWARD_GEL }, '/account/referrals');
     this.email
-      .sendReferralReward({ email: referral.inviter.email, firstName: referral.inviter.firstName, language: referral.inviter.language, couponCode })
+      .sendReferralReward({ email: referral.inviter.email, firstName: referral.inviter.firstName, language: referral.inviter.language, couponCode, amount: REWARD_GEL })
       .catch((e) => this.logger.error(`Referral reward email failed: ${e.message}`));
     return true;
   }
@@ -302,6 +303,35 @@ export class ReferralsService implements OnModuleInit, OnModuleDestroy {
         rewarded: rewardedBy.find((r) => r.inviterId === t.inviterId)?._count._all ?? 0,
       })),
     };
+  }
+
+  /** Admin → Coupons → Friend codes: the offer, and how it's doing. */
+  async adminOffer() {
+    const offer = (await shopSettings(this.prisma)).referral;
+    const [orders, paid, rewards] = await Promise.all([
+      this.prisma.order.count({ where: { referralCode: { not: null } } }),
+      this.prisma.order.aggregate({ where: { referralCode: { not: null }, payments: { some: { status: { in: [...COLLECTED] } } } }, _count: { _all: true }, _sum: { referralDiscount: true, total: true } }),
+      this.prisma.referral.aggregate({ where: { status: 'REWARD_GRANTED' }, _count: { _all: true }, _sum: { rewardValue: true } }),
+    ]);
+    return {
+      offer,
+      stats: {
+        ordersWithCode: orders, paidOrders: paid._count._all,
+        friendDiscounts: Number(paid._sum.referralDiscount ?? 0), revenue: Number(paid._sum.total ?? 0),
+        rewardsGiven: rewards._count._all, rewardsValue: Number(rewards._sum.rewardValue ?? 0),
+      },
+    };
+  }
+
+  async saveAdminOffer(input: any) {
+    const row = await this.prisma.cMSPage.findUnique({ where: { slug: SETTINGS_SLUG }, select: { content: true } });
+    const content = { ...((row?.content as any) ?? {}), referral: cleanReferral(input) };
+    await this.prisma.cMSPage.upsert({
+      where: { slug: SETTINGS_SLUG },
+      update: { content },
+      create: { key: SETTINGS_SLUG, slug: SETTINGS_SLUG, title: 'Settings', status: 'PUBLISHED', content },
+    });
+    return this.adminOffer();
   }
 }
 

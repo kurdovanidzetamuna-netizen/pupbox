@@ -39,10 +39,12 @@ export default function ReferralsPage() {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://pupbox.ge';
-  const link = data?.referralCode ? `${siteUrl}/register?ref=${data.referralCode}` : '';
+  // The code rides in the link: the friend can look around first, and it's applied in their basket by itself.
+  const link = data?.referralCode ? `${siteUrl}/?ref=${data.referralCode}` : '';
   const reward = Number(data?.reward ?? 10);
   const earned = (data?.stats?.rewarded ?? 0) * reward;
-  const message = fill(t('ref.shareText'), { n: reward });
+  const gets = data?.friend ? (data.friend.type === 'PERCENTAGE' ? `${data.friend.value}%` : `₾${data.friend.value}`) : '';
+  const message = gets ? fill(t('ref.shareTextOff'), { off: gets, code: data.referralCode }) : fill(t('ref.shareText'), { n: reward });
 
   async function copy(what: 'code' | 'link') {
     try { await navigator.clipboard.writeText(what === 'code' ? data.referralCode : link); } catch { return; }
@@ -59,7 +61,7 @@ export default function ReferralsPage() {
   const friends: any[] = data.referrals ?? [];
   const steps = [
     { emoji: '🔗', title: t('ref.how1'), text: t('ref.how1Sub') },
-    { emoji: '🐶', title: t('ref.how2'), text: t('ref.how2Sub') },
+    { emoji: '🐶', title: t('ref.how2'), text: gets ? fill(t('ref.how2SubOff'), { off: gets }) : t('ref.how2Sub') },
     { emoji: '🎁', title: fill(t('ref.how3'), { n: reward }), text: t('ref.how3Sub') },
   ];
 

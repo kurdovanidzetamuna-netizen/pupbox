@@ -132,17 +132,33 @@ export default function CartPage() {
             <div className="relative">
               <span aria-hidden="true" className="absolute left-0 top-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-pastel-grey z-10" />
               <span aria-hidden="true" className="absolute right-0 top-1/2 translate-x-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-pastel-grey z-10" />
-              {cart.coupon ? (
+              {cart.coupon || cart.referral ? (
                 <div className="rounded-[20px] bg-teal-50 ring-1 ring-inset ring-teal-300 border-dashed px-4 py-3.5 flex items-center gap-3">
-                  <span className="w-10 h-10 shrink-0 rounded-[12px] bg-white text-teal-600 flex items-center justify-center"><Icon name="check" className="w-5 h-5" strokeWidth={2.6} /></span>
+                  <span className="w-10 h-10 shrink-0 rounded-[12px] bg-white text-teal-600 flex items-center justify-center"><Icon name={cart.referral ? 'heart' : 'check'} className="w-5 h-5" strokeWidth={2.6} /></span>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[12px] font-semibold text-teal-700">{t('cart.promoOn')}</p>
-                    <p className="text-[15px] font-extrabold tracking-wider text-gray-900 font-mono truncate">{cart.coupon.code}</p>
+                    <p className="text-[12px] font-semibold text-teal-700">{cart.referral ? fill(t('cart.friendOn'), { name: cart.referral.inviterName || t('ref.friend') }) : t('cart.promoOn')}</p>
+                    <p className="text-[15px] font-extrabold tracking-wider text-gray-900 font-mono truncate">{cart.referral?.code ?? cart.coupon.code}</p>
                     <p className="text-[12px] text-teal-700">
-                      {cart.coupon.discountType === 'PERCENTAGE'
-                        ? fill(t('cart.percentOff'), { v: Number(cart.coupon.discountValue) })
-                        : fill(t('cart.amountOff'), { v: gel(cart.coupon.discountValue) })}
+                      {cart.referral
+                        ? cart.referral.discount > 0
+                          ? `${cart.referral.offer.type === 'PERCENTAGE' ? fill(t('cart.percentOff'), { v: cart.referral.offer.value }) : fill(t('cart.amountOff'), { v: gel(cart.referral.offer.value) })} · ${t('cart.firstOrder')}`
+                          : cart.referral.offer.minOrder > cart.subtotal ? fill(t('cart.friendMin'), { v: gel(cart.referral.offer.minOrder) }) : t('cart.friendNotHere')
+                        : <>
+                          {cart.coupon.discountType === 'PERCENTAGE'
+                            ? fill(t('cart.percentOff'), { v: Number(cart.coupon.discountValue) })
+                            : fill(t('cart.amountOff'), { v: gel(cart.coupon.discountValue) })}
+                          {/* Only for some things: say which */}
+                          {cart.coupon.scopes && !['SHOP', 'BOX', 'CUSTOM_BOX', 'GIFT'].every((k) => cart.coupon.scopes.includes(k)) && ` · ${cart.coupon.scopes.map((x: string) => t(`cpn.${x}`)).join(', ')}`}
+                          {/* Its other rules, so the discount shown isn't a surprise */}
+                          {[
+                            cart.coupon.discountType === 'PERCENTAGE' && Number(cart.coupon.maxDiscount) > 0 && fill(t('cpn.upTo'), { v: gel(cart.coupon.maxDiscount) }),
+                            Number(cart.coupon.minOrderAmount) > 0 && fill(t('cpn.min'), { v: gel(cart.coupon.minOrderAmount) }),
+                            cart.coupon.minPlanMonths > 1 && fill(t('cpn.months'), { n: cart.coupon.minPlanMonths }),
+                            cart.coupon.firstOrderOnly && t('cpn.first'),
+                          ].filter(Boolean).map((x) => ` · ${x}`).join('')}
+                        </>}
                     </p>
+                    {cart.coupon?.scopes?.includes('DELIVERY') && !cart.referral && <p className="text-[11.5px] text-teal-700/80">{t('cart.couponDelivery')}</p>}
                   </div>
                   <IconButton icon="close" tone="danger" size="sm" label={t('cart.removeCoupon')} onClick={removeCoupon} />
                 </div>
@@ -172,7 +188,7 @@ export default function CartPage() {
               <h2 className="text-[15px] font-extrabold text-gray-900 mb-3">{t('co.sum.title')}</h2>
               <dl className="space-y-2 text-[13.5px]">
                 <div className="flex justify-between text-gray-600"><dt>{t('co.sum.subtotal')}</dt><dd>{gel(cart.subtotal)}</dd></div>
-                {cart.discountAmount > 0 && <div className="flex justify-between text-teal-700 font-semibold"><dt>{t('co.sum.discount')}</dt><dd>−{gel(cart.discountAmount)}</dd></div>}
+                {cart.discountAmount > 0 && <div className="flex justify-between text-teal-700 font-semibold"><dt>{cart.referral ? t('co.sum.friend') : t('co.sum.discount')}</dt><dd>−{gel(cart.discountAmount)}</dd></div>}
                 <div className="flex justify-between text-gray-500">
                   <dt>{t('co.sum.delivery')}</dt>
                   <dd>{cart.deliveryIncluded ? t('co.delivery.included') : t('co.sum.deliveryLater')}</dd>

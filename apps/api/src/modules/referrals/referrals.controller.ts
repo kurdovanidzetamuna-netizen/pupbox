@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, UseGuards, Request, Query, Res } from '@nestjs/common';
+import { Controller, Get, Post, Put, Body, UseGuards, Request, Query, Res } from '@nestjs/common';
 import { Response } from 'express';
 import { toCsv } from '../reports/reports.service';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
@@ -6,11 +6,12 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { AdminJwtGuard } from '../admin-auth/admin-jwt.guard';
 import { ReferralsService, type ReferralFilters } from './referrals.service';
 import { AdminPerms } from '../admin-auth/admin-permissions';
+import { AuditService } from '../audit/audit.service';
 
 @ApiTags('referrals')
 @Controller('referrals')
 export class ReferralsController {
-  constructor(private readonly referralsService: ReferralsService) {}
+  constructor(private readonly referralsService: ReferralsService, private audit: AuditService) {}
 
   @Get('my')
   @ApiBearerAuth()
@@ -32,6 +33,26 @@ export class ReferralsController {
   @AdminPerms({ read: 'users.view' })
   adminList(@Query('page') page = '1', @Query('limit') limit = '20', @Query() f: ReferralFilters) {
     return this.referralsService.adminList(+page, +limit, f);
+  }
+
+  /** The friend-code offer (what the friend and the inviter get) and its numbers. */
+  @Get('admin/offer')
+  @ApiBearerAuth()
+  @UseGuards(AdminJwtGuard)
+  @AdminPerms({ read: 'coupons.manage' })
+  adminOffer() {
+    return this.referralsService.adminOffer();
+  }
+
+  @Put('admin/offer')
+  @ApiBearerAuth()
+  @UseGuards(AdminJwtGuard)
+  @AdminPerms({ write: 'coupons.manage' })
+  async saveOffer(@Body() body: Record<string, any>, @Request() req: any) {
+    const before = await this.referralsService.adminOffer();
+    const after = await this.referralsService.saveAdminOffer(body);
+    await this.audit.log({ adminUserId: req.user?.id, action: 'UPDATE', module: 'coupons', entityType: 'ReferralOffer', entityId: 'referral', before: before.offer, after: after.offer });
+    return after;
   }
 
   @Get('admin/stats')

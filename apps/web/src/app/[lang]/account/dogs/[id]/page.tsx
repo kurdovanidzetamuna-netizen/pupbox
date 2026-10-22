@@ -15,8 +15,8 @@ import { authFetch, loginUrl, SessionExpiredError } from '@/lib/authFetch';
 import { birthdayLine, dogAge, dogOption, SIZE_SHORT } from '@/lib/dog';
 import { planText } from '@/lib/localize';
 import { formatDate } from '@/lib/dates';
+import { useCategories, likesText, catName, catEmoji } from '@/components/CategoryLikes';
 
-const CHEW_LEVEL: Record<string, number> = { GENTLE: 1, AVERAGE: 2, POWER: 3 };
 const round = 'w-9 h-9 rounded-full inline-flex items-center justify-center transition-colors';
 
 /**
@@ -37,6 +37,7 @@ export default function DogProfilePage() {
   const [confirm, setConfirm] = useState(false);
   const [removing, setRemoving] = useState(false);
   const [hello, setHello] = useState(!!params.get('new'));
+  const cats = useCategories();
 
   const expired = () => router.replace(loginUrl(`/account/dogs/${id}`));
 
@@ -77,6 +78,7 @@ export default function DogProfilePage() {
   const tone = gift ? { soft: 'bg-lilac-50', text: 'text-lilac-600' } : { soft: 'bg-teal-50', text: 'text-teal-700' };
   const chips = (list: string[], cls: string) => list.map((x) => <span key={x} className={`text-[12px] font-semibold rounded-full px-2.5 py-1 ${cls}`}>{dogOption(x, lang, t)}</span>);
   const none = <span className="text-[12.5px] text-gray-400">{t('dogs.notSet')}</span>;
+  const likes = likesText(dog.likedCategoryIds, cats);
   const edit = () => { setError(''); setEditing(true); };
 
   const section = (icon: string, title: string, body: React.ReactNode, i: number) => (
@@ -163,18 +165,18 @@ export default function DogProfilePage() {
         ), 0)}
 
         {section('heart', t('dogs.secLikes'), (
-          <dl className="space-y-2.5">
-            <div className="flex gap-3"><dt className="w-24 shrink-0 text-[12px] text-gray-400 pt-1">{t('dogs.food')}</dt><dd className="flex flex-wrap gap-1.5">{dog.foodPreferences?.length ? chips(dog.foodPreferences, 'bg-teal-50 text-teal-800') : none}</dd></div>
-            <div className="flex gap-3"><dt className="w-24 shrink-0 text-[12px] text-gray-400 pt-1">{t('dogs.toys')}</dt><dd className="flex flex-wrap gap-1.5">{dog.toyPreferences?.length ? chips(dog.toyPreferences, 'bg-peach-50 text-peach-600') : none}</dd></div>
-            <div className="flex gap-3 items-center"><dt className="w-24 shrink-0 text-[12px] text-gray-400">{t('dogs.chew')}</dt><dd>
-              {dog.chewingStrength ? (
-                <span className="flex items-center gap-2 text-[12.5px] font-semibold text-gray-800" title={t(`dog.chew.${dog.chewingStrength}`)}>
-                  <span className="flex gap-0.5" aria-hidden="true">{[1, 2, 3].map((n) => <span key={n} className={n <= (CHEW_LEVEL[dog.chewingStrength] ?? 0) ? '' : 'grayscale opacity-25'}>🦴</span>)}</span>
-                  {t(`dog.chew.${dog.chewingStrength}`, dog.chewingStrength)}
-                </span>
-              ) : none}
-            </dd></div>
-          </dl>
+          likes.length ? (
+            <div className="space-y-2">
+              {likes.map(({ main, kinds }) => (
+                <div key={main.id} className="flex flex-wrap items-center gap-1.5">
+                  <span className="text-[12.5px] font-bold text-gray-800 mr-1"><span aria-hidden="true">{catEmoji(main)}</span> {catName(main, lang)}</span>
+                  {kinds.length
+                    ? kinds.map((k) => <span key={k.id} className="text-[12px] font-semibold rounded-full px-2.5 py-1 bg-teal-50 text-teal-800">{catName(k, lang)}</span>)
+                    : <span className="text-[12px] text-gray-400">{t('dogs.anyKind')}</span>}
+                </div>
+              ))}
+            </div>
+          ) : none
         ), 1)}
 
         {section('info', t('dogs.secNotes'), dog.specialNotes ? <p className="text-[13.5px] text-gray-700 leading-relaxed whitespace-pre-line">{dog.specialNotes}</p> : none, 2)}

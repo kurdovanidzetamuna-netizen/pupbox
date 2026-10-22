@@ -68,7 +68,7 @@ export class CrmService {
       orderBy: { createdAt: 'desc' },
       select: {
         id: true, name: true, breed: true, size: true, gender: true, birthday: true, weightKg: true, allergies: true,
-        foodPreferences: true, toyPreferences: true, chewingStrength: true, specialNotes: true, photoUrl: true, forGift: true, createdAt: true,
+        foodPreferences: true, toyPreferences: true, chewingStrength: true, likedCategoryIds: true, specialNotes: true, photoUrl: true, forGift: true, createdAt: true,
         user: { select: { id: true, firstName: true, lastName: true, email: true, phone: true, language: true, marketingConsent: true, createdAt: true } },
         subscriptions: { orderBy: { createdAt: 'desc' }, select: { status: true, endDate: true, cancelledAt: true, plan: { select: { name: true } } } },
       },

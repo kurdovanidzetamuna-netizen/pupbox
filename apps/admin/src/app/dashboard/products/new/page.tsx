@@ -11,6 +11,7 @@ import PersonalisationCard, { EMPTY_PERSONALISATION, personalisationFromProduct,
 import AllergensCard from '@/components/AllergensCard';
 import SuitsCard, { EMPTY_SUITS, type Suits } from '@/components/SuitsCard';
 import SellerCard, { OURS, shopPrice, termsPayload, type SellerTerms } from '@/components/SellerCard';
+import { NumInput } from '@/components/NumberField';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 
@@ -410,10 +411,10 @@ function NewProductForm() {
           {isKa && <p style={{ fontSize: 11, color: 'var(--slate-400)', margin: '0 0 14px' }}>Switch to English to edit inventory.</p>}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, ...(isKa ? disabledSection : {}) }}>
             <FormField label="Initial Stock Quantity">
-              <input style={isKa ? disabledInput : inputClass()} type="number" min="0" value={form.stockQuantity} onChange={e => set('stockQuantity', e.target.value)} disabled={isKa} />
+              <NumInput style={isKa ? disabledInput : inputClass()} min="0" value={form.stockQuantity} onChange={e => set('stockQuantity', e.target.value)} disabled={isKa} />
             </FormField>
             <FormField label="Low Stock Alert Threshold">
-              <input style={isKa ? disabledInput : inputClass()} type="number" min="0" value={form.lowStockAlert} onChange={e => set('lowStockAlert', e.target.value)} disabled={isKa} />
+              <NumInput style={isKa ? disabledInput : inputClass()} min="0" value={form.lowStockAlert} onChange={e => set('lowStockAlert', e.target.value)} disabled={isKa} />
             </FormField>
           </div>
         </div>

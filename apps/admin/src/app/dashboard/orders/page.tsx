@@ -5,6 +5,7 @@ import Dropdown, { type DropdownOption } from '@/components/Dropdown';
 import { API, authHeaders, STATUS_LABEL, TYPE_LABELS, TYPE_ICONS, EDITABLE, StatusBadge, TypeBadge, RefundDueBadge, Thumb } from './_lib';
 import OrderDrawer from './_components/OrderDrawer';
 import { categoryTree, type Cat } from './_components/CategoryPicker';
+import { DateInput } from '@/components/DateField';
 
 const gel = (v: number) => (Math.abs(v) >= 10000 ? `₾${(v / 1000).toFixed(1)}k` : `₾${v.toLocaleString('en-US', { maximumFractionDigits: 0 })}`);
 const PAGE = 20;
@@ -191,9 +192,9 @@ export default function AdminOrdersPage() {
         </div>
         {period === 'custom' && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
-            <input type="date" aria-label="From date" value={dateFrom} onChange={(e) => f(setDateFrom)(e.target.value)} style={{ height: 34, border: '1.5px solid var(--slate-200)', borderRadius: 10, padding: '0 10px', fontSize: 12.5 }} />
+            <DateInput aria-label="From date" value={dateFrom} onChange={(e) => f(setDateFrom)(e.target.value)} />
             <span style={{ color: 'var(--slate-400)' }}>–</span>
-            <input type="date" aria-label="To date" value={dateTo} onChange={(e) => f(setDateTo)(e.target.value)} style={{ height: 34, border: '1.5px solid var(--slate-200)', borderRadius: 10, padding: '0 10px', fontSize: 12.5 }} />
+            <DateInput aria-label="To date" value={dateTo} onChange={(e) => f(setDateTo)(e.target.value)} />
           </div>
         )}
         {chips.length > 0 && (
@@ -315,9 +316,12 @@ function Inside({ items = [] }: { items?: any[] }) {
 function RowActions({ o, onEdit }: { o: any; onEdit: () => void }) {
   const small = { fontSize: 12, fontWeight: 700, borderRadius: 9, padding: '6px 10px', textDecoration: 'none', cursor: 'pointer', whiteSpace: 'nowrap' as const };
   return (
-    <span style={{ display: 'inline-flex', gap: 6, flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
-      {EDITABLE.includes(o.status) && <button onClick={onEdit} title="Edit order" aria-label={`Edit order ${(o.orderNumber || o.id).slice(-8)}`} style={{ ...small, border: '1px solid var(--slate-200)', background: 'var(--white)', color: 'var(--slate-700)' }}>✎ Edit</button>}
-      <Link href={`/dashboard/orders/${o.id}/invoice`} target="_blank" title="Invoice" aria-label="Invoice" style={{ ...small, color: 'var(--teal-700)', background: 'var(--teal-50)', border: '1px solid var(--teal-200)' }}>🧾</Link>
+    // Invoice always first, Edit always second (an empty slot when it can't be edited) — nothing jumps around.
+    <span style={{ display: 'inline-grid', gridTemplateColumns: '38px 70px', gap: 6, flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
+      <Link href={`/dashboard/orders/${o.id}/invoice`} target="_blank" title="Invoice" aria-label="Invoice" style={{ ...small, color: 'var(--teal-700)', background: 'var(--teal-50)', border: '1px solid var(--teal-200)', textAlign: 'center' }}>🧾</Link>
+      {EDITABLE.includes(o.status)
+        ? <button onClick={onEdit} title="Edit order" aria-label={`Edit order ${(o.orderNumber || o.id).slice(-8)}`} style={{ ...small, border: '1px solid var(--slate-200)', background: 'var(--white)', color: 'var(--slate-700)' }}>✎ Edit</button>
+        : <span aria-hidden="true" />}
     </span>
   );
 }

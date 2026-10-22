@@ -23,6 +23,7 @@ class GiftDogDto {
   @IsOptional() @IsArray() @ArrayMaxSize(30) @IsString({ each: true }) @MaxLength(60, { each: true }) foodPreferences?: string[];
   @IsOptional() @IsArray() @ArrayMaxSize(30) @IsString({ each: true }) @MaxLength(60, { each: true }) toyPreferences?: string[];
   @IsOptional() @IsString() @MaxLength(30) chewingStrength?: string;
+  @IsOptional() @IsArray() @ArrayMaxSize(40) @IsString({ each: true }) @MaxLength(40, { each: true }) likedCategoryIds?: string[];
   @IsOptional() @IsString() @MaxLength(500) specialNotes?: string;
   @IsOptional() @IsDateString() birthday?: string | null;
 }
@@ -63,6 +64,9 @@ class CreateOrderDto {
   /** The map pin (Georgia and around), so the courier finds the door. */
   @IsOptional() @IsNumber() @Min(35) @Max(48) latitude?: number;
   @IsOptional() @IsNumber() @Min(36) @Max(52) longitude?: number;
+  /** A new address's name (Home, Granny's…) and whether it becomes their main one. */
+  @IsOptional() @Trim() @IsString() @MaxLength(40) addressLabel?: string;
+  @IsOptional() @IsBoolean() makeMainAddress?: boolean;
   /**
    * The customer's auto-renewal choice. The checkout page has always sent
    * this; because it was missing here, forbidNonWhitelisted rejected every

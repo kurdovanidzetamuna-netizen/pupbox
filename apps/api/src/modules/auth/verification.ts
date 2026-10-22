@@ -4,13 +4,11 @@ import { parsePhoneNumberFromString } from 'libphonenumber-js';
 import type { PrismaService } from '../prisma/prisma.service';
 import type { EmailService } from '../email/email.service';
 import type { SmsService } from '../sms/sms.service';
+import { smsSettings } from '../sms/sms-settings';
 
 export type Channel = 'EMAIL' | 'PHONE';
 
-const CODE_TTL_MS = 10 * 60_000;
 const MAX_ATTEMPTS = 5;
-const RESEND_AFTER_MS = 60_000;
-const MAX_PER_HOUR = 5;
 
 /**
  * A fixed code instead of a random one, so sign-up can be tested without an
@@ -41,6 +39,8 @@ const hash = (userId: string, code: string) => crypto.createHash('sha256').updat
 export async function sendCode(prisma: PrismaService, email: EmailService, sms: SmsService, userId: string, channel: Channel) {
   const user = await prisma.user.findUnique({ where: { id: userId }, select: { email: true, phone: true, firstName: true, language: true, emailVerified: true, phoneVerified: true } });
   if (!user) throw new BadRequestException('Account not found');
+  const { codes } = await smsSettings(prisma);
+  const RESEND_AFTER_MS = codes.resendSeconds * 1000, MAX_PER_HOUR = codes.perHour, CODE_TTL_MS = codes.validMinutes * 60_000;
   if (channel === 'EMAIL' ? user.emailVerified : user.phoneVerified) return { sent: false, alreadyVerified: true };
   const target = channel === 'EMAIL' ? user.email : user.phone;
   if (!target) throw new BadRequestException('Add your phone number first.');
@@ -66,8 +66,8 @@ export async function sendCode(prisma: PrismaService, email: EmailService, sms: 
   } else if (channel === 'EMAIL') {
     await email.sendVerificationCode({ email: target, firstName: user.firstName, language: user.language, code });
   } else {
-    const text = user.language === 'en' ? `Pupbox code: ${code}. Valid for 10 minutes.` : `Pupbox-ის კოდი: ${code}. მოქმედებს 10 წუთი.`;
-    await sms.send(target, text);
+    const text = user.language === 'en' ? `Pupbox code: ${code}. Valid for ${codes.validMinutes} minutes.` : `Pupbox-ის კოდი: ${code}. მოქმედებს ${codes.validMinutes} წუთი.`;
+    await sms.send(target, text, { kind: 'OTP', userId, secret: code });
   }
   return { sent: true, to: channel === 'EMAIL' ? target : `${target.slice(0, 7)}•••${target.slice(-2)}` };
 }
@@ -100,7 +100,11 @@ export async function confirmCode(prisma: PrismaService, userId: string, channel
   const next = { emailVerified: channel === 'EMAIL' ? true : user.emailVerified, phoneVerified: channel === 'PHONE' ? true : user.phoneVerified };
   const updated = await prisma.user.update({
     where: { id: userId },
-    data: { ...next, ...(next.emailVerified && next.phoneVerified && user.status === 'UNVERIFIED' ? { status: 'ACTIVE' as const } : {}) },
+    data: {
+      ...next,
+      ...(channel === 'PHONE' ? { phoneVerifiedAt: new Date(), phoneVerifiedVia: 'SMS' } : {}),
+      ...(next.emailVerified && next.phoneVerified && user.status === 'UNVERIFIED' ? { status: 'ACTIVE' as const } : {}),
+    },
     select: { emailVerified: true, phoneVerified: true },
   });
   return verificationState(updated);

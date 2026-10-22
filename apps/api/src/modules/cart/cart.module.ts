@@ -106,13 +106,13 @@ export class CartController {
   }
 
   @Get('delivery-methods')
-  async getDeliveryMethods(@Request() req: any, @Headers() headers: any, @Query('total') total?: string) {
+  async getDeliveryMethods(@Request() req: any, @Headers() headers: any, @Query('total') total?: string, @Query('gift') gift?: string) {
     // Priced against the shopper's actual cart when we know who they are, so
     // a plan that includes delivery shows it as free here, exactly as checkout
     // will charge it. `total` remains for callers without a cart.
     if (req.user?.id || headers['x-session-id']) {
       const { userId, sessionId } = this.resolveSession(req, headers);
-      return this.service.getDeliveryMethods(await this.service.getOrCreate(userId, sessionId));
+      return this.service.getDeliveryMethods(await this.service.getOrCreate(userId, sessionId), { gift: gift === 'true' });
     }
     return this.service.getDeliveryMethods({ subtotal: total ? +total : 0 });
   }

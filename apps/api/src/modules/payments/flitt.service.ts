@@ -95,4 +95,47 @@ export class FlittService {
       paymentId: data.response.payment_id,
     };
   }
+
+  get configured() { return !!this.merchantId && !!this.secretKey; }
+
+  /** Signed request to one of Flitt's server-to-server endpoints; returns its `response`. */
+  private async call(path: string, params: Record<string, string | number>) {
+    const body = { ...params, merchant_id: this.merchantId };
+    const signed = { ...body, signature: this.buildSignature(body) };
+    const res = await fetch(`https://pay.flitt.com/api/${path}`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ request: signed }), signal: AbortSignal.timeout(20_000),
+    });
+    const data = await res.json().catch(() => ({}));
+    const r = data?.response ?? {};
+    if (!res.ok || r.response_status === 'failure') {
+      this.logger.error(`Flitt ${path} failed: ${res.status} ${JSON.stringify(r).slice(0, 300)}`);
+      throw Object.assign(new Error(r.error_message || `Flitt ${path} failed (${res.status})`), { code: r.error_code });
+    }
+    return r;
+  }
+
+  /**
+   * Gives money back on a paid order (all or part) — Flitt's "reverse".
+   * The bank returns it to the same card; it shows on the statement in a few days.
+   */
+  async refund(o: { orderId: string; amount: number; comment?: string }) {
+    const r = await this.call('reverse/order_id', {
+      order_id: o.orderId, amount: Math.round(o.amount * 100), currency: 'GEL', ...(o.comment ? { comment: o.comment.slice(0, 200) } : {}),
+    });
+    return { id: String(r.reverse_id ?? r.payment_id ?? ''), status: String(r.reverse_status ?? r.order_status ?? '') };
+  }
+
+  /**
+   * Charges a saved card (the token from an earlier payment) without the
+   * customer present — automatic renewals. Each try needs its own order id
+   * at Flitt, so retries use "<order>-r<try>"; the callback maps it back.
+   */
+  async chargeSavedCard(o: { orderId: string; attempt: number; amount: number; token: string; description: string; serverCallbackUrl: string }) {
+    const r = await this.call('recurring', {
+      order_id: `${o.orderId}-r${o.attempt}`, order_desc: o.description, amount: Math.round(o.amount * 100), currency: 'GEL',
+      rectoken: o.token, server_callback_url: o.serverCallbackUrl,
+    });
+    return { status: String(r.order_status ?? ''), paymentId: String(r.payment_id ?? ''), reason: String(r.response_description ?? r.error_message ?? ''), code: r.response_code, raw: r };
+  }
 }

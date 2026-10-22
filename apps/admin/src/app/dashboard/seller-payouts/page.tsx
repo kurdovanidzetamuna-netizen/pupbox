@@ -1,6 +1,7 @@
 'use client';
 import { Fragment, useEffect, useState } from 'react';
 import ErrorPopup from '@/components/ErrorPopup';
+import { DateInput } from '@/components/DateField';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 const money = (n: number) => `₾${Number(n || 0).toFixed(2)}`;
@@ -118,9 +119,9 @@ export default function SellerPayoutsPage() {
         <button style={chip(which === 'last')} onClick={() => setRange(preset('last'))}>Last month</button>
         <button style={chip(which === 'all')} onClick={() => setRange(preset('all'))}>All time</button>
         <span style={{ width: 1, height: 22, background: 'var(--slate-200)', margin: '0 4px' }} />
-        <input type="date" aria-label="From" value={range.from} onChange={(e) => setRange((r) => ({ ...r, from: e.target.value }))} style={inp} />
+        <DateInput aria-label="From" value={range.from} onChange={(e) => setRange((r) => ({ ...r, from: e.target.value }))} />
         <span style={{ color: 'var(--slate-400)', fontSize: 13 }}>→</span>
-        <input type="date" aria-label="To" value={range.to} onChange={(e) => setRange((r) => ({ ...r, to: e.target.value }))} style={inp} />
+        <DateInput aria-label="To" value={range.to} onChange={(e) => setRange((r) => ({ ...r, to: e.target.value }))} />
         <span style={{ fontSize: 12, color: 'var(--slate-400)' }}>by order date</span>
       </div>
 

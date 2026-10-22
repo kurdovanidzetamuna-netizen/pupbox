@@ -1,12 +1,11 @@
 'use client';
+import { NumInput } from '@/components/NumberField';
 
 /**
  * Number field with a custom stepper.
  *
- * Browsers draw their own tiny up/down arrows on input[type=number], which
- * look nothing like the rest of the form and are an awkwardly small target.
- * Those are hidden and replaced with a −/+ pair sized to actually hit, in the
- * same filled, borderless style as the select and the behaviour chips.
+ * Typed as text (no browser arrows), with a −/+ pair sized to actually hit,
+ * in the same filled, borderless style as the select and the behaviour chips.
  */
 export default function NumberField({ value, onChange, min, max, step = 1, prefix, suffix, placeholder, error, width }: {
   value: string | number;
@@ -36,13 +35,8 @@ export default function NumberField({ value, onChange, min, max, step = 1, prefi
       boxShadow: error ? 'inset 0 0 0 1.5px var(--red-500)' : 'none',
       boxSizing: 'border-box',
     }}>
-      {/* Hides the browser's own spinner; the −/+ below replace it. */}
-      <style>{'.pb-num::-webkit-outer-spin-button,.pb-num::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}.pb-num{-moz-appearance:textfield}'}</style>
       {prefix && <span style={{ fontSize: 13, color: 'var(--slate-400)', flexShrink: 0 }}>{prefix}</span>}
-      <input
-        className="pb-num"
-        type="number"
-        inputMode="decimal"
+      <NumInput
         min={min} max={max} step={step}
         value={value ?? ''}
         onChange={e => onChange(e.target.value)}

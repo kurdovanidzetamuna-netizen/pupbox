@@ -4,6 +4,7 @@ import { categoryOptions } from '@/components/categoryOptions';
 import { useEffect, useState } from 'react';
 import FormField, { inputClass } from '@/components/FormField';
 import ErrorPopup from '@/components/ErrorPopup';
+import { NumInput } from '@/components/NumberField';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 const EMOJI = ['🥩', '🍗', '🐟', '🧀', '🍪', '🥕', '🦴', '🦆', '🪢', '🏀', '🧩', '🐿️', '🪃', '🧸', '🧴', '🐾', '🦷', '🧤', '🌿', '🎀', '🥣', '🏷️', '🧣', '🛏️'];
@@ -126,8 +127,8 @@ export default function CustomBoxItemsPage() {
                 {categoryOptions(cats).map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
               </Select>
             </FormField>
-            <FormField label="Price ₾" required error={errors.price}><input style={inputClass(errors.price)} type="number" min={0} step="0.5" value={form.price} onChange={(e) => set('price', e.target.value)} /></FormField>
-            <FormField label="In stock" error={errors.stock}><input style={inputClass(errors.stock)} type="number" min={0} value={form.stock} onChange={(e) => set('stock', e.target.value)} /></FormField>
+            <FormField label="Price ₾" required error={errors.price}><NumInput style={inputClass(errors.price)} min={0} step="0.5" value={form.price} onChange={(e) => set('price', e.target.value)} /></FormField>
+            <FormField label="In stock" error={errors.stock}><NumInput style={inputClass(errors.stock)} min={0} value={form.stock} onChange={(e) => set('stock', e.target.value)} /></FormField>
           </div>
           <div style={{ display: 'flex', gap: 22, flexWrap: 'wrap', margin: '4px 0 18px' }}>
             {([['popular', '⭐ “Popular” badge'], ['mystery', '🎁 Can be packed as a mystery item'], ['active', 'Shown in the builder']] as const).map(([k, label]) => (

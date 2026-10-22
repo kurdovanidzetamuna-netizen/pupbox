@@ -20,6 +20,7 @@ const LOOK: Record<string, { icon: string; tile: string }> = {
   GIFT_SENT:       { icon: 'gift',     tile: 'bg-lilac-50 text-lilac-600' },
   REFUNDED:        { icon: 'undo',     tile: 'bg-teal-50 text-teal-700' },
   REFERRAL_REWARD: { icon: 'coin',     tile: 'bg-lilac-50 text-lilac-600' },
+  EXTRA_CHARGE:    { icon: 'card',     tile: 'bg-amber-50 text-amber-700' },
 };
 
 const money = (n: unknown) => Number(n ?? 0).toFixed(2).replace(/\.00$/, '');

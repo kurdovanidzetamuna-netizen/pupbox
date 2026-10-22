@@ -121,7 +121,7 @@ export default function CustomersPage() {
                   </td>
                   <td style={{ padding: '14px 18px', color: 'var(--slate-500)' }}>
                     {c.phone || '—'}
-                    {c.phone && <span title={c.phoneVerified ? 'Confirmed by SMS' : 'Not confirmed'} style={{ marginLeft: 4, color: c.phoneVerified ? 'var(--green-700)' : 'var(--amber-600)' }}>{c.phoneVerified ? '✓' : '•'}</span>}
+                    {c.phone && <span title={c.phoneVerified ? `Confirmed ${c.phoneVerifiedVia === 'ADMIN' ? 'by admin' : 'by SMS code'}${c.phoneVerifiedAt ? ` on ${new Date(c.phoneVerifiedAt).toLocaleDateString('en-GB')}` : ''}` : 'Not confirmed'} style={{ marginLeft: 4, color: c.phoneVerified ? 'var(--green-700)' : 'var(--amber-600)' }}>{c.phoneVerified ? '✓' : '•'}</span>}
                   </td>
                   <td style={{ padding: '14px 18px', fontWeight: 700, color: 'var(--slate-900)' }}>{c._count?.dogs ?? 0}</td>
                   <td style={{ padding: '14px 18px', fontWeight: 700, color: 'var(--slate-900)' }}>{c._count?.orders ?? 0}</td>

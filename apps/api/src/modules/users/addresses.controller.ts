@@ -23,7 +23,7 @@ class AddressDto {
 }
 class UpdateAddressDto extends PartialType(AddressDto) {}
 
-const SELECT = { id: true, label: true, firstName: true, lastName: true, phone: true, city: true, addressLine1: true, addressLine2: true, latitude: true, longitude: true, isDefault: true } as const;
+const SELECT = { id: true, label: true, firstName: true, lastName: true, phone: true, city: true, addressLine1: true, addressLine2: true, latitude: true, longitude: true, isDefault: true, isGift: true } as const;
 
 /** The customer's saved delivery addresses: list, add, edit, remove, choose the default. */
 @ApiTags('My Addresses')
@@ -34,21 +34,21 @@ export class AddressesController {
   constructor(private prisma: PrismaService) {}
 
   private async own(id: string, userId: string) {
-    const a = await this.prisma.address.findFirst({ where: { id, userId, deletedAt: null }, select: { id: true, isDefault: true } });
+    const a = await this.prisma.address.findFirst({ where: { id, userId, deletedAt: null }, select: { id: true, isDefault: true, isGift: true } });
     if (!a) throw new NotFoundException('Address not found');
     return a;
   }
 
   @Get()
   list(@Request() req: any) {
-    return this.prisma.address.findMany({ where: { userId: req.user.id, deletedAt: null }, orderBy: [{ isDefault: 'desc' }, { createdAt: 'desc' }], select: SELECT });
+    return this.prisma.address.findMany({ where: { userId: req.user.id, deletedAt: null }, orderBy: [{ isGift: 'asc' }, { isDefault: 'desc' }, { createdAt: 'desc' }], select: SELECT });
   }
 
   @Post()
   async create(@Request() req: any, @Body() dto: AddressDto) {
     const userId = req.user.id;
-    // The first address is the default; asking for default moves it here.
-    const count = await this.prisma.address.count({ where: { userId, deletedAt: null } });
+    // The first address of their own is the default (gift addresses don't count); asking for default moves it here.
+    const count = await this.prisma.address.count({ where: { userId, deletedAt: null, isGift: false } });
     const isDefault = dto.isDefault === true || count === 0;
     if (isDefault) await this.prisma.address.updateMany({ where: { userId }, data: { isDefault: false } });
     return this.prisma.address.create({ data: { ...dto, addressLine2: dto.addressLine2 || null, label: dto.label || null, userId, isDefault }, select: SELECT });
@@ -56,7 +56,9 @@ export class AddressesController {
 
   @Patch(':id')
   async update(@Request() req: any, @Param('id') id: string, @Body() dto: UpdateAddressDto) {
-    await this.own(id, req.user.id);
+    const a = await this.own(id, req.user.id);
+    // A friend's gift address is never where the customer's own orders go by default.
+    if (dto.isDefault === true && a.isGift) throw new BadRequestException('A gift address can’t be your default address.');
     if (dto.isDefault === true) await this.prisma.address.updateMany({ where: { userId: req.user.id }, data: { isDefault: false } });
     const { isDefault, ...rest } = dto;
     return this.prisma.address.update({ where: { id }, data: { ...rest, ...(isDefault === true ? { isDefault: true } : {}) }, select: SELECT });
@@ -70,7 +72,7 @@ export class AddressesController {
     if (inUse) throw new BadRequestException('A plan delivers to this address. Change the plan’s address first.');
     await this.prisma.address.update({ where: { id }, data: { deletedAt: new Date(), isDefault: false } });
     if (a.isDefault) {
-      const next = await this.prisma.address.findFirst({ where: { userId: req.user.id, deletedAt: null }, orderBy: { createdAt: 'desc' }, select: { id: true } });
+      const next = await this.prisma.address.findFirst({ where: { userId: req.user.id, deletedAt: null, isGift: false }, orderBy: { createdAt: 'desc' }, select: { id: true } });
       if (next) await this.prisma.address.update({ where: { id: next.id }, data: { isDefault: true } });
     }
     return { ok: true };

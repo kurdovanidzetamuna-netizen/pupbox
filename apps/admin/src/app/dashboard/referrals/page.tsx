@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { FilterSelect, SearchInput, Toolbar, StatCard, StatCards, Pagination, ActionButton } from '@/components/Toolbar';
+import { DateInput } from '@/components/DateField';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 const token = () => localStorage.getItem('admin_token') ?? '';
@@ -21,7 +22,7 @@ type Stats = {
   topInviters: { id: string; email: string; firstName?: string; lastName?: string; referralCode?: string; referrals: number; rewarded: number }[];
 };
 
-const coupons = (n: number) => `${n} coupon${n === 1 ? '' : 's'}`;
+const coupons = (n: number) => `${n} promo code${n === 1 ? '' : 's'}`;
 const gel = (n: number) => `₾${n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
 const fullName = (u?: { firstName?: string | null; lastName?: string | null } | null) => [u?.firstName, u?.lastName].filter(Boolean).join(' ');
 const formatDate = (d: string) => new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
@@ -79,7 +80,6 @@ export default function ReferralsPage() {
   const fu = stats?.funnel;
   const card: React.CSSProperties = { background: 'var(--white)', borderRadius: 16, border: '1px solid var(--slate-200b)', padding: '18px 20px' };
   const th: React.CSSProperties = { padding: '10px 18px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: 'var(--slate-400)', textTransform: 'uppercase', letterSpacing: '0.06em', borderBottom: '1px solid var(--slate-200b)', background: 'var(--slate-50)', whiteSpace: 'nowrap' };
-  const dateInput: React.CSSProperties = { padding: '5px 10px', borderRadius: 9, fontSize: 12, border: '1.5px solid var(--slate-200)', color: 'var(--slate-600)', background: 'var(--white)' };
 
   return (
     <div style={{ padding: 'clamp(16px, 4vw, 32px)' }}>
@@ -151,10 +151,10 @@ export default function ReferralsPage() {
           {Object.entries(STAGES).map(([k, s]) => <option key={k} value={k}>{s.label}</option>)}
         </FilterSelect>
         <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--slate-500)' }}>
-          From <input type="date" value={f.from} max={f.to || undefined} onChange={(e) => setF((x) => ({ ...x, from: e.target.value }))} style={dateInput} />
+          From <DateInput value={f.from} max={f.to || undefined} onChange={(e) => setF((x) => ({ ...x, from: e.target.value }))} />
         </label>
         <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--slate-500)' }}>
-          To <input type="date" value={f.to} min={f.from || undefined} onChange={(e) => setF((x) => ({ ...x, to: e.target.value }))} style={dateInput} />
+          To <DateInput value={f.to} min={f.from || undefined} onChange={(e) => setF((x) => ({ ...x, to: e.target.value }))} />
         </label>
         {filtered && (
           <button type="button" onClick={() => { setQ(''); setF({ status: '', from: '', to: '', q: '' }); }}

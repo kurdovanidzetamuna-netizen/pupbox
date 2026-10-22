@@ -185,7 +185,7 @@ export default function Dropdown(props: Single | Multi) {
         }}>
         {icon && <span aria-hidden="true" style={{ display: 'inline-flex', flexShrink: 0 }}>{icon}</span>}
         <span style={{ flex: block ? 1 : undefined, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {label && <span style={{ fontWeight: 600, color: on ? 'var(--teal-600)' : 'var(--slate-400)' }}>{label}{on ? ': ' : ''}</span>}
+          {label && <span style={{ fontWeight: 600, color: on ? 'var(--teal-600)' : 'var(--slate-400)' }}>{label}{on || plain ? ': ' : ''}</span>}
           {label && !on && !plain ? '' : text}
         </span>
         {multi && picked.length > 1 && <span style={{ flexShrink: 0, minWidth: 18, height: 18, borderRadius: 99, background: 'var(--teal-600)', color: 'var(--white)', fontSize: 10.5, fontWeight: 800, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>{picked.length}</span>}

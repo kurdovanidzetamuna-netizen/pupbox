@@ -4,8 +4,9 @@ import { useLanguage } from '@/context/LanguageContext';
 import { fill } from '@/context/strings/purchase';
 import {
   emptyDogProfile, fromDog, toDogPayload, type DogProfile,
-  Section, ChipGroup, SizePicker, ChewPicker, COMMON_ALLERGIES, FOOD_LIKES, TOY_LIKES, SIZES, cleanWeight, KgTag,
+  Section, ChipGroup, SizePicker, COMMON_ALLERGIES, SIZES, cleanWeight, KgTag,
 } from '@/components/DogProfileForm';
+import CategoryLikes from '@/components/CategoryLikes';
 import Modal from '@/components/ui/Modal';
 import Field from '@/components/ui/Field';
 import IconButton from '@/components/ui/IconButton';
@@ -120,7 +121,7 @@ export default function DogEditor({ open, onClose, dog, onSaved, onExpired, welc
 
   // What the dog says: a question until it's answered, then a happy reply.
   const answered = [named, !!draft.size, draft.allergies.length > 0,
-    draft.foodPreferences.length + draft.toyPreferences.length > 0 || !!draft.chewingStrength][step];
+    draft.likedCategoryIds.length > 0][step];
   const bubble = editing
     ? fill(t('dogEd.b.hello1'), { name: draft.name.trim() || dog.name })
     : fill(t(`dogEd.b.${STEPS[step].key}${answered ? 1 : 0}`), { name: draft.name.trim() });
@@ -265,19 +266,11 @@ export default function DogEditor({ open, onClose, dog, onSaved, onExpired, welc
         )}
 
         {show(3) && (() => {
-          const blocked = new Set(draft.allergies.map((a) => a.toLowerCase()));
           return (
             <>
               {group(3)}
-              <Section title={t('dog.food')} hint={t('dog.foodHint')}>
-                <ChipGroup options={FOOD_LIKES.filter((f) => !blocked.has(f.toLowerCase()))} selected={draft.foodPreferences} addLabel={t('dog.foodAdd')}
-                  onChange={(v) => set('foodPreferences', v.filter((f) => !blocked.has(f.toLowerCase())))} />
-              </Section>
-              <Section title={t('dog.toys')} hint={t('dog.optional')}>
-                <ChipGroup options={TOY_LIKES} selected={draft.toyPreferences} onChange={(v) => set('toyPreferences', v)} addLabel={t('dog.toysAdd')} />
-              </Section>
-              <Section title={t('dog.chew')} hint={t('dog.chewHint')}>
-                <ChewPicker value={draft.chewingStrength} onChange={(v) => set('chewingStrength', v)} />
+              <Section title={t('dog.likes')} hint={t('dog.likesHint')}>
+                <CategoryLikes value={draft.likedCategoryIds} onChange={(v) => set('likedCategoryIds', v)} allergies={draft.allergies} />
               </Section>
               <Section title={t('dog.notes')} hint={t('dog.optional')}>
                 <textarea value={draft.specialNotes} onChange={(e) => set('specialNotes', e.target.value)} rows={2} maxLength={500} placeholder={t('dog.notesPh')}

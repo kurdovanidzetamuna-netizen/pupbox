@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import FormField, { inputClass } from './FormField';
+import { NumInput } from '@/components/NumberField';
 
 interface Props {
   price: string;
@@ -109,11 +110,11 @@ export default function PricingSection({ price, salePrice, onChange, priceError,
     <div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
         <FormField label={priceLocked ? 'Shop price (₾) · from the seller’s price + our margin' : 'RRP / Original Price (₾)'} required error={priceError}>
-          <input style={{ ...inp(priceError), ...(priceLocked ? { background: 'var(--slate-50)', color: 'var(--slate-600)', fontWeight: 700 } : {}) }} type="number" step="0.01" min="0" value={price}
+          <NumInput style={{ ...inp(priceError), ...(priceLocked ? { background: 'var(--slate-50)', color: 'var(--slate-600)', fontWeight: 700 } : {}) }} step="0.01" min="0" value={price}
             readOnly={priceLocked} onChange={e => !priceLocked && handlePrice(e.target.value)} placeholder="0.00" />
         </FormField>
         <FormField label="Customer Price (₾)" error={salePriceError}>
-          <input style={inp(salePriceError)} type="number" step="0.01" min="0" value={salePrice} onChange={e => handleSalePrice(e.target.value)} placeholder="Leave empty = no discount" />
+          <NumInput style={inp(salePriceError)} step="0.01" min="0" value={salePrice} onChange={e => handleSalePrice(e.target.value)} placeholder="Leave empty = no discount" />
         </FormField>
       </div>
 
@@ -121,9 +122,8 @@ export default function PricingSection({ price, salePrice, onChange, priceError,
         <div>
           <label style={lbl}>Discount % <span style={{ color: 'var(--slate-300)', fontWeight: 400 }}>(auto-fills Customer Price)</span></label>
           <div style={{ position: 'relative' }}>
-            <input
-              style={{ ...inp(), paddingRight: 32 }}
-              type="number" step="0.1" min="0" max="99"
+            <NumInput
+              style={{ ...inp(), paddingRight: 32 }} step="0.1" min="0" max="99"
               value={discountPct}
               onChange={e => handleDiscountPct(e.target.value)}
               placeholder="e.g. 20"
@@ -134,9 +134,8 @@ export default function PricingSection({ price, salePrice, onChange, priceError,
         <div>
           <label style={lbl}>Discount Amount (₾) <span style={{ color: 'var(--slate-300)', fontWeight: 400 }}>(auto-fills Customer Price)</span></label>
           <div style={{ position: 'relative' }}>
-            <input
-              style={{ ...inp(), paddingLeft: 24 }}
-              type="number" step="0.01" min="0"
+            <NumInput
+              style={{ ...inp(), paddingLeft: 24 }} step="0.01" min="0"
               value={discountAmt}
               onChange={e => handleDiscountAmt(e.target.value)}
               placeholder="e.g. 5.00"

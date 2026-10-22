@@ -2,6 +2,7 @@
 import { num } from '../../_lib/plan-config';
 import Pill from '../ui/Pill';
 import type { PlanBuilderState } from './usePlanBuilder';
+import { NumInput } from '@/components/NumberField';
 
 export default function DiscountsTab({ b }: { b: PlanBuilderState }) {
   const {
@@ -16,8 +17,7 @@ export default function DiscountsTab({ b }: { b: PlanBuilderState }) {
         <p style={{ fontSize: 12, color: 'var(--slate-400)', margin: '0 0 16px' }}>Discount automatically applied when a new customer signs up via a referral link and buys this plan.</p>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <label style={{ fontSize: 13, color: 'var(--slate-700b)', fontWeight: 600 }}>Discount %</label>
-          <input
-            type="number" min="0" max="100" step="1"
+          <NumInput min="0" max="100" step="1"
             value={cfg.referralDiscountPercent}
             onChange={e => setCfg(c => ({ ...c, referralDiscountPercent: num(e.target.value) }))}
             style={{ width: 80, border: '1px solid var(--slate-200)', borderRadius: 9, padding: '8px 12px', fontSize: 14, fontWeight: 700, outline: 'none', textAlign: 'center' }}
@@ -34,11 +34,11 @@ export default function DiscountsTab({ b }: { b: PlanBuilderState }) {
       {/* Promo codes */}
       <div style={{ background: 'var(--slate-50)', borderRadius: 12, border: '1px solid var(--slate-200b)', padding: '18px 20px' }}>
         <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--slate-900)', margin: '0 0 4px' }}>🏷️ Promo Codes</p>
-        <p style={{ fontSize: 12, color: 'var(--slate-400)', margin: '0 0 16px' }}>Active coupons that can be applied to this plan. Toggle to allow/block each coupon.</p>
+        <p style={{ fontSize: 12, color: 'var(--slate-400)', margin: '0 0 16px' }}>Active promo codes that can be applied to this plan. Toggle to allow/block each coupon.</p>
 
         {coupons.length === 0 ? (
           <div style={{ fontSize: 13, color: 'var(--slate-400)', padding: '12px 0' }}>
-            No active coupons yet. Create them in the <strong>Coupons</strong> page first.
+            No active promo codes yet. Create them in the <strong>Promo codes</strong> page first.
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>

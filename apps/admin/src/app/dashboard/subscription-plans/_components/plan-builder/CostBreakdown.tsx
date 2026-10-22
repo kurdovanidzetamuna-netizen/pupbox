@@ -2,6 +2,7 @@
 import type { PlanItem } from '../../_lib/types';
 import { num } from '../../_lib/plan-config';
 import type { PlanBuilderState } from './usePlanBuilder';
+import { NumInput } from '@/components/NumberField';
 
 /** Right-hand column of Box Builder: what the plan costs us against what it sells for. */
 export default function CostBreakdown({ b }: { b: PlanBuilderState }) {
@@ -49,8 +50,7 @@ export default function CostBreakdown({ b }: { b: PlanBuilderState }) {
             <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--slate-500)' }}>⚙️ Operational cost {boxCount > 1 ? '(per box)' : ''}</span>
             <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
               <span style={{ fontSize: 11, color: 'var(--slate-400)' }}>₾</span>
-              <input
-                type="number" min="0" step="0.01"
+              <NumInput min="0" step="0.01"
                 value={cfg.operationalCost}
                 onChange={e => setCfg(c => ({ ...c, operationalCost: num(e.target.value) }))}
                 style={{ width: 72, border: '1px solid var(--slate-200)', borderRadius: 7, padding: '4px 8px', fontSize: 12, outline: 'none', textAlign: 'right' }}
@@ -70,8 +70,7 @@ export default function CostBreakdown({ b }: { b: PlanBuilderState }) {
             {!cfg.deliveryFree && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 4, justifyContent: 'flex-end' }}>
                 <span style={{ fontSize: 11, color: 'var(--slate-400)' }}>₾</span>
-                <input
-                  type="number" min="0" step="0.01"
+                <NumInput min="0" step="0.01"
                   value={cfg.deliveryCost}
                   onChange={e => setCfg(c => ({ ...c, deliveryCost: num(e.target.value) }))}
                   style={{ width: 72, border: '1px solid var(--slate-200)', borderRadius: 7, padding: '4px 8px', fontSize: 12, outline: 'none', textAlign: 'right' }}

@@ -1,5 +1,6 @@
 'use client';
 import FormField, { inputClass } from '@/components/FormField';
+import { NumInput } from '@/components/NumberField';
 
 /** The form's view of a product's personalisation: what the customer chooses before adding to cart. */
 export interface PersonalisationForm { engrave: boolean; engraveMax: string; sizes: string }
@@ -40,7 +41,7 @@ export default function PersonalisationCard({ value, onChange, disabled, style }
       <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--slate-600)', cursor: 'pointer', flexWrap: 'wrap' }}>
         <input type="checkbox" checked={value.engrave} onChange={(e) => set({ engrave: e.target.checked })} disabled={disabled} />
         Customer writes a name to engrave, up to
-        <input style={{ ...inputClass(), width: 64, padding: '4px 8px' }} type="number" min="1" max="40" value={value.engraveMax}
+        <NumInput style={{ ...inputClass(), width: 64, padding: '4px 8px' }} min="1" max="40" value={value.engraveMax}
           onChange={(e) => set({ engraveMax: e.target.value })} disabled={disabled || !value.engrave} aria-label="Most characters" />
         characters
       </label>

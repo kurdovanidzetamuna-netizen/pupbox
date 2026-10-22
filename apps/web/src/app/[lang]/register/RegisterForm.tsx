@@ -6,12 +6,12 @@ import { useCart } from '@/context/CartContext';
 import { safeRedirect } from '@/lib/safeRedirect';
 import LegalNotice from '@/components/LegalNotice';
 import VerifyCodes from '@/components/VerifyCodes';
-import PhoneInput from '@/components/ui/PhoneInput';
+import PhoneOtpField, { type PhoneConfirmed } from '@/components/PhoneOtpField';
 import { Icon } from '@/components/ui/icons';
 import DogEditor from '@/components/DogEditor';
 import { useModalDirty } from '@/components/ui/Modal';
 import { API_URL } from '@/lib/api';
-import { forgetReferral, rememberReferral, storedReferral } from '@/lib/referral';
+import { rememberReferral, storedReferral } from '@/lib/referral';
 import { FormAlert, countErrors, revealFirstError } from '@/components/ui/FormError';
 import { Heading } from '@/components/ui/Heading';
 import IconButton from '@/components/ui/IconButton';
@@ -42,6 +42,8 @@ export function RegisterForm({ inModal = false }: { inModal?: boolean }) {
   const [form, setForm] = useState({ firstName: '', lastName: '', email: '', password: '', phone: '', referralCode: '' });
   const [fromLink, setFromLink] = useState(false);
   const [phoneOk, setPhoneOk] = useState(false);
+  // Confirmed by SMS code right in the form; the proof goes with the new account.
+  const [phoneProof, setPhoneProof] = useState<PhoneConfirmed | null>(null);
   const [consent, setConsent] = useState(false);
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -71,6 +73,7 @@ export function RegisterForm({ inModal = false }: { inModal?: boolean }) {
     if (!form.lastName.trim()) errs.lastName = t('reg.e.lastName');
     if (!EMAIL_RE.test(form.email.trim())) errs.email = t('reg.e.email');
     if (!phoneOk) errs.phone = t(form.phone ? 'reg.e.phone' : 'ui.e.phone');
+    else if (!phoneProof?.proof) errs.phone = t('otp.e.confirm');
     if (countErrors(errs)) { setFieldErrors(errs); return revealFirstError(); }
     setFieldErrors({}); setError('');
     setStep('account');
@@ -91,7 +94,7 @@ export function RegisterForm({ inModal = false }: { inModal?: boolean }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           firstName: form.firstName.trim(), lastName: form.lastName.trim(), email: form.email.trim(), password: form.password, phone: form.phone.trim(),
-          referralCode: form.referralCode.trim() || undefined, marketingConsent: consent, language: lang,
+          referralCode: form.referralCode.trim() || undefined, marketingConsent: consent, language: lang, phoneProof: phoneProof?.proof,
         }),
       });
       const data = await res.json();
@@ -99,10 +102,11 @@ export function RegisterForm({ inModal = false }: { inModal?: boolean }) {
         const msg = (Array.isArray(data.message) ? data.message[0] : data.message) || t('co.e.generic');
         // A problem with the name, email or phone belongs to the first step.
         if (/email|phone|name/i.test(msg)) setStep('about');
+        // An expired phone proof means confirming the number again.
+        if (/phone code/i.test(msg)) setPhoneProof(null);
         throw new Error(msg);
       }
       localStorage.setItem('pupbox_token', data.token);
-      forgetReferral();
       await refreshCart(); // merges anything added as a guest into the account cart
       setStep('verify');
       window.scrollTo({ top: 0 });
@@ -144,11 +148,9 @@ export function RegisterForm({ inModal = false }: { inModal?: boolean }) {
                 <Field id="lastName" label={t('register.lastName')} required autoComplete="family-name" value={form.lastName} error={fieldErrors.lastName} onChange={v => set('lastName', v)} />
               </div>
               <Field id="email" type="email" label={t('login.email')} required autoComplete="email" inputMode="email" value={form.email} error={fieldErrors.email} onChange={v => set('email', v)} />
-              <div>
-                <PhoneInput id="phone" label={t('reg.phone')} value={form.phone} required error={fieldErrors.phone} floatLabel
-                  onChange={(v, ok) => { set('phone', v); setPhoneOk(ok); }} />
-                {!fieldErrors.phone && <p className="mt-1 px-1 text-[11.5px] text-gray-500">{t('reg.phoneHint')}</p>}
-              </div>
+              <PhoneOtpField id="phone" mode="signup" label={t('reg.phone')} value={form.phone} error={fieldErrors.phone} confirmed={!!phoneProof && phoneProof.phone === form.phone}
+                onChange={(v, ok) => { set('phone', v); setPhoneOk(ok); }}
+                onConfirmed={(c) => { setPhoneProof(c); if (c) setFieldErrors((e) => ({ ...e, phone: '' })); }} />
               <Button type="submit" size="lg" icon="arrow" label={t('reg.next')} className="mt-2" />
             </form>
           </>

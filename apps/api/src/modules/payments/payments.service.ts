@@ -12,6 +12,22 @@ import { cancelUnpaidOrder } from '../orders/order-lifecycle';
 import { sendGiftCard } from '../gifts/gift-card';
 import { extendAfterRenewal } from '../subscriptions/renewal';
 import { shopSettings } from '../settings/settings';
+import { SmsNotify } from '../sms/sms-notify';
+import { AutoRenewService } from './auto-renew';
+
+const BRAND: [RegExp, string][] = [[/visa/i, 'VISA'], [/master/i, 'Mastercard'], [/amex|american/i, 'AMEX'], [/maestro/i, 'Maestro']];
+/** Card and method from a bank answer; the development stand-in gets a test card. */
+function cardDetails(body: Record<string, any>) {
+  if (body.keepCard) return {}; // an automatic charge already noted its saved card
+  const masked = String(body.masked_card ?? '');
+  if (/\d{4}$/.test(masked)) {
+    return {
+      cardMask: masked, cardBrand: BRAND.find(([re]) => re.test(String(body.card_type ?? '')))?.[1] ?? (String(body.card_type || '') || 'Card'),
+      method: String(body.payment_system || body.card_type || 'card'),
+    };
+  }
+  return body.simulated && !String(body.payment_id ?? '').startsWith('free-') ? { cardMask: '444455******1111', cardBrand: 'VISA', method: 'card (test)' } : {};
+}
 
 /** How long an order may wait for payment before its stock and coupon are freed (checked every 15 minutes). */
 const UNPAID_TTL_MS = 2 * 60 * 60 * 1000;
@@ -26,11 +42,15 @@ export class PaymentsService implements OnModuleInit, OnModuleDestroy {
     private config: ConfigService,
     private email: EmailService,
     private products: ProductsService,
+    private smsNotify: SmsNotify,
+    private autoRenew: AutoRenewService,
   ) {}
 
   private timer?: NodeJS.Timeout;
 
   onModuleInit() {
+    // A successful automatic renewal charge runs the same "paid" path as a bank callback.
+    this.autoRenew.applyPaid = (orderId, paymentId, raw) => this.applyPaymentResult({ ...(raw ?? {}), order_id: orderId, payment_id: paymentId, order_status: 'approved', simulated: !raw, keepCard: true });
     const run = () => this.expireUnpaid().catch((e) => this.logger.error(`Unpaid-order expiry failed: ${e.message}`));
     setTimeout(run, 15_000).unref();
     this.timer = setInterval(run, 15 * 60 * 1000);
@@ -50,7 +70,11 @@ export class PaymentsService implements OnModuleInit, OnModuleDestroy {
   async expireUnpaid() {
     const stale = await this.prisma.order.findMany({
       // Renewal orders wait for their own deadline (renewal.ts), not 2 hours.
-      where: { status: 'PENDING', type: { not: 'RENEWAL' }, createdAt: { lt: new Date(Date.now() - UNPAID_TTL_MS) }, payments: { none: { status: 'PAID' } } },
+      // An extra payment for an edited order gets a week (the customer is told by text and email).
+      where: {
+        status: 'PENDING', type: { not: 'RENEWAL' }, payments: { none: { status: 'PAID' } },
+        OR: [{ parentOrderId: null, createdAt: { lt: new Date(Date.now() - UNPAID_TTL_MS) } }, { parentOrderId: { not: null }, createdAt: { lt: new Date(Date.now() - 7 * 86400_000) } }],
+      },
       select: { id: true },
     });
     let expired = 0;
@@ -167,7 +191,9 @@ export class PaymentsService implements OnModuleInit, OnModuleDestroy {
 
   /** What a payment outcome does to the order. Callers must have trusted `body` first. */
   private async applyPaymentResult(body: Record<string, any>) {
-    const { order_id, payment_id, order_status } = body;
+    const { payment_id, order_status } = body;
+    // Automatic renewal tries go to the bank as "<order>-r<try>"; it's still our order.
+    const order_id = String(body.order_id ?? '').replace(/-r\d+$/, '');
 
     const order = await this.prisma.order.findUnique({ where: { id: order_id } });
     if (!order) {
@@ -204,6 +230,8 @@ export class PaymentsService implements OnModuleInit, OnModuleDestroy {
         status: paymentStatus,
         paidAt: paymentStatus === 'PAID' ? new Date() : null,
         webhookData: body,
+        // The card as the bank shows it, for admin and receipts.
+        ...cardDetails(body),
       },
     });
 
@@ -280,6 +308,8 @@ export class PaymentsService implements OnModuleInit, OnModuleDestroy {
         if (body.rectoken) await saveCardFromBank(this.prisma, order.userId, body);
         notify(this.prisma, order.userId, 'ORDER_PAID', { orderId: order_id, total: Number(order.total), kind: order.type, gift: !!order.isGift }, '/account/orders');
         this.notifyShop(order_id).catch((e) => this.logger.error(`New order email failed for ${order_id}: ${e.message}`));
+        // Text messages: a thank-you to the customer, a summary to the team (each switchable in Settings).
+        this.smsNotify.orderPaid(order_id);
         // The inviter's referral reward follows once this order is past the
         // free-cancellation window (ReferralsService.grantDueRewards).
       }

@@ -10,6 +10,8 @@ import { LoginDto } from './dto/login.dto';
 import { ReferralsService } from '../referrals/referrals.service';
 import { EmailService } from '../email/email.service';
 import { SmsService } from '../sms/sms.service';
+import { SmsNotify } from '../sms/sms-notify';
+import { sendPhoneOtp, verifyPhoneOtp, useSignupProof, type OtpPurpose } from './phone-otp';
 import { removeDogPhoto } from '../dogs/dog-photo';
 import { Channel, confirmCode, normalisePhone, sendCode, verificationState } from './verification';
 
@@ -28,7 +30,17 @@ export class AuthService {
     private referrals: ReferralsService,
     private email: EmailService,
     private sms: SmsService,
+    private smsNotify: SmsNotify,
   ) {}
+
+  /** An SMS code for a number not yet confirmed on an account (sign-up, or changing it). */
+  sendPhoneCode(o: { phone: unknown; purpose: OtpPurpose; userId?: string; ip?: string; language?: string }) {
+    return sendPhoneOtp(this.prisma, this.sms, o);
+  }
+
+  checkPhoneCode(o: { phone: unknown; code: unknown; purpose: OtpPurpose; userId?: string }) {
+    return verifyPhoneOtp(this.prisma, o);
+  }
 
   /** Sends a code to the account's email or phone (registration, or after changing the phone). */
   sendVerification(userId: string, channel: Channel) {
@@ -57,6 +69,10 @@ export class AuthService {
       throw new ConflictException('This phone number is already used by another account. Sign in instead.');
     }
 
+    // Confirmed by SMS code on the form: the account starts with the phone verified.
+    const phoneConfirmed = dto.phoneProof ? await useSignupProof(this.prisma, phone, dto.phoneProof) : false;
+    if (dto.phoneProof && !phoneConfirmed) throw new BadRequestException('Your phone code has expired. Ask for a new one.');
+
     const passwordHash = await bcrypt.hash(dto.password, 12);
 
     const user = await this.prisma.user.create({
@@ -67,6 +83,7 @@ export class AuthService {
         lastName: dto.lastName,
         phone,
         passwordHash,
+        ...(phoneConfirmed ? { phoneVerified: true, phoneVerifiedAt: new Date(), phoneVerifiedVia: 'SMS' } : {}),
         // The sign-up tick covers both channels; each can be switched off later.
         marketingConsent: dto.marketingConsent === true,
         marketingConsentAt: dto.marketingConsent === true ? new Date() : null,
@@ -97,14 +114,17 @@ export class AuthService {
     notify(this.prisma, user.id, 'WELCOME', { firstName: user.firstName }, '/account/dogs');
     this.email.sendWelcome({ email: user.email, firstName: user.firstName, language: dto.language ?? 'ka' }).catch(() => {});
 
-    // Both codes go out now; the next screen asks for them. A failed send
-    // doesn't undo the account — "Send again" is on that screen.
-    for (const channel of ['EMAIL', 'PHONE'] as const) {
+    // Text messages: welcome to the customer, a heads-up to the team.
+    this.smsNotify.newCustomer(user.id);
+
+    // The codes still needed go out now; the next screen asks for them. A
+    // failed send doesn't undo the account — "Send again" is on that screen.
+    for (const channel of (phoneConfirmed ? ['EMAIL'] : ['EMAIL', 'PHONE']) as ('EMAIL' | 'PHONE')[]) {
       await this.sendVerification(user.id, channel).catch((e) => this.logger.warn(`Verification ${channel} not sent for ${user.id}: ${e.message}`));
     }
 
     const token = this.signToken(user.id, user.email, 'customer');
-    return { user, token, verification: verificationState({ emailVerified: false, phoneVerified: false }) };
+    return { user, token, verification: verificationState({ emailVerified: false, phoneVerified: phoneConfirmed }) };
   }
 
   async login(dto: LoginDto) {

@@ -52,9 +52,9 @@ export class DogsService {
   async create(userId: string, data: {
     name: string; breed?: string; birthday?: Date; gender?: any;
     size?: any; weightKg?: number; allergies?: string[]; toyPreferences?: string[];
-    foodPreferences?: string[]; chewingStrength?: string; specialNotes?: string;
+    foodPreferences?: string[]; chewingStrength?: string; specialNotes?: string; likedCategoryIds?: string[];
   }) {
-    return this.prisma.dog.create({ data: { ...data, userId } });
+    return this.prisma.dog.create({ data: { ...data, ...(await this.likes(data.likedCategoryIds)), userId } });
   }
 
   async setPhoto(id: string, userId: string, buf: Buffer | undefined) {
@@ -72,7 +72,14 @@ export class DogsService {
 
   async update(id: string, userId: string, data: any) {
     await this.findOne(id, userId);
-    return this.prisma.dog.update({ where: { id }, data });
+    return this.prisma.dog.update({ where: { id }, data: { ...data, ...(await this.likes(data.likedCategoryIds)) } });
+  }
+
+  /** Only real, live categories are kept as likes (an old id or a typo is dropped). */
+  private async likes(ids?: string[]) {
+    if (!Array.isArray(ids)) return {};
+    const found = await this.prisma.productCategory.findMany({ where: { id: { in: [...new Set(ids)] }, deletedAt: null }, select: { id: true } });
+    return { likedCategoryIds: found.map((c) => c.id) };
   }
 
   async remove(id: string, userId: string) {

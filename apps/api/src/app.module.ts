@@ -48,7 +48,8 @@ import { UploadModule } from './modules/upload/upload.module';
       isGlobal: true,
       envFilePath: [resolve(process.cwd(), '.env'), resolve(process.cwd(), '../../.env')],
     }),
-    ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }]),
+    // A plain sentence when someone hits a limit (the default reads "ThrottlerException: Too Many Requests").
+    ThrottlerModule.forRoot({ throttlers: [{ ttl: 60000, limit: 100 }], errorMessage: 'Too many tries in a short time. Please wait a few minutes and try again.' }),
     PrismaModule,
     AuthModule,
     UsersModule,

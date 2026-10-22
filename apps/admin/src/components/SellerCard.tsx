@@ -1,6 +1,7 @@
 'use client';
 import { Select } from '@/components/Dropdown';
 import { useEffect, useState } from 'react';
+import { NumInput } from '@/components/NumberField';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 
@@ -67,7 +68,7 @@ export default function SellerCard({ value, onChange, salePrice, error, style }:
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginTop: 14 }}>
             <div>
               <label style={lbl}>Seller’s price (₾) *</label>
-              <input style={input} type="number" step="0.01" min="0" value={value.sellerPrice} onChange={(e) => set('sellerPrice', e.target.value)} placeholder="What they charge us" />
+              <NumInput style={input} step="0.01" min="0" value={value.sellerPrice} onChange={(e) => set('sellerPrice', e.target.value)} placeholder="What they charge us" />
             </div>
             <div>
               <label style={lbl}>Our margin</label>
@@ -78,7 +79,7 @@ export default function SellerCard({ value, onChange, salePrice, error, style }:
             </div>
             <div>
               <label style={lbl}>{value.marginType === 'PERCENT' ? 'Margin (%)' : 'Margin (₾)'}</label>
-              <input style={input} type="number" step="0.01" min="0" value={value.marginValue} onChange={(e) => set('marginValue', e.target.value)} placeholder="0" />
+              <NumInput style={input} step="0.01" min="0" value={value.marginValue} onChange={(e) => set('marginValue', e.target.value)} placeholder="0" />
             </div>
           </div>
           {error && <p style={{ fontSize: 12, color: 'var(--red-600)', margin: '8px 0 0' }}>{error}</p>}

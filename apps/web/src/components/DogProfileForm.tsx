@@ -7,17 +7,16 @@ import { FieldError } from '@/components/ui/FormError';
 import Field from '@/components/ui/Field';
 import { Icon } from '@/components/ui/icons';
 import DatePicker from '@/components/ui/DatePicker';
+import CategoryLikes from '@/components/CategoryLikes';
 
 /**
  * Tell-us-about-your-dog, as tappable choices rather than a form.
  *
  * Every box is picked per dog, so this is the most important thing a customer
- * ever tells us — but it was a text box asking for comma-separated allergies,
- * and the preference fields that actually drive personalisation
- * (toyPreferences, foodPreferences, chewingStrength) were never collected at
- * all. Choices are pre-set chips people can tap, with a free-text escape
- * hatch, so the common answer takes one tap and the unusual one is still
- * possible.
+ * ever tells us. Choices are chips people can tap (with a free-text escape
+ * hatch for allergies), so the common answer takes one tap. What the dog
+ * loves is picked from the shop's own categories (CategoryLikes), so boxes
+ * can be filled from what we stock.
  */
 
 export interface DogProfile {
@@ -32,12 +31,14 @@ export interface DogProfile {
   foodPreferences: string[];
   toyPreferences: string[];
   chewingStrength: string;
+  /** Shop categories the dog loves (main ones and/or their kinds). */
+  likedCategoryIds: string[];
   specialNotes: string;
 }
 
 export const emptyDogProfile: DogProfile = {
   name: '', breed: '', size: '', gender: '', weightKg: '', birthday: '',
-  allergies: [], foodPreferences: [], toyPreferences: [], chewingStrength: '', specialNotes: '',
+  allergies: [], foodPreferences: [], toyPreferences: [], chewingStrength: '', likedCategoryIds: [], specialNotes: '',
 };
 
 /** A saved dog from the API, back into the form's shape. */
@@ -47,7 +48,7 @@ export function fromDog(d: any): DogProfile {
     weightKg: d?.weightKg != null ? String(d.weightKg) : '',
     birthday: d?.birthday ? String(d.birthday).slice(0, 10) : '',
     allergies: d?.allergies || [], foodPreferences: d?.foodPreferences || [], toyPreferences: d?.toyPreferences || [],
-    chewingStrength: d?.chewingStrength || '', specialNotes: d?.specialNotes || '',
+    chewingStrength: d?.chewingStrength || '', likedCategoryIds: d?.likedCategoryIds || [], specialNotes: d?.specialNotes || '',
   };
 }
 
@@ -62,9 +63,9 @@ export function toDogPayload(d: DogProfile) {
     // null clears a birthday that was set before.
     birthday: d.birthday || null,
     allergies: d.allergies,
-    foodPreferences: d.foodPreferences,
-    toyPreferences: d.toyPreferences,
-    chewingStrength: d.chewingStrength || undefined,
+    // Likes are shop categories now; the older food/toy words and chewing
+    // strength aren't asked any more (kept on dogs that already have them).
+    likedCategoryIds: d.likedCategoryIds,
     specialNotes: d.specialNotes.trim() || undefined,
   };
 }
@@ -79,16 +80,9 @@ export const SIZES = [
   { value: 'EXTRA_LARGE', emoji: '🐕‍🦺' },
 ];
 
-export const CHEW_LEVELS = [
-  { value: 'GENTLE', emoji: '🪶' },
-  { value: 'AVERAGE', emoji: '🦴' },
-  { value: 'POWER', emoji: '💪' },
-];
 
 // The same list products' allergens use, so boxes can be checked against the dog.
 export const COMMON_ALLERGIES: string[] = ALLERGENS.map((a) => a.key);
-export const FOOD_LIKES = ['Chicken', 'Beef', 'Lamb', 'Fish', 'Peanut butter', 'Cheese', 'Grain-free', 'Dental chews'];
-export const TOY_LIKES = ['Squeaky', 'Plush', 'Rope', 'Ball', 'Puzzle', 'Tug', 'Fetch', 'Chew'];
 
 export function Section({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
   return (
@@ -187,23 +181,6 @@ export function KgTag() {
   return <span className="h-6 px-2 rounded-md bg-white ring-1 ring-gray-200/80 text-[11.5px] font-bold text-gray-600 inline-flex items-center">{t('dog.kg')}</span>;
 }
 
-/** Gentle, average or power chewer, as three emoji pills. */
-export function ChewPicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  const { t } = useLanguage();
-  return (
-    <div className="flex flex-wrap gap-1.5">
-      {CHEW_LEVELS.map((c) => {
-        const active = value === c.value;
-        return (
-          <button key={c.value} type="button" onClick={() => onChange(active ? '' : c.value)} aria-pressed={active} title={t(`dog.chewHint.${c.value}`)}
-            className={`h-9 pl-2 pr-3 rounded-full inline-flex items-center gap-1.5 text-[12.5px] font-semibold ring-1 ring-inset transition ${active ? 'bg-teal-50 text-teal-700 ring-teal-400' : 'bg-gray-100/80 text-gray-700 ring-transparent hover:bg-gray-100'}`}>
-            <span className="text-[16px] leading-none" aria-hidden="true">{c.emoji}</span>{t(`dog.chew.${c.value}`)}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
 
 export default function DogProfileForm({ value, onChange, showOptional = true, compact = false, nameError, sizeError }: {
   value: DogProfile;
@@ -223,8 +200,6 @@ export default function DogProfileForm({ value, onChange, showOptional = true, c
   const { t } = useLanguage();
   const [expanded, setExpanded] = useState(false);
   const set = <K extends keyof DogProfile>(k: K, v: DogProfile[K]) => onChange({ ...value, [k]: v });
-  const allergySet = new Set(value.allergies.map((a) => a.toLowerCase()));
-  const hiddenFoods = FOOD_LIKES.filter((f) => allergySet.has(f.toLowerCase()));
   const showDetails = !compact || expanded;
 
   return (
@@ -285,27 +260,8 @@ export default function DogProfileForm({ value, onChange, showOptional = true, c
 
       {showDetails && showOptional && (
         <>
-          <Section title={t('dog.food')} hint={t('dog.foodHint')}>
-            <ChipGroup
-              // An allergen is never offered as a favourite.
-              options={FOOD_LIKES.filter((f) => !allergySet.has(f.toLowerCase()))}
-              selected={value.foodPreferences}
-              onChange={(v) => set('foodPreferences', v.filter((f) => !allergySet.has(f.toLowerCase())))}
-              addLabel={t('dog.foodAdd')}
-            />
-            {hiddenFoods.length > 0 && (
-              <p className="text-xs text-gray-400 mt-2">
-                {fill(t('dog.foodHidden'), { list: hiddenFoods.map((f) => t(`dog.opt.${f}`, f)).join(', ') })}
-              </p>
-            )}
-          </Section>
-
-          <Section title={t('dog.toys')} hint={t('dog.optional')}>
-            <ChipGroup options={TOY_LIKES} selected={value.toyPreferences} onChange={(v) => set('toyPreferences', v)} addLabel={t('dog.toysAdd')} />
-          </Section>
-
-          <Section title={t('dog.chew')} hint={t('dog.chewHint')}>
-            <ChewPicker value={value.chewingStrength} onChange={(v) => set('chewingStrength', v)} />
+          <Section title={t('dog.likes')} hint={t('dog.likesHint')}>
+            <CategoryLikes value={value.likedCategoryIds} onChange={(v) => set('likedCategoryIds', v)} allergies={value.allergies} />
           </Section>
 
           <Section title={t('dog.notes')} hint={t('dog.optional')}>

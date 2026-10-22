@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import FormField, { inputClass, parseFieldErrors } from '@/components/FormField';
 import LangTabs, { type Lang } from '@/components/LangTabs';
 import ErrorPopup from '@/components/ErrorPopup';
+import { NumInput } from '@/components/NumberField';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 
@@ -181,7 +182,7 @@ export default function AdminCategoriesPage() {
               {lang === 'en' && (
                 <div>
                   <FormField label="Sort Order">
-                    <input style={inputClass()} type="number" value={form.sortOrder} onChange={e => set('sortOrder', e.target.value)} />
+                    <NumInput style={inputClass()} value={form.sortOrder} onChange={e => set('sortOrder', e.target.value)} />
                   </FormField>
                 </div>
               )}

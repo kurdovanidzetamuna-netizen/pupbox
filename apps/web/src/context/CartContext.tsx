@@ -1,5 +1,6 @@
 'use client';
-import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
+import { storedReferral, forgetReferral } from '@/lib/referral';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 
@@ -52,6 +53,24 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => { refresh(); }, []);
+
+  // A friend's code from their link (?ref=NINO-4K7P) goes on the basket by
+  // itself, once there's something in it and no other code. If it can't apply
+  // to this customer (their own code, not a first order), it's forgotten.
+  const tried = useRef('');
+  useEffect(() => {
+    const code = storedReferral();
+    if (!code || !cart?.items?.length || cart.coupon || cart.referral) return;
+    const key = `${code}:${cart.userId ?? 'guest'}`;
+    if (tried.current === key) return;
+    tried.current = key;
+    fetch(`${API_URL}/cart/coupon`, { method: 'POST', headers: getHeaders(), body: JSON.stringify({ code }) })
+      .then(async (r) => {
+        if (r.ok) setCart(await r.json());
+        else if (cart.userId) forgetReferral();
+      })
+      .catch(() => {});
+  }, [cart]);
   // After sign-out, show the guest cart rather than the account's.
   useEffect(() => {
     const onOut = () => { refresh(); };
@@ -77,7 +96,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
       updateItem: (itemId, quantity) => call(`/items/${itemId}`, 'PUT', { quantity }),
       removeItem: (itemId) => call(`/items/${itemId}`, 'DELETE'),
       applyCoupon: (code) => call('/coupon', 'POST', { code }),
-      removeCoupon: () => call('/coupon', 'DELETE'),
+      // Taking a friend's code off means it: it won't come back by itself.
+      removeCoupon: () => { if (cart?.referral) forgetReferral(); return call('/coupon', 'DELETE'); },
     }}>
       {children}
     </CartContext.Provider>
