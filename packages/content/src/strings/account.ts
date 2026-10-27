@@ -189,7 +189,6 @@ export const ACCOUNT_STRINGS: Record<string, { en: string; ka: string }> = {
   'addr.default':           { en: 'Main',                        ka: 'მთავარი' },
   'addr.isMain':            { en: 'Your main address',           ka: 'შენი მთავარი მისამართი' },
   'addr.mainSwitch':        { en: 'Main address',                ka: 'მთავარი მისამართი' },
-  'addr.mainHint':          { en: 'Shown first, and ready at checkout', ka: 'პირველი ჩანს და შეკვეთისას თავად შეივსება' },
   'addr.n.home':            { en: 'Home',                        ka: 'სახლი' },
   'addr.n.work':            { en: 'Work',                        ka: 'სამსახური' },
   'addr.n.country':         { en: 'Country house',               ka: 'აგარაკი' },
