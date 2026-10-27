@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { AsyncLocalStorage } from 'node:async_hooks';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -17,6 +18,28 @@ interface Message {
   after?: string[];
 }
 
+/** What an admin edits for one email in one language (admin → Emails). Fill-ins are {{name}}; **bold**. */
+export interface EmailText { subject: string; heading: string; body: string; button?: string; after?: string }
+
+/** Every customer email admin can reword, in menu order, with what it's for. */
+export const EMAIL_KINDS: { key: string; label: string; about: string }[] = [
+  { key: 'welcome', label: 'Welcome', about: 'Right after someone creates an account.' },
+  { key: 'email_verification', label: 'Email code', about: 'The 6-digit code that confirms an email address.' },
+  { key: 'password_reset', label: 'Password reset', about: 'The link to set a new password.' },
+  { key: 'payment_confirmation', label: 'Payment received', about: 'When an order is paid.' },
+  { key: 'order_shipped', label: 'Order shipped', about: 'When a shop order leaves.' },
+  { key: 'box_shipped', label: 'Box shipped', about: 'When a monthly box leaves.' },
+  { key: 'renewal_due', label: 'Renewal due', about: 'A few days before a plan renews, with the link to pay.' },
+  { key: 'gift_card', label: 'Gift for a friend', about: 'To the person who receives a gift plan.' },
+  { key: 'referral_reward', label: 'Friend reward', about: 'When a friend’s first order earns a promo code.' },
+];
+
+/** Admin's words as paragraphs, with fill-ins put in (escaped) and **bold** kept. */
+const fillIn = (text: string, vars: Record<string, string>, blocks: Record<string, string> = {}) =>
+  esc(text).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\{\{(\w+)\}\}/g, (_, k) => (k in blocks ? blocks[k] : esc(vars[k] ?? '')));
+const emptyFillIn = (text: string, vars: Record<string, string>, blocks: Record<string, string>) =>
+  [...text.matchAll(/\{\{(\w+)\}\}/g)].some(([, k]) => !(k in blocks ? blocks[k] : vars[k]));
+
 const hi = (l: Lang, name: string) => (l === 'ka' ? `გამარჯობა, ${esc(name)}!` : `Hi ${esc(name)},`);
 
 /**
@@ -28,6 +51,8 @@ const hi = (l: Lang, name: string) => (l === 'ka' ? `გამარჯობა
 @Injectable()
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
+  /** Set while admin asks for the built-in wording: deliver() hands it back instead of sending. */
+  private capture = new AsyncLocalStorage<{ out?: { message: Message; vars: Record<string, string>; blocks: Record<string, string> } }>();
 
   constructor(private config: ConfigService, private prisma: PrismaService) {}
 
@@ -67,12 +92,99 @@ ${m.body.map(p).join('\n')}${button}${(m.after ?? []).map((a) => `<p style="marg
 </div></body></html>`;
   }
 
-  /** Sends `key` to `to` in `l`, using an admin template when one exists. */
-  private async deliver(to: string, key: string, l: Lang, vars: Record<string, string>, built: Message) {
+  /**
+   * Sends `key` to `to` in `l`. Admin's wording (admin → Emails) replaces the
+   * built-in one when saved; `blocks` are ready-made pieces (the big code,
+   * a gift note) admin places with {{name}}. A paragraph whose fill-in is
+   * empty (no tracking number yet) is left out.
+   */
+  private async deliver(to: string, key: string, l: Lang, vars: Record<string, string>, built: Message, blocks: Record<string, string> = {}) {
+    const asked = this.capture.getStore();
+    if (asked) { asked.out = { message: built, vars, blocks }; return; }
     const tpl = await this.getTemplate(key, l);
-    const subject = tpl ? this.renderTemplate(tpl.subject, vars) : built.subject;
-    const html = tpl ? this.renderTemplate(tpl.body, vars) : this.layout(l, built);
+    let subject = built.subject, html: string;
+    const own = tpl ? this.parseText(tpl.body) : null;
+    if (tpl && own) {
+      const m = this.fromText(own, tpl.subject, vars, blocks, built);
+      subject = m.subject; html = this.layout(l, m);
+    } else if (tpl) {
+      // An older template written as whole HTML.
+      subject = this.renderTemplate(tpl.subject, vars); html = this.renderTemplate(tpl.body, vars);
+    } else html = this.layout(l, built);
     await this.send(to, subject, html);
+  }
+
+  private parseText(body: string): EmailText | null {
+    if (!body.trim().startsWith('{')) return null;
+    try { const t = JSON.parse(body); return typeof t?.heading === 'string' && typeof t?.body === 'string' ? t : null; } catch { return null; }
+  }
+
+  /** Admin's wording as a message: same button link and layout as the built-in one. */
+  private fromText(t: EmailText, subject: string, vars: Record<string, string>, blocks: Record<string, string>, built: Message): Message {
+    const paras = (s?: string) => (s ?? '').split(/\n\s*\n/).map((x) => x.trim()).filter((x) => x && !emptyFillIn(x, vars, blocks)).map((x) => fillIn(x, vars, blocks).replace(/\n/g, '<br>'));
+    const plain = (s: string) => s.replace(/\{\{(\w+)\}\}/g, (_, k) => vars[k] ?? '').replace(/\*\*/g, '');
+    return {
+      subject: plain(subject).trim() || built.subject,
+      heading: fillIn(t.heading, vars, {}),
+      body: paras(t.body),
+      button: built.button && t.button?.trim() ? { text: fillIn(t.button, vars, {}), url: built.button.url } : built.button,
+      after: t.after !== undefined ? paras(t.after) : built.after,
+    };
+  }
+
+  /** Sample customers for the editor: what each email says, its fill-ins, and the preview. */
+  private sample(key: string, l: Lang): Promise<unknown> {
+    const who = { email: 'sample@pupbox.ge', firstName: 'Nino', language: l };
+    const order = 'sampleorder00ab12cd';
+    switch (key) {
+      case 'welcome': return this.sendWelcome(who);
+      case 'email_verification': return this.sendVerificationCode({ ...who, code: '483920' });
+      case 'password_reset': return this.sendPasswordReset({ ...who, token: 'SAMPLE-TOKEN' });
+      case 'payment_confirmation': return this.sendPaymentConfirmation({ id: order, total: 79, user: who });
+      case 'order_shipped': return this.sendOrderShipped({ ...who, orderId: order, trackingNumber: 'GE20481937' });
+      case 'box_shipped': return this.sendBoxShipped({ ...who, dogName: 'Rex', boxNumber: 7, boxesTotal: 12, trackingNumber: 'GE20481937' });
+      case 'renewal_due': return this.sendRenewalDue({ ...who, planName: 'Standard · 3 months', amount: 189, renewsOn: new Date('2026-12-01T12:00:00Z'), orderId: order });
+      case 'gift_card': return this.sendGiftCard({ recipientEmail: who.email, recipientName: 'Ana', buyerName: 'Nino', planName: 'Mini · 3 months', message: 'Happy birthday, Rex!', dogName: 'Rex', boxes: 3, language: l });
+      case 'referral_reward': return this.sendReferralReward({ ...who, couponCode: 'FRIEND-7Q2K', amount: 15 });
+      default: return Promise.resolve();
+    }
+  }
+
+  /**
+   * The built-in wording of one email as editable text: real values swapped
+   * back to their {{fill-ins}}, <strong> as **bold**, special blocks as {{name}}.
+   */
+  async builtIn(key: string, l: Lang) {
+    const store: { out?: { message: Message; vars: Record<string, string>; blocks: Record<string, string> } } = {};
+    await this.capture.run(store, () => this.sample(key, l));
+    if (!store.out) return null;
+    const { message: m, vars, blocks } = store.out;
+    const pairs = Object.entries(vars).filter(([, v]) => v && !/^https?:/.test(v)).sort((a, b) => b[1].length - a[1].length);
+    const back = (s: string) => {
+      let x = s;
+      for (const [k, v] of Object.entries(blocks)) if (v && x.trim() === v.trim()) return `{{${k}}}`;
+      x = x.replace(/<strong>(.*?)<\/strong>/g, '**$1**').replace(/<br\s*\/?>/g, '\n').replace(/<[^>]+>/g, '');
+      x = x.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'");
+      for (const [k, v] of pairs) x = x.replace(new RegExp(`(?<![\\w.])${v.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![\\w])`, 'g'), `{{${k}}}`);
+      return x;
+    };
+    const text: EmailText = {
+      subject: back(m.subject), heading: back(m.heading),
+      body: m.body.map(back).join('\n\n'),
+      ...(m.button ? { button: back(m.button.text) } : {}),
+      ...(m.after?.length ? { after: m.after.map(back).join('\n\n') } : {}),
+    };
+    return { text, fillIns: [...Object.keys(vars).filter((k) => !/Url$/.test(k)), ...Object.keys(blocks)] };
+  }
+
+  /** The email as the customer would get it, from (unsaved) text — for the editor's preview. */
+  async preview(key: string, l: Lang, t?: EmailText) {
+    const store: { out?: { message: Message; vars: Record<string, string>; blocks: Record<string, string> } } = {};
+    await this.capture.run(store, () => this.sample(key, l));
+    if (!store.out) return null;
+    const { message, vars, blocks } = store.out;
+    const m = t ? this.fromText(t, t.subject, vars, blocks, message) : message;
+    return { subject: m.subject, html: this.layout(l, m) };
   }
 
   /**
@@ -223,7 +335,7 @@ ${m.body.map(p).join('\n')}${button}${(m.after ?? []).map((a) => `<p style="marg
     const note = d.message
       ? `<span style="display:block;background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:14px 16px;font-style:italic;color:#92400e">“${esc(d.message)}”<br><span style="font-style:normal;font-size:13px;color:#b45309">— ${esc(d.buyerName)}</span></span>`
       : '';
-    const vars = { recipientName: d.recipientName, buyerName: d.buyerName, planName: d.planName, message: d.message ?? '', dogName: d.dogName ?? '', siteUrl: this.siteUrl };
+    const vars = { recipientName: d.recipientName, buyerName: d.buyerName, planName: d.planName, message: d.message ?? '', dogName: d.dogName ?? '', boxes: String(d.boxes ?? 1), siteUrl: this.siteUrl };
     const forDog = (ka: string, en: string) => (d.dogName ? (l === 'ka' ? ka : en) : '');
     await this.deliver(d.recipientEmail, 'gift_card', l, vars, l === 'ka' ? {
       subject: `${d.buyerName}-მა შენს ძაღლს Pupbox აჩუქა! 🎁`,
@@ -234,17 +346,17 @@ ${m.body.map(p).join('\n')}${button}${(m.after ?? []).map((a) => `<p style="marg
     } : {
       subject: `${d.buyerName} sent your dog a Pupbox gift! 🎁`,
       heading: '🎁 A gift is on its way',
-      body: [hi(l, d.recipientName), `<strong>${esc(d.buyerName)}</strong> has given ${forDog(`<strong>${esc(d.dogName ?? '')}</strong>`, 'your dog')} a <strong>${esc(d.planName)}</strong> subscription.`, ...(note ? [note] : []),
+      body: [hi(l, d.recipientName), `<strong>${esc(d.buyerName)}</strong> has given ${d.dogName ? `<strong>${esc(d.dogName)}</strong>` : 'your dog'} a <strong>${esc(d.planName)}</strong> subscription.`, ...(note ? [note] : []),
         `${d.boxes && d.boxes > 1 ? `${d.boxes} boxes` : 'The box'} will arrive at your address, one a month — there's nothing you need to do. The courier will call before delivering.`],
       button: { text: 'Meet Pupbox', url: this.siteUrl },
-    });
+    }, { giftNote: note });
   }
 
   async sendReferralReward(d: { email: string; firstName: string; couponCode: string; amount?: number; language?: string | null }) {
     const l = lang(d.language);
     const n = `₾${Number(d.amount ?? 10).toFixed(2).replace(/\.00$/, '')}`;
     const url = `${this.siteUrl}/shop`;
-    await this.deliver(d.email, 'referral_reward', l, { firstName: d.firstName, couponCode: d.couponCode, siteUrl: this.siteUrl }, l === 'ka' ? {
+    await this.deliver(d.email, 'referral_reward', l, { firstName: d.firstName, couponCode: d.couponCode, amount: n, siteUrl: this.siteUrl }, l === 'ka' ? {
       subject: `შენ მიიღე ${n}-იანი პრომო კოდი! 🎁`,
       heading: 'მადლობა რეკომენდაციისთვის',
       body: [hi(l, d.firstName), `შენმა მეგობარმა პირველი შეკვეთა გააკეთა — აი შენი ${n}-იანი პრომო კოდი: <strong>${esc(d.couponCode)}</strong>. გამოიყენე შემდეგ შეკვეთაზე.`],
@@ -261,7 +373,7 @@ ${m.body.map(p).join('\n')}${button}${(m.after ?? []).map((a) => `<p style="marg
     const l = lang(d.language);
     const url = `${this.siteUrl}/reset-password?token=${encodeURIComponent(d.token)}`;
     // Without an email service in development, the link is the only way to test the flow.
-    if (!this.apiKey && this.config.get('NODE_ENV') !== 'production') this.logger.warn(`Password reset link (development only): ${url}`);
+    if (!this.apiKey && !this.capture.getStore() && this.config.get('NODE_ENV') !== 'production') this.logger.warn(`Password reset link (development only): ${url}`);
     await this.deliver(d.email, 'password_reset', l, { firstName: d.firstName, resetUrl: url }, l === 'ka' ? {
       subject: 'Pupbox-ის პაროლის აღდგენა',
       heading: 'ახალი პაროლის დაყენება',
@@ -281,7 +393,7 @@ ${m.body.map(p).join('\n')}${button}${(m.after ?? []).map((a) => `<p style="marg
   async sendVerificationCode(d: { email: string; firstName: string; language?: string | null; code: string }) {
     const l = lang(d.language);
     // Without an email service in development, the log is where the code can be read.
-    if (!this.apiKey && this.config.get('NODE_ENV') !== 'production') this.logger.warn(`Email verification code for ${d.email} (development only): ${d.code}`);
+    if (!this.apiKey && !this.capture.getStore() && this.config.get('NODE_ENV') !== 'production') this.logger.warn(`Email verification code for ${d.email} (development only): ${d.code}`);
     const big = `<span style="display:block;font-size:30px;font-weight:800;letter-spacing:8px;color:#0f766e;text-align:center;padding:8px 0">${esc(d.code)}</span>`;
     await this.deliver(d.email, 'email_verification', l, { firstName: d.firstName, code: d.code }, l === 'ka' ? {
       subject: `${d.code} — Pupbox-ის დადასტურების კოდი`,
@@ -293,6 +405,6 @@ ${m.body.map(p).join('\n')}${button}${(m.after ?? []).map((a) => `<p style="marg
       heading: 'Confirm your email',
       body: [hi(l, d.firstName), 'Enter this code on Pupbox:', big, 'It works for 10 minutes.'],
       after: ["If it wasn't you, ignore this email."],
-    });
+    }, { codeBox: big });
   }
 }

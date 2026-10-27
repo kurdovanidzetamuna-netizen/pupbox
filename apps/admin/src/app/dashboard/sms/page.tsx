@@ -16,7 +16,17 @@ type S = {
   quiet: { enabled: boolean; from: string; to: string; team: boolean };
   codes: { resendSeconds: number; perHour: number; validMinutes: number };
   retries: { afterHours: number[]; textOnTries: number[] };
+  texts: Record<string, { en?: string; ka?: string }>;
+  textDefaults?: Record<string, { label: string; fillIns: string[]; en: string; ka: string }>;
 };
+
+const FILL: Record<string, string> = { firstName: 'first name', orderId: 'order number', items: 'number of items', total: 'total', amount: 'amount', nextTry: 'next try date', tries: 'number of tries', card: 'card ending' };
+/** How many texts one message costs: Georgian letters fit 70 to a text (67 when split), Latin 160 (153). */
+function segments(text: string) {
+  const unicode = /[^\x00-\x7F’—–…]/.test(text) || /[’—–…]/.test(text);
+  const per = unicode ? 70 : 160, multi = unicode ? 67 : 153;
+  return text.length <= per ? 1 : Math.ceil(text.length / multi);
+}
 
 const TOPICS: { key: Topic; label: string; hint: string }[] = [
   { key: 'orders', label: '🛍️ New orders', hint: 'Order number, total, customer, city, items' },
@@ -204,6 +214,37 @@ export default function SmsPage() {
                 </Row>
               </summary>
               <p style={{ margin: '0 0 10px', padding: '10px 12px', borderRadius: 12, background: 'var(--slate-50)', fontSize: 12.5, color: 'var(--slate-600)', lineHeight: 1.5 }}>{m.example}<br /><span style={{ color: 'var(--slate-400)' }}>Sent in Georgian or English, in the customer’s language.</span></p>
+            </details>
+          ))}
+        </div>
+      </Section>
+
+      <Section title="Wording" hint="What each text says, in Georgian and English. Fill-ins in {{curly brackets}} are put in for each customer. Longer texts cost more — Georgian fits 70 letters in one SMS.">
+        <div style={{ display: 'grid', gap: 10 }}>
+          {Object.entries(s.textDefaults ?? {}).map(([key, d]) => (
+            <details key={key} style={{ border: '1px solid var(--slate-200b)', borderRadius: 12, padding: '10px 12px', background: 'var(--white)' }}>
+              <summary style={{ cursor: 'pointer', fontSize: 13.5, fontWeight: 700, color: 'var(--slate-800)' }}>
+                {d.label}{(s.texts?.[key]?.ka || s.texts?.[key]?.en) && <span style={{ marginLeft: 6, fontSize: 10.5, fontWeight: 700, color: 'var(--teal-700)', background: 'var(--teal-50)', borderRadius: 999, padding: '1px 7px' }}>edited</span>}
+              </summary>
+              {(['ka', 'en'] as const).map((l) => {
+                const value = s.texts?.[key]?.[l] ?? d[l];
+                const n = segments(value);
+                return (
+                  <div key={l} style={{ marginTop: 10 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--slate-500)', marginBottom: 4 }}>
+                      <b>{l === 'ka' ? '🇬🇪 Georgian' : '🇬🇧 English'}</b>
+                      <span style={{ color: n > 2 ? 'var(--amber-700)' : 'var(--slate-400)' }}>{value.length} characters · {n} SMS</span>
+                    </div>
+                    <textarea value={value} rows={3} maxLength={480} aria-label={`${d.label} — ${l === 'ka' ? 'Georgian' : 'English'}`}
+                      onChange={(e) => up((x) => { x.texts = x.texts ?? {}; x.texts[key] = { ...(x.texts[key] ?? {}), [l]: e.target.value }; return x; })}
+                      style={{ width: '100%', boxSizing: 'border-box', padding: '8px 10px', fontSize: 13, border: '1px solid var(--slate-200)', borderRadius: 10, outline: 'none', resize: 'vertical', fontFamily: 'inherit', background: 'var(--white)', color: 'var(--slate-900)' }} />
+                  </div>
+                );
+              })}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, marginTop: 6, flexWrap: 'wrap' }}>
+                <span style={{ fontSize: 11.5, color: 'var(--slate-400)' }}>Fill-ins: {d.fillIns.map((f) => `{{${f}}} = ${FILL[f] ?? f}`).join(' · ')}</span>
+                {(s.texts?.[key]?.ka || s.texts?.[key]?.en) && <button type="button" onClick={() => up((x) => { delete x.texts[key]; return x; })} style={{ border: 'none', background: 'none', color: 'var(--teal-600)', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>↺ Original words</button>}
+              </div>
             </details>
           ))}
         </div>

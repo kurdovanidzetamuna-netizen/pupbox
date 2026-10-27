@@ -8,7 +8,7 @@ import { AdminJwtGuard } from '../admin-auth/admin-jwt.guard';
 import { AdminPerms } from '../admin-auth/admin-permissions';
 import { normalisePhone } from '../auth/verification';
 import { AuditService } from '../audit/audit.service';
-import { smsSettings, saveSmsSettings, maskKey, quietUntil } from './sms-settings';
+import { smsSettings, saveSmsSettings, maskKey, quietUntil, SMS_TEXTS } from './sms-settings';
 
 class TestSmsDto {
   @IsString() @MaxLength(30) to: string;
@@ -27,7 +27,7 @@ class AdminSmsController {
   @Get('settings')
   async settings() {
     const s = await smsSettings(this.prisma);
-    return { ...s, apiKey: maskKey(s.apiKey), quietNow: quietUntil(s.quiet) };
+    return { ...s, apiKey: maskKey(s.apiKey), quietNow: quietUntil(s.quiet), textDefaults: SMS_TEXTS };
   }
 
   @Put('settings')
@@ -36,7 +36,7 @@ class AdminSmsController {
     const s = await saveSmsSettings(this.prisma, body);
     const hide = (x: typeof s) => ({ ...x, apiKey: x.apiKey ? maskKey(x.apiKey) : '' });
     await this.audit.log({ adminUserId: req.user?.id, action: 'UPDATE', module: 'settings', entityType: 'SmsSettings', entityId: 'config-sms', before: hide(before), after: hide(s) });
-    return { ...s, apiKey: maskKey(s.apiKey), quietNow: quietUntil(s.quiet) };
+    return { ...s, apiKey: maskKey(s.apiKey), quietNow: quietUntil(s.quiet), textDefaults: SMS_TEXTS };
   }
 
   @Get('status') status() { return this.sms.status(); }
