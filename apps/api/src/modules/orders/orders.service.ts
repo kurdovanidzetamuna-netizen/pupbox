@@ -539,7 +539,7 @@ export class OrdersService {
     if (!changes.length && !extraLines.length) return this.adminGetOne(id);
 
     // Stock first: if a product ran out, nothing else changes.
-    if (stockHold.length) await reserveStock(this.prisma, stockHold);
+    if (stockHold.length) await reserveStock(this.prisma, stockHold, 'admin');
     try {
       for (const op of lineOps) await op();
     } catch (e) {
@@ -585,7 +585,7 @@ export class OrdersService {
       return { productId: p.id, name: p.name, sku: p.sku, price, quantity: l.quantity, total: +(price * l.quantity).toFixed(2), sellerId: p.sellerId ?? null, sellerPrice: p.supply?.sellerPrice ?? null };
     });
     const total = +rows.reduce((n, r) => n + r.total, 0).toFixed(2);
-    await reserveStock(this.prisma, rows.map((r) => ({ productId: r.productId, quantity: r.quantity, name: r.name })));
+    await reserveStock(this.prisma, rows.map((r) => ({ productId: r.productId, quantity: r.quantity, name: r.name })), 'admin');
     const extra = await this.prisma.order.create({
       data: {
         userId: order.userId, parentOrderId: order.id, addressId: order.addressId, dogId: order.dogId, type: 'PRODUCT', status: 'PENDING',
@@ -614,6 +614,14 @@ export class OrdersService {
    * The customer gets a note and a text; the audit log keeps who did it.
    */
   async refund(id: string, o: RefundInput, adminUserId?: string) {
+    // One refund per order at a time: a double click must not send the money twice.
+    if (this.refunding.has(id)) throw new BadRequestException('A refund for this order is already being sent. Wait a moment, then refresh.');
+    this.refunding.add(id);
+    try { return await this.refundOnce(id, o, adminUserId); } finally { this.refunding.delete(id); }
+  }
+  private refunding = new Set<string>();
+
+  private async refundOnce(id: string, o: RefundInput, adminUserId?: string) {
     const order = await this.prisma.order.findUnique({
       where: { id },
       include: { items: true, payments: { where: { status: { in: ['PAID', 'PARTIALLY_REFUNDED'] } }, include: { refunds: true }, orderBy: { createdAt: 'desc' }, take: 1 } },

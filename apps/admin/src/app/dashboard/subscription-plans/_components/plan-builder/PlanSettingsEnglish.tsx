@@ -192,10 +192,16 @@ export default function PlanSettingsEnglish({ b }: { b: PlanBuilderState }) {
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, marginBottom: 12 }}>
       <SettingTile
         icon="✅" title="Active"
-        onLabel="Live on the pricing page" offLabel="Hidden from customers"
-        detail="Makes this plan visible and purchasable on the website. Disable to hide the plan from customers without deleting it."
+        onLabel="Sold and renews" offLabel="Retired — no sales, no renewals"
+        detail="Turning a plan off retires it: nobody can buy it, and the people already on it stop renewing when their term ends. To only take it off the website, use On the site instead."
         checked={form.isActive} onChange={v => setForm((x: any) => ({ ...x, isActive: v }))}
         accent="var(--emerald-600)" tint="var(--green-50)"
+      />
+      <SettingTile
+        icon="👁️" title="On the site"
+        onLabel="Shown on the pricing page" offLabel="Hidden — current subscribers still renew"
+        detail="Shows this plan on the website so new customers can buy it. Hide it and it disappears from the site and can't be bought, but everyone already on it keeps renewing as normal."
+        checked={form.listed !== false} onChange={v => setForm((x: any) => ({ ...x, listed: v }))}
       />
       <SettingTile
         icon="🔄" title="Auto renewal"
@@ -284,7 +290,7 @@ export default function PlanSettingsEnglish({ b }: { b: PlanBuilderState }) {
           rather than only visible over in Box Builder. */}
       <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginTop: 10 }}>
         {[
-          { on: form.isActive, icon: '✅', label: 'Live on site', c: 'var(--emerald-600)', bg: 'var(--green-50)', b: 'var(--green-200)' },
+          { on: form.isActive && form.listed !== false, icon: '✅', label: 'Live on site', c: 'var(--emerald-600)', bg: 'var(--green-50)', b: 'var(--green-200)' },
           { on: form.autoRenewal, icon: '🔄', label: 'Auto renews', c: 'var(--teal-700)', bg: 'var(--teal-50)', b: 'var(--teal-200)' },
           { on: form.giftable, icon: '🎁', label: 'Giftable', c: 'var(--amber-700)', bg: 'var(--amber-50)', b: 'var(--amber-200)' },
           { on: cfg.deliveryFree, icon: '🚚', label: 'Free delivery', c: 'var(--teal-700)', bg: 'var(--teal-50)', b: 'var(--teal-200)' },

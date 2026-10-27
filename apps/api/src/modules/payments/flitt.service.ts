@@ -138,4 +138,10 @@ export class FlittService {
     });
     return { status: String(r.order_status ?? ''), paymentId: String(r.payment_id ?? ''), reason: String(r.response_description ?? r.error_message ?? ''), code: r.response_code, raw: r };
   }
+
+  /** How a charge stands now, by the order id it went to the bank with (e.g. "<order>-r2"). */
+  async orderStatus(flittOrderId: string) {
+    const r = await this.call('status/order_id', { order_id: flittOrderId });
+    return { status: String(r.order_status ?? ''), paymentId: String(r.payment_id ?? ''), reason: String(r.response_description ?? r.error_message ?? ''), raw: r };
+  }
 }

@@ -400,7 +400,7 @@ export function Pagination({
   );
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 24 }}>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginTop: 24 }}>
       {/* Per-page */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <span style={{ fontSize: 12, color: 'var(--slate-400)' }}>Show</span>
@@ -410,11 +410,17 @@ export function Pagination({
       </div>
 
       {/* Pages */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+      <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}>
         {btn('‹', () => onPageChange(Math.max(1, page - 1)), false, page === 1)}
-        {Array.from({ length: totalPages }, (_, i) => i + 1).map(n =>
-          btn(n, () => onPageChange(n), n === page)
-        )}
+        {/* First, last, and two either side of this page; "…" for the gaps. */}
+        {Array.from({ length: totalPages }, (_, i) => i + 1)
+          .filter(n => n === 1 || n === totalPages || Math.abs(n - page) <= 2)
+          .map((n, i, shown) => (
+            <React.Fragment key={n}>
+              {i > 0 && n - shown[i - 1] > 1 && <span style={{ color: 'var(--slate-400)', fontSize: 12, padding: '0 2px' }}>…</span>}
+              {btn(n, () => onPageChange(n), n === page)}
+            </React.Fragment>
+          ))}
         {btn('›', () => onPageChange(Math.min(totalPages, page + 1)), false, page === totalPages)}
         <span style={{ fontSize: 12, color: 'var(--slate-400)', marginLeft: 4 }}>
           {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, total)} of {total}

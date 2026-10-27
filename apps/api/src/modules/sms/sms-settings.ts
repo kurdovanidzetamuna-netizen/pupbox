@@ -17,6 +17,44 @@ export const CUSTOMER_KINDS = ['ORDER_CUSTOMER', 'WELCOME', 'PAYMENT_FAILED', 'P
 export const TEAM_TOPICS = ['orders', 'signups', 'payments'] as const;
 export type TeamTopic = (typeof TEAM_TOPICS)[number];
 
+/**
+ * The words of each customer text, in both languages, with {{fill-ins}}.
+ * Admin can reword them (Text messages → Wording); what isn't changed uses these.
+ */
+export const SMS_TEXTS: Record<string, { label: string; fillIns: string[]; en: string; ka: string }> = {
+  ORDER_CUSTOMER: { label: 'Order paid', fillIns: ['firstName', 'orderId', 'items', 'total'],
+    en: 'PupBox: Thank you, {{firstName}}! Order #{{orderId}} is paid — {{items}}, {{total}}. We’ll let you know when it ships.',
+    ka: 'PupBox: მადლობა, {{firstName}}! შეკვეთა #{{orderId}} გადახდილია — {{items}}, {{total}}. გაგზავნისას შეგატყობინებთ.' },
+  WELCOME: { label: 'Welcome after sign-up', fillIns: ['firstName'],
+    en: 'PupBox: Welcome, {{firstName}}! Your account is ready. Tell us about your dog and pick a box: pupbox.ge',
+    ka: 'PupBox: მოგესალმებით, {{firstName}}! ანგარიში შექმნილია. მოგვიყევით თქვენს ძაღლზე და აირჩიეთ კოლოფი: pupbox.ge' },
+  RENEWAL_RETRY: { label: 'Renewal declined — we’ll try again', fillIns: ['amount', 'nextTry'],
+    en: 'PupBox: Your plan renewal ({{amount}}) didn’t go through. We’ll try again {{nextTry}}, or pay now: pupbox.ge/account/subscriptions',
+    ka: 'PupBox: გეგმის განახლება ({{amount}}) ვერ გადაიხადა. ხელახლა ვცდით {{nextTry}}, ან გადაიხადეთ ახლა: pupbox.ge/account/subscriptions' },
+  RENEWAL_REFUSED: { label: 'Renewal card refused for good', fillIns: ['amount'],
+    en: 'PupBox: Your card was declined for your plan renewal ({{amount}}). Please pay with another card: pupbox.ge/account/subscriptions',
+    ka: 'PupBox: გეგმის განახლებისას ({{amount}}) ბარათმა უარი თქვა. გთხოვთ, გადაიხადოთ სხვა ბარათით: pupbox.ge/account/subscriptions' },
+  RENEWAL_ENDED: { label: 'Plan ended after the last try', fillIns: ['tries'],
+    en: 'PupBox: We couldn’t renew your plan — the card was declined {{tries}} times, so it has ended. Restart any time: pupbox.ge/account',
+    ka: 'PupBox: გეგმის განახლება ვერ მოხერხდა — ბარათმა {{tries}}-ჯერ უარი თქვა, ამიტომ გეგმა დასრულდა. თავიდან დაწყება ნებისმიერ დროს: pupbox.ge/account' },
+  PAYMENT_RECOVERED: { label: 'Renewal paid after a retry', fillIns: ['amount'],
+    en: 'PupBox: Payment received ({{amount}}) — your plan continues. Thank you!',
+    ka: 'PupBox: გადახდა მიღებულია ({{amount}}) — თქვენი გეგმა გრძელდება. მადლობა!' },
+  REFUND: { label: 'Money refunded', fillIns: ['amount', 'orderId', 'card'],
+    en: 'PupBox: We’ve refunded {{amount}} for order #{{orderId}}{{card}}. It can take 3–5 working days to show.',
+    ka: 'PupBox: შეკვეთა #{{orderId}}-ზე დაგიბრუნეთ {{amount}}{{card}}. ასახვას 3–5 სამუშაო დღე შეიძლება დასჭირდეს.' },
+  EXTRA_CHARGE: { label: 'Extra payment for added items', fillIns: ['orderId', 'amount'],
+    en: 'PupBox: We added items to your order #{{orderId}} as you asked. Please pay the difference of {{amount}} here: pupbox.ge/account/orders',
+    ka: 'PupBox: თქვენი თხოვნით შეკვეთა #{{orderId}}-ს ნივთები დავამატეთ. გთხოვთ, გადაიხადოთ სხვაობა {{amount}} აქ: pupbox.ge/account/orders' },
+};
+
+/** One customer text in their language: admin's words if saved, else the built-in ones. */
+export function smsText(cfg: SmsSettings, key: keyof typeof SMS_TEXTS & string, language: string | null | undefined, vars: Record<string, string | number>) {
+  const l = language === 'en' ? 'en' : 'ka';
+  const words = cfg.texts?.[key]?.[l]?.trim() || SMS_TEXTS[key][l];
+  return words.replace(/\{\{(\w+)\}\}/g, (_, k) => String(vars[k] ?? '')).replace(/\s{2,}/g, ' ').trim();
+}
+
 export type TeamNumber = { name: string; phone: string; active: boolean; topics: TeamTopic[] };
 export interface SmsSettings {
   /** Main switch for every message except codes. */
@@ -32,6 +70,8 @@ export interface SmsSettings {
   codes: { resendSeconds: number; perHour: number; validMinutes: number };
   /** Card renewals: hours after the first try for each retry, and which tries text the customer. */
   retries: { afterHours: number[]; textOnTries: number[] };
+  /** Admin's own wording per text and language; missing ones use SMS_TEXTS. */
+  texts: Record<string, { en?: string; ka?: string }>;
 }
 
 export const SMS_DEFAULTS: SmsSettings = {
@@ -41,6 +81,7 @@ export const SMS_DEFAULTS: SmsSettings = {
   quiet: { enabled: true, from: '22:00', to: '09:00', team: false },
   codes: { resendSeconds: 60, perHour: 5, validMinutes: 10 },
   retries: { afterHours: [3, 7, 24, 48, 216, 384, 552], textOnTries: [1, 4, 6, 7, 8] },
+  texts: {},
 };
 
 const int = (v: unknown, fallback: number, min: number, max: number) => {
@@ -87,6 +128,12 @@ export function cleanSms(c: any, legacy?: any): SmsSettings {
       validMinutes: int(c.codes?.validMinutes, SMS_DEFAULTS.codes.validMinutes, 2, 60),
     },
     retries: { afterHours, textOnTries },
+    // Only known texts; a wording equal to the built-in one isn't stored.
+    texts: Object.fromEntries(Object.keys(SMS_TEXTS).map((k) => {
+      const t = c.texts?.[k] ?? {};
+      const one = (l: 'en' | 'ka') => (typeof t[l] === 'string' && t[l].trim() && t[l].trim() !== SMS_TEXTS[k][l] ? t[l].trim().slice(0, 480) : undefined);
+      return [k, { en: one('en'), ka: one('ka') }];
+    }).filter(([, v]) => (v as any).en || (v as any).ka)),
   };
 }
 

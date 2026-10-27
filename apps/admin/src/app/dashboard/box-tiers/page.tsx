@@ -127,7 +127,7 @@ export default function BoxTiersPage() {
                   const p = t.plans.find((x: any) => x.durationValue === m);
                   return p ? (
                     <div key={m} style={{ borderRadius: 10, background: p.isActive ? 'var(--slate-50)' : 'var(--white)', border: '1px solid var(--slate-200)', padding: '8px 10px', opacity: p.isActive ? 1 : 0.6 }}>
-                      <div style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--slate-400)' }}>{m} mo{p.isActive ? '' : ' · off'}</div>
+                      <div style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--slate-400)' }}>{m} mo{!p.isActive ? ' · off' : p.listed === false ? ' · hidden' : ''}</div>
                       <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--slate-900)' }}>{gel(p.monthlyEquivPrice ?? Number(p.price) / m)}<span style={{ fontSize: 10.5, fontWeight: 600, color: 'var(--slate-400)' }}>/mo</span></div>
                       <div style={{ fontSize: 10.5, color: 'var(--slate-500)' }}>{gel(p.price)}{Number(p.discountPercent) > 0 ? ` · −${Number(p.discountPercent)}%` : ''}</div>
                     </div>

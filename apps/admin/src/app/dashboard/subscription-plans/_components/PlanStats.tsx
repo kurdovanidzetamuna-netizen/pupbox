@@ -5,8 +5,9 @@ export default function PlanStats({ plans, planOrderCounts }: { plans: any[]; pl
   return (
     <StatCards>
       <StatCard value={plans.length} label="total plans" theme="slate" />
-      <StatCard value={plans.filter(p => p.isActive).length} label="active" theme="green" />
-      <StatCard value={plans.filter(p => !p.isActive).length} label="disabled" theme="red" />
+      <StatCard value={plans.filter(p => p.isActive && p.listed !== false).length} label="live on site" theme="green" />
+      <StatCard value={plans.filter(p => p.isActive && p.listed === false).length} label="hidden" theme="slate" />
+      <StatCard value={plans.filter(p => !p.isActive).length} label="off" theme="red" />
       <StatCard value={Object.values(planOrderCounts).filter(c => c > 0).length} label="plans in use" theme="blue" />
       {(() => {
         const popular = plans.find(p => p.badge === 'Most Popular');

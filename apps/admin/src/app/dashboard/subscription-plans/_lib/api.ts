@@ -37,8 +37,19 @@ export function savePlan(planId: string | undefined, body: any) {
   );
 }
 
+/** Only the field that changes: the API refuses the read-only ones (id, dates, tier). */
 export function togglePlanActive(p: any) {
-  return fetch(`${API}/admin/subscription-plans/${p.id}`, { method: 'PUT', headers: jsonHeaders(), body: JSON.stringify({ ...p, isActive: !p.isActive }) });
+  return fetch(`${API}/admin/subscription-plans/${p.id}`, { method: 'PUT', headers: jsonHeaders(), body: JSON.stringify({ isActive: !p.isActive }) });
+}
+
+/** Show on the site or hide it; hidden plans keep renewing for the people already on them. */
+export function togglePlanListed(p: any) {
+  return fetch(`${API}/admin/subscription-plans/${p.id}`, { method: 'PUT', headers: jsonHeaders(), body: JSON.stringify({ listed: p.listed === false }) });
+}
+
+/** Shows or hides a whole group: the box-type plans, or the plans without a box type. */
+export function setGroupListed(group: 'BOX_TYPES' | 'OTHER', listed: boolean) {
+  return fetch(`${API}/admin/subscription-plans/show-on-site`, { method: 'POST', headers: jsonHeaders(), body: JSON.stringify({ group, listed }) });
 }
 
 export function deletePlan(planId: string) {

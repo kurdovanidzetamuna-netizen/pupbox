@@ -5,7 +5,7 @@ import QuickAddBoxItemModal from '@/components/QuickAddBoxItemModal';
 import Link from 'next/link';
 import { EMPTY_FORM } from './_lib/constants';
 import { isSuperAdmin as currentUserIsSuperAdmin } from './_lib/auth';
-import { fetchPlans, fetchPlanOrderCount, fetchTiers, togglePlanActive, deletePlan as deletePlanRequest } from './_lib/api';
+import { fetchPlans, fetchPlanOrderCount, fetchTiers, togglePlanActive, togglePlanListed, setGroupListed, deletePlan as deletePlanRequest } from './_lib/api';
 import { useBadges } from './_hooks/useBadges';
 import PlanBuilder from './_components/plan-builder/PlanBuilder';
 import PlanStats from './_components/PlanStats';
@@ -13,6 +13,7 @@ import BadgeManagerModal from './_components/BadgeManagerModal';
 import PlanListRow, { PlanListHeader } from './_components/PlanListRow';
 import PlanCard from './_components/PlanCard';
 import PlanViewModal from './_components/PlanViewModal';
+import SiteVisibility from './_components/SiteVisibility';
 
 export default function AdminSubscriptionPlansPage() {
   const [showBoxItemModal, setShowBoxItemModal] = useState(false);
@@ -29,6 +30,7 @@ export default function AdminSubscriptionPlansPage() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(9);
   const [badgeManagerInput, setBadgeManagerInput] = useState('');
+  const [groupBusy, setGroupBusy] = useState<'BOX_TYPES' | 'OTHER' | null>(null);
 
   async function load() {
     setLoading(true);
@@ -72,8 +74,22 @@ export default function AdminSubscriptionPlansPage() {
   }, []);
 
   async function toggleActive(p: any) {
+    // Retiring a plan stops renewals for everyone on it; hiding is the gentle option.
+    if (p.isActive && !confirm(`Turn off "${p.name}"? Nobody can buy it, and people already on it stop renewing when their term ends.\n\nTo only take it off the website, use Hide instead.`)) return;
     await togglePlanActive(p);
     load();
+  }
+
+  // Shown on the spot; the list reloads after.
+  async function toggleListed(p: any) {
+    setPlans((all) => all.map((x) => (x.id === p.id ? { ...x, listed: p.listed === false } : x)));
+    await togglePlanListed(p);
+    load();
+  }
+
+  async function changeGroup(group: 'BOX_TYPES' | 'OTHER', listed: boolean) {
+    setGroupBusy(group);
+    try { await setGroupListed(group, listed); await load(); } finally { setGroupBusy(null); }
   }
 
   async function deletePlan(p: any) {
@@ -101,6 +117,7 @@ export default function AdminSubscriptionPlansPage() {
       </div>
 
       <PlanStats plans={plans} planOrderCounts={planOrderCounts} />
+      {!loading && <SiteVisibility plans={plans} busy={groupBusy} onChange={changeGroup} />}
       <Toolbar style={{ marginBottom: 20 }}>
         <ActionButton onClick={() => setBuilderPlan({ ...EMPTY_FORM })}>+ New Plan</ActionButton>
         <ActionButton variant="secondary" onClick={() => setShowBoxItemModal(true)}>+ New Box Item</ActionButton>
@@ -169,6 +186,7 @@ export default function AdminSubscriptionPlansPage() {
               onView: () => setViewPlan(p),
               onConfigure: () => setBuilderPlan(p),
               onToggle: () => toggleActive(p),
+              onToggleListed: () => toggleListed(p),
               onDelete: () => deletePlan(p),
             };
             return viewMode === 'list'

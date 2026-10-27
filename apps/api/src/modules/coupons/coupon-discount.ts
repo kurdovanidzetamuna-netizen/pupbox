@@ -72,6 +72,25 @@ export function couponFit(c: Coupon, lines: Line[]): 'ok' | 'scope' | 'months' |
   return planMiss(c, kind[0])!;
 }
 
+/**
+ * Why a code on this order takes nothing off, or null when it takes money
+ * off. MIN: the order is under its minimum (by `short`). GIFT: it's for gift
+ * boxes and this plan isn't a gift. NONE: nothing it covers is in the order.
+ * In the basket (no `delivery` yet) a delivery code can still help at
+ * checkout, so it only counts the minimum there.
+ */
+export function couponGap(c: Coupon, lines: Line[], o: { delivery?: number; gift?: boolean } = {}): null | { reason: 'MIN'; short: number } | { reason: 'GIFT' | 'NONE' } {
+  if (!meetsMinimum(c, lines)) {
+    const subtotal = lines.reduce((n, l) => n + value(l), 0);
+    return { reason: 'MIN', short: +(Number(c.minOrderAmount) - subtotal).toFixed(2) };
+  }
+  const off = couponDiscount(c, lines, o.delivery ?? 0, { gift: o.gift });
+  if (off.items + off.delivery > 0) return null;
+  if (o.delivery === undefined && c.scopes.includes('DELIVERY')) return null;
+  const giftOnly = !o.gift && c.scopes.includes('GIFT') && lines.some((l) => lineScope(l) === 'BOX' && !planMiss(c, l));
+  return { reason: giftOnly ? 'GIFT' : 'NONE' };
+}
+
 /** Has this customer paid for an order before? (For "new customers only" codes.) */
 export const hasPaidBefore = async (prisma: { payment: { count: (a: any) => Promise<number> } }, userId: string) =>
   (await prisma.payment.count({ where: { userId, status: { in: ['PAID', 'PARTIALLY_REFUNDED', 'REFUNDED'] } } })) > 0;

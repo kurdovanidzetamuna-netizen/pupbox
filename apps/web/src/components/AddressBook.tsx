@@ -226,10 +226,7 @@ export default function AddressBook({ onExpired, addTick = 0, onCount }: {
                   <span className="w-10 h-6 rounded-full bg-gray-300 peer-checked:bg-teal-600 transition-colors" />
                   <span className="absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform peer-checked:translate-x-4" />
                 </span>
-                <span className="min-w-0">
-                  <span className="flex items-center gap-1 text-[13px] font-semibold text-gray-800"><Icon name="star" className="w-3.5 h-3.5 text-amber-500 [&_path]:fill-current" />{t('addr.mainSwitch')}</span>
-                  <span className="block text-[11.5px] text-gray-500">{t('addr.mainHint')}</span>
-                </span>
+                <span className="flex items-center gap-1 text-[13px] font-semibold text-gray-800"><Icon name="star" className="w-3.5 h-3.5 text-amber-500 [&_path]:fill-current" />{t('addr.mainSwitch')}</span>
               </label>
             )}
           </div>

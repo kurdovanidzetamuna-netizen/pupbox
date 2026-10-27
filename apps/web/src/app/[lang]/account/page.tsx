@@ -14,6 +14,7 @@ import Modal from '@/components/ui/Modal';
 import IconButton from '@/components/ui/IconButton';
 import { Icon } from '@/components/ui/icons';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
+import { pushIsOn, pushSupported, turnPushOff, turnPushOn } from '@/lib/push';
 import { FormAlert, countErrors, revealFirstError } from '@/components/ui/FormError';
 
 export default function AccountPage() {
@@ -86,6 +87,16 @@ export default function AccountPage() {
     if (u) { setUser(u); setForm((f) => ({ ...f, phone: u.phone || '' })); }
     setPhoneOpen(false);
     setSuccess(t('otp.saved'));
+  }
+
+  // Push on this device: a browser setting, so it's read from the browser.
+  const [push, setPush] = useState<{ on: boolean; note: string; busy: boolean }>({ on: false, note: '', busy: false });
+  useEffect(() => { if (notifOpen) pushIsOn().then((on) => setPush((p) => ({ ...p, on }))).catch(() => {}); }, [notifOpen]);
+  async function togglePush() {
+    setPush((p) => ({ ...p, busy: true, note: '' }));
+    if (push.on) { await turnPushOff(); setPush({ on: false, note: '', busy: false }); return; }
+    const r = await turnPushOn().catch(() => 'unavailable' as const);
+    setPush({ on: r === 'on', busy: false, note: r === 'denied' ? t('acc.pushDenied') : r === 'unavailable' ? t('acc.pushUnavailable') : '' });
   }
 
   async function toggleChannel(channel: 'marketingEmail' | 'marketingSms') {
@@ -232,6 +243,15 @@ export default function AccountPage() {
               {toggle(!!user?.[k], () => (user?.[k] ? setAskOff(k) : toggleChannel(k)), t(label))}
             </div>
           ))}
+          {pushSupported() && (
+            <div className="py-3">
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-[13px] font-medium text-gray-800">🔔 {t('acc.pushDevice')}</span>
+                {toggle(push.on, () => { if (!push.busy) togglePush(); }, t('acc.pushDevice'))}
+              </div>
+              {push.note && <p className="mt-1.5 text-[12px] text-amber-700">{push.note}</p>}
+            </div>
+          )}
         </div>
       </Modal>
 

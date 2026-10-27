@@ -18,6 +18,7 @@ const FILTERS: { key: string; icon: string; label: string; types?: string[] }[] 
   { key: 'orders', icon: 'bag', label: 'ntf.c.orders', types: ['ORDER_PAID', 'PAYMENT_FAILED', 'ORDER_SHIPPED', 'ORDER_DELIVERED', 'REFUNDED', 'EXTRA_CHARGE'] },
   { key: 'boxes', icon: 'box', label: 'ntf.c.boxes', types: ['BOX_SHIPPED', 'BOX_DELIVERED', 'RENEWAL_DUE'] },
   { key: 'gifts', icon: 'gift', label: 'ntf.c.gifts', types: ['GIFT_SENT', 'REFERRAL_REWARD', 'WELCOME'] },
+  { key: 'news', icon: 'heart', label: 'ntf.c.news', types: ['MESSAGE'] },
 ];
 
 /**
@@ -101,7 +102,7 @@ export default function NotificationsPage() {
             return (
               <button key={f.key} type="button" role="tab" aria-selected={on} aria-label={t(f.label)} onClick={() => setFilter(f.key)}
                 className={`group/tab relative shrink-0 inline-flex items-center justify-center w-10 h-9 rounded-full transition-colors ${
-                  on ? 'bg-white text-teal-700 shadow-[0_1px_4px_rgba(36,48,58,0.15)]' : 'text-gray-600 hover:text-gray-900'}`}>
+                  on ? 'bg-white text-teal-700 ring-1 ring-gray-200' : 'text-gray-600 hover:text-gray-900'}`}>
                 <Icon name={f.icon} className="w-[18px] h-[18px]" />
                 {f.key === 'unread' && unread > 0 && <span className="absolute top-0.5 right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-teal-600 text-white text-[9.5px] font-bold leading-4 text-center tabular-nums">{unread}</span>}
                 <span role="tooltip" className="pointer-events-none absolute top-full mt-1.5 left-1/2 -translate-x-1/2 hidden group-hover/tab:block group-focus-visible/tab:block whitespace-nowrap rounded-lg bg-gray-800 text-white text-[11px] font-medium px-2 py-1 z-30">{t(f.label)}</span>

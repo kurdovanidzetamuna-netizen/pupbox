@@ -8,7 +8,8 @@
 }
 
 /* Flat, friendly buttons: every filled brand button is solid mint with the
-   cards' soft rounded corners and no shadow; it darkens a touch on hover.
+   cards' soft rounded corners and no shadow (no button on the site has
+   one); it darkens a touch on hover.
    :where() keeps this weak, so a button's own rounded-* class still wins. */
 :where(a.bg-teal-600, button.bg-teal-600) {
   border-radius: 14px;
@@ -146,16 +147,14 @@ input[type=number] { -moz-appearance: textfield; appearance: textfield; }
   background: #22A38B; color: #fff; font-weight: 700; font-size: 14px; white-space: nowrap;
   transition: background-color .2s ease;
 }
-.cta-glow::before, .cta-glow::after {
+.cta-glow::before {
   content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit;
   background: var(--glow); background-size: 400%;
   animation: glowFlow 10s linear infinite;
   transition: inset .3s ease, opacity .3s ease;
 }
-.cta-glow::after { filter: blur(18px); opacity: 0; }
 .cta-glow:hover, .cta-glow:focus-visible { background: #1A8574; }
 .cta-glow:hover::before, .cta-glow:focus-visible::before { inset: -4px; border-radius: 22px; }
-.cta-glow:hover::after, .cta-glow:focus-visible::after { inset: 8px -4px -8px; opacity: .55; }
 .cta-glow:active { background: #166A5E; }
 .cta-glow-icon { display: inline-flex; flex-shrink: 0; }
 .cta-glow-icon svg { transition: transform .2s ease; }
@@ -163,7 +162,7 @@ input[type=number] { -moz-appearance: textfield; appearance: textfield; }
 @keyframes glowFlow { 0% { background-position: 0 0; } 50% { background-position: 300% 0; } 100% { background-position: 0 0; } }
 
 @media (prefers-reduced-motion: reduce) {
-  .cta-glow::before, .cta-glow::after { animation: none; }
+  .cta-glow::before { animation: none; }
 }
 
 /* A bar that fills like a timer (slider dots, the changing steps). Pause it

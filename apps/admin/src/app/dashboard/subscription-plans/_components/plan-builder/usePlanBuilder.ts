@@ -298,6 +298,7 @@ export function usePlanBuilder({ plan, onClose, onSaved, badges, addBadge }: Pla
         benefits: form.benefits.split('\n').filter(Boolean),
         sortOrder: Number(form.sortOrder),
         isActive: form.isActive,
+        listed: form.listed !== false,
         deliveryIncluded: form.deliveryIncluded,
         autoRenewal: form.autoRenewal,
         giftable: form.giftable,

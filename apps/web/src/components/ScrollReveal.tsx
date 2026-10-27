@@ -18,6 +18,7 @@ import { usePath } from '@/lib/path';
  *   build-a-box product panel): those are browsed, not scrolled past.
  * - Once played, the classes come off, so nothing keeps a transform.
  * - Off entirely for people who ask their device for less motion.
+ * - Leaves decorations laid over other things (a switch's sliding highlight) alone.
  * - If React re-renders an element's class, it simply shows: failing visible.
  */
 const TARGETS = [
@@ -63,10 +64,15 @@ export default function ScrollReveal() {
       });
     }, { threshold: 0 });
 
+    // Remembered here, not on the element: React still owns the page's
+    // attributes while it finishes loading, and an extra one makes it warn.
+    const seen = new WeakSet<HTMLElement>();
     const take = (el: HTMLElement) => {
-      if (el.dataset.rv) return;
-      el.dataset.rv = '1';
+      if (seen.has(el)) return;
+      seen.add(el);
       if (el.closest(SKIP) || el.querySelector('.fixed, .sticky, form')) return;
+      // Decorations laid over something else (a switch's sliding highlight) move with it, never on their own.
+      if (el.getAttribute('aria-hidden') === 'true' || getComputedStyle(el).position === 'absolute') return;
       // A section whose cards animate on their own doesn't move as a block too.
       if (el.tagName === 'SECTION' && el.querySelector(ITEM.replace(/main |footer /g, ''))) return;
       // Already on screen (or above it), or off to the side: leave it exactly as it is.
@@ -81,7 +87,8 @@ export default function ScrollReveal() {
       root.querySelectorAll<HTMLElement>(TARGETS).forEach(take);
     };
 
-    scan(document);
+    // Only once the page has loaded and React has finished taking it over:
+    // marking something React hasn't reached yet makes it warn.
     // New content (a list that loaded, the next page) gets the same treatment.
     let queued: Node[] = [];
     let raf = 0;
@@ -89,13 +96,15 @@ export default function ScrollReveal() {
       records.forEach((r) => r.addedNodes.forEach((n) => { if (n.nodeType === 1) queued.push(n); }));
       if (!raf) raf = requestAnimationFrame(() => { raf = 0; const q = queued; queued = []; q.forEach((n) => scan(n as ParentNode)); });
     });
-    mo.observe(document.body, { childList: true, subtree: true });
+    const begin = () => { scan(document); mo.observe(document.body, { childList: true, subtree: true }); };
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const settle = () => { timer = setTimeout(begin, 350); };
+    if (document.readyState === 'complete') settle(); else window.addEventListener('load', settle, { once: true });
 
     return () => {
-      io.disconnect(); mo.disconnect(); cancelAnimationFrame(raf);
+      io.disconnect(); mo.disconnect(); cancelAnimationFrame(raf); clearTimeout(timer); window.removeEventListener('load', settle);
       // Never leave anything hidden behind.
       document.querySelectorAll('.rv').forEach((el) => el.classList.remove('rv', 'rv-item', 'rv-block'));
-      document.querySelectorAll<HTMLElement>('[data-rv]').forEach((el) => delete el.dataset.rv);
     };
   }, [pathname]);
 

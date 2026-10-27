@@ -198,7 +198,7 @@ export default function BuildBoxView({ products, config: raw }: { products: any[
           <div role="radiogroup" aria-label={`${t('cb.once')} / ${t('cb.monthly')}`} className="grid grid-cols-2 w-full max-w-sm sm:max-w-none sm:w-auto sm:inline-flex bg-gray-200/80 ring-1 ring-inset ring-gray-300/60 rounded-full p-1 gap-1">
             {([[false, 'box', t('cb.once')], [true, 'repeat', t('cb.monthly')]] as const).map(([m, icon, label]) => (
               <button key={String(m)} type="button" role="radio" aria-checked={monthly === m} onClick={() => setMonthly(m)}
-                className={`flex items-center justify-center gap-1.5 sm:gap-2 px-2.5 sm:px-6 py-2.5 rounded-full text-[12.5px] sm:text-[13.5px] font-bold whitespace-nowrap transition-all ${monthly === m ? 'bg-white text-teal-700 shadow-[0_1px_4px_rgba(36,48,58,0.15)]' : 'text-gray-600 hover:text-gray-900'}`}>
+                className={`flex items-center justify-center gap-1.5 sm:gap-2 px-2.5 sm:px-6 py-2.5 rounded-full text-[12.5px] sm:text-[13.5px] font-bold whitespace-nowrap transition-all ${monthly === m ? 'bg-white text-teal-700 ring-1 ring-gray-200' : 'text-gray-600 hover:text-gray-900'}`}>
                 <Icon name={icon} className="w-[17px] h-[17px]" />{label}
                 {m && config.monthlyDiscount > 0 && <span className="text-[11px] font-extrabold text-peach-600">−{config.monthlyDiscount}%</span>}
               </button>

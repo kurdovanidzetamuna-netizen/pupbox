@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { smsSettings, quietUntil, type SmsSettings, type TeamTopic } from './sms-settings';
+import { smsText, smsSettings, quietUntil, type SmsSettings, type TeamTopic } from './sms-settings';
 import { SmsService, type SmsKind } from './sms.service';
 
 const DEMO = /@pupbox\.dev$/i;
@@ -50,9 +50,8 @@ export class SmsNotify {
       const count = o.items.reduce((n, i) => n + i.quantity, 0);
       const list = o.items.slice(0, 2).map((i) => `${i.name}${i.quantity > 1 ? ` ×${i.quantity}` : ''}`).join(', ') + (o.items.length > 2 ? ` +${o.items.length - 2}` : '');
       if (o.user.phone && o.user.phoneVerified) {
-        const text = o.user.language === 'en'
-          ? `PupBox: Thank you, ${o.user.firstName}! Order #${no(o)} is paid — ${count} item${count === 1 ? '' : 's'}, ${gel(o.total)}. We'll let you know when it ships.`
-          : `PupBox: მადლობა, ${o.user.firstName}! შეკვეთა #${no(o)} გადახდილია — ${count} ნივთი, ${gel(o.total)}. გაგზავნისას შეგატყობინებთ.`;
+        const items = o.user.language === 'en' ? `${count} item${count === 1 ? '' : 's'}` : `${count} ნივთი`;
+        const text = smsText(cfg, 'ORDER_CUSTOMER', o.user.language, { firstName: o.user.firstName, orderId: no(o), items, total: gel(o.total) });
         await this.customer(cfg, 'ORDER_CUSTOMER', o.user.phone, text, { userId: o.user.id, orderId });
       }
       const text = `PupBox new order #${no(o)}: ${gel(o.total)} · ${o.user.firstName} ${o.user.lastName} ${o.address?.phone || o.user.phone || ''}${o.address?.city ? ` · ${o.address.city}` : ''} · ${list}`;
@@ -67,9 +66,7 @@ export class SmsNotify {
       if (!u || DEMO.test(u.email)) return;
       const cfg = await smsSettings(this.prisma);
       if (u.phone && u.phoneVerified) {
-        const text = u.language === 'en'
-          ? `PupBox: Welcome, ${u.firstName}! Your account is ready. Tell us about your dog and pick a box: pupbox.ge`
-          : `PupBox: მოგესალმებით, ${u.firstName}! ანგარიში შექმნილია. მოგვიყევით თქვენს ძაღლზე და აირჩიეთ კოლოფი: pupbox.ge`;
+        const text = smsText(cfg, 'WELCOME', u.language, { firstName: u.firstName });
         await this.customer(cfg, 'WELCOME', u.phone, text, { userId });
       }
       await this.team(cfg, 'signups', `PupBox new customer: ${u.firstName} ${u.lastName} · ${u.phone || 'no phone'}${u.phoneVerified ? ' ✓' : ''} · ${u.email}`, 'NEW_CUSTOMER_ADMIN', { userId });
@@ -85,11 +82,7 @@ export class SmsNotify {
       const en = ord.user.language === 'en';
       const when = o.next ? o.next.toLocaleString(en ? 'en-GB' : 'ka-GE', { timeZone: 'Asia/Tbilisi', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
       if (o.toCustomer && ord.user.phone && ord.user.phoneVerified) {
-        const text = o.final
-          ? (en ? `PupBox: We couldn't renew your plan — the card was declined ${o.attempt} times, so it has ended. Restart any time: pupbox.ge/account` : `PupBox: გეგმის განახლება ვერ მოხერხდა — ბარათმა ${o.attempt}-ჯერ უარი თქვა, ამიტომ გეგმა დასრულდა. თავიდან დაწყება ნებისმიერ დროს: pupbox.ge/account`)
-          : o.hard
-            ? (en ? `PupBox: Your card was declined for your plan renewal (${gel(ord.total)}). Please pay with another card: pupbox.ge/account/subscriptions` : `PupBox: გეგმის განახლებისას (${gel(ord.total)}) ბარათმა უარი თქვა. გთხოვთ, გადაიხადოთ სხვა ბარათით: pupbox.ge/account/subscriptions`)
-            : (en ? `PupBox: Your plan renewal (${gel(ord.total)}) didn't go through. We'll try again ${when}, or pay now: pupbox.ge/account/subscriptions` : `PupBox: გეგმის განახლება (${gel(ord.total)}) ვერ გადაიხადა. ხელახლა ვცდით ${when}, ან გადაიხადეთ ახლა: pupbox.ge/account/subscriptions`);
+        const text = smsText(cfg, o.final ? 'RENEWAL_ENDED' : o.hard ? 'RENEWAL_REFUSED' : 'RENEWAL_RETRY', ord.user.language, { amount: gel(ord.total), nextTry: when, tries: o.attempt });
         await this.customer(cfg, 'PAYMENT_FAILED', ord.user.phone, text, { userId: ord.user.id, orderId });
       }
       if (o.toTeam) {
@@ -104,8 +97,9 @@ export class SmsNotify {
     try {
       const ord = await this.prisma.order.findUnique({ where: { id: orderId }, include: { user: { select: { id: true, email: true, phone: true, phoneVerified: true, language: true } } } });
       if (!ord || DEMO.test(ord.user.email) || !ord.user.phone || !ord.user.phoneVerified) return;
-      const text = ord.user.language === 'en' ? `PupBox: Payment received (${gel(ord.total)}) — your plan continues. Thank you!` : `PupBox: გადახდა მიღებულია (${gel(ord.total)}) — თქვენი გეგმა გრძელდება. მადლობა!`;
-      await this.customer(await smsSettings(this.prisma), 'PAYMENT_RECOVERED', ord.user.phone, text, { userId: ord.user.id, orderId });
+      const cfg = await smsSettings(this.prisma);
+      const text = smsText(cfg, 'PAYMENT_RECOVERED', ord.user.language, { amount: gel(ord.total) });
+      await this.customer(cfg, 'PAYMENT_RECOVERED', ord.user.phone, text, { userId: ord.user.id, orderId });
     } catch (e: any) { this.logger.error(`Renewal-recovered SMS for ${orderId}: ${e.message}`); }
   }
 
@@ -115,10 +109,10 @@ export class SmsNotify {
       const ord = await this.prisma.order.findUnique({ where: { id: orderId }, include: { user: { select: { id: true, email: true, phone: true, phoneVerified: true, language: true } } } });
       if (!ord || DEMO.test(ord.user.email) || !ord.user.phone || !ord.user.phoneVerified) return;
       const card = cardMask ? cardMask.replace(/^.*?(\d{4})$/, '••$1') : '';
-      const text = ord.user.language === 'en'
-        ? `PupBox: We've refunded ${gel(amount)} for order #${no(ord)}${card ? ` to your card ${card}` : ''}. It can take 3–5 working days to show.`
-        : `PupBox: შეკვეთა #${no(ord)}-ზე დაგიბრუნეთ ${gel(amount)}${card ? ` ბარათზე ${card}` : ''}. ასახვას 3–5 სამუშაო დღე შეიძლება დასჭირდეს.`;
-      await this.customer(await smsSettings(this.prisma), 'REFUND', ord.user.phone, text, { userId: ord.user.id, orderId });
+      const cfg = await smsSettings(this.prisma);
+      const en = ord.user.language === 'en';
+      const text = smsText(cfg, 'REFUND', ord.user.language, { amount: gel(amount), orderId: no(ord), card: card ? (en ? ` to your card ${card}` : ` ბარათზე ${card}`) : '' });
+      await this.customer(cfg, 'REFUND', ord.user.phone, text, { userId: ord.user.id, orderId });
     } catch (e: any) { this.logger.error(`Refund SMS for ${orderId}: ${e.message}`); }
   }
 
@@ -128,10 +122,9 @@ export class SmsNotify {
       const ord = await this.prisma.order.findUnique({ where: { id: extraOrderId }, include: { user: { select: { id: true, email: true, phone: true, phoneVerified: true, language: true } } } });
       if (!ord || DEMO.test(ord.user.email) || !ord.user.phone || !ord.user.phoneVerified) return;
       const n = parentOrderNumber.slice(-8).toUpperCase();
-      const text = ord.user.language === 'en'
-        ? `PupBox: We added items to your order #${n} as you asked. Please pay the difference of ${gel(total)} here: pupbox.ge/account/orders`
-        : `PupBox: თქვენი თხოვნით შეკვეთა #${n}-ს ნივთები დავამატეთ. გთხოვთ, გადაიხადოთ სხვაობა ${gel(total)} აქ: pupbox.ge/account/orders`;
-      await this.customer(await smsSettings(this.prisma), 'EXTRA_CHARGE', ord.user.phone, text, { userId: ord.user.id, orderId: extraOrderId });
+      const cfg = await smsSettings(this.prisma);
+      const text = smsText(cfg, 'EXTRA_CHARGE', ord.user.language, { orderId: n, amount: gel(total) });
+      await this.customer(cfg, 'EXTRA_CHARGE', ord.user.phone, text, { userId: ord.user.id, orderId: extraOrderId });
     } catch (e: any) { this.logger.error(`Extra-charge SMS for ${extraOrderId}: ${e.message}`); }
   }
 }

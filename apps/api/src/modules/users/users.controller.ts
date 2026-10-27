@@ -1,9 +1,11 @@
-import { Controller, Get, Patch, Body, UseGuards, Request, Param, Query, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Controller, Get, Patch, Post, Delete, Body, UseGuards, Request, Param, Query, Res, BadRequestException, NotFoundException } from '@nestjs/common';
+import type { Response } from 'express';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth, ApiTags, ApiOperation } from '@nestjs/swagger';
 import { Prisma, UserStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { IsBoolean, IsIn, IsOptional, IsString, MaxLength } from 'class-validator';
+import { ArrayMaxSize, IsArray, IsBoolean, IsIn, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import { customerRows, customersCsv, type CustomerQuery } from './customer-list';
 import { normalisePhone } from '../auth/verification';
 import { consentUpdate } from './consent';
 import { AdminPerms } from '../admin-auth/admin-permissions';
@@ -34,6 +36,14 @@ const USER_SELECT = {
 class VerifyDto {
   @IsIn(['PHONE', 'EMAIL']) channel: 'PHONE' | 'EMAIL';
   @IsBoolean() verified: boolean;
+}
+
+class NoteDto {
+  @IsString() @MinLength(1) @MaxLength(2000) body!: string;
+}
+
+class TagsDto {
+  @IsArray() @ArrayMaxSize(20) @IsString({ each: true }) @MaxLength(30, { each: true }) tags!: string[];
 }
 
 class CustomerStatusDto {
@@ -136,34 +146,22 @@ export class UsersController {
 export class AdminCustomersController {
   constructor(private prisma: PrismaService, private audit: AuditService) {}
 
+  /** The list: filters, sorting and paging, with spend, plan and city per customer. */
   @Get()
-  @ApiOperation({ summary: 'List all customers' })
-  async list(@Query('search') search?: string, @Query('status') status?: string) {
-    // Every User row is a customer — admins live in the separate AdminUser
-    // model, so there is no isAdmin column to filter on. Querying one threw
-    // PrismaClientValidationError and this endpoint returned 500 every time;
-    // the `as any` on the where clause is what stopped the compiler saying so.
-    const where: Prisma.UserWhereInput = {
-      deletedAt: null,
-      ...(status && status in UserStatus ? { status: status as UserStatus } : {}),
-      ...(search ? {
-        OR: [
-          { email: { contains: search, mode: 'insensitive' } },
-          { firstName: { contains: search, mode: 'insensitive' } },
-          { lastName: { contains: search, mode: 'insensitive' } },
-        ],
-      } : {}),
-    };
+  @ApiOperation({ summary: 'List customers' })
+  list(@Query() q: CustomerQuery) {
+    return customerRows(this.prisma, q);
+  }
 
-    return this.prisma.user.findMany({
-      where,
-      select: {
-        id: true, email: true, firstName: true, lastName: true, phone: true, status: true, referralCode: true, createdAt: true,
-        emailVerified: true, phoneVerified: true, phoneVerifiedAt: true, phoneVerifiedVia: true, marketingConsent: true, marketingEmail: true, marketingSms: true,
-        _count: { select: { orders: true, dogs: { where: { deletedAt: null, forGift: false } } } },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+  /** The same filtered list as a spreadsheet (contact details: needs "Export CRM lists"). */
+  @Get('export.csv')
+  @AdminPerms({ read: 'crm.export' })
+  @ApiOperation({ summary: 'Customers as CSV' })
+  async exportCsv(@Res() res: Response, @Query() q: CustomerQuery) {
+    const { rows } = await customerRows(this.prisma, q, true);
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="customers-${new Date().toISOString().slice(0, 10)}.csv"`);
+    res.send(customersCsv(rows));
   }
 
   /** One customer with everything the team needs: dogs (with photos), plans, orders, consent. */
@@ -183,12 +181,33 @@ export class AdminCustomersController {
           select: { id: true, status: true, isGift: true, startDate: true, endDate: true, boxesTotal: true, boxesDelivered: true, autoRenewal: true, cancelledAt: true, plan: { select: { name: true } }, dog: { select: { name: true } } },
         },
         orders: { orderBy: { createdAt: 'desc' }, take: 20, select: { id: true, orderNumber: true, type: true, status: true, total: true, createdAt: true, isGift: true } },
-        referralsSent: { select: { status: true } },
+        referralsSent: { select: { status: true, rewardValue: true, createdAt: true, invited: { select: { email: true, firstName: true, lastName: true } } }, orderBy: { createdAt: 'desc' } },
+        referralsReceived: { select: { status: true, createdAt: true, inviter: { select: { id: true, email: true, firstName: true, lastName: true } } }, take: 1 },
+        savedCards: { select: { id: true, brand: true, last4: true, expMonth: true, expYear: true, isDefault: true, createdAt: true }, orderBy: [{ isDefault: 'desc' }, { createdAt: 'desc' }] },
+        couponUsages: { select: { usedAt: true, orderId: true, coupon: { select: { code: true } } }, orderBy: { usedAt: 'desc' }, take: 30 },
+        customerNotes: { orderBy: { createdAt: 'desc' }, take: 100 },
+        _count: { select: { pushSubscriptions: true } },
+        lastLoginAt: true, crmTags: true,
       },
     });
     if (!user) throw new NotFoundException('Customer not found');
-    const spent = await this.prisma.payment.aggregate({ where: { userId: id, status: { in: ['PAID', 'PARTIALLY_REFUNDED'] } }, _sum: { amount: true } });
-    return { ...user, totalPaid: Number(spent._sum.amount ?? 0), referrals: user.referralsSent.length };
+    const { rows } = await customerRows(this.prisma, { search: user.email }, true);
+    const me = rows.find((r) => r.id === id);
+    // What each promo code took off: the order's discount.
+    const orderIds = user.couponUsages.map((u) => u.orderId).filter(Boolean) as string[];
+    const discounts = orderIds.length ? await this.prisma.order.findMany({ where: { id: { in: orderIds } }, select: { id: true, discountAmount: true, orderNumber: true } }) : [];
+    const { referralsSent, referralsReceived, customerNotes, couponUsages, _count, crmTags, ...rest } = user;
+    return {
+      ...rest,
+      totalPaid: me?.spent ?? 0, refunded: me?.refunded ?? 0, paidOrders: me?.orders ?? 0, lastOrderAt: me?.lastOrderAt ?? null,
+      averageOrder: me?.orders ? +((me.spent + me.refunded) / me.orders).toFixed(2) : 0,
+      tags: crmTags, notes: customerNotes, pushDevices: _count.pushSubscriptions,
+      referrals: referralsSent.length, referralsSent, invitedBy: referralsReceived[0]?.inviter ?? null,
+      promoCodes: couponUsages.map((u) => {
+        const o = discounts.find((d) => d.id === u.orderId);
+        return { code: u.coupon.code, usedAt: u.usedAt, orderId: u.orderId, orderNumber: o?.orderNumber ?? null, discount: Number(o?.discountAmount ?? 0) };
+      }),
+    };
   }
 
   /**
@@ -219,6 +238,34 @@ export class AdminCustomersController {
       before: { [body.channel === 'PHONE' ? 'phoneVerified' : 'emailVerified']: body.channel === 'PHONE' ? user.phoneVerified : user.emailVerified },
       after: { [body.channel === 'PHONE' ? 'phoneVerified' : 'emailVerified']: body.verified, by: 'admin' } });
     return updated;
+  }
+
+  /** A note from the team about this customer (a call, a wish, a complaint). */
+  @Post(':id/notes')
+  @AdminPerms({ write: ['crm.manage', 'users.block'] })
+  async addNote(@Param('id') id: string, @Body() dto: NoteDto, @Request() req: any) {
+    const user = await this.prisma.user.findFirst({ where: { id, deletedAt: null }, select: { id: true } });
+    if (!user) throw new NotFoundException('Customer not found');
+    const admin = await this.prisma.adminUser.findUnique({ where: { id: req.user?.id }, select: { firstName: true, lastName: true, email: true } }).catch(() => null);
+    return this.prisma.customerNote.create({
+      data: { userId: id, body: dto.body.trim(), adminUserId: req.user?.id ?? null, adminName: admin ? ([admin.firstName, admin.lastName].filter(Boolean).join(' ') || admin.email) : null },
+    });
+  }
+
+  @Delete(':id/notes/:noteId')
+  @AdminPerms({ write: ['crm.manage', 'users.block'] })
+  async deleteNote(@Param('id') id: string, @Param('noteId') noteId: string) {
+    const { count } = await this.prisma.customerNote.deleteMany({ where: { id: noteId, userId: id } });
+    if (!count) throw new NotFoundException('Note not found');
+    return { ok: true };
+  }
+
+  /** The team's labels for this customer (VIP, wholesale…), used to filter the list. */
+  @Patch(':id/tags')
+  @AdminPerms({ write: ['crm.manage', 'users.block'] })
+  async setTags(@Param('id') id: string, @Body() dto: TagsDto) {
+    const tags = [...new Set(dto.tags.map((t) => t.trim()).filter(Boolean))];
+    return this.prisma.user.update({ where: { id }, data: { crmTags: tags }, select: { id: true, crmTags: true } });
   }
 
   @Patch(':id/status')

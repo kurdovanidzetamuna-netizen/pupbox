@@ -137,6 +137,7 @@ export class AuthService {
     if (user.status === 'BLOCKED') throw new UnauthorizedException('Account is blocked');
 
     const token = this.signToken(user.id, user.email, 'customer');
+    this.prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } }).catch(() => {});
     return {
       user: {
         id: user.id,
