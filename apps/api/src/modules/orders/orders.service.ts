@@ -614,6 +614,14 @@ export class OrdersService {
    * The customer gets a note and a text; the audit log keeps who did it.
    */
   async refund(id: string, o: RefundInput, adminUserId?: string) {
+    // One refund per order at a time: a double click must not send the money twice.
+    if (this.refunding.has(id)) throw new BadRequestException('A refund for this order is already being sent. Wait a moment, then refresh.');
+    this.refunding.add(id);
+    try { return await this.refundOnce(id, o, adminUserId); } finally { this.refunding.delete(id); }
+  }
+  private refunding = new Set<string>();
+
+  private async refundOnce(id: string, o: RefundInput, adminUserId?: string) {
     const order = await this.prisma.order.findUnique({
       where: { id },
       include: { items: true, payments: { where: { status: { in: ['PAID', 'PARTIALLY_REFUNDED'] } }, include: { refunds: true }, orderBy: { createdAt: 'desc' }, take: 1 } },
