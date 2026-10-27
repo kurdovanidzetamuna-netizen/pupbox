@@ -166,8 +166,9 @@ export async function endUnpaidRenewals(prisma: PrismaService, now = new Date())
   });
   let ended = 0;
   for (const s of overdue) {
-    // A saved card still being retried (auto-renew.ts) decides for itself when to stop.
-    if (await prisma.order.count({ where: { subscriptionId: s.id, type: 'RENEWAL', status: 'PENDING', nextChargeAt: { not: null } } })) continue;
+    // A saved card still being retried (auto-renew.ts) decides for itself when
+    // to stop; a charge the bank hasn't answered waits for a person to check.
+    if (await prisma.order.count({ where: { subscriptionId: s.id, type: 'RENEWAL', status: 'PENDING', OR: [{ nextChargeAt: { not: null } }, { payments: { some: { status: 'PENDING', attempt: { not: null } } } }] } })) continue;
     const open = await prisma.order.findMany({ where: { subscriptionId: s.id, type: 'RENEWAL', status: 'PENDING' }, select: { id: true } });
     for (const o of open) await cancelUnpaidOrder(prisma, o.id, 'Renewal not paid in time; the plan ended.');
     await prisma.customerSubscription.update({ where: { id: s.id }, data: { status: 'EXPIRED', autoRenewal: false, nextRenewalAt: null } });

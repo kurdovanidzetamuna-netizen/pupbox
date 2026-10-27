@@ -91,6 +91,11 @@ export class PaymentsService implements OnModuleInit, OnModuleDestroy {
       include: { items: true },
     });
     if (!order) throw new NotFoundException('Order not found or already paid');
+    // The saved card is being charged for this renewal and the bank hasn't
+    // answered yet: paying the link as well could take the money twice.
+    if (order.type === 'RENEWAL' && await this.prisma.payment.count({ where: { orderId, status: 'PENDING', attempt: { not: null } } })) {
+      throw new BadRequestException('We’re already charging your saved card for this renewal. Please check again in an hour.');
+    }
 
     const apiUrl = this.config.get('NEXT_PUBLIC_API_URL') || 'http://localhost:4000/api/v1';
     const siteUrl = this.config.get('NEXT_PUBLIC_SITE_URL') || 'http://localhost:3000';

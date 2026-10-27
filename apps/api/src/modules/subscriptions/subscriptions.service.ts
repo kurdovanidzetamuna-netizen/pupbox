@@ -136,6 +136,7 @@ export class SubscriptionsService implements OnModuleInit, OnModuleDestroy {
       return { kind: 'free', refund: 0, keptBoxes: 0 };
     }
 
+    await this.chargeNotUndecided(id);
     await this.withdrawOpenRenewals(id, 'Subscription cancelled by the customer.');
     const now = new Date();
     const { plan, orderId } = await planCancellation(this.prisma, id, now);
@@ -193,8 +194,21 @@ export class SubscriptionsService implements OnModuleInit, OnModuleDestroy {
     if (['CANCELLED', 'EXPIRED'].includes(sub.status)) throw new BadRequestException('Cannot modify a cancelled subscription');
     // Renewal falls due when the current term ends; switching it off clears
     // that and withdraws a renewal payment that was waiting.
-    if (!enabled) await this.withdrawOpenRenewals(id, 'Renewal turned off by the customer.');
+    if (!enabled) {
+      await this.chargeNotUndecided(id);
+      await this.withdrawOpenRenewals(id, 'Renewal turned off by the customer.');
+    }
     return this.prisma.customerSubscription.update({ where: { id }, data: { autoRenewal: enabled, nextRenewalAt: enabled ? sub.endDate : null } });
+  }
+
+  /**
+   * The saved card is being charged for a renewal and the bank hasn't said
+   * yes or no. Withdrawing the renewal now would let a late "yes" switch the
+   * plan back on after the customer stopped it — so they wait for the answer.
+   */
+  private async chargeNotUndecided(subscriptionId: string) {
+    const undecided = await this.prisma.payment.count({ where: { status: 'PENDING', attempt: { not: null }, order: { subscriptionId, type: 'RENEWAL', status: 'PENDING' } } });
+    if (undecided) throw new BadRequestException('Your card is being charged for the renewal right now. Please try again in an hour.');
   }
 
   private async withdrawOpenRenewals(subscriptionId: string, note: string) {

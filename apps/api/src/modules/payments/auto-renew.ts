@@ -49,7 +49,15 @@ export class AutoRenewService implements OnModuleInit, OnModuleDestroy {
   }
   onModuleDestroy() { clearInterval(this.timer); }
 
+  /**
+   * The development stand-in approves charges without a bank. On a live
+   * server without Flitt keys nothing is charged at all: renewals wait, unpaid,
+   * until the keys are set (or the customer pays the link).
+   */
+  private get canCharge() { return this.flitt.configured || this.config.get('NODE_ENV') !== 'production'; }
+
   async chargeDue(now = new Date()) {
+    if (!this.canCharge) return { tried: 0, charged: 0 };
     const due = await this.prisma.order.findMany({
       where: { type: 'RENEWAL', status: 'PENDING', nextChargeAt: { lte: now } },
       select: { id: true }, orderBy: { nextChargeAt: 'asc' }, take: 25,
@@ -64,6 +72,7 @@ export class AutoRenewService implements OnModuleInit, OnModuleDestroy {
     const o = await this.prisma.order.findUnique({ where: { id: orderId }, select: { type: true, status: true } });
     if (!o) throw new NotFoundException('Order not found');
     if (o.type !== 'RENEWAL' || o.status !== 'PENDING') throw new BadRequestException('Only an unpaid renewal can be charged.');
+    if (!this.canCharge) throw new BadRequestException('Payments are not configured');
     await this.prisma.order.update({ where: { id: orderId }, data: { nextChargeAt: new Date() } });
     await this.tryCharge(orderId, new Date(), true);
   }
@@ -92,6 +101,12 @@ export class AutoRenewService implements OnModuleInit, OnModuleDestroy {
       payment = open;
       outcome = await this.settled(orderId, attempt, open);
     } else {
+      // The customer is paying the emailed link right now: let that finish first.
+      const paying = await this.prisma.payment.count({ where: { orderId, status: 'PENDING', attempt: null, createdAt: { gt: new Date(now.getTime() - 2 * HOUR) } } });
+      if (paying) {
+        await this.prisma.order.update({ where: { id: orderId }, data: { nextChargeAt: new Date(now.getTime() + HOUR) } });
+        return false;
+      }
       const card = await this.prisma.savedCard.findFirst({ where: { userId: order.userId }, orderBy: [{ isDefault: 'desc' }, { createdAt: 'desc' }] });
       if (!card) {
         await this.prisma.order.update({ where: { id: orderId }, data: { lastChargeError: 'No saved card — waiting for the customer to pay the link.' } });

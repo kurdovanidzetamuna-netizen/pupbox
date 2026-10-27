@@ -46,6 +46,8 @@ const EXACT: Record<string, string> = {
   'Order not found or already paid': 'შეკვეთა ვერ მოიძებნა ან უკვე გადახდილია',
   'Order not found': 'შეკვეთა ვერ მოიძებნა',
   'Payments are not configured': 'გადახდა დროებით მიუწვდომელია',
+  'We’re already charging your saved card for this renewal. Please check again in an hour.': 'ამ განახლების თანხას უკვე ვჭრით შენახული ბარათიდან. გთხოვ, ერთ საათში შეამოწმე.',
+  'Your card is being charged for the renewal right now. Please try again in an hour.': 'ამ წუთას შენი ბარათიდან განახლების თანხა იჭრება. გთხოვ, ერთ საათში სცადე თავიდან.',
   'Please confirm your email and phone first.': 'ჯერ დაადასტურე ელფოსტა და ტელეფონი.',
   'Product not found or unavailable': 'პროდუქტი ვერ მოიძებნა ან მიუწვდომელია',
   'Recipient name is required for a gift': 'მიუთითე, ვისთვისაა საჩუქარი',
