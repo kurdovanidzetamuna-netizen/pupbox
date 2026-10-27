@@ -1,4 +1,5 @@
 'use client';
+import UsedOn, { download } from './UsedOn';
 import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react';
 import FriendCodes from './FriendCodes';
 import SideDrawer from '@/components/SideDrawer';
@@ -200,16 +201,19 @@ export default function PromoCodesPage() {
   const copy = (code: string) => navigator.clipboard?.writeText(code).then(() => setToast(`${code} copied`)).catch(() => {});
 
   return (
-    <div style={{ padding: 32, maxWidth: 1200 }}>
+    <div style={{ padding: 'clamp(16px, 4vw, 32px)', maxWidth: 1200 }}>
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
-      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12, marginBottom: 20 }}>
+      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 20 }}>
         <div>
           <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--slate-900)', margin: 0 }}>Promo codes</h1>
           <p style={{ fontSize: 13, color: 'var(--slate-500)', margin: '4px 0 0' }}>Discounts customers type in the basket — for the shop, boxes, gifts or delivery.</p>
         </div>
+        <span style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        <button type="button" onClick={() => download('/admin/coupons/export.csv', `promo-codes-${new Date().toISOString().slice(0, 10)}.csv`)} className="pc-btn soft">⬇ Export CSV</button>
         <button type="button" onClick={() => open('new')} className="pc-cta">
           <span style={{ fontSize: 18, lineHeight: 1 }}>＋</span> New promo code
         </button>
+        </span>
       </div>
 
       {/* How the codes are doing */}
@@ -326,6 +330,7 @@ export default function PromoCodesPage() {
             <Stat label="Sales" value={gel(current.stats?.sales)} />
           </div>
         )}
+        {current && <UsedOn id={current.id} code={current.code} />}
         {stopped && <p className="pc-alert">This code was stopped on {showDate(day(current.stoppedAt))} and can’t be used again. To run it again, create a new code.</p>}
 
         <fieldset disabled={stopped} style={{ border: 'none', margin: 0, padding: 0, minWidth: 0, display: 'grid', gap: 12 }}>

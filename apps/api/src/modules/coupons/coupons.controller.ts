@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, UseGuards, ConflictException, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Param, Res, UseGuards, ConflictException, BadRequestException, NotFoundException } from '@nestjs/common';
+import type { Response } from 'express';
 import { ArrayMinSize, ArrayUnique, IsArray, IsBoolean, IsDateString, IsEnum, IsInt, IsNumber, IsOptional, IsString, Length, Matches, Max, MaxLength, Min, ValidateIf } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
 import { CouponDiscountType, CouponScope } from '@prisma/client';
@@ -6,6 +7,8 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { PrismaService } from '../prisma/prisma.service';
 import { AdminPerms } from '../admin-auth/admin-permissions';
 import { AdminJwtGuard } from '../admin-auth/admin-jwt.guard';
+
+const csvCell = (v: unknown) => { const t = v == null ? '' : String(v); return /[",\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t; };
 
 /** The admin form called the percentage type "PERCENT"; accept it as PERCENTAGE. */
 const toType = ({ value }: { value: unknown }) => (value === 'PERCENT' ? 'PERCENTAGE' : value);
@@ -139,6 +142,56 @@ export class CouponsController {
         ...(dto.boxTierIds !== undefined ? { boxTierIds: (await this.tiers(dto.boxTierIds)) ?? [] } : {}),
       },
     });
+  }
+
+  /** Every order that used this code: who, when, what it took off, and whether it was paid. */
+  @Get(':id/orders')
+  async orders(@Param('id') id: string) {
+    const c = await this.prisma.coupon.findUnique({ where: { id }, select: { id: true, code: true } });
+    if (!c) throw new NotFoundException('Promo code not found');
+    return { code: c.code, orders: await this.usedOn(id) };
+  }
+
+  /** Those orders as a spreadsheet. */
+  @Get(':id/orders.csv')
+  async ordersCsv(@Param('id') id: string, @Res() res: Response) {
+    const c = await this.prisma.coupon.findUnique({ where: { id }, select: { code: true } });
+    if (!c) throw new NotFoundException('Promo code not found');
+    const rows = await this.usedOn(id);
+    const head = ['Date', 'Order', 'Customer', 'Email', 'Phone', 'Status', 'Paid', 'Discount (GEL)', 'Order total (GEL)'];
+    const lines = rows.map((r) => [r.createdAt.toISOString().slice(0, 16).replace('T', ' '), r.number, r.customer, r.email, r.phone ?? '', r.status, r.paid ? 'yes' : 'no', r.discount.toFixed(2), r.total.toFixed(2)].map(csvCell).join(','));
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="promo-${c.code}.csv"`);
+    res.send('\uFEFF' + [head.join(','), ...lines].join('\n'));
+  }
+
+  /** All codes with how each did, as a spreadsheet. */
+  @Get('export.csv')
+  async exportCsv(@Res() res: Response) {
+    const list = await this.list();
+    const head = ['Code', 'Description', 'Type', 'Value', 'Works on', 'Status', 'Starts', 'Ends', 'Uses', 'Use limit', 'Paid orders', 'Taken off (GEL)', 'Sales (GEL)'];
+    const day = (d: any) => (d ? new Date(d).toISOString().slice(0, 10) : '');
+    const lines = (list as any[]).map((c) => [
+      c.code, c.description ?? '', c.discountType, Number(c.discountValue), (c.scopes ?? []).join(' '), c.stoppedAt ? 'stopped' : c.isActive ? 'on' : 'off',
+      day(c.startsAt), day(c.expiresAt), c.usedCount ?? c._count?.usages ?? 0, c.usageLimit ?? '', c.stats?.orders ?? 0, Number(c.stats?.discount ?? 0).toFixed(2), Number(c.stats?.sales ?? 0).toFixed(2),
+    ].map(csvCell).join(','));
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="promo-codes-${new Date().toISOString().slice(0, 10)}.csv"`);
+    res.send('\uFEFF' + [head.join(','), ...lines].join('\n'));
+  }
+
+  private async usedOn(couponId: string) {
+    const orders = await this.prisma.order.findMany({
+      where: { couponId }, orderBy: { createdAt: 'desc' }, take: 1000,
+      select: { id: true, orderNumber: true, status: true, discountAmount: true, total: true, createdAt: true,
+        user: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } },
+        payments: { where: { status: { in: ['PAID', 'PARTIALLY_REFUNDED', 'REFUNDED'] } }, select: { id: true }, take: 1 } },
+    });
+    return orders.map((o) => ({
+      id: o.id, number: o.id.slice(-8).toUpperCase(), status: o.status, createdAt: o.createdAt, paid: o.payments.length > 0,
+      discount: Number(o.discountAmount), total: Number(o.total),
+      userId: o.user?.id ?? null, customer: [o.user?.firstName, o.user?.lastName].filter(Boolean).join(' '), email: o.user?.email ?? '', phone: o.user?.phone ?? null,
+    }));
   }
 
   /** Stop for good: it stops working now (and leaves any basket holding it) and can never be switched back on. */
