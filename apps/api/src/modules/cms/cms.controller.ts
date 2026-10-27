@@ -62,6 +62,13 @@ export class CmsController {
     return this.cmsService.findBySlug(slug);
   }
 
+  /** Public: the promo pop-ups every page asks for. None saved yet is an empty list, not a 404. */
+  @Get('config-promo-popups')
+  async promoPopups() {
+    const row = await this.cmsService.findBySlug('config-promo-popups').catch(() => null);
+    return row?.status === 'PUBLISHED' ? row : { slug: 'config-promo-popups', content: { popups: [] } };
+  }
+
   @Get(':slug')
   async findBySlug(@Param('slug') slug: string) {
     const row = await this.cmsService.findBySlug(slug);
