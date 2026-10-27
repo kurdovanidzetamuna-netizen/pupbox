@@ -187,10 +187,16 @@ model User {
   language       String      @default("ka")
   /// Sign-in tokens issued before this are refused, so a password reset signs out every old session.
   passwordChangedAt DateTime?
+  /// Last time they signed in (CRM: who is still around).
+  lastLoginAt    DateTime?
+  /// The team's own labels for this customer (VIP, wholesale, complained…).
+  crmTags        String[]    @default([])
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
   deletedAt      DateTime?
 
+  customerNotes  CustomerNote[]
+  pushSubscriptions PushSubscription[]
   addresses      Address[]
   passwordResets PasswordResetToken[]
   verificationCodes VerificationCode[]
@@ -1184,6 +1190,54 @@ enum NotificationType {
   REFERRAL_REWARD
   /// Something was added to a paid order: a link to pay the difference.
   EXTRA_CHARGE
+  /// A message the team sent from admin (its words and button are in `data`).
+  MESSAGE
+}
+
+/// What the team wrote down about a customer (calls, complaints, wishes).
+model CustomerNote {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  adminUserId String?
+  adminName   String?
+  body        String
+  createdAt   DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
+
+/// A message sent from admin to a group of customers: their bell, and a browser push when asked.
+model NotificationCampaign {
+  id          String   @id @default(cuid())
+  titleEn     String
+  titleKa     String
+  bodyEn      String
+  bodyKa      String
+  ctaTextEn   String?
+  ctaTextKa   String?
+  link        String?
+  /// Who it went to: { group, ids? } as chosen in admin.
+  audience    Json     @default("{}")
+  push        Boolean  @default(false)
+  recipients  Int      @default(0)
+  pushSent    Int      @default(0)
+  adminUserId String?
+  adminName   String?
+  createdAt   DateTime @default(now())
+}
+
+/// A browser that agreed to push notifications for this customer.
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+
+  @@index([userId])
 }
 
 /// The customer's in-app notification centre (the bell).
@@ -1322,4 +1376,12 @@ model NewsletterSubscriber {
   email     String   @unique
   language  String   @default("ka")
   createdAt DateTime @default(now())
+}
+
+/// How often each promo pop-up (admin → Promo pop-ups) was shown and its button tapped.
+model PromoPopupStat {
+  popupId   String   @id
+  views     Int      @default(0)
+  clicks    Int      @default(0)
+  updatedAt DateTime @updatedAt
 }
