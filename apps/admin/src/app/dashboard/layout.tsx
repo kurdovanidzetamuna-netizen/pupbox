@@ -55,6 +55,7 @@ const NAV_GROUPS = [
     items: [
       { href: '/dashboard/customers', label: 'Customers', icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z' },
       { href: '/dashboard/notifications', label: 'Notifications', icon: 'M15 17h5l-1.4-1.4A2 2 0 0118 14.2V11a6 6 0 00-4-5.7V5a2 2 0 10-4 0v.3C7.7 6.2 6 8.4 6 11v3.2c0 .5-.2 1-.6 1.4L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9' },
+      { href: '/dashboard/messages', label: 'Send messages', icon: 'M8 10h8M8 14h5M21 12c0 4.4-4 8-9 8a9.9 9.9 0 01-4-.8L3 20l1.3-3.9A7.5 7.5 0 013 12c0-4.4 4-8 9-8s9 3.6 9 8z' },
       { href: '/dashboard/crm', label: 'Dogs & CRM', icon: 'M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z' },
       { href: '/dashboard/referrals', label: 'Referrals', icon: 'M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1' },
     ],
@@ -63,6 +64,7 @@ const NAV_GROUPS = [
     label: 'System',
     items: [
       { href: '/dashboard/settings', label: 'Settings', icon: 'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z' },
+      { href: '/dashboard/emails', label: 'Emails', icon: 'M3 8l9 6 9-6M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z' },
       { href: '/dashboard/sms', label: 'Text messages', icon: 'M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z' },
       { href: '/dashboard/admin-users', label: 'Admin Users', icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z' },
       { href: '/dashboard/admin-translations', label: 'Admin Translations', icon: 'M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129' },
@@ -132,12 +134,12 @@ function NavGroup({ group, isActive }: { group: typeof NAV_GROUPS[0]; isActive: 
 const NEEDS: [prefix: string, perm: string][] = [
   ['/dashboard/admin-users', 'admin.manage'], ['/dashboard/roles', 'admin.manage'], ['/dashboard/audit', 'admin.manage'],
   ['/dashboard/reports', 'reports.view'], ['/dashboard/orders', 'orders.view'], ['/dashboard/customers', 'users.view'],
-  ['/dashboard/referrals', 'users.view'], ['/dashboard/crm', 'crm.view'], ['/dashboard/notifications', 'crm.view'], ['/dashboard/coupons', 'coupons.manage'], ['/dashboard/sellers', 'sellers.view'], ['/dashboard/seller-payouts', 'sellers.payouts'],
+  ['/dashboard/referrals', 'users.view'], ['/dashboard/crm', 'crm.view'], ['/dashboard/notifications', 'crm.view'], ['/dashboard/messages', 'crm.message'], ['/dashboard/coupons', 'coupons.manage'], ['/dashboard/sellers', 'sellers.view'], ['/dashboard/seller-payouts', 'sellers.payouts'],
   ['/dashboard/products', 'products.view'], ['/dashboard/categories', 'products.view'], ['/dashboard/box-items', 'products.view'], ['/dashboard/custom-box-items', 'products.view'],
   ['/dashboard/box-tiers', 'subscriptions.view'], ['/dashboard/subscription-plans', 'subscriptions.view'], ['/dashboard/subscriptions', 'subscriptions.view'],
   ['/dashboard/monthly-boxes', 'subscriptions.view'], ['/dashboard/box-campaigns', 'subscriptions.view'],
   ['/dashboard/page-builder', 'cms.view'], ['/dashboard/blog', 'cms.view'], ['/dashboard/cms', 'cms.view'], ['/dashboard/faq', 'cms.view'],
-  ['/dashboard/promo-popups', 'cms.view'], ['/dashboard/translations', 'cms.view'], ['/dashboard/admin-translations', 'cms.view'],
+  ['/dashboard/promo-popups', 'cms.view'], ['/dashboard/emails', 'cms.view'], ['/dashboard/translations', 'cms.view'], ['/dashboard/admin-translations', 'cms.view'],
   ['/dashboard/settings', 'cms.edit'],
   ['/dashboard/sms', 'cms.edit'],
 ];

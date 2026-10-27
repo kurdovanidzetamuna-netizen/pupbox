@@ -18,6 +18,7 @@ const FILTERS: { key: string; icon: string; label: string; types?: string[] }[] 
   { key: 'orders', icon: 'bag', label: 'ntf.c.orders', types: ['ORDER_PAID', 'PAYMENT_FAILED', 'ORDER_SHIPPED', 'ORDER_DELIVERED', 'REFUNDED', 'EXTRA_CHARGE'] },
   { key: 'boxes', icon: 'box', label: 'ntf.c.boxes', types: ['BOX_SHIPPED', 'BOX_DELIVERED', 'RENEWAL_DUE'] },
   { key: 'gifts', icon: 'gift', label: 'ntf.c.gifts', types: ['GIFT_SENT', 'REFERRAL_REWARD', 'WELCOME'] },
+  { key: 'news', icon: 'heart', label: 'ntf.c.news', types: ['MESSAGE'] },
 ];
 
 /**

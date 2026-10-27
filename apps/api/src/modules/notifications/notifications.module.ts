@@ -1,6 +1,7 @@
 import { Injectable, Logger, Module, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsController } from './notifications.controller';
+import { AdminMessagesController, PushController, PushService } from './messages';
 
 /** Notifications older than this are cleared away (read or not). */
 const KEEP_DAYS = 180;
@@ -28,7 +29,8 @@ export class NotificationsCleanup implements OnModuleInit, OnModuleDestroy {
 }
 
 @Module({
-  controllers: [NotificationsController],
-  providers: [NotificationsCleanup],
+  controllers: [NotificationsController, PushController, AdminMessagesController],
+  providers: [NotificationsCleanup, PushService],
+  exports: [PushService],
 })
 export class NotificationsModule {}

@@ -21,7 +21,17 @@ const LOOK: Record<string, { icon: string; tile: string }> = {
   REFUNDED:        { icon: 'undo',     tile: 'bg-teal-50 text-teal-700' },
   REFERRAL_REWARD: { icon: 'coin',     tile: 'bg-lilac-50 text-lilac-600' },
   EXTRA_CHARGE:    { icon: 'card',     tile: 'bg-amber-50 text-amber-700' },
+  MESSAGE:         { icon: 'bell',     tile: 'bg-teal-50 text-teal-700' },
 };
+
+/** A message from the team carries its own words in both languages. */
+const own = (v: any, lang: string) => (v && typeof v === 'object' ? (lang === 'en' ? v.en || v.ka : v.ka || v.en) : '') || '';
+
+/** Opens a notification's link: pages on the site in-app, other sites in a new tab. */
+function go(router: { push: (u: string) => void }, link: string) {
+  if (/^https?:\/\//.test(link)) window.open(link, '_blank', 'noopener');
+  else router.push(link);
+}
 
 const money = (n: unknown) => Number(n ?? 0).toFixed(2).replace(/\.00$/, '');
 
@@ -30,6 +40,7 @@ export function useWording() {
   const { t, lang } = useLanguage();
   return (n: Notice) => {
     const d = n.data ?? {};
+    if (n.type === 'MESSAGE') return { title: own(d.title, lang), body: own(d.body, lang), cta: own(d.cta, lang) };
     const vars: Record<string, string | number> = {
       n: String(d.orderId ?? '').slice(-8).toUpperCase(),
       total: money(d.total), amount: money(d.amount),
@@ -43,7 +54,7 @@ export function useWording() {
     else if ((n.type === 'BOX_SHIPPED' || n.type === 'BOX_DELIVERED') && !d.dogName) titleKey = `ntf.${n.type}.tNoDog`;
     let body = fill(t(n.type === 'PAYMENT_FAILED' && d.kind === 'RENEWAL' ? 'ntf.PAYMENT_FAILED.renewal' : `ntf.${n.type}.b`), vars);
     if (d.tracking && (n.type === 'ORDER_SHIPPED' || n.type === 'BOX_SHIPPED')) body += ` ${lang === 'ka' ? 'თრექინგი' : 'Tracking'}: ${d.tracking}`;
-    return { title: fill(t(titleKey), vars), body };
+    return { title: fill(t(titleKey), vars), body, cta: '' };
   };
 }
 
@@ -80,14 +91,14 @@ export default function NotificationItem({ n, compact, onChange, onOpen, classNa
   const router = useRouter();
   const word = useWording();
   const ago = useAgo();
-  const { title, body } = word(n);
+  const { title, body, cta } = word(n);
   const look = LOOK[n.type] ?? { icon: 'bell', tile: 'bg-gray-100 text-gray-500' };
   const unread = !n.readAt;
 
   function open() {
     if (unread) { onChange({ ...n, readAt: new Date().toISOString() }); markRead(n.id).catch(() => {}); }
     onOpen?.();
-    if (n.link) router.push(n.link);
+    if (n.link) go(router, n.link);
   }
 
   if (compact) return (
@@ -120,7 +131,8 @@ export default function NotificationItem({ n, compact, onChange, onOpen, classNa
           <p className={`flex-1 min-w-0 text-[14px] leading-snug ${unread ? 'font-bold text-gray-900' : 'font-medium text-gray-700'}`}>{title}</p>
           <span className={`shrink-0 text-[11.5px] whitespace-nowrap ${unread ? 'text-teal-700 font-semibold' : 'text-gray-400'}`}>{ago(n.createdAt)}</span>
         </div>
-        <p className="text-[13px] text-gray-500 leading-snug mt-0.5 line-clamp-2">{body}</p>
+        <p className={`text-[13px] text-gray-500 leading-snug mt-0.5 ${cta ? '' : 'line-clamp-2'}`}>{body}</p>
+        {cta && n.link && <span className="mt-2 inline-flex items-center gap-1.5 h-8 px-3.5 rounded-full bg-teal-50 text-teal-700 text-[12.5px] font-semibold">{cta}<Icon name="arrow" className="w-3.5 h-3.5" /></span>}
       </div>
       <span className="relative self-center hidden sm:flex shrink-0 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
         {unread && <IconButton icon="check" size="sm" label={t('ntf.markRead')} onClick={() => { onChange({ ...n, readAt: new Date().toISOString() }); markRead(n.id).catch(() => {}); }} />}
