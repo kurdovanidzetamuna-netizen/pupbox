@@ -68,7 +68,7 @@ function IconInput({ value, onChange }: { value: string; onChange: (v: string) =
   );
 }
 
-function ImageInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+export function ImageInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   const file = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');

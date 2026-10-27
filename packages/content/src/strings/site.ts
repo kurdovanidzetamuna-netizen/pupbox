@@ -1,5 +1,9 @@
 /** Header, mobile menu, footer and home page words, in both languages. */
 export const SITE_STRINGS: Record<string, { en: string; ka: string }> = {
+  'popup.close':            { en: 'Close',                       ka: 'დახურვა' },
+  'popup.noThanks':         { en: 'No thanks',                   ka: 'არა, გმადლობ' },
+  'popup.copy':             { en: 'Tap to copy',                 ka: 'შეეხე დასაკოპირებლად' },
+  'popup.copied':           { en: 'Copied',                      ka: 'დაკოპირდა' },
   // Header, bottom bar and menu drawer
   'nav.home':               { en: 'Home',                        ka: 'მთავარი' },
   'nav.plans':              { en: 'Plans',                       ka: 'გეგმები' },

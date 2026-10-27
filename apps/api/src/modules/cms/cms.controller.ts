@@ -1,4 +1,6 @@
-import { Controller, Get, Post, Patch, Param, Body, UseGuards, NotFoundException } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Param, Body, UseGuards, NotFoundException, BadRequestException, HttpCode } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
+import { PrismaService } from '../prisma/prisma.service';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { IsIn, IsObject, IsOptional, IsString, Matches, MaxLength } from 'class-validator';
 import { AdminJwtGuard } from '../admin-auth/admin-jwt.guard';
@@ -35,7 +37,7 @@ const SECRET_SLUGS = ['config-sms'];
 @ApiTags('cms')
 @Controller('cms')
 export class CmsController {
-  constructor(private readonly cmsService: CmsService) {}
+  constructor(private readonly cmsService: CmsService, private prisma: PrismaService) {}
 
   /** Public: published pages only — drafts and internal settings stay in admin. */
   @Get()
@@ -53,6 +55,15 @@ export class CmsController {
     return (await this.cmsService.findAll()).filter((r) => !SECRET_SLUGS.includes(r.slug));
   }
 
+  /** Admin: views and taps for every pop-up. */
+  @Get('admin/popup-stats')
+  @ApiBearerAuth()
+  @UseGuards(AdminJwtGuard)
+  @AdminPerms({ read: 'cms.view' })
+  popupStats() {
+    return this.prisma.promoPopupStat.findMany();
+  }
+
   @Get('admin/:slug')
   @ApiBearerAuth()
   @UseGuards(AdminJwtGuard)
@@ -60,6 +71,16 @@ export class CmsController {
   findBySlugAdmin(@Param('slug') slug: string) {
     if (SECRET_SLUGS.includes(slug)) throw new NotFoundException('Page not found');
     return this.cmsService.findBySlug(slug);
+  }
+
+  /** Public: a promo pop-up was shown (`seen`) or its button tapped (`clicked`). Counted for admin. */
+  @Post('popups/:id/:what')
+  @HttpCode(204)
+  @Throttle({ default: { limit: 30, ttl: 60_000 } })
+  async popupEvent(@Param('id') id: string, @Param('what') what: string) {
+    if (!/^[a-z0-9]{4,40}$/i.test(id) || (what !== 'seen' && what !== 'clicked')) throw new BadRequestException();
+    const field = what === 'seen' ? 'views' : 'clicks';
+    await this.prisma.promoPopupStat.upsert({ where: { popupId: id }, create: { popupId: id, [field]: 1 }, update: { [field]: { increment: 1 } } });
   }
 
   /** Public: the promo pop-ups every page asks for. None saved yet is an empty list, not a 404. */

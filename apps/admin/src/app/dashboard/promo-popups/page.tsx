@@ -1,44 +1,45 @@
 'use client';
-import { Select } from '@/components/Dropdown';
-import { useEffect, useState } from 'react';
-import { NumInput } from '@/components/NumberField';
+import { useEffect, useMemo, useState } from 'react';
+import SideDrawer from '@/components/SideDrawer';
+import Dropdown from '@/components/Dropdown';
+import DateField from '@/components/DateField';
+import NumberField from '@/components/NumberField';
+import { ActionButton, StatCard, StatCards } from '@/components/Toolbar';
+import { ImageInput } from '../page-builder/_components/fields';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 const SLUG = 'config-promo-popups';
+const auth = () => ({ Authorization: `Bearer ${localStorage.getItem('admin_token')}` });
 
-const TRIGGER_OPTIONS = [
-  { value: 'on_load',      label: 'On page load' },
-  { value: 'exit_intent',  label: 'Exit intent (mouse leaves)' },
-  { value: 'after_delay',  label: 'After delay' },
-  { value: 'on_scroll',    label: 'After 50% scroll' },
+const TRIGGERS = [
+  { value: 'on_load', label: 'As soon as the page opens' },
+  { value: 'after_delay', label: 'After a few seconds' },
+  { value: 'on_scroll', label: 'Halfway down the page' },
+  { value: 'exit_intent', label: 'When they’re about to leave' },
 ];
-
-const PAGE_OPTIONS = [
-  { value: 'all',         label: 'All pages' },
-  { value: 'homepage',    label: 'Home page' },
-  { value: 'prices',      label: 'Pricing page' },
-  { value: 'how-it-works',label: 'How it works' },
-  { value: 'blog',        label: 'Blog' },
-  { value: 'checkout',    label: 'Checkout' },
+const PAGES = [
+  { value: 'all', label: 'Every page' }, { value: 'homepage', label: 'Home' }, { value: 'prices', label: 'Pricing' },
+  { value: 'how-it-works', label: 'How it works' }, { value: 'shop', label: 'Shop' }, { value: 'build-box', label: 'Build a box' },
+  { value: 'blog', label: 'Blog' }, { value: 'cart', label: 'Basket' }, { value: 'checkout', label: 'Checkout' }, { value: 'account', label: 'Account' },
 ];
-
-const TYPE_OPTIONS = [
-  { value: 'discount',    label: '🏷️  Discount / Coupon' },
-  { value: 'newsletter',  label: '📧  Newsletter signup' },
-  { value: 'announcement',label: '📣  Announcement' },
-  { value: 'exit',        label: '🚪  Exit offer' },
+const AUDIENCES = [
+  { value: 'all', label: 'Everyone' },
+  { value: 'guests', label: 'Visitors who aren’t signed in' },
+  { value: 'customers', label: 'Signed-in customers' },
+];
+const FREQUENCY = [
+  { value: 'session', label: 'Once per visit' },
+  { value: 'day', label: 'Once a day' },
+  { value: 'always', label: 'Every time it applies' },
 ];
 
 interface Popup {
   id: string;
   active: boolean;
   type: string;
-  titleEn: string;
-  titleKa: string;
-  bodyEn: string;
-  bodyKa: string;
-  ctaTextEn: string;
-  ctaTextKa: string;
+  titleEn: string; titleKa: string;
+  bodyEn: string; bodyKa: string;
+  ctaTextEn: string; ctaTextKa: string;
   ctaUrl: string;
   couponCode: string;
   imageUrl: string;
@@ -47,352 +48,220 @@ interface Popup {
   showOnPages: string[];
   showOncePerSession: boolean;
   showOncePerDay: boolean;
-  bgColor: string;
-  accentColor: string;
+  audience?: string;
+  startsAt?: string;
+  endsAt?: string;
 }
-
-function genId() { return Math.random().toString(36).slice(2, 10); }
 
 const EMPTY: Omit<Popup, 'id'> = {
-  active: true,
-  type: 'discount',
-  titleEn: '',
-  titleKa: '',
-  bodyEn: '',
-  bodyKa: '',
-  ctaTextEn: 'Get the deal →',
-  ctaTextKa: 'გარიგების მიღება →',
-  ctaUrl: '/prices',
-  couponCode: '',
-  imageUrl: '',
-  trigger: 'after_delay',
-  delaySeconds: 5,
-  showOnPages: ['all'],
-  showOncePerSession: true,
-  showOncePerDay: false,
-  bgColor: 'var(--white)',
-  accentColor: 'var(--teal-600)',
+  active: true, type: 'discount', titleEn: '', titleKa: '', bodyEn: '', bodyKa: '',
+  ctaTextEn: 'See the offer', ctaTextKa: 'შეთავაზების ნახვა', ctaUrl: '/prices', couponCode: '', imageUrl: '',
+  trigger: 'after_delay', delaySeconds: 5, showOnPages: ['all'], showOncePerSession: true, showOncePerDay: false,
+  audience: 'all', startsAt: '', endsAt: '',
 };
 
-export default function PromoPopupsPage() {
-  const [popups, setPopups] = useState<Popup[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const [editing, setEditing] = useState<Popup | null>(null);
-  const [form, setForm] = useState<Omit<Popup, 'id'>>(EMPTY);
-  const [lang, setLang] = useState<'en' | 'ka'>('en');
-  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+const today = () => new Date().toISOString().slice(0, 10);
+const nice = (d?: string) => (d ? new Date(`${d}T00:00:00`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '');
 
-  const token = () => localStorage.getItem('admin_token');
+/** Live now, waiting for its start date, past its end date, or switched off. */
+function stateOf(p: Popup): { label: string; fg: string; bg: string } {
+  if (!p.active) return { label: 'Off', fg: 'var(--slate-500)', bg: 'var(--slate-100)' };
+  if (p.startsAt && p.startsAt > today()) return { label: `Starts ${nice(p.startsAt)}`, fg: 'var(--blue-700, #1d4ed8)', bg: 'var(--blue-50)' };
+  if (p.endsAt && p.endsAt < today()) return { label: 'Ended', fg: 'var(--amber-700)', bg: 'var(--amber-50)' };
+  return { label: 'Live', fg: 'var(--green-800)', bg: 'var(--green-50)' };
+}
+const freqOf = (p: Omit<Popup, 'id'>) => (p.showOncePerDay ? 'day' : p.showOncePerSession ? 'session' : 'always');
+
+/**
+ * Pop-ups on the site: an offer, a promo code, news. Each has words in both
+ * languages, an optional picture and button (any page on the site or any
+ * https:// address), where and to whom it shows, from and until when, and
+ * how often. Views and button taps are counted.
+ */
+export default function PromoPopupsPage() {
+  const [popups, setPopups] = useState<Popup[] | null>(null);
+  const [stats, setStats] = useState<Record<string, { views: number; clicks: number }>>({});
+  const [codes, setCodes] = useState<string[]>([]);
+  const [editing, setEditing] = useState<Popup | 'new' | null>(null);
+  const [form, setForm] = useState<Omit<Popup, 'id'>>(EMPTY);
+  const [start, setStart] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [toast, setToast] = useState('');
+  const [error, setError] = useState('');
+  const [lang, setLang] = useState<'ka' | 'en'>('ka');
 
   async function load() {
-    setLoading(true);
-    try {
-      const res = await fetch(`${API}/cms/admin/${SLUG}`, { headers: { Authorization: `Bearer ${localStorage.getItem('admin_token')}` } });
-      if (res.ok) {
-        const data = await res.json();
-        setPopups((data.content?.popups || []) as Popup[]);
-      }
-    } catch { } finally {
-      setLoading(false);
-    }
+    const [c, s] = await Promise.all([
+      fetch(`${API}/cms/admin/${SLUG}`, { headers: auth() }).then((r) => (r.ok ? r.json() : null)).catch(() => null),
+      fetch(`${API}/cms/admin/popup-stats`, { headers: auth() }).then((r) => (r.ok ? r.json() : [])).catch(() => []),
+    ]);
+    setPopups((c?.content?.popups ?? []) as Popup[]);
+    setStats(Object.fromEntries((s as any[]).map((x) => [x.popupId, x])));
   }
-
-  async function saveAll(next: Popup[]) {
-    setSaving(true);
-    try {
-      await fetch(`${API}/cms`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token()}` },
-        body: JSON.stringify({ slug: SLUG, content: { popups: next } }),
-      });
-      setPopups(next);
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2200);
-    } catch { } finally {
-      setSaving(false);
-    }
-  }
-
-  useEffect(() => { load(); }, []);
   useEffect(() => {
-    const h = (e: KeyboardEvent) => { if (e.key === 'Escape') { setEditing(null); setForm(EMPTY); setDeleteConfirm(null); } };
-    window.addEventListener('keydown', h);
-    return () => window.removeEventListener('keydown', h);
+    load();
+    fetch(`${API}/admin/coupons`, { headers: auth() }).then((r) => (r.ok ? r.json() : [])).then((l: any[]) => setCodes(l.filter((x) => x.isActive && !x.stoppedAt).map((x) => x.code))).catch(() => {});
   }, []);
+  useEffect(() => { if (toast) { const t = setTimeout(() => setToast(''), 2500); return () => clearTimeout(t); } }, [toast]);
 
-  function openNew() {
-    setEditing(null);
-    setForm(EMPTY);
+  async function saveAll(next: Popup[], msg: string) {
+    setBusy(true); setError('');
+    try {
+      const r = await fetch(`${API}/cms`, { method: 'POST', headers: { ...auth(), 'Content-Type': 'application/json' }, body: JSON.stringify({ key: SLUG, slug: SLUG, title: 'Promo pop-ups', status: 'PUBLISHED', content: { popups: next } }) });
+      if (!r.ok) throw new Error();
+      setPopups(next); setToast(msg); return true;
+    } catch { setError('Not saved — try again.'); return false; } finally { setBusy(false); }
   }
 
-  function openEdit(p: Popup) {
-    setEditing(p);
-    setForm({ ...p });
+  function open(p: Popup | 'new') {
+    const f = p === 'new' ? EMPTY : { ...EMPTY, ...p };
+    setEditing(p); setForm(f); setStart(JSON.stringify(f)); setError('');
+  }
+  const set = <K extends keyof typeof form>(k: K) => (v: (typeof form)[K]) => { setForm((x) => ({ ...x, [k]: v })); setError(''); };
+
+  async function save() {
+    if (!form.titleEn.trim() || !form.titleKa.trim()) { setError('Add the title in both languages.'); return; }
+    if ((form.ctaTextEn.trim() || form.ctaTextKa.trim()) && !/^(\/\S*|https:\/\/\S+)$/.test(form.ctaUrl.trim())) { setError('The button link must start with / (a page on the site) or https://'); return; }
+    if (form.startsAt && form.endsAt && form.endsAt < form.startsAt) { setError('It must end after it starts.'); return; }
+    const clean = { ...form, ctaUrl: form.ctaUrl.trim(), couponCode: form.couponCode.trim().toUpperCase() };
+    const list = popups ?? [];
+    const next = editing === 'new' ? [...list, { ...clean, id: Math.random().toString(36).slice(2, 10) }] : list.map((p) => (p.id === (editing as Popup).id ? { ...clean, id: p.id } : p));
+    if (await saveAll(next, editing === 'new' ? 'Pop-up created' : 'Saved')) setEditing(null);
   }
 
-  function handleSave() {
-    if (!form.titleEn.trim()) return;
-    let next: Popup[];
-    if (editing) {
-      next = popups.map(p => p.id === editing.id ? { ...form, id: editing.id } : p);
-    } else {
-      next = [...popups, { ...form, id: genId() }];
-    }
-    saveAll(next);
-    setEditing(null);
-    setForm(EMPTY);
-  }
+  const list = popups ?? [];
+  const live = list.filter((p) => stateOf(p).label === 'Live').length;
+  const views = list.reduce((n, p) => n + (stats[p.id]?.views ?? 0), 0);
+  const clicks = list.reduce((n, p) => n + (stats[p.id]?.clicks ?? 0), 0);
+  const P = lang === 'en' ? { t: form.titleEn, b: form.bodyEn, c: form.ctaTextEn } : { t: form.titleKa, b: form.bodyKa, c: form.ctaTextKa };
+  const dirty = useMemo(() => JSON.stringify(form) !== start, [form, start]);
 
-  function handleDelete(id: string) {
-    saveAll(popups.filter(p => p.id !== id));
-    setDeleteConfirm(null);
-    if (editing?.id === id) { setEditing(null); setForm(EMPTY); }
-  }
-
-  function toggleActive(id: string) {
-    saveAll(popups.map(p => p.id === id ? { ...p, active: !p.active } : p));
-  }
-
-  function f(key: keyof Omit<Popup, 'id'>) {
-    return (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-      setForm(prev => ({ ...prev, [key]: e.target.value }));
-    };
-  }
+  const inp: React.CSSProperties = { width: '100%', boxSizing: 'border-box', padding: '9px 11px', fontSize: 13, border: '1px solid var(--slate-200)', borderRadius: 10, outline: 'none', background: 'var(--white)', color: 'var(--slate-900)', fontFamily: 'inherit' };
+  const lab: React.CSSProperties = { display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--slate-600)', margin: '14px 0 5px' };
+  const pair = (kKa: 'titleKa' | 'bodyKa' | 'ctaTextKa', kEn: 'titleEn' | 'bodyEn' | 'ctaTextEn', label: string, max: number, area = false) => (
+    <>
+      <label style={lab}>{label}</label>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 8 }}>
+        {([[kKa, '🇬🇪 Georgian'], [kEn, '🇬🇧 English']] as const).map(([k, ph]) => area
+          ? <textarea key={k} value={form[k]} onChange={(e) => set(k)(e.target.value)} maxLength={max} rows={3} placeholder={ph} aria-label={`${label} — ${ph}`} style={{ ...inp, resize: 'vertical' }} />
+          : <input key={k} value={form[k]} onChange={(e) => set(k)(e.target.value)} maxLength={max} placeholder={ph} aria-label={`${label} — ${ph}`} style={inp} />)}
+      </div>
+    </>
+  );
 
   return (
-    <div style={{ padding: 32 }}>
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 28 }}>
+    <div style={{ padding: 'clamp(16px, 4vw, 32px)' }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 20 }}>
         <div>
-          <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--slate-900)', margin: 0 }}>Promo Popups</h1>
-          <p style={{ fontSize: 13, color: 'var(--slate-400)', marginTop: 4 }}>Manage website popups — discounts, announcements, exit offers</p>
+          <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--slate-900)', margin: 0 }}>Promo pop-ups</h1>
+          <p style={{ fontSize: 13, color: 'var(--slate-400)', margin: '4px 0 0', maxWidth: 620 }}>Offers and news that pop up on the site — with a picture, a promo code and a button to any page.</p>
         </div>
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-          {saved && <span style={{ fontSize: 12, color: 'var(--teal-600)', fontWeight: 600 }}>✓ Saved</span>}
-          <button
-            onClick={openNew}
-            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 18px', borderRadius: 10, background: 'var(--slate-900)', color: 'var(--white)', border: 'none', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
-          >
-            + New Popup
-          </button>
-        </div>
+        <ActionButton onClick={() => open('new')}>＋ New pop-up</ActionButton>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 420px', gap: 24, alignItems: 'start' }}>
-        {/* Popup list */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {loading ? (
-            <div style={{ background: 'var(--white)', borderRadius: 14, border: '1px solid var(--slate-200b)', padding: '60px 0', textAlign: 'center', color: 'var(--slate-400)', fontSize: 13 }}>Loading…</div>
-          ) : popups.length === 0 ? (
-            <div style={{ background: 'var(--white)', borderRadius: 14, border: '2px dashed var(--slate-200b)', padding: '60px 0', textAlign: 'center' }}>
-              <div style={{ fontSize: 36, marginBottom: 10 }}>🎉</div>
-              <p style={{ color: 'var(--slate-400)', fontSize: 13, margin: 0 }}>No popups yet. Create your first one.</p>
-            </div>
-          ) : (
-            popups.map(p => (
-              <div
-                key={p.id}
-                style={{ background: 'var(--white)', borderRadius: 14, border: `1px solid ${editing?.id === p.id ? 'var(--teal-600)' : 'var(--slate-200b)'}`, padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 14, cursor: 'pointer', transition: 'border-color 0.15s' }}
-                onClick={() => openEdit(p)}
-              >
-                {/* Type badge */}
-                <div style={{ width: 40, height: 40, borderRadius: 10, background: 'var(--teal-50)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>
-                  {TYPE_OPTIONS.find(t => t.value === p.type)?.label.split(' ')[0] || '🎉'}
-                </div>
+      <StatCards>
+        <StatCard theme="teal" value={live} label="Live now" />
+        <StatCard theme="slate" value={views.toLocaleString()} label="Times shown" />
+        <StatCard theme="blue" value={clicks.toLocaleString()} label="Button taps" />
+        <StatCard theme="amber" value={views ? `${((clicks / views) * 100).toFixed(1)}%` : '—'} label="Tap rate" />
+      </StatCards>
 
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ margin: 0, fontWeight: 700, color: 'var(--slate-900)', fontSize: 14, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.titleEn || <span style={{ color: 'var(--slate-300)' }}>Untitled</span>}</p>
-                  <p style={{ margin: '3px 0 0', fontSize: 11, color: 'var(--slate-400)' }}>
-                    {TRIGGER_OPTIONS.find(t => t.value === p.trigger)?.label} · {PAGE_OPTIONS.find(pg => pg.value === (p.showOnPages?.[0] || 'all'))?.label}
-                    {p.couponCode && <span style={{ marginLeft: 6, background: 'var(--yellow-100)', color: 'var(--yellow-800)', borderRadius: 4, padding: '1px 6px', fontSize: 10, fontWeight: 700 }}>{p.couponCode}</span>}
-                  </p>
+      <div style={{ marginTop: 16, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 320px), 1fr))', gap: 12 }}>
+        {popups === null && <p style={{ color: 'var(--slate-400)', fontSize: 13 }}>Loading…</p>}
+        {popups !== null && list.length === 0 && <p style={{ color: 'var(--slate-400)', fontSize: 13 }}>No pop-ups yet. Create one with “New pop-up”.</p>}
+        {list.map((p) => {
+          const st = stateOf(p), s = stats[p.id];
+          return (
+            <div key={p.id} style={{ background: 'var(--white)', border: '1px solid var(--slate-200b)', borderRadius: 16, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              {p.imageUrl ? <img src={p.imageUrl} alt="" style={{ width: '100%', height: 110, objectFit: 'cover' }} /> : <div style={{ height: 6, background: 'var(--teal-100, #ccfbf1)' }} />}
+              <div style={{ padding: '12px 14px', flex: 1 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center' }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 9px', borderRadius: 999, color: st.fg, background: st.bg }}>{st.label}</span>
+                  <span style={{ fontSize: 11.5, color: 'var(--slate-400)' }}>{s?.views ?? 0} shown · {s?.clicks ?? 0} taps</span>
                 </div>
-
-                {/* Active toggle */}
-                <div
-                  onClick={e => { e.stopPropagation(); toggleActive(p.id); }}
-                  style={{ width: 36, height: 20, borderRadius: 999, background: p.active ? 'var(--teal-600)' : 'var(--slate-200)', position: 'relative', cursor: 'pointer', flexShrink: 0, transition: 'background 0.2s' }}
-                >
-                  <div style={{ position: 'absolute', top: 2, left: p.active ? 18 : 2, width: 16, height: 16, borderRadius: '50%', background: 'var(--white)', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
+                <div style={{ fontWeight: 700, color: 'var(--slate-900)', marginTop: 8 }}>{p.titleKa || p.titleEn}</div>
+                <div style={{ fontSize: 12.5, color: 'var(--slate-500)' }}>{p.titleEn}</div>
+                <div style={{ fontSize: 11.5, color: 'var(--slate-400)', marginTop: 6 }}>
+                  {TRIGGERS.find((t) => t.value === p.trigger)?.label} · {(p.showOnPages ?? ['all']).map((v) => PAGES.find((x) => x.value === v)?.label ?? v).join(', ')} · {AUDIENCES.find((a) => a.value === (p.audience ?? 'all'))?.label}
+                  {(p.startsAt || p.endsAt) && <> · {p.startsAt ? nice(p.startsAt) : 'now'} → {p.endsAt ? nice(p.endsAt) : 'no end'}</>}
                 </div>
-
-                {/* Delete */}
-                <button
-                  onClick={e => { e.stopPropagation(); setDeleteConfirm(p.id); }}
-                  style={{ background: 'none', border: 'none', color: 'var(--slate-300)', cursor: 'pointer', fontSize: 16, padding: '4px 6px', borderRadius: 6, flexShrink: 0 }}
-                  title="Delete"
-                >✕</button>
+                {p.couponCode && <code style={{ display: 'inline-block', marginTop: 6, fontSize: 11.5, fontWeight: 700, color: 'var(--teal-700)', background: 'var(--teal-50)', borderRadius: 6, padding: '1px 7px' }}>{p.couponCode}</code>}
               </div>
-            ))
-          )}
-        </div>
-
-        {/* Editor panel */}
-        <div style={{ background: 'var(--white)', borderRadius: 14, border: '1px solid var(--slate-200b)', overflow: 'hidden', position: 'sticky', top: 24 }}>
-          <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--slate-100)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h3 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: 'var(--slate-900)' }}>{editing ? 'Edit Popup' : 'New Popup'}</h3>
-            {/* Lang toggle */}
-            <div style={{ display: 'flex', background: 'var(--slate-100)', borderRadius: 8, padding: 2 }}>
-              {(['en', 'ka'] as const).map(l => (
-                <button key={l} onClick={() => setLang(l)} style={{ padding: '4px 12px', borderRadius: 6, border: 'none', fontSize: 12, fontWeight: 600, cursor: 'pointer', background: lang === l ? 'var(--white)' : 'transparent', color: lang === l ? 'var(--slate-900)' : 'var(--slate-400)', boxShadow: lang === l ? '0 1px 3px rgba(0,0,0,0.08)' : 'none', transition: 'all 0.15s' }}>
-                  {l.toUpperCase()}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 14, maxHeight: 'calc(100vh - 220px)', overflowY: 'auto' }}>
-            {/* Type */}
-            <Field label="Type">
-              <Select value={form.type} onChange={f('type')} style={selectStyle}>
-                {TYPE_OPTIONS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-              </Select>
-            </Field>
-
-            {/* Title */}
-            <Field label={`Title (${lang.toUpperCase()})`}>
-              <input value={lang === 'en' ? form.titleEn : form.titleKa} onChange={e => setForm(p => ({ ...p, [lang === 'en' ? 'titleEn' : 'titleKa']: e.target.value }))} style={inputStyle} placeholder="e.g. Get 10% off your first box" />
-            </Field>
-
-            {/* Body */}
-            <Field label={`Message (${lang.toUpperCase()})`}>
-              <textarea value={lang === 'en' ? form.bodyEn : form.bodyKa} onChange={e => setForm(p => ({ ...p, [lang === 'en' ? 'bodyEn' : 'bodyKa']: e.target.value }))} rows={3} style={{ ...inputStyle, resize: 'vertical' }} placeholder="Short description shown under the title" />
-            </Field>
-
-            {/* CTA */}
-            <Field label={`Button text (${lang.toUpperCase()})`}>
-              <input value={lang === 'en' ? form.ctaTextEn : form.ctaTextKa} onChange={e => setForm(p => ({ ...p, [lang === 'en' ? 'ctaTextEn' : 'ctaTextKa']: e.target.value }))} style={inputStyle} placeholder="Get the deal →" />
-            </Field>
-
-            <Field label="Button URL">
-              <input value={form.ctaUrl} onChange={f('ctaUrl')} style={inputStyle} placeholder="/prices" />
-            </Field>
-
-            {/* Coupon */}
-            <Field label="Promo code (optional)">
-              <input value={form.couponCode} onChange={f('couponCode')} style={inputStyle} placeholder="WELCOME10" />
-            </Field>
-
-            {/* Image */}
-            <Field label="Image URL (optional)">
-              <input value={form.imageUrl} onChange={f('imageUrl')} style={inputStyle} placeholder="https://…" />
-            </Field>
-
-            {/* Trigger */}
-            <Field label="Show trigger">
-              <Select value={form.trigger} onChange={f('trigger')} style={selectStyle}>
-                {TRIGGER_OPTIONS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-              </Select>
-            </Field>
-
-            {form.trigger === 'after_delay' && (
-              <Field label="Delay (seconds)">
-                <NumInput min={1} max={60} value={form.delaySeconds} onChange={e => setForm(p => ({ ...p, delaySeconds: +e.target.value }))} style={inputStyle} />
-              </Field>
-            )}
-
-            {/* Pages */}
-            <Field label="Show on pages">
-              <Select value={form.showOnPages?.[0] || 'all'} onChange={e => setForm(p => ({ ...p, showOnPages: [e.target.value] }))} style={selectStyle}>
-                {PAGE_OPTIONS.map(pg => <option key={pg.value} value={pg.value}>{pg.label}</option>)}
-              </Select>
-            </Field>
-
-            {/* Frequency */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <label style={labelStyle}>Frequency</label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--slate-600)', cursor: 'pointer' }}>
-                <input type="checkbox" checked={form.showOncePerSession} onChange={e => setForm(p => ({ ...p, showOncePerSession: e.target.checked }))} />
-                Show once per session
-              </label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--slate-600)', cursor: 'pointer' }}>
-                <input type="checkbox" checked={form.showOncePerDay} onChange={e => setForm(p => ({ ...p, showOncePerDay: e.target.checked }))} />
-                Show once per day
-              </label>
-            </div>
-
-            {/* Colors */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-              <Field label="Background">
-                <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                  <input type="color" value={form.bgColor} onChange={e => setForm(p => ({ ...p, bgColor: e.target.value }))} style={{ width: 32, height: 32, border: '1px solid var(--slate-200)', borderRadius: 6, padding: 2, cursor: 'pointer' }} />
-                  <input value={form.bgColor} onChange={f('bgColor')} style={{ ...inputStyle, flex: 1 }} />
-                </div>
-              </Field>
-              <Field label="Accent">
-                <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                  <input type="color" value={form.accentColor} onChange={e => setForm(p => ({ ...p, accentColor: e.target.value }))} style={{ width: 32, height: 32, border: '1px solid var(--slate-200)', borderRadius: 6, padding: 2, cursor: 'pointer' }} />
-                  <input value={form.accentColor} onChange={f('accentColor')} style={{ ...inputStyle, flex: 1 }} />
-                </div>
-              </Field>
-            </div>
-
-            {/* Preview */}
-            {(form.titleEn || form.titleKa) && (
-              <div style={{ borderRadius: 12, overflow: 'hidden', border: '1px solid var(--slate-200b)' }}>
-                <p style={{ margin: 0, fontSize: 10, fontWeight: 700, color: 'var(--slate-400)', textTransform: 'uppercase', padding: '8px 12px', background: 'var(--slate-50)', letterSpacing: '0.06em' }}>Preview</p>
-                <div style={{ background: form.bgColor, padding: '16px', textAlign: 'center' }}>
-                  {form.imageUrl && <img src={form.imageUrl} alt="" style={{ width: '100%', maxHeight: 100, objectFit: 'cover', borderRadius: 8, marginBottom: 10 }} />}
-                  <p style={{ margin: '0 0 6px', fontWeight: 800, fontSize: 15, color: 'var(--slate-900)' }}>{lang === 'en' ? form.titleEn : form.titleKa}</p>
-                  {(lang === 'en' ? form.bodyEn : form.bodyKa) && <p style={{ margin: '0 0 10px', fontSize: 12, color: 'var(--slate-500)' }}>{lang === 'en' ? form.bodyEn : form.bodyKa}</p>}
-                  {form.couponCode && <p style={{ margin: '0 0 10px', fontWeight: 800, fontSize: 16, color: form.accentColor, letterSpacing: '0.1em' }}>{form.couponCode}</p>}
-                  {(lang === 'en' ? form.ctaTextEn : form.ctaTextKa) && (
-                    <div style={{ display: 'inline-block', background: form.accentColor, color: 'var(--white)', borderRadius: 8, padding: '7px 16px', fontSize: 12, fontWeight: 700 }}>
-                      {lang === 'en' ? form.ctaTextEn : form.ctaTextKa}
-                    </div>
-                  )}
-                </div>
+              <div style={{ display: 'flex', gap: 6, padding: '10px 14px', borderTop: '1px solid var(--slate-100)' }}>
+                <ActionButton variant="secondary" onClick={() => open(p)} style={{ padding: '5px 12px', fontSize: 12 }}>Edit</ActionButton>
+                <ActionButton variant="secondary" onClick={() => saveAll(list.map((x) => (x.id === p.id ? { ...x, active: !x.active } : x)), p.active ? 'Switched off' : 'Switched on')} style={{ padding: '5px 12px', fontSize: 12 }}>{p.active ? 'Switch off' : 'Switch on'}</ActionButton>
+                <span style={{ flex: 1 }} />
+                <ActionButton variant="secondary" onClick={() => { if (confirm('Delete this pop-up? This can’t be undone.')) saveAll(list.filter((x) => x.id !== p.id), 'Deleted'); }} style={{ padding: '5px 12px', fontSize: 12, color: 'var(--red-600)' }}>Delete</ActionButton>
               </div>
-            )}
-          </div>
-
-          {/* Footer */}
-          <div style={{ padding: '14px 20px', borderTop: '1px solid var(--slate-100)', display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-            {editing && (
-              <button onClick={() => { setEditing(null); setForm(EMPTY); }} style={{ padding: '8px 16px', borderRadius: 9, border: '1px solid var(--slate-200)', background: 'var(--white)', color: 'var(--slate-500)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-                Discard
-              </button>
-            )}
-            <button
-              onClick={handleSave}
-              disabled={saving || !form.titleEn.trim()}
-              style={{ padding: '8px 18px', borderRadius: 9, border: 'none', background: form.titleEn.trim() ? 'var(--teal-600)' : 'var(--slate-200)', color: form.titleEn.trim() ? 'var(--white)' : 'var(--slate-400)', fontSize: 13, fontWeight: 600, cursor: form.titleEn.trim() ? 'pointer' : 'not-allowed' }}
-            >
-              {saving ? 'Saving…' : editing ? 'Update' : 'Add Popup'}
-            </button>
-          </div>
-        </div>
+            </div>
+          );
+        })}
       </div>
+      {toast && <div role="status" style={{ position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)', background: 'var(--slate-900)', color: 'var(--white)', padding: '10px 18px', borderRadius: 999, fontSize: 13, fontWeight: 600, zIndex: 80 }}>✓ {toast}</div>}
 
-      {/* Delete confirm modal */}
-      {deleteConfirm && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div onClick={() => setDeleteConfirm(null)} style={{ position: 'absolute', inset: 0, background: 'rgba(15,23,42,0.4)', backdropFilter: 'blur(2px)' }} />
-          <div style={{ position: 'relative', background: 'var(--white)', borderRadius: 16, padding: 28, width: 360, boxShadow: '0 20px 60px rgba(0,0,0,0.15)' }}>
-            <h3 style={{ margin: '0 0 8px', fontSize: 16, fontWeight: 700, color: 'var(--slate-900)' }}>Delete popup?</h3>
-            <p style={{ margin: '0 0 24px', fontSize: 13, color: 'var(--slate-500)', lineHeight: 1.6 }}>This popup will be removed from the website. This cannot be undone.</p>
-            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-              <button onClick={() => setDeleteConfirm(null)} style={{ padding: '8px 18px', borderRadius: 10, border: '1px solid var(--slate-200)', background: 'var(--white)', color: 'var(--slate-500)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
-              <button onClick={() => handleDelete(deleteConfirm)} style={{ padding: '8px 18px', borderRadius: 10, border: 'none', background: 'var(--red-600)', color: 'var(--white)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Yes, delete</button>
-            </div>
+      <SideDrawer open={editing !== null} onClose={() => setEditing(null)} dirty={dirty && !busy} width={620}
+        title={editing === 'new' ? 'New pop-up' : 'Edit pop-up'} subtitle="Shown on the site in the visitor’s language."
+        footer={(close) => (
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+            <ActionButton variant="secondary" onClick={close}>Cancel</ActionButton>
+            <span style={{ flex: 1 }} />
+            <ActionButton onClick={save} disabled={busy || (editing !== 'new' && !dirty)}>{busy ? 'Saving…' : editing === 'new' ? 'Create pop-up' : 'Save changes'}</ActionButton>
+          </div>
+        )}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 600, color: 'var(--slate-700)', cursor: 'pointer' }}>
+          <input type="checkbox" checked={form.active} onChange={(e) => set('active')(e.target.checked)} /> Switched on
+        </label>
+        {pair('titleKa', 'titleEn', 'Title', 80)}
+        {pair('bodyKa', 'bodyEn', 'Message', 300, true)}
+        <label style={lab}>Picture <span style={{ fontWeight: 400, color: 'var(--slate-400)' }}>optional · wide, about 840×360</span></label>
+        <ImageInput value={form.imageUrl} onChange={set('imageUrl')} />
+        <label style={lab}>Promo code <span style={{ fontWeight: 400, color: 'var(--slate-400)' }}>optional · visitors tap to copy it</span></label>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <input value={form.couponCode} onChange={(e) => set('couponCode')(e.target.value.toUpperCase().replace(/[^A-Z0-9_-]/g, ''))} maxLength={30} placeholder="e.g. WELCOME10" aria-label="Promo code" style={{ ...inp, flex: '1 1 160px', width: 'auto', fontFamily: 'monospace' }} />
+          {codes.length > 0 && <Dropdown aria-label="Pick a live promo code" placeholder="Pick a live code" value="" onChange={(v) => set('couponCode')(v)} options={codes.map((c) => ({ value: c, label: c }))} />}
+        </div>
+        {form.couponCode && codes.length > 0 && !codes.includes(form.couponCode) && <p style={{ fontSize: 12, color: 'var(--amber-700)', margin: '4px 0 0' }}>No live promo code is called {form.couponCode}. Check it in Promo codes.</p>}
+        {pair('ctaTextKa', 'ctaTextEn', 'Button text (optional)', 30)}
+        <label style={lab}>Button link</label>
+        <input value={form.ctaUrl} onChange={(e) => set('ctaUrl')(e.target.value)} maxLength={500} placeholder="/prices, /shop/…, or https://…" aria-label="Button link" style={{ ...inp, fontFamily: 'monospace' }} />
+        <p style={{ fontSize: 11.5, color: 'var(--slate-400)', margin: '4px 0 0' }}>A page on the site starts with “/”. Other websites open in a new tab.</p>
+
+        <label style={lab}>When it pops up</label>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+          <Dropdown aria-label="When" value={form.trigger} onChange={set('trigger')} options={TRIGGERS} />
+          {form.trigger === 'after_delay' && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12.5, color: 'var(--slate-500)' }}><NumberField stepper value={String(form.delaySeconds)} onChange={(v) => set('delaySeconds')(Math.max(1, Number(v) || 5))} min={1} max={120} ariaLabel="Seconds" /> seconds</span>}
+        </div>
+        {form.trigger === 'exit_intent' && <p style={{ fontSize: 11.5, color: 'var(--slate-400)', margin: '4px 0 0' }}>On phones (no mouse) it shows after 25 seconds instead.</p>}
+        <label style={lab}>Where and to whom</label>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <Dropdown multiple aria-label="Pages" label="Pages" placeholder="Pages" value={form.showOnPages} onChange={(v) => set('showOnPages')(v.includes('all') && !form.showOnPages.includes('all') ? ['all'] : v.filter((x) => x !== 'all').length ? v.filter((x) => x !== 'all') : ['all'])} options={PAGES} />
+          <Dropdown aria-label="Who" value={form.audience ?? 'all'} onChange={set('audience')} options={AUDIENCES} />
+          <Dropdown aria-label="How often" value={freqOf(form)} onChange={(v) => setForm((x) => ({ ...x, showOncePerDay: v === 'day', showOncePerSession: v === 'session' }))} options={FREQUENCY} />
+        </div>
+        <label style={lab}>Dates <span style={{ fontWeight: 400, color: 'var(--slate-400)' }}>optional</span></label>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', fontSize: 12.5, color: 'var(--slate-500)' }}>
+          From <DateField compact value={form.startsAt ?? ''} onChange={(v) => set('startsAt')(v)} emptyLabel="Now" ariaLabel="Starts" /> until <DateField compact value={form.endsAt ?? ''} onChange={(v) => set('endsAt')(v)} min={form.startsAt || undefined} emptyLabel="No end" ariaLabel="Ends" />
+        </div>
+
+        <div style={{ marginTop: 18, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--slate-600)' }}>Preview</span>
+          <span style={{ display: 'inline-flex', background: 'var(--slate-100)', borderRadius: 999, padding: 2 }}>
+            {(['ka', 'en'] as const).map((l) => <button key={l} type="button" onClick={() => setLang(l)} style={{ border: 'none', borderRadius: 999, padding: '3px 10px', fontSize: 11.5, fontWeight: 700, cursor: 'pointer', background: lang === l ? 'var(--white)' : 'transparent', color: lang === l ? 'var(--slate-900)' : 'var(--slate-500)' }}>{l === 'ka' ? 'ქა' : 'EN'}</button>)}
+          </span>
+        </div>
+        <div style={{ marginTop: 8, borderRadius: 20, overflow: 'hidden', border: '1px solid var(--slate-200b)', background: '#fff', maxWidth: 380, marginInline: 'auto', textAlign: 'center' }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          {form.imageUrl && <img src={form.imageUrl} alt="" style={{ width: '100%', height: 150, objectFit: 'cover', display: 'block' }} />}
+          <div style={{ padding: '18px 20px 20px' }}>
+            <div style={{ fontWeight: 800, fontSize: 19, color: '#0f172a' }}>{P.t || 'Title'}</div>
+            {P.b && <div style={{ fontSize: 13.5, color: '#64748b', marginTop: 6 }}>{P.b}</div>}
+            {form.couponCode && <div style={{ display: 'inline-block', marginTop: 12, padding: '8px 16px', borderRadius: 12, border: '1.5px dashed #5eead4', background: '#f0fdfa', fontFamily: 'monospace', fontWeight: 800, color: '#0f766e', letterSpacing: '.08em' }}>{form.couponCode}</div>}
+            {P.c && <div style={{ marginTop: 12, padding: '11px 0', borderRadius: 999, background: '#0d9488', color: '#fff', fontWeight: 700, fontSize: 14 }}>{P.c}</div>}
           </div>
         </div>
-      )}
+        {error && <p role="alert" style={{ color: 'var(--red-600)', fontSize: 13, marginTop: 12 }}>{error}</p>}
+      </SideDrawer>
     </div>
   );
 }
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-      <label style={labelStyle}>{label}</label>
-      {children}
-    </div>
-  );
-}
-
-const labelStyle: React.CSSProperties = { fontSize: 11, fontWeight: 700, color: 'var(--slate-500)', textTransform: 'uppercase', letterSpacing: '0.06em' };
-const inputStyle: React.CSSProperties = { width: '100%', border: '1px solid var(--slate-200)', borderRadius: 8, padding: '8px 10px', fontSize: 13, color: 'var(--slate-900)', outline: 'none', boxSizing: 'border-box' };
-const selectStyle: React.CSSProperties = { ...inputStyle, background: 'var(--white)', cursor: 'pointer' };
