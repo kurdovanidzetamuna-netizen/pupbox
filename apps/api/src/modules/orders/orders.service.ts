@@ -539,7 +539,7 @@ export class OrdersService {
     if (!changes.length && !extraLines.length) return this.adminGetOne(id);
 
     // Stock first: if a product ran out, nothing else changes.
-    if (stockHold.length) await reserveStock(this.prisma, stockHold);
+    if (stockHold.length) await reserveStock(this.prisma, stockHold, 'admin');
     try {
       for (const op of lineOps) await op();
     } catch (e) {
@@ -585,7 +585,7 @@ export class OrdersService {
       return { productId: p.id, name: p.name, sku: p.sku, price, quantity: l.quantity, total: +(price * l.quantity).toFixed(2), sellerId: p.sellerId ?? null, sellerPrice: p.supply?.sellerPrice ?? null };
     });
     const total = +rows.reduce((n, r) => n + r.total, 0).toFixed(2);
-    await reserveStock(this.prisma, rows.map((r) => ({ productId: r.productId, quantity: r.quantity, name: r.name })));
+    await reserveStock(this.prisma, rows.map((r) => ({ productId: r.productId, quantity: r.quantity, name: r.name })), 'admin');
     const extra = await this.prisma.order.create({
       data: {
         userId: order.userId, parentOrderId: order.id, addressId: order.addressId, dogId: order.dogId, type: 'PRODUCT', status: 'PENDING',

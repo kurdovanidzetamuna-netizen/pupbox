@@ -413,7 +413,7 @@ export function Pagination({
       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
         {btn('‹', () => onPageChange(Math.max(1, page - 1)), false, page === 1)}
         {Array.from({ length: totalPages }, (_, i) => i + 1).map(n =>
-          btn(n, () => onPageChange(n), n === page)
+          <React.Fragment key={n}>{btn(n, () => onPageChange(n), n === page)}</React.Fragment>
         )}
         {btn('›', () => onPageChange(Math.min(totalPages, page + 1)), false, page === totalPages)}
         <span style={{ fontSize: 12, color: 'var(--slate-400)', marginLeft: 4 }}>

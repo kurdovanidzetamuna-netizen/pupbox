@@ -19,8 +19,9 @@ function combine(lines: Line[]) {
  * reserved in one statement that only succeeds while enough is free
  * (quantity − already reserved), so two shoppers can't both take the last
  * one. All or nothing: if any product is short, what was held is released.
+ * `who` picks the wording: the shopper's basket, or an admin editing an order.
  */
-export async function reserveStock(prisma: PrismaService, lines: Line[]) {
+export async function reserveStock(prisma: PrismaService, lines: Line[], who: 'shopper' | 'admin' = 'shopper') {
   const held: Line[] = [];
   for (const l of combine(lines)) {
     const n = await prisma.$executeRaw`
@@ -28,7 +29,9 @@ export async function reserveStock(prisma: PrismaService, lines: Line[]) {
       WHERE "productId" = ${l.productId} AND "quantity" - "reservedQty" >= ${l.quantity}`;
     if (n === 0) {
       await releaseStock(prisma, held);
-      throw new BadRequestException(`${l.name ? `"${l.name}"` : 'An item in your cart'} just sold out or has fewer left than you chose. Please update your cart.`);
+      throw new BadRequestException(who === 'admin'
+        ? `${l.name ? `"${l.name}"` : 'A product'} is out of stock or has fewer left than you added. Lower the quantity or pick another product.`
+        : `${l.name ? `"${l.name}"` : 'An item in your cart'} just sold out or has fewer left than you chose. Please update your cart.`);
     }
     held.push(l);
   }
