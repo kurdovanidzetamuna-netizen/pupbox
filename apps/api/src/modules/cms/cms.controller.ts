@@ -92,7 +92,10 @@ export class CmsController {
 
   @Get(':slug')
   async findBySlug(@Param('slug') slug: string) {
-    const row = await this.cmsService.findBySlug(slug);
+    // A shop setting nobody has saved yet (e.g. translations): empty, not a 404 on every page.
+    const row = slug.startsWith('config-') && !PRIVATE_SLUGS.includes(slug)
+      ? await this.cmsService.findBySlug(slug).catch(() => ({ slug, status: 'PUBLISHED', content: {} }) as any)
+      : await this.cmsService.findBySlug(slug);
     if (row.status !== 'PUBLISHED' || PRIVATE_SLUGS.includes(row.slug)) throw new NotFoundException('Page not found');
     return row;
   }
