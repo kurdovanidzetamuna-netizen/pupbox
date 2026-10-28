@@ -1,4 +1,5 @@
 'use client';
+import { Bone, Loading, PanelBones, RowBones } from '@/components/ui/Skeleton';
 import Link from '@/components/LangLink';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -10,7 +11,6 @@ import IconButton from '@/components/ui/IconButton';
 import { Icon } from '@/components/ui/icons';
 import EmptyState from '@/components/ui/EmptyState';
 import Segmented from '@/components/ui/Segmented';
-import { GlossyBox } from '@/components/Glossy3D';
 import PlansList from '@/components/account/PlansList';
 import OrdersList from '@/components/account/OrdersList';
 import Menu from '@/components/ui/Menu';
@@ -111,7 +111,7 @@ export default function OrdersAndPlansPage() {
         actions={<IconButton icon="plus" label={t('sub.addPlan').replace(/^\+\s*/, '')} tone="primary" onClick={() => router.push('/prices#plans')} />} />
 
       {loading ? (
-        <div className="flex justify-center py-20"><GlossyBox className="w-14 h-14 animate-[bob_1s_ease-in-out_infinite]" /></div>
+        <Loading label={t('global.loading')} className="space-y-4"><Bone className="h-36 w-full rounded-[24px]" /><RowBones count={4} /></Loading>
       ) : error ? (
         <FormAlert message={error} className="my-10" />
       ) : subs.length === 0 && orders.length === 0 ? (

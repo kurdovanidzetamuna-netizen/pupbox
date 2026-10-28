@@ -246,7 +246,7 @@ export default function Header({ site }: { site: StoredContent | null }) {
           {tabBar && <div className="lg:hidden h-16" aria-hidden="true" />}
 
           {/* ── Side menu: the rest of the site ── */}
-          <div className={`lg:hidden fixed inset-0 z-[60] ${drawer ? '' : 'pointer-events-none'}`} aria-hidden={!drawer}>
+          <div className={`lg:hidden fixed inset-0 z-[60] ${drawer ? '' : 'pointer-events-none'}`} aria-hidden={!drawer} {...(drawer ? {} : ({ inert: '' } as object))}>
             <div onClick={() => setDrawer(false)}
               className={`absolute inset-0 bg-gray-900/30 transition-opacity duration-300 ${drawer ? 'opacity-100' : 'opacity-0'}`} />
             <aside id="site-drawer" role="dialog" aria-modal="true" aria-label={t('nav.menu')}

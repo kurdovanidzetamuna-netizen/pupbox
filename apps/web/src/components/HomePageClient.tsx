@@ -1,4 +1,5 @@
 'use client';
+import Photo from '@/components/ui/Photo';
 import { useEffect, useRef, useState } from 'react';
 import Link from '@/components/LangLink';
 import { homePage, type StoredContent } from '@pupbox/content';
@@ -111,7 +112,7 @@ function HeroSlider({ hero }: { hero: any }) {
         {/* The photo frame stays; photos slide through it */}
         <div className="md:order-2 relative aspect-[16/10] md:aspect-auto md:h-[300px] lg:h-[360px] rounded-[18px] lg:rounded-[24px] overflow-hidden bg-white/60">
           {slides.map((sl, k) => (
-            <img key={k} src={sl.photo} alt={k === i ? sl.alt : ''} aria-hidden={k !== i} loading={k === 0 ? 'eager' : 'lazy'} fetchPriority={k === 0 ? 'high' : 'auto'}
+            <Photo key={k} src={sl.photo} alt={k === i ? sl.alt : ''} aria-hidden={k !== i} fill priority={k === 0} sizes="(min-width: 768px) 55vw, 100vw"
               className={`absolute inset-0 w-full h-full object-cover ${sl.pos} ${place(k, ['-translate-x-full', 'translate-x-full'])}`} />
           ))}
           {/* Slide switches on the photo: big bars in a frosted pill; the current one fills like a timer */}
@@ -132,7 +133,7 @@ function HeroSlider({ hero }: { hero: any }) {
           {slides.map((sl, k) => {
             const H = k === 0 ? 'h1' : 'h2';
             return (
-              <div key={k} aria-hidden={k !== i} className={`[grid-area:1/1] min-w-0 self-center ${k === 0 ? 'hero-rise' : ''} ${place(k, ['-translate-x-12', 'translate-x-12'])}`}>
+              <div key={k} aria-hidden={k !== i} {...(k !== i ? ({ inert: '' } as object) : {})} className={`[grid-area:1/1] min-w-0 self-center ${k === 0 ? 'hero-rise' : ''} ${place(k, ['-translate-x-12', 'translate-x-12'])}`}>
                 {sl.eyebrow && <p className="text-[12.5px] font-bold text-teal-700 truncate">{sl.eyebrow}</p>}
                 <H className="mt-1.5 text-[24px] leading-[1.15] sm:text-[30px] md:text-[28px] lg:text-[40px] font-extrabold tracking-tight text-gray-900 text-balance">{sl.title}</H>
                 {sl.sub && <p className="mt-2.5 text-[14px] sm:text-[15.5px] leading-relaxed text-gray-600 max-w-md line-clamp-2">{sl.sub}</p>}
@@ -224,7 +225,7 @@ function Steps({ steps }: { steps: any[] }) {
       <div className={`relative rounded-[24px] lg:rounded-[32px] p-3 sm:p-5 transition-colors duration-500 ${PASTEL[(i + 2) % PASTEL.length]}`}>
         <div className="relative aspect-[16/10] sm:aspect-[4/3] rounded-[18px] lg:rounded-[24px] overflow-hidden bg-white">
           {steps.map((_, k) => (
-            <img key={k} src={STEP_PHOTO[k % STEP_PHOTO.length]} alt="" loading="lazy"
+            <Photo key={k} src={STEP_PHOTO[k % STEP_PHOTO.length]} alt="" fill sizes="(min-width: 768px) 45vw, 100vw"
               className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${k === i ? 'opacity-100' : 'opacity-0'}`} />
           ))}
         </div>
@@ -306,7 +307,7 @@ export default function HomePageClient({ plans, tiers, content, pricing }: Props
               return (
               <li key={k} className={`group relative overflow-hidden rounded-[24px] ${PASTEL[k % PASTEL.length]} p-5 sm:p-6 min-h-[170px] sm:min-h-[200px] flex flex-col ${wide ? 'lg:col-span-2' : ''}`}>
                 {photo && (
-                  <img src={photo} alt="" loading="lazy"
+                  <Photo src={photo} alt="" width={260} height={325} sizes="260px"
                     className="hidden lg:block absolute right-28 top-1/2 -translate-y-1/2 h-[74%] aspect-[4/5] object-cover rounded-[20px] rotate-[-5deg] ring-[5px] ring-white shadow-[0_18px_40px_-18px_rgba(36,48,58,0.45)] transition-transform duration-500 group-hover:rotate-0 group-hover:scale-[1.03]" />
                 )}
                 {/* A glossy 3D icon, edge to edge in the corner (Airbnb-style); a line icon if there's no match */}
@@ -349,7 +350,7 @@ export default function HomePageClient({ plans, tiers, content, pricing }: Props
             {testimonials.items.map((item: any, k: number) => (
               <li key={k} className="snap-start shrink-0 w-[82%] sm:w-[60%] md:w-auto">
                 <figure className="relative h-full flex flex-col items-center text-center rounded-[28px] bg-white px-6 pt-16 pb-7 shadow-[0_14px_40px_-24px_rgba(36,48,58,0.35)]">
-                  <img src={item.image || REVIEW_PHOTO[k % REVIEW_PHOTO.length]} alt="" loading="lazy"
+                  <Photo src={item.image || REVIEW_PHOTO[k % REVIEW_PHOTO.length]} alt="" width={96} height={96} sizes="96px"
                     className="absolute -top-12 left-1/2 -translate-x-1/2 w-24 h-24 rounded-full object-cover ring-[6px] ring-white bg-gray-100" />
                   <figcaption>
                     <span className="block text-[17px] font-extrabold text-gray-900"><Caps text={item.name} /></span>

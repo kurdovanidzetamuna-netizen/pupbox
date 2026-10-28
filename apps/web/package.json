@@ -14,7 +14,8 @@
     "libphonenumber-js": "1.11.18",
     "next": "^14.2.0",
     "react": "^18.3.0",
-    "react-dom": "^18.3.0"
+    "react-dom": "^18.3.0",
+    "sharp": "^0.33.5"
   },
   "devDependencies": {
     "@types/leaflet": "1.9.12",

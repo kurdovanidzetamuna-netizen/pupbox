@@ -3,6 +3,8 @@ import { api } from '@/lib/api';
 import { shopPage } from '@pupbox/content';
 import { getStoredContent, pageMetadata } from '@/lib/content';
 import ShopView from './ShopView';
+import { JsonLd, breadcrumbs } from '@/lib/jsonld';
+import { SITE_URL, asLang, atLang } from '@/lib/seo';
 
 export const generateMetadata = ({ params }: { params: { lang: string } }) => pageMetadata(shopPage, { lang: params.lang });
 
@@ -31,8 +33,15 @@ export default async function ShopPage({
     api.sellers.list().catch(() => [] as any[]),
   ]);
 
+  const lang = asLang(route.lang);
+  const list = {
+    '@type': 'ItemList',
+    itemListElement: (products as any[]).slice(0, 30).map((p, i) => ({ '@type': 'ListItem', position: i + 1, url: `${SITE_URL}${atLang(`/shop/${p.slug}`, lang)}`, name: (lang === 'ka' && p.translations?.ka?.name) || p.name })),
+  };
+
   return (
     <Suspense fallback={null}>
+      <JsonLd data={[list, breadcrumbs(lang, [{ name: 'Pupbox', path: '/' }, { name: lang === 'en' ? 'Shop' : 'მაღაზია', path: '/shop' }])]} />
       <ShopView products={products} total={total} pages={pages} page={Number(searchParams.page || 1)}
         categories={categories as any[]} brands={brands} content={content} sellers={sellers} />
     </Suspense>

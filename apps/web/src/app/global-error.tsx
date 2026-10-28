@@ -1,4 +1,5 @@
 'use client';
+import ErrorArt from '@/components/ErrorArt';
 
 /**
  * Last resort when even the layout fails: no header, no translations
@@ -9,7 +10,7 @@ export default function GlobalError({ reset }: { error: Error; reset: () => void
     <html lang="ka">
       <body style={{ margin: 0, fontFamily: '-apple-system, Segoe UI, Helvetica, Arial, sans-serif', background: '#f8fafc', color: '#111827' }}>
         <main style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: 24 }}>
-          <div style={{ fontSize: 56, marginBottom: 16 }}>🦴</div>
+          <ErrorArt scene="broken" className="" />
           <h1 style={{ fontSize: 26, margin: '0 0 8px' }}>რაღაც შეფერხდა</h1>
           <p style={{ color: '#6b7280', margin: '0 0 4px' }}>Something went wrong on our side.</p>
           <p style={{ color: '#6b7280', margin: '0 0 24px' }}>სცადე თავიდან · Please try again.</p>

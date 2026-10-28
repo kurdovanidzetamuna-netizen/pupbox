@@ -17,8 +17,10 @@ import { Icon } from '@/components/ui/icons';
 export function LoginForm({ inModal = false }: { inModal?: boolean }) {
   const router = useRouter();
   const params = useSearchParams();
-  const redirect = safeRedirect(params.get('redirect'));
-  const sessionExpired = params.get('expired') === '1';
+  // The pop-up changes the address itself, which useSearchParams doesn't always see yet: read it directly too.
+  const query = (k: string) => params.get(k) ?? (typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get(k) : null);
+  const redirect = safeRedirect(query('redirect'));
+  const sessionExpired = query('expired') === '1';
   const { refresh: refreshCart } = useCart();
   const { t, lang } = useLanguage();
 
@@ -51,7 +53,7 @@ export function LoginForm({ inModal = false }: { inModal?: boolean }) {
       // Sign-up wasn't finished: confirm phone and email first, then carry on.
       if (data.verification && !data.verification.verified) router.push(`/verify?redirect=${encodeURIComponent(redirect)}`);
       // From the pop-up with nowhere asked: close it and stay on the same page.
-      else if (inModal && !params.get('redirect')) router.back();
+      else if (inModal && !query('redirect')) router.back();
       else router.push(redirect);
     } catch (e: any) {
       setError(e.message);

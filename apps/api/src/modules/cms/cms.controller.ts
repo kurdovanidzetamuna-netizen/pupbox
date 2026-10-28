@@ -70,7 +70,11 @@ export class CmsController {
   @AdminPerms({ read: 'cms.view' })
   findBySlugAdmin(@Param('slug') slug: string) {
     if (SECRET_SLUGS.includes(slug)) throw new NotFoundException('Page not found');
-    return this.cmsService.findBySlug(slug);
+    // Not saved yet: the editor starts from its defaults (no 404 in the console).
+    return this.cmsService.findBySlug(slug).catch((e) => {
+      if (e instanceof NotFoundException) return { slug, content: null, saved: false };
+      throw e;
+    });
   }
 
   /** Public: a promo pop-up was shown (`seen`) or its button tapped (`clicked`). Counted for admin. */
@@ -92,7 +96,10 @@ export class CmsController {
 
   @Get(':slug')
   async findBySlug(@Param('slug') slug: string) {
-    const row = await this.cmsService.findBySlug(slug);
+    // A shop setting nobody has saved yet (e.g. translations): empty, not a 404 on every page.
+    const row = slug.startsWith('config-') && !PRIVATE_SLUGS.includes(slug)
+      ? await this.cmsService.findBySlug(slug).catch(() => ({ slug, status: 'PUBLISHED', content: {} }) as any)
+      : await this.cmsService.findBySlug(slug);
     if (row.status !== 'PUBLISHED' || PRIVATE_SLUGS.includes(row.slug)) throw new NotFoundException('Page not found');
     return row;
   }

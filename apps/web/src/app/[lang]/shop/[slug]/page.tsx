@@ -15,6 +15,17 @@ function inLang(product: any, lang: Lang) {
 }
 const mainImage = (product: any) => [...(product.images ?? [])].sort((a, b) => Number(b.isPrimary) - Number(a.isPrimary))[0]?.url as string | undefined;
 
+/**
+ * A product's text for Google: its own words, and when those are short, the
+ * price and delivery after them so the result says what people look for.
+ */
+function withPrice(text: string | null | undefined, price: number, lang: 'ka' | 'en') {
+  const own = (text ?? '').replace(/\s+/g, ' ').trim();
+  if (own.length >= 110) return own;
+  const tail = lang === 'en' ? `₾${price.toFixed(2)} · delivered across Georgia by Pupbox.` : `₾${price.toFixed(2)} · მიწოდება მთელ საქართველოში — Pupbox.`;
+  return own ? `${own.replace(/[.!]?$/, '.')} ${tail}` : tail;
+}
+
 export async function generateMetadata({ params }: { params: { slug: string; lang: string } }): Promise<Metadata> {
   const lang = asLang(params.lang);
   try {
@@ -23,7 +34,7 @@ export async function generateMetadata({ params }: { params: { slug: string; lan
     return seo({
       lang, path: `/shop/${product.slug}`,
       title: product.seoTitle || p.name,
-      description: product.seoDesc || p.short || p.description,
+      description: product.seoDesc || withPrice(p.short || p.description, Number(product.price), lang),
       photo: mainImage(product),
       sub: `₾${Number(product.price).toFixed(2)}${p.short ? ` · ${p.short}` : ''}`,
     });

@@ -8,8 +8,8 @@ export const generateMetadata = ({ params }: { params: { lang: string } }): Meta
   const lang = asLang(params.lang);
   return seo({
     lang, path: '/build-box',
-    title: tx(lang, 'ააწყე შენი კოლოფი', 'Build your own box'),
-    description: tx(lang, 'აირჩიე ნივთები შენი ძაღლისთვის — ერთჯერადად ან ყოველთვიურად.', 'Pick every item for your dog — once, or every month.'),
+    title: tx(lang, 'ააწყე ძაღლის კოლოფი შენით', 'Build your own dog box'),
+    description: tx(lang, 'თავად აირჩიე ნუგბარი, სათამაშოები და მოვლის საშუალებები შენი ძაღლისთვის — ერთჯერადად ან ყოველთვიურად, მიწოდებით მთელ საქართველოში.', 'Pick the treats, toys and care items for your dog yourself — as a one-off box or every month, delivered across Georgia.'),
   });
 };
 

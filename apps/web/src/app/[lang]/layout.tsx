@@ -3,6 +3,7 @@ import OfflineGame from '@/components/OfflineGame';
 import type { Metadata, Viewport } from 'next';
 import { SITE_URL, T, asLang, seo } from '@/lib/seo';
 import { notFound } from 'next/navigation';
+import AuthPopup from '@/components/AuthPopup';
 import '../globals.css';
 import { Noto_Sans_Georgian } from 'next/font/google';
 
@@ -16,13 +17,14 @@ import ScrollReveal from '@/components/ScrollReveal';
 import Footer from '@/components/Footer';
 import { sitePage } from '@pupbox/content';
 import { getStoredContent } from '@/lib/content';
+import { API_URL } from '@/lib/api';
 
 
 /**
  * Defaults for every page, in the page's language; each page sets its own
  * title, description, address and share picture on top (lib/seo.ts).
  */
-type Props = { children: React.ReactNode; modal: React.ReactNode; params: { lang: string } };
+type Props = { children: React.ReactNode; params: { lang: string } };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const lang = asLang(params.lang);
@@ -47,7 +49,7 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
-  themeColor: '#22A38B',
+  themeColor: '#178573',
 };
 
 export const generateStaticParams = () => [{ lang: 'ka' }, { lang: 'en' }];
@@ -85,13 +87,18 @@ var m=JSON.parse(localStorage.getItem('pupbox_me')||'null');
 if(m&&m.t===t.slice(-16)){if(m.initial)d.style.setProperty('--me-initial',JSON.stringify(m.initial));if(m.name)d.style.setProperty('--me-name',JSON.stringify(m.name));}
 }catch(e){}})();`;
 
-export default async function RootLayout({ children, modal, params }: Props) {
+export default async function RootLayout({ children, params }: Props) {
   // Only /ka and /en exist; anything else in the first place is not a page.
   if (params.lang !== 'ka' && params.lang !== 'en') notFound();
   const site = await getStoredContent(sitePage);
   return (
     // The auth hint script adds data-auth and two CSS variables to <html> before React hydrates.
     <html lang={params.lang === 'en' ? 'en' : 'ka'} className={sans.variable} suppressHydrationWarning>
+      <head>
+        {/* Every page asks the API for something: start that connection while the page loads. */}
+        <link rel="preconnect" href={new URL(API_URL).origin} crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href={new URL(API_URL).origin} />
+      </head>
       <body className="font-sans bg-gray-50 text-gray-800">
         <script dangerouslySetInnerHTML={{ __html: AUTH_HINT }} />
         <script dangerouslySetInnerHTML={{ __html: REFRESH_TO_TOP }} />
@@ -102,7 +109,7 @@ export default async function RootLayout({ children, modal, params }: Props) {
             <Header site={site} />
             <PromoPopup />
             {children}
-            {modal}
+            <AuthPopup />
             <Footer site={site} />
             <ScrollReveal />
           </CartProvider>
