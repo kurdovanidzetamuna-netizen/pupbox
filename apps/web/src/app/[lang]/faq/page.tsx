@@ -10,7 +10,7 @@ export const generateMetadata = ({ params }: { params: { lang: string } }): Meta
   return seo({
     lang, path: '/faq',
     title: tx(lang, 'კითხვა-პასუხი', 'Questions & answers'),
-    description: tx(lang, 'ყველაფერი Pupbox-ის ყუთების, მიწოდებისა და გეგმების შესახებ.', 'Everything about Pupbox boxes, delivery and plans.'),
+    description: tx(lang, 'პასუხები Pupbox-ის კოლოფებზე: რა არის შიგნით, მიწოდება, გადახდა, საჩუქრად გაგზავნა, გეგმის შეცვლა და გაუქმება.', 'Answers about Pupbox dog boxes: what’s inside, delivery, payment, sending one as a gift, changing or cancelling a plan.'),
   });
 };
 

@@ -149,7 +149,7 @@ export default function TierPicker({ tiers, gift = false }: { tiers: any[]; gift
             {fill(t(gift ? 'tier.gift' : 'tier.choose'), { name: pickedName })}
           </span>
           {plan && (
-            <span className="text-[12px] font-semibold text-white/85 leading-tight">
+            <span className="text-[12px] font-semibold text-white leading-tight">
               {length > 1 ? fill(t('tier.totalFor'), { total: money(Number(plan.price)), n: length }) : `${money(Number(plan.price))} ${t('tier.perMonth')}`}
             </span>
           )}

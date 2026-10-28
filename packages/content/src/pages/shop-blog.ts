@@ -25,8 +25,8 @@ export const shopPage: PageDef = {
       ],
     },
     seo(
-      tx('Shop', 'მაღაზია'),
-      tx('Premium dog treats, toys, grooming and accessories, delivered across Georgia.', 'პრემიუმ ნუგბარი, სათამაშოები, მოვლის საშუალებები და აქსესუარები ძაღლებისთვის — მიწოდება მთელ საქართველოში.'),
+      tx('Dog treats, toys & accessories shop', 'ძაღლის ნუგბარი, სათამაშოები და აქსესუარები'),
+      tx('Shop premium dog treats, chews, toys, grooming and accessories in one place — sorted by size and age, delivered across Georgia.', 'იყიდე ძაღლის პრემიუმ ნუგბარი, საღეჭი, სათამაშოები, მოვლის საშუალებები და აქსესუარები ერთ ადგილას — ზომისა და ასაკის მიხედვით, მიწოდებით მთელ საქართველოში.'),
     ),
   ],
 };

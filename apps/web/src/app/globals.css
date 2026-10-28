@@ -144,7 +144,7 @@ input[type=number] { -moz-appearance: textfield; appearance: textfield; }
   position: relative;
   display: inline-flex; align-items: center; justify-content: center;
   height: 2.75rem; padding: 0 1.25rem 0 1rem; gap: .5rem; border-radius: 18px;
-  background: #22A38B; color: #fff; font-weight: 700; font-size: 14px; white-space: nowrap;
+  background: #178573; color: #fff; font-weight: 700; font-size: 14px; white-space: nowrap;
   transition: background-color .2s ease;
 }
 .cta-glow::before {
@@ -153,9 +153,9 @@ input[type=number] { -moz-appearance: textfield; appearance: textfield; }
   animation: glowFlow 10s linear infinite;
   transition: inset .3s ease, opacity .3s ease;
 }
-.cta-glow:hover, .cta-glow:focus-visible { background: #1A8574; }
+.cta-glow:hover, .cta-glow:focus-visible { background: #136E60; }
 .cta-glow:hover::before, .cta-glow:focus-visible::before { inset: -4px; border-radius: 22px; }
-.cta-glow:active { background: #166A5E; }
+.cta-glow:active { background: #105A4F; }
 .cta-glow-icon { display: inline-flex; flex-shrink: 0; }
 .cta-glow-icon svg { transition: transform .2s ease; }
 .cta-glow:hover .cta-glow-icon svg { transform: rotate(-12deg) scale(1.1); }
@@ -180,3 +180,8 @@ input[type=number] { -moz-appearance: textfield; appearance: textfield; }
 .hero-rise > :nth-child(1) { animation-delay: .25s; } .hero-rise > :nth-child(2) { animation-delay: .35s; }
 .hero-rise > :nth-child(3) { animation-delay: .45s; } .hero-rise > :nth-child(4) { animation-delay: .55s; }
 @media (prefers-reduced-motion: reduce) { .hero-in, .hero-rise > * { animation: none; } }
+
+/* Loading skeletons (components/ui/Skeleton): a soft light passing across grey shapes. */
+.skel { background: linear-gradient(100deg, #eef1f3 30%, #f7f9fa 50%, #eef1f3 70%); background-size: 300% 100%; animation: skel 1.5s ease-in-out infinite; }
+@keyframes skel { from { background-position: 100% 0; } to { background-position: 0 0; } }
+@media (prefers-reduced-motion: reduce) { .skel { animation: none; } }

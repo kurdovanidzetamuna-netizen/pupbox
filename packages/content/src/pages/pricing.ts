@@ -110,8 +110,8 @@ export const pricingPage: PageDef = {
       ],
     },
     seo(
-      tx('Pricing and plans', 'ფასები და გეგმები'),
-      tx('Choose a Pupbox plan for your dog — 1, 3, 6 or 12 months. Longer plans save more.', 'აირჩიე Pupbox-ის გეგმა შენი ძაღლისთვის — 1, 3, 6 ან 12 თვით. გრძელვადიანი გეგმები უფრო ხელსაყრელია.'),
+      tx('Dog box plans & prices', 'ძაღლის კოლოფის გეგმები და ფასები'),
+      tx('Mini, Standard or Premium dog box, every month for 1, 3 or 6 months — longer plans save more. Free delivery across Georgia, cancel anytime.', 'Mini, Standard ან Premium კოლოფი შენს ძაღლს ყოველთვე — 1, 3 ან 6 თვით, გრძელი გეგმა უფრო იაფია. უფასო მიწოდება მთელ საქართველოში, გაუქმება ნებისმიერ დროს.'),
     ),
   ],
 };

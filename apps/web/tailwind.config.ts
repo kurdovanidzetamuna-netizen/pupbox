@@ -17,10 +17,12 @@ const config: Config = {
           300: '#8FE0CC',
           400: '#5ECDB5',
           500: '#36B9A0',
-          600: '#22A38B',
-          700: '#1A8574',
-          800: '#166A5E',
-          900: '#12564D',
+          // 600 and up are a step deeper so white text on buttons and teal
+          // text on white read clearly (contrast ≥ 4.5); the light mints stay.
+          600: '#178573',
+          700: '#136E60',
+          800: '#105A4F',
+          900: '#0D4A41',
         },
         // Soft slate greys: headings read dark but never black.
         gray: {
@@ -29,14 +31,14 @@ const config: Config = {
           200: '#E3E9EC',
           300: '#CBD4DA',
           400: '#9AA7B1',
-          500: '#6B7A86',
+          500: '#617079', // readable on white, mint and light grey (contrast ≥ 4.6)
           600: '#52616D',
           700: '#3E4C57',
           800: '#2E3A44',
           900: '#24303A',
         },
         peach: { 50: '#FFF6F1', 100: '#FFE9DE', 200: '#FFD5C0', 300: '#FFBE9F', 400: '#FFA77E', 500: '#F58F62', 600: '#E9784A' },
-        lilac: { 50: '#F6F4FF', 100: '#ECE8FF', 400: '#A897F5', 600: '#7C68E0' },
+        lilac: { 50: '#F6F4FF', 100: '#ECE8FF', 400: '#A897F5', 600: '#7260DA' }, // 600: white text reads clearly on it (4.8)
         // Soft card colours after bog.ge: one per card, never for text or buttons.
         pastel: { sun: '#FFF1C9', peach: '#FFE5D6', lilac: '#E9E0FF', mint: '#D9F3E8', pink: '#FFDDEB', sky: '#DDEFFC', grey: '#F4F5F7' },
       },

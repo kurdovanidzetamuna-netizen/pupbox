@@ -54,8 +54,8 @@ export const howItWorksPage: PageDef = {
       ],
     },
     seo(
-      tx('How it works', 'როგორ მუშაობს'),
-      tx('How a Pupbox subscription works, from choosing a plan to your monthly box.', 'როგორ მუშაობს Pupbox-ის გამოწერა — გეგმის არჩევიდან ყოველთვიურ კოლოფამდე.'),
+      tx('How the monthly dog box works', 'როგორ მუშაობს ძაღლის ყოველთვიური კოლოფი'),
+      tx('Tell us about your dog, pick a plan, and get a box of treats, toys and care picked for them every month — delivered across Georgia.', 'მოგვიყევი შენს ძაღლზე, აირჩიე გეგმა და ყოველთვე მიიღე მისთვის შერჩეული ნუგბრის, სათამაშოებისა და მოვლის კოლოფი — მიწოდებით მთელ საქართველოში.'),
     ),
   ],
 };

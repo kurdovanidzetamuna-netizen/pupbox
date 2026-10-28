@@ -1,4 +1,5 @@
 'use client';
+import Photo from '@/components/ui/Photo';
 import { useRouter } from 'next/navigation';
 import Modal from '@/components/ui/Modal';
 import { useLanguage } from '@/context/LanguageContext';
@@ -26,7 +27,7 @@ function AuthTop() {
     <div className="relative h-28 sm:h-32 mb-5 bg-pastel-mint overflow-hidden" aria-hidden="true">
       {/* Confetti dots */}
       <span className="absolute inset-0 opacity-70 bg-[radial-gradient(circle_at_14%_30%,#22A38B_0_3px,transparent_4px),radial-gradient(circle_at_86%_24%,#FF5C8D_0_3px,transparent_4px),radial-gradient(circle_at_72%_78%,#7C68E0_0_3px,transparent_4px),radial-gradient(circle_at_26%_80%,#F5A623_0_3px,transparent_4px)]" />
-      <img src="/images/hero/dog-6.jpg" alt=""
+      <Photo src="/images/hero/dog-6.jpg" alt="" width={128} height={128} sizes="128px"
         className="absolute left-1/2 -translate-x-1/2 -bottom-8 sm:-bottom-10 w-28 h-28 sm:w-32 sm:h-32 rounded-full object-cover object-[50%_35%] ring-[5px] ring-white" />
       <GlossyBone className="absolute left-[18%] top-5 w-12 h-12 sm:w-14 sm:h-14 animate-[bob_3s_ease-in-out_infinite]" />
       <GlossyBall className="absolute right-[20%] top-4 w-10 h-10 sm:w-12 sm:h-12 animate-[bob_3.4s_ease-in-out_.4s_infinite]" />
