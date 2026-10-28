@@ -34,11 +34,13 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export function RegisterForm({ inModal = false }: { inModal?: boolean }) {
   const router = useRouter();
   const params = useSearchParams();
-  const redirect = safeRedirect(params.get('redirect'));
+  // The pop-up changes the address itself, which useSearchParams doesn't always see yet: read it directly too.
+  const query = (k: string) => params.get(k) ?? (typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get(k) : null);
+  const redirect = safeRedirect(query('redirect'));
   const { refresh: refreshCart } = useCart();
   const { t, lang } = useLanguage();
 
-  const [step, setStep] = useState<Step>(params.get('step') === 'verify' ? 'verify' : 'about');
+  const [step, setStep] = useState<Step>(query('step') === 'verify' ? 'verify' : 'about');
   const [form, setForm] = useState({ firstName: '', lastName: '', email: '', password: '', phone: '', referralCode: '' });
   const [fromLink, setFromLink] = useState(false);
   const [phoneOk, setPhoneOk] = useState(false);
@@ -52,7 +54,7 @@ export function RegisterForm({ inModal = false }: { inModal?: boolean }) {
 
   // The link's code wins; otherwise one remembered from an earlier visit.
   useEffect(() => {
-    const fromUrl = params.get('ref');
+    const fromUrl = query('ref');
     if (fromUrl) rememberReferral(fromUrl);
     const code = fromUrl || storedReferral();
     if (code) { setForm(f => ({ ...f, referralCode: f.referralCode || code })); setFromLink(true); }

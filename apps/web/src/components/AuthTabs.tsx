@@ -2,6 +2,7 @@
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useLanguage } from '@/context/LanguageContext';
 import { atLang } from '@/lib/seo';
+import { useAuthPopup } from '@/components/AuthPopup';
 
 /**
  * Sign in | Sign up as one switch, at the top of both forms (pop-up and full
@@ -13,10 +14,14 @@ export default function AuthTabs({ current }: { current: 'login' | 'register' })
   const router = useRouter();
   const params = useSearchParams();
   const { t, lang } = useLanguage();
+  const popup = useAuthPopup();
   const go = (to: 'login' | 'register') => {
     if (to === current) return;
-    const redirect = params.get('redirect');
-    router.replace(atLang(`/${to}${redirect ? `?redirect=${encodeURIComponent(redirect)}` : ''}`, lang), { scroll: false });
+    const redirect = params.get('redirect') ?? new URLSearchParams(window.location.search).get('redirect');
+    const href = atLang(`/${to}${redirect ? `?redirect=${encodeURIComponent(redirect)}` : ''}`, lang);
+    // In the pop-up it switches in place; on the full page it goes to the other page.
+    if (popup) popup.switchTo(to, href);
+    else router.replace(href, { scroll: false });
   };
   return (
     <div role="tablist" aria-label={`${t('nav.signIn')} / ${t('nav.signUp')}`}
