@@ -1,4 +1,5 @@
 'use client';
+import { Bone, Loading, PanelBones, RowBones } from '@/components/ui/Skeleton';
 import Link from '@/components/LangLink';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -61,7 +62,9 @@ export default function MyDogsPage() {
       )}
 
       {loading ? (
-        <div className="flex justify-center py-20"><span className="text-4xl animate-[bob_1s_ease-in-out_infinite]" aria-hidden="true">🐶</span></div>
+        <Loading label={t('global.loading')} className="grid gap-4 sm:grid-cols-2">
+          {[0, 1].map((i) => <div key={i} className="flex gap-4 rounded-3xl bg-white ring-1 ring-gray-100 p-4"><Bone className="w-20 h-20 rounded-2xl shrink-0" /><div className="flex-1 space-y-2 pt-1"><Bone className="h-5 w-1/2" /><Bone className="h-3.5 w-3/4" /><Bone className="h-3.5 w-2/5" /></div></div>)}
+        </Loading>
       ) : dogs.length === 0 ? (
         <button type="button" onClick={openAdd} className="group relative w-full overflow-hidden rounded-[28px] bg-teal-50/70 py-14 text-center">
           <PawTrail />

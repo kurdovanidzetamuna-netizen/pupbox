@@ -1,4 +1,5 @@
 'use client';
+import { Bone, Loading, PanelBones, RowBones } from '@/components/ui/Skeleton';
 import { signOut } from '@/lib/signOut';
 import Link from '@/components/LangLink';
 import { useEffect, useState } from 'react';
@@ -133,7 +134,11 @@ export default function AccountPage() {
   return (
     <div className="space-y-5">
       {loading ? (
-        <div className="flex justify-center py-20"><div className="w-8 h-8 border-4 border-teal-200 border-t-teal-600 rounded-full animate-spin" /></div>
+        <Loading label={t('global.loading')} className="space-y-5">
+          <div className="flex items-center gap-3 rounded-3xl bg-white ring-1 ring-gray-200/60 px-4 py-3.5 sm:px-5"><Bone className="w-10 h-10 rounded-full" /><div className="flex-1 space-y-2"><Bone className="h-4 w-40" /><Bone className="h-3 w-56" /></div></div>
+          <PanelBones count={2} />
+          <Bone className="h-16 w-full rounded-3xl" />
+        </Loading>
       ) : (
         <>
           {/* One slim row: who you are; the menu on the left has the sections. */}

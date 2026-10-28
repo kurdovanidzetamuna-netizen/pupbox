@@ -1,4 +1,5 @@
 'use client';
+import { Bone, Loading, PanelBones, RowBones } from '@/components/ui/Skeleton';
 import { GlossyGift } from '@/components/Glossy3D';
 import PawTrail from '@/components/PawTrail';
 import ShareButtons from '@/components/ShareButtons';
@@ -54,7 +55,13 @@ export default function ReferralsPage() {
   const share = () => (native ? navigator.share({ title: t('ref.title'), text: message, url: link }).catch(() => {}) : copy('link'));
 
   if (loading) {
-    return <div className="flex justify-center py-24"><span className="text-4xl motion-safe:animate-[bob_1s_ease-in-out_infinite]" aria-hidden="true">🎁</span></div>;
+    return (
+      <Loading label={t('global.loading')} className="space-y-5">
+        <Bone className="h-44 w-full rounded-[28px]" />
+        <div className="grid grid-cols-3 gap-3">{[0, 1, 2].map((i) => <Bone key={i} className="h-20 rounded-2xl" />)}</div>
+        <RowBones count={3} />
+      </Loading>
+    );
   }
   if (!data?.stats) return null;
 
