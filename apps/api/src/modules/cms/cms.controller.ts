@@ -70,7 +70,11 @@ export class CmsController {
   @AdminPerms({ read: 'cms.view' })
   findBySlugAdmin(@Param('slug') slug: string) {
     if (SECRET_SLUGS.includes(slug)) throw new NotFoundException('Page not found');
-    return this.cmsService.findBySlug(slug);
+    // Not saved yet: the editor starts from its defaults (no 404 in the console).
+    return this.cmsService.findBySlug(slug).catch((e) => {
+      if (e instanceof NotFoundException) return { slug, content: null, saved: false };
+      throw e;
+    });
   }
 
   /** Public: a promo pop-up was shown (`seen`) or its button tapped (`clicked`). Counted for admin. */

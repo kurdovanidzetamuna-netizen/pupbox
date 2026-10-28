@@ -20,6 +20,14 @@ type S = {
   textDefaults?: Record<string, { label: string; fillIns: string[]; en: string; ka: string }>;
 };
 
+/** Which wording each on/off message uses (a declined card has three, depending on what happens next). */
+const WORDING: Record<string, string[]> = { ORDER_CUSTOMER: ['ORDER_CUSTOMER'], WELCOME: ['WELCOME'], PAYMENT_FAILED: ['RENEWAL_RETRY', 'RENEWAL_REFUSED', 'RENEWAL_ENDED'], PAYMENT_RECOVERED: ['PAYMENT_RECOVERED'], REFUND: ['REFUND'], EXTRA_CHARGE: ['EXTRA_CHARGE'] };
+const SAMPLE: Record<string, string> = { firstName: 'Nino', orderId: 'A1B2C3D4', items: '3 items', total: '₾99', amount: '₾89', nextTry: '23 Oct, 15:00', tries: '8', card: ' to your card ••1111' };
+const example = (s: S, key: string) => (WORDING[key] ?? []).map((k) => {
+  const words = s.texts?.[k]?.en?.trim() || s.textDefaults?.[k]?.en || '';
+  return words.replace(/\{\{(\w+)\}\}/g, (_, v) => SAMPLE[v] ?? '');
+}).filter(Boolean);
+
 const FILL: Record<string, string> = { firstName: 'first name', orderId: 'order number', items: 'number of items', total: 'total', amount: 'amount', nextTry: 'next try date', tries: 'number of tries', card: 'card ending' };
 /** How many texts one message costs: Georgian letters fit 70 to a text (67 when split), Latin 160 (153). */
 function segments(text: string) {
@@ -213,7 +221,10 @@ export default function SmsPage() {
                   <span onClick={(e) => e.preventDefault()}><Switch on={s.customer[m.key]} label={m.label} onChange={(v) => up((x) => { x.customer[m.key] = v; return x; })} /></span>
                 </Row>
               </summary>
-              <p style={{ margin: '0 0 10px', padding: '10px 12px', borderRadius: 12, background: 'var(--slate-50)', fontSize: 12.5, color: 'var(--slate-600)', lineHeight: 1.5 }}>{m.example}<br /><span style={{ color: 'var(--slate-400)' }}>Sent in Georgian or English, in the customer’s language.</span></p>
+              <p style={{ margin: '0 0 10px', padding: '10px 12px', borderRadius: 12, background: 'var(--slate-50)', fontSize: 12.5, color: 'var(--slate-600)', lineHeight: 1.5 }}>
+                {(example(s, m.key).length ? example(s, m.key) : [m.example]).map((x, i) => <span key={i} style={{ display: 'block', marginBottom: 4 }}>{x}</span>)}
+                <span style={{ color: 'var(--slate-400)' }}>Sent in Georgian or English, in the customer’s language. Change the words under Wording below.</span>
+              </p>
             </details>
           ))}
         </div>
