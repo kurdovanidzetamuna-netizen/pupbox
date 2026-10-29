@@ -20,6 +20,8 @@ export const SNIPPET_PLACES: SnippetPlace[] = ['head', 'body-start', 'body-end']
  */
 export interface Snippet {
   id: string;
+  /** Which tool from admin's list it was added as ("" = any other code). */
+  tool: string;
   name: string;
   place: SnippetPlace;
   code: string;
@@ -115,7 +117,7 @@ const id = (v: unknown, re: RegExp, upper = true, inCode?: RegExp) => {
   return re.test(s) ? s : '';
 };
 
-const SNIPPET_MAX = 20, CODE_MAX = 20_000;
+const SNIPPET_MAX = 40, CODE_MAX = 20_000;
 function cleanSnippets(list: unknown): Snippet[] {
   if (!Array.isArray(list)) return [];
   return list.slice(0, SNIPPET_MAX).flatMap((x: any, i): Snippet[] => {
@@ -123,6 +125,7 @@ function cleanSnippets(list: unknown): Snippet[] {
     if (!code) return [];
     return [{
       id: typeof x.id === 'string' && /^[a-z0-9]{4,24}$/.test(x.id) ? x.id : `s${Date.now().toString(36)}${i}`,
+      tool: typeof x.tool === 'string' && /^[a-z0-9-]{2,30}$/.test(x.tool) ? x.tool : '',
       name: typeof x.name === 'string' && x.name.trim() ? x.name.trim().slice(0, 60) : 'Custom code',
       place: SNIPPET_PLACES.includes(x.place) ? x.place : 'head',
       code,
@@ -210,6 +213,31 @@ export async function saveMarketing(prisma: PrismaService, input: any, canCode: 
   return { value, rejected: rejected(input, value) };
 }
 
+/**
+ * <meta> tags in pasted head code (ownership checks from Search Console,
+ * Ahrefs, Pinterest…, Facebook's fb:app_id). The site writes these into
+ * the page itself: services check the page as first sent, before any of
+ * our code runs. http-equiv tags (redirects, security headers) are left out.
+ */
+export function metaTagsOf(snippets: Snippet[]) {
+  const out: { name?: string; property?: string; content: string }[] = [];
+  const seen = new Set<string>();
+  const attr = (tag: string, n: string) => tag.match(new RegExp(`\\s${n}\\s*=\\s*(?:"([^"]*)"|'([^']*)')`, 'i'))?.slice(1).find((x) => x !== undefined);
+  for (const sn of snippets) {
+    if (!sn.on || sn.place !== 'head') continue;
+    for (const tag of sn.code.match(/<meta\b[^>]*>/gi) ?? []) {
+      const name = attr(tag, 'name'), property = attr(tag, 'property'), content = attr(tag, 'content');
+      const key = name ?? property;
+      if (!key || content === undefined || !/^[A-Za-z0-9_:.\-]{1,80}$/.test(key) || content.length > 500) continue;
+      const k = `${key}=${content}`;
+      if (seen.has(k) || out.length >= 40) continue;
+      seen.add(k);
+      out.push({ ...(name ? { name } : { property }), content });
+    }
+  }
+  return out;
+}
+
 /** The part the site may see: IDs that are public in any page's source anyway. Never the token. */
 export function publicMarketing(s: MarketingSettings) {
   return {
@@ -220,6 +248,7 @@ export function publicMarketing(s: MarketingSettings) {
     consent: s.consent,
     seo: s.seo,
     snippets: s.snippets.filter((x) => x.on).map(({ id, place, code, consent }) => ({ id, place, code, consent })),
+    metaTags: metaTagsOf(s.snippets),
   };
 }
 

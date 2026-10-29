@@ -14,6 +14,8 @@ export type PublicMarketing = {
   consent: { banner: boolean };
   seo: { hideFromSearch: boolean };
   snippets?: Snippet[];
+  /** <meta> tags from admin's pasted head code; the layout writes them into the page itself. */
+  metaTags?: { name?: string; property?: string; content: string }[];
 };
 export type Snippet = { id: string; place: 'head' | 'body-start' | 'body-end'; code: string; consent: boolean };
 
@@ -118,7 +120,8 @@ export function placeSnippets(list: Snippet[]) {
     try {
       const tpl = document.createElement('template');
       tpl.innerHTML = sn.code;
-      const nodes = Array.from(tpl.content.childNodes).map((n) => {
+      // <meta> tags are already in the page from the server (see [lang]/layout.tsx).
+      const nodes = Array.from(tpl.content.childNodes).filter((n) => n.nodeName !== 'META').map((n) => {
         if (n.nodeName !== 'SCRIPT') return n;
         const old = n as HTMLScriptElement, el = document.createElement('script');
         for (const a of Array.from(old.attributes)) el.setAttribute(a.name, a.value);

@@ -113,6 +113,8 @@ export default async function RootLayout({ children, params }: Props) {
         {/* Every page asks the API for something: start that connection while the page loads. */}
         <link rel="preconnect" href={new URL(API_URL).origin} crossOrigin="anonymous" />
         <link rel="dns-prefetch" href={new URL(API_URL).origin} />
+        {/* Ownership checks and app IDs pasted in admin → SEO & tracking → Custom code: in the page as sent, where services look. */}
+        {marketing?.metaTags?.map((m, i) => <meta key={i} {...(m.name ? { name: m.name } : { property: m.property })} content={m.content} />)}
       </head>
       <body className="font-sans bg-gray-50 text-gray-800">
         <script dangerouslySetInnerHTML={{ __html: AUTH_HINT }} />
