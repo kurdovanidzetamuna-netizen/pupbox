@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react';
 import Link from 'next/link';
-import { PAGES, cmsSlug, mergedSections } from '@pupbox/content';
+import { PAGES, cmsSlug, mergedSections, SITE_STRINGS } from '@pupbox/content';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 const SITE = (process.env.NEXT_PUBLIC_SITE_URL || 'https://pupbox.ge').replace(/\/$/, '');
@@ -16,17 +16,18 @@ type S = {
   google: { ga4: string; gtm: string; ads: string; adsLabel: string };
   meta: { pixel: string; capi: boolean; token: string; testCode: string };
   tiktok: { pixel: string };
-  consent: { banner: boolean };
+  consent: { banner: boolean; always: boolean; version: number; policy: string; texts: { ka: Record<string, string>; en: Record<string, string> } };
   seo: { hideFromSearch: boolean };
   snippets: Snippet[];
 };
 type Place = 'head' | 'body-start' | 'body-end';
-type Snippet = { id: string; tool: string; name: string; place: Place; code: string; consent: boolean; on: boolean };
+type Snippet = { id: string; tool: string; name: string; place: Place; code: string; consent: boolean; category: 'analytics' | 'ads'; on: boolean };
 type Sent = { at: string; ok: boolean; event: string; message: string };
-type Tab = 'connect' | 'code' | 'checks' | 'feed' | 'texts';
+type Tab = 'connect' | 'code' | 'cookies' | 'checks' | 'feed' | 'texts';
 const TABS: { key: Tab; label: string }[] = [
   { key: 'connect', label: '📈 Ads & analytics' },
   { key: 'code', label: '🧩 Other tools & code' },
+  { key: 'cookies', label: '🍪 Cookies' },
   { key: 'checks', label: '✅ Site checks' },
   { key: 'feed', label: '🛍️ Product feed' },
   { key: 'texts', label: '🔍 Google texts' },
@@ -152,13 +153,10 @@ export default function MarketingPage() {
       </div>
 
       {tab === 'connect' && <>
-        <section style={{ ...card, marginTop: 10, display: 'grid', gap: 4, background: s.consent.banner ? 'var(--teal-50)' : 'var(--amber-50)', borderColor: s.consent.banner ? 'var(--teal-200)' : 'var(--amber-200, #fde68a)' }}>
-          <Row title="Ask visitors first (cookie banner)" hint={s.consent.banner
-            ? 'Nothing below loads until a visitor taps “Accept all”. Recommended — Georgian and EU privacy law expect it.'
-            : 'Off: every visitor is tracked straight away, without being asked. Only do this if your lawyer agrees.'}>
-            <Switch on={s.consent.banner} disabled={ro} label="Cookie banner" onChange={(v) => { if (!v && !confirm('Track every visitor without asking? Privacy law usually requires asking first.')) return; up((x) => ({ ...x, consent: { banner: v } })); }} />
-          </Row>
-        </section>
+        <p role="note" style={{ ...note, marginTop: 10, background: s.consent.banner ? 'var(--teal-50)' : 'var(--amber-50)' }}>
+          🍪 {s.consent.banner ? <>Analytics loads only after a visitor says yes to <b>Analytics</b>; Meta, Google Ads and TikTok only after a yes to <b>Ads</b>.</> : <>The cookie banner is <b>off</b>: everything below loads for every visitor.</>}{' '}
+          <button type="button" onClick={() => setTab('cookies')} style={{ ...btnSoft, padding: '3px 9px', fontSize: 12 }}>Cookie settings →</button>
+        </p>
 
         <Service icon="🔵" name="Meta — Facebook & Instagram" on={metaOn} hint="Counts visits and sales from your Facebook and Instagram ads, and builds audiences (people who looked at a product, added to basket, bought).">
           <Steps items={[
@@ -255,6 +253,8 @@ export default function MarketingPage() {
       {tab === 'code' && <CustomCode list={s.snippets} ro={ro || !canCode} roleNote={!ro && !canCode}
         onChange={(list) => up((x) => ({ ...x, snippets: list }))}
         onMove={(id, f) => up((x) => ({ ...applyFound(x, f), snippets: x.snippets.filter((sn) => sn.id !== id) }))} />}
+
+      {tab === 'cookies' && <Cookies s={s} ro={ro} up={up} />}
 
       {tab === 'checks' && <>
         <Section title="Prove the site is yours" hint="Each service gives you a code (“HTML tag” option). Paste the code, or the whole <meta …> tag — we take the code out of it. Save, wait a minute, then press Verify in that service.">
@@ -420,7 +420,7 @@ function CustomCode({ list, ro, roleNote, onChange, onMove }: { list: Snippet[];
   const set = (id: string, patch: Partial<Snippet>) => onChange(list.map((x) => (x.id === id ? { ...x, ...patch } : x)));
   const add = (t: Tool) => {
     const id = newId();
-    onChange([...list, { id, tool: t.key, name: t.key === 'other' ? '' : t.name, place: t.place, code: '', consent: t.consent, on: true }]);
+    onChange([...list, { id, tool: t.key, name: t.key === 'other' ? '' : t.name, place: t.place, code: '', consent: t.consent, category: t.group === 'analytics' ? 'analytics' : 'ads', on: true }]);
     setPicking(false); setQ(''); setFresh(id);
   };
   useEffect(() => { if (fresh) document.getElementById(`sn-${fresh}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, [fresh]);
@@ -473,9 +473,21 @@ function CustomCode({ list, ro, roleNote, onChange, onMove }: { list: Snippet[];
                     ))}
                   </div>
                   <div style={{ fontSize: 12, color: 'var(--slate-500)', marginTop: -6 }}>{PLACES.find((p) => p.key === sn.place)!.hint}{sn.place === 'head' && /<meta\b/i.test(sn.code) ? ' Its <meta> tags go into the page itself, so ownership checks find them.' : ''}</div>
-                  <Row title="Wait for cookie consent" hint={sn.consent ? 'Loads only after the visitor taps “Accept all”. Keep this on for anything that tracks visitors.' : 'Loads for every visitor straight away. Only for code that doesn’t track anyone (a chat widget, say).'}>
-                    <Switch on={sn.consent} disabled={ro} label="Wait for cookie consent" onChange={(v) => set(sn.id, { consent: v })} />
-                  </Row>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--slate-700)', marginBottom: 6 }}>When it loads</div>
+                    <div role="radiogroup" aria-label="When it loads" style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                      {([['now', 'Straight away'], ['analytics', 'After a yes to Analytics'], ['ads', 'After a yes to Ads']] as const).map(([k, label]) => {
+                        const sel = k === 'now' ? !sn.consent : sn.consent && sn.category === k;
+                        return (
+                          <button key={k} type="button" role="radio" aria-checked={sel} disabled={ro} onClick={() => set(sn.id, k === 'now' ? { consent: false } : { consent: true, category: k })}
+                            style={{ padding: '6px 12px', borderRadius: 99, fontSize: 12.5, fontWeight: 700, cursor: ro ? 'default' : 'pointer', border: `1.5px solid ${sel ? 'var(--teal-500)' : 'var(--slate-200)'}`, background: sel ? 'var(--teal-50)' : 'var(--white)', color: sel ? 'var(--teal-800)' : 'var(--slate-600)' }}>
+                            {label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <div style={{ fontSize: 12, color: 'var(--slate-500)', marginTop: 6 }}>{!sn.consent ? 'For every visitor, without asking. Only for code that doesn’t track anyone (a chat widget, say).' : sn.category === 'analytics' ? 'Only for visitors who allow Analytics cookies — heatmaps, visitor statistics.' : 'Only for visitors who allow Ads cookies — ad pixels, remarketing.'}</div>
+                  </div>
                 </>}
                 {!ro && (
                   <div>
@@ -517,6 +529,148 @@ function CustomCode({ list, ro, roleNote, onChange, onMove }: { list: Snippet[];
       </Section>
       <p style={{ ...note, marginTop: 14 }}>⚠️ Code here runs on every page, for every visitor. Paste only code from services you trust, straight from their own site. If the site misbehaves after saving, switch it off and save.</p>
     </>
+  );
+}
+
+// ── Cookies ─────────────────────────────────────────────────────────────────
+const COOKIE_WORDS: { key: string; label: string; long?: boolean }[] = [
+  { key: 'title', label: 'Title' },
+  { key: 'text', label: 'Text', long: true },
+  { key: 'accept', label: '“Accept all” button' },
+  { key: 'needed', label: '“Only necessary” button' },
+  { key: 'choose', label: '“Let me choose” button' },
+  { key: 'save', label: '“Save my choice” button' },
+  { key: 'necessaryHint', label: 'Necessary — what it’s for', long: true },
+  { key: 'analyticsHint', label: 'Analytics — what it’s for', long: true },
+  { key: 'adsHint', label: 'Ads — what it’s for', long: true },
+];
+type Answers = { days: number; visitors: number; answers: number; all: number; needed: number; custom: number; analytics: number; ads: number; byDay: { date: string; all: number; needed: number; custom: number }[]; recent: { choice: string; analytics: boolean; ads: boolean; version: number; lang: string | null; path: string | null; createdAt: string; visitor: string }[] };
+
+/** The cookie banner: whether and when it shows, its words, and what visitors answered. */
+function Cookies({ s, ro, up }: { s: S; ro: boolean; up: (f: (x: S) => S) => void }) {
+  const [lang, setLang] = useState<'ka' | 'en'>('ka');
+  const [days, setDays] = useState(30);
+  const [a, setA] = useState<Answers | null>(null);
+  useEffect(() => {
+    setA(null);
+    fetch(`${API}/admin/marketing/consents?days=${days}`, { headers: auth() }).then((r) => (r.ok ? r.json() : null)).then(setA).catch(() => setA(null));
+  }, [days]);
+  const pct = (n: number) => (a?.visitors ? `${Math.round((n / a.visitors) * 100)}%` : '—');
+  const peak = Math.max(1, ...(a?.byDay ?? []).map((d) => d.all + d.needed + d.custom));
+  const c = s.consent;
+
+  return (
+    <>
+      <section style={{ ...card, marginTop: 14, display: 'grid', gap: 4, background: c.banner ? 'var(--white)' : 'var(--amber-50)' }}>
+        <Row title="Ask visitors about cookies" hint={c.banner
+          ? 'A small card at the bottom asks each new visitor: accept all, only necessary, or choose. Nothing that tracks loads before they say yes.'
+          : 'Off: every visitor is tracked straight away, without being asked. Only do this if your lawyer agrees.'}>
+          <Switch on={c.banner} disabled={ro} label="Cookie banner" onChange={(v) => { if (!v && !confirm('Track every visitor without asking? Privacy law usually requires asking first.')) return; up((x) => { x.consent.banner = v; return x; }); }} />
+        </Row>
+        <div style={{ borderTop: '1px solid var(--slate-100)' }} />
+        <Row title="Show it to every new visitor" hint={c.always ? 'Always asks, even before any tracking is connected.' : 'Asks only once something that tracks is connected (Ads & analytics, or other tools that wait for consent).'}>
+          <Switch on={c.always} disabled={ro || !c.banner} label="Show to every visitor" onChange={(v) => up((x) => { x.consent.always = v; return x; })} />
+        </Row>
+      </section>
+
+      <Section title="What visitors answered" hint="Each visitor’s latest answer, counted once. Kept as proof of consent — with a random browser ID only, no name, email or IP address.">
+        <div style={{ display: 'flex', gap: 6, marginBottom: 12, flexWrap: 'wrap' }}>
+          {[7, 30, 90].map((d) => (
+            <button key={d} type="button" onClick={() => setDays(d)} aria-pressed={days === d}
+              style={{ padding: '5px 11px', borderRadius: 99, fontSize: 12.5, fontWeight: 700, cursor: 'pointer', border: `1.5px solid ${days === d ? 'var(--teal-500)' : 'var(--slate-200)'}`, background: days === d ? 'var(--teal-50)' : 'var(--white)', color: days === d ? 'var(--teal-800)' : 'var(--slate-600)' }}>
+              Last {d} days
+            </button>
+          ))}
+        </div>
+        {!a ? <p style={{ color: 'var(--slate-400)', margin: 0, fontSize: 13 }}>Loading…</p> : a.visitors === 0 ? <p style={{ ...note, margin: 0 }}>No answers yet in this period.</p> : (
+          <div style={{ display: 'grid', gap: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 8 }}>
+              <Stat label="Visitors answered" value={a.visitors.toLocaleString()} />
+              <Stat label="Accepted all" value={pct(a.all)} tone="teal" />
+              <Stat label="Only necessary" value={pct(a.needed)} />
+              <Stat label="Chose themselves" value={pct(a.custom)} />
+              <Stat label="Allow analytics" value={pct(a.analytics)} />
+              <Stat label="Allow ads" value={pct(a.ads)} />
+            </div>
+            {a.byDay.length > 1 && (
+              <div>
+                <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--slate-600)', marginBottom: 6 }}>Day by day</div>
+                <div style={{ display: 'flex', alignItems: 'flex-end', gap: 3, height: 80, overflowX: 'auto' }} aria-label="Answers per day">
+                  {a.byDay.map((d) => {
+                    const n = d.all + d.needed + d.custom;
+                    return (
+                      <div key={d.date} title={`${d.date}: ${d.all} all · ${d.custom} chose · ${d.needed} necessary`} style={{ flex: '1 0 8px', maxWidth: 22, height: `${(n / peak) * 100}%`, minHeight: 3, display: 'flex', flexDirection: 'column', borderRadius: 4, overflow: 'hidden' }}>
+                        <span style={{ flex: d.needed, background: 'var(--slate-300)' }} />
+                        <span style={{ flex: d.custom, background: 'var(--teal-300, #5eead4)' }} />
+                        <span style={{ flex: d.all, background: 'var(--teal-600)' }} />
+                      </div>
+                    );
+                  })}
+                </div>
+                <div style={{ display: 'flex', gap: 12, marginTop: 6, fontSize: 11.5, color: 'var(--slate-500)', flexWrap: 'wrap' }}>
+                  <span><span style={{ color: 'var(--teal-600)' }}>■</span> Accepted all</span><span><span style={{ color: 'var(--teal-300, #5eead4)' }}>■</span> Chose</span><span><span style={{ color: 'var(--slate-300)' }}>■</span> Only necessary</span>
+                </div>
+              </div>
+            )}
+            <details>
+              <summary style={{ cursor: 'pointer', fontSize: 13, fontWeight: 700, color: 'var(--teal-700)' }}>Latest answers</summary>
+              <ul style={{ listStyle: 'none', margin: '8px 0 0', padding: 0, display: 'grid', gap: 4 }}>
+                {a.recent.map((r, i) => (
+                  <li key={i} style={{ fontSize: 12.5, display: 'flex', gap: 8, flexWrap: 'wrap', color: 'var(--slate-600)', padding: '6px 8px', borderRadius: 8, background: 'var(--slate-50)' }}>
+                    <b style={{ color: r.choice === 'all' ? 'var(--teal-700)' : 'var(--slate-700)' }}>{r.choice === 'all' ? 'Accepted all' : r.choice === 'needed' ? 'Only necessary' : `Chose: ${[r.analytics && 'analytics', r.ads && 'ads'].filter(Boolean).join(' + ') || 'nothing extra'}`}</b>
+                    <span>{r.path || '/'}</span>
+                    <span style={{ color: 'var(--slate-400)' }}>{(r.lang ?? '').toUpperCase()} · visitor {r.visitor} · {new Date(r.createdAt).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+                  </li>
+                ))}
+              </ul>
+            </details>
+          </div>
+        )}
+      </Section>
+
+      <Section title="Banner words" hint="What the banner says. Leave a box empty to keep the standard words (shown faded).">
+        <div role="tablist" aria-label="Language" style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
+          {(['ka', 'en'] as const).map((l) => (
+            <button key={l} type="button" role="tab" aria-selected={lang === l} onClick={() => setLang(l)}
+              style={{ padding: '5px 12px', borderRadius: 99, fontSize: 12.5, fontWeight: 700, cursor: 'pointer', border: `1.5px solid ${lang === l ? 'var(--teal-500)' : 'var(--slate-200)'}`, background: lang === l ? 'var(--teal-50)' : 'var(--white)', color: lang === l ? 'var(--teal-800)' : 'var(--slate-600)' }}>
+              {l === 'ka' ? '🇬🇪 Georgian' : '🇬🇧 English'}
+            </button>
+          ))}
+        </div>
+        <div style={{ display: 'grid', gap: 10 }}>
+          {COOKIE_WORDS.map((w) => {
+            const value = c.texts?.[lang]?.[w.key] ?? '';
+            const def = SITE_STRINGS[`cookie.${w.key}`]?.[lang] ?? '';
+            const set = (v: string) => up((x) => { x.consent.texts = x.consent.texts ?? { ka: {}, en: {} }; x.consent.texts[lang] = { ...(x.consent.texts[lang] ?? {}), [w.key]: v }; return x; });
+            return (
+              <Field key={w.key} label={w.label}>
+                {w.long
+                  ? <textarea value={value} disabled={ro} rows={3} maxLength={w.key === 'text' ? 600 : 200} placeholder={def} onChange={(e) => set(e.target.value)} style={{ ...inp, resize: 'vertical' }} aria-label={`${w.label} (${lang})`} />
+                  : <input value={value} disabled={ro} maxLength={200} placeholder={def} onChange={(e) => set(e.target.value)} style={inp} aria-label={`${w.label} (${lang})`} />}
+              </Field>
+            );
+          })}
+          <Field label="Privacy page link" hint="Shown at the end of the banner text. A page on the site (/pages/privacy) or a full https:// address.">
+            <input value={c.policy} disabled={ro} placeholder="/pages/privacy" onChange={(e) => up((x) => { x.consent.policy = e.target.value.trim(); return x; })} style={{ ...inp, maxWidth: 360 }} aria-label="Privacy page link" />
+          </Field>
+        </div>
+      </Section>
+
+      <Section title="Ask everyone again" hint="After changing what you use cookies for (a new tool, a new kind of ad), everyone should answer again. Their earlier answers stop counting and the banner shows to them once more.">
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+          <span style={{ fontSize: 13, color: 'var(--slate-600)' }}>Banner version <b>{c.version}</b></span>
+          {!ro && <button type="button" onClick={() => { if (confirm('Show the banner again to everyone, including people who already answered? Press Save afterwards.')) up((x) => { x.consent.version = x.consent.version + 1; return x; }); }} style={btnSoft}>Ask everyone again</button>}
+        </div>
+      </Section>
+    </>
+  );
+}
+function Stat({ label, value, tone }: { label: string; value: string; tone?: 'teal' }) {
+  return (
+    <div style={{ borderRadius: 12, padding: '10px 12px', background: tone === 'teal' ? 'var(--teal-50)' : 'var(--slate-50)' }}>
+      <div style={{ fontSize: 20, fontWeight: 800, color: tone === 'teal' ? 'var(--teal-800)' : 'var(--slate-900)' }}>{value}</div>
+      <div style={{ fontSize: 12, color: 'var(--slate-500)' }}>{label}</div>
+    </div>
   );
 }
 

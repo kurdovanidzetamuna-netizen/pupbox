@@ -4,8 +4,9 @@ import { PrismaService } from '../prisma/prisma.service';
 import { smsSettings } from './sms-settings';
 
 /** Why a message went out — kept on its log row. */
-export type SmsKind = 'OTP' | 'WELCOME' | 'NEW_CUSTOMER_ADMIN' | 'ORDER_CUSTOMER' | 'ORDER_ADMIN' | 'PAYMENT_FAILED' | 'PAYMENT_FAILED_ADMIN' | 'PAYMENT_RECOVERED' | 'REFUND' | 'EXTRA_CHARGE' | 'TEST';
-export type SmsMeta = { kind: SmsKind; userId?: string | null; orderId?: string | null; /** Hidden in the log (a code). */ secret?: string };
+export type SmsKind = 'OTP' | 'WELCOME' | 'NEW_CUSTOMER_ADMIN' | 'ORDER_CUSTOMER' | 'ORDER_ADMIN' | 'PAYMENT_FAILED' | 'PAYMENT_FAILED_ADMIN' | 'PAYMENT_RECOVERED' | 'REFUND' | 'EXTRA_CHARGE' | 'TEST'
+  | 'RENEWAL_SOON' | 'PLAN_ENDING' | 'UNPAID_ORDER' | 'CART_REMINDER' | 'SHIPPED' | 'DELIVERED' | 'AFTER_DELIVERY';
+export type SmsMeta = { kind: SmsKind; userId?: string | null; orderId?: string | null; /** Hidden in the log (a code). */ secret?: string; /** A scheduled reminder's key, so it goes once. */ ref?: string };
 
 /** What the customer sees, with the real reason kept for the log. */
 const failure = (reason: string) => Object.assign(new ServiceUnavailableException('We couldn’t send the text message. Please try again in a minute.'), { reason });
@@ -61,7 +62,7 @@ export class SmsService implements OnModuleInit, OnModuleDestroy {
   async send(to: string, text: string, meta: SmsMeta = { kind: 'TEST' }, opts: { sendAt?: Date | null } = {}) {
     const logged = meta.secret ? text.split(meta.secret).join('••••••') : text;
     const log = (status: 'SENT' | 'FAILED' | 'SKIPPED' | 'QUEUED', extra: { providerId?: string | null; error?: string; sendAt?: Date } = {}) =>
-      this.prisma.smsLog.create({ data: { to, kind: meta.kind, status, text: logged.slice(0, 480), userId: meta.userId ?? null, orderId: meta.orderId ?? null, ...extra } })
+      this.prisma.smsLog.create({ data: { to, kind: meta.kind, status, text: logged.slice(0, 480), userId: meta.userId ?? null, orderId: meta.orderId ?? null, ref: meta.ref ?? null, ...extra } })
         .catch((e) => this.logger.error(`SMS log not saved: ${e.message}`));
     // Quiet hours: kept and sent later (never a code — those carry a secret and are needed now).
     if (opts.sendAt && opts.sendAt.getTime() > Date.now() && !meta.secret) {

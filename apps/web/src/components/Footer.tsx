@@ -90,7 +90,7 @@ function Newsletter() {
  * The tagline, links, contact and socials are edited in admin → Page Builder
  * → Header & Footer.
  */
-export default function Footer({ site, cookies = false }: { site: StoredContent | null; /** Ads/analytics are set up: offer to change the cookie choice. */ cookies?: boolean }) {
+export default function Footer({ site, cookies = false }: { site: StoredContent | null; /** The site asks about cookies: offer to change the answer. */ cookies?: boolean }) {
   const c = usePage(sitePage, site);
   const { t } = useLanguage();
   const { footer, contact, social } = c;

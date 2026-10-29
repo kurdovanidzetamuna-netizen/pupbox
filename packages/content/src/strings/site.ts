@@ -1,12 +1,21 @@
 /** Header, mobile menu, footer and home page words, in both languages. */
 export const SITE_STRINGS: Record<string, { en: string; ka: string }> = {
   'popup.close':            { en: 'Close',                       ka: 'დახურვა' },
-  // Cookie choice (shown only when ads or analytics are set up in admin → SEO & tracking)
+  // Cookie banner (admin → SEO & tracking → Cookies can reword it)
   'cookie.title':           { en: 'Cookies, your choice',        ka: 'ქუქიები — შენი არჩევანია' },
   'cookie.text':            { en: 'We use cookies to see how the site is used and to show you relevant Pupbox ads on Facebook, Instagram and Google. The ones the site needs to work are always on.', ka: 'ქუქიებით ვხედავთ, როგორ გამოიყენება საიტი, და Facebook-ზე, Instagram-სა და Google-ზე შესაბამის Pupbox-ის რეკლამას გაჩვენებთ. საიტის მუშაობისთვის საჭირო ქუქიები ყოველთვის ჩართულია.' },
   'cookie.accept':          { en: 'Accept all',                  ka: 'ყველას დაშვება' },
   'cookie.needed':          { en: 'Only necessary',              ka: 'მხოლოდ საჭირო' },
   'cookie.settings':        { en: 'Cookie settings',             ka: 'ქუქიების პარამეტრები' },
+  'cookie.choose':          { en: 'Let me choose',               ka: 'არჩევა' },
+  'cookie.save':            { en: 'Save my choice',              ka: 'არჩევანის შენახვა' },
+  'cookie.policy':          { en: 'Privacy policy',              ka: 'კონფიდენციალობის პოლიტიკა' },
+  'cookie.necessary':       { en: 'Necessary',                   ka: 'აუცილებელი' },
+  'cookie.necessaryHint':   { en: 'Sign-in, basket, language and your cookie choice. The site can’t work without them.', ka: 'შესვლა, კალათა, ენა და ქუქიების არჩევანი. მათ გარეშე საიტი ვერ იმუშავებს.' },
+  'cookie.analytics':       { en: 'Analytics',                   ka: 'ანალიტიკა' },
+  'cookie.analyticsHint':   { en: 'Shows us which pages help and which don’t, so we can make the site better.', ka: 'გვაჩვენებს, რომელი გვერდები გამოგადგათ, რომ საიტი გავაუმჯობესოთ.' },
+  'cookie.ads':             { en: 'Ads',                         ka: 'რეკლამა' },
+  'cookie.adsHint':         { en: 'Lets Facebook, Instagram, Google and TikTok show you Pupbox ads that fit you, and tells us which ads work.', ka: 'Facebook-ს, Instagram-ს, Google-სა და TikTok-ს საშუალებას აძლევს, გაჩვენონ თქვენზე მორგებული Pupbox-ის რეკლამა და გვაჩვენებს, რომელი რეკლამა მუშაობს.' },
   'popup.noThanks':         { en: 'No thanks',                   ka: 'არა, გმადლობ' },
   'popup.copy':             { en: 'Tap to copy',                 ka: 'შეეხე დასაკოპირებლად' },
   'popup.copied':           { en: 'Copied',                      ka: 'დაკოპირდა' },

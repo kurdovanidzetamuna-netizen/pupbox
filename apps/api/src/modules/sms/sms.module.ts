@@ -4,6 +4,7 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { IsString, MaxLength } from 'class-validator';
 import { SmsService } from './sms.service';
 import { SmsNotify } from './sms-notify';
+import { SmsReminders } from './sms-reminders';
 import { AdminJwtGuard } from '../admin-auth/admin-jwt.guard';
 import { AdminPerms } from '../admin-auth/admin-permissions';
 import { normalisePhone } from '../auth/verification';
@@ -21,7 +22,7 @@ class TestSmsDto {
 @AdminPerms({ read: 'cms.edit', write: 'cms.edit' })
 @Controller('admin/sms')
 class AdminSmsController {
-  constructor(private sms: SmsService, private prisma: PrismaService, private audit: AuditService) {}
+  constructor(private sms: SmsService, private prisma: PrismaService, private audit: AuditService, private reminders: SmsReminders) {}
 
   /** Everything on the page; the API key only masked. */
   @Get('settings')
@@ -47,6 +48,10 @@ class AdminSmsController {
     return this.prisma.smsLog.findMany({ where: kind ? { kind } : {}, orderBy: { createdAt: 'desc' }, take: Math.min(100, Math.max(1, +limit || 30)) });
   }
 
+  /** Sends the scheduled texts that are due now, without waiting for the next run (every 5 minutes). */
+  @Post('reminders/run')
+  async runReminders() { return { sent: await this.reminders.run() }; }
+
   @Post('test')
   async test(@Body() dto: TestSmsDto) {
     const to = normalisePhone(dto.to);
@@ -59,7 +64,7 @@ class AdminSmsController {
 @Global()
 @Module({
   controllers: [AdminSmsController],
-  providers: [SmsService, SmsNotify],
+  providers: [SmsService, SmsNotify, SmsReminders],
   exports: [SmsService, SmsNotify],
 })
 export class SmsModule {}

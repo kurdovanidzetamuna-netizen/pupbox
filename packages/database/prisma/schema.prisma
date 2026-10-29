@@ -1156,8 +1156,11 @@ model SmsLog {
   orderId    String?
   /// When a QUEUED message goes out.
   sendAt     DateTime?
+  /// What a scheduled reminder was for (e.g. "renew:<sub>:<date>:7"), so it goes once.
+  ref        String?
   createdAt  DateTime @default(now())
 
+  @@index([ref])
   @@index([createdAt])
   @@index([kind, createdAt])
   @@index([status, sendAt])
@@ -1388,4 +1391,24 @@ model PromoPopupStat {
   views     Int      @default(0)
   clicks    Int      @default(0)
   updatedAt DateTime @updatedAt
+}
+
+/// A visitor's answer to the cookie banner, kept as proof of consent.
+/// No name, email or IP: only a random ID from the visitor's browser.
+model CookieConsent {
+  id        String   @id @default(cuid())
+  /// Random ID kept in the visitor's browser (cookie pb_vid).
+  visitorId String
+  /// all | needed | custom
+  choice    String
+  analytics Boolean
+  ads       Boolean
+  /// The banner's version when they answered (admin can ask everyone again).
+  version   Int
+  lang      String?
+  path      String?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([visitorId])
 }
