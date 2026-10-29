@@ -4,7 +4,7 @@ import { CartModule } from '../cart/cart.module';
 import { Controller, Post, Get, Body, UseGuards, Request, Query } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth, ApiTags, ApiOperation } from '@nestjs/swagger';
-import { IsString, IsOptional, IsEmail, IsBoolean, ValidateNested, IsDateString, MaxLength, IsNotEmpty, Matches, IsEnum, IsArray, ArrayMaxSize, IsNumber, Min, Max } from 'class-validator';
+import { IsString, IsOptional, IsEmail, IsBoolean, ValidateNested, IsDateString, MaxLength, IsNotEmpty, Matches, IsEnum, IsArray, ArrayMaxSize, IsNumber, Min, Max, IsIn } from 'class-validator';
 import { DogGender, DogSize } from '@prisma/client';
 import { Type, Transform } from 'class-transformer';
 
@@ -49,6 +49,27 @@ class PrepareCheckoutDto {
   @IsOptional() @IsString() dogId?: string;
 }
 
+/** Campaign tags from the address the visitor arrived on. */
+class UtmDto {
+  @IsOptional() @IsString() @MaxLength(120) source?: string;
+  @IsOptional() @IsString() @MaxLength(120) medium?: string;
+  @IsOptional() @IsString() @MaxLength(160) campaign?: string;
+  @IsOptional() @IsString() @MaxLength(160) content?: string;
+  @IsOptional() @IsString() @MaxLength(160) term?: string;
+}
+
+/** Where the buyer came from, and their cookie choice (see MarketingService). */
+class TrackingDto {
+  @IsOptional() @IsIn(['all', 'needed']) consent?: string;
+  @IsOptional() @IsString() @MaxLength(200) fbp?: string;
+  @IsOptional() @IsString() @MaxLength(400) fbc?: string;
+  @IsOptional() @IsString() @MaxLength(400) gclid?: string;
+  @IsOptional() @IsString() @MaxLength(400) ttclid?: string;
+  @IsOptional() @ValidateNested() @Type(() => UtmDto) utm?: UtmDto;
+  @IsOptional() @IsString() @MaxLength(500) landing?: string;
+  @IsOptional() @IsString() @MaxLength(500) referrer?: string;
+}
+
 class CreateOrderDto {
   @IsString() deliveryMethodId: string;
   @IsOptional() @IsString() addressId?: string;
@@ -74,6 +95,7 @@ class CreateOrderDto {
    */
   @IsOptional() @IsBoolean() autoRenewal?: boolean;
   @IsOptional() @ValidateNested() @Type(() => GiftDetailsDto) gift?: GiftDetailsDto;
+  @IsOptional() @ValidateNested() @Type(() => TrackingDto) tracking?: TrackingDto;
 }
 
 @ApiTags('Checkout')
@@ -92,7 +114,9 @@ class CheckoutController {
   @Post('order')
   @ApiOperation({ summary: 'Create order (pending payment)' })
   createOrder(@Request() req: any, @Body() dto: CreateOrderDto) {
-    return this.service.createOrder(req.user.id, dto);
+    // The browser's address and name go with the ad details: Meta matches purchases with them.
+    const tracking = dto.tracking ? { ...dto.tracking, ip: req.ip, ua: String(req.headers['user-agent'] ?? '').slice(0, 400) } : undefined;
+    return this.service.createOrder(req.user.id, { ...dto, tracking });
   }
 }
 

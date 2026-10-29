@@ -4,6 +4,9 @@ import type { Metadata, Viewport } from 'next';
 import { SITE_URL, T, asLang, seo } from '@/lib/seo';
 import { notFound } from 'next/navigation';
 import AuthPopup from '@/components/AuthPopup';
+import Tracking from '@/components/Tracking';
+import { getMarketing } from '@/lib/marketing';
+import { anyTracking } from '@/lib/tracking';
 import '../globals.css';
 import { Noto_Sans_Georgian } from 'next/font/google';
 
@@ -32,13 +35,25 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const description = T(lang,
     'პრემიუმ საჭმლის, სათამაშოებისა და აქსესუარების კურირებული ყოველთვიური კოლოფი შენი ძაღლისთვის. მიწოდება მთელ საქართველოში.',
     'Curated monthly boxes of premium treats, toys and accessories for your dog. Delivered across Georgia.');
+  const mk = await getMarketing();
+  const v = mk?.verification;
+  // Admin → SEO & tracking: "hide from search" for test periods.
+  const hidden = mk?.seo.hideFromSearch === true;
   return {
     metadataBase: new URL(SITE_URL),
     ...seo({ lang, path: '/', title, description, absoluteTitle: true }),
     title: { default: title, template: '%s | Pupbox' },
     applicationName: 'Pupbox',
     keywords: ['dog subscription box', 'dog treats Georgia', 'pupbox', 'monthly dog box', 'pet subscription', 'ძაღლის გამოწერა', 'ძაღლის საჭმელი', 'pupbox საქართველო'],
-    robots: { index: true, follow: true, googleBot: { index: true, follow: true, 'max-image-preview': 'large', 'max-snippet': -1 } },
+    robots: hidden
+      ? { index: false, follow: false, googleBot: { index: false, follow: false } }
+      : { index: true, follow: true, googleBot: { index: true, follow: true, 'max-image-preview': 'large', 'max-snippet': -1 } },
+    // Ownership checks pasted in admin (Google Search Console, Bing, Meta Business, Yandex).
+    ...(v && (v.google || v.bing || v.meta || v.yandex) ? { verification: {
+      ...(v.google ? { google: v.google } : {}),
+      ...(v.yandex ? { yandex: v.yandex } : {}),
+      other: { ...(v.bing ? { 'msvalidate.01': v.bing } : {}), ...(v.meta ? { 'facebook-domain-verification': v.meta } : {}) },
+    } } : {}),
     formatDetection: { telephone: false, email: false, address: false },
     appleWebApp: { title: 'Pupbox', capable: true, statusBarStyle: 'default' },
   };
@@ -90,7 +105,7 @@ if(m&&m.t===t.slice(-16)){if(m.initial)d.style.setProperty('--me-initial',JSON.s
 export default async function RootLayout({ children, params }: Props) {
   // Only /ka and /en exist; anything else in the first place is not a page.
   if (params.lang !== 'ka' && params.lang !== 'en') notFound();
-  const site = await getStoredContent(sitePage);
+  const [site, marketing] = await Promise.all([getStoredContent(sitePage), getMarketing()]);
   return (
     // The auth hint script adds data-auth and two CSS variables to <html> before React hydrates.
     <html lang={params.lang === 'en' ? 'en' : 'ka'} className={sans.variable} suppressHydrationWarning>
@@ -110,7 +125,8 @@ export default async function RootLayout({ children, params }: Props) {
             <PromoPopup />
             {children}
             <AuthPopup />
-            <Footer site={site} />
+            <Tracking config={marketing} />
+            <Footer site={site} cookies={anyTracking(marketing) && marketing!.consent.banner} />
             <ScrollReveal />
           </CartProvider>
         </LanguageProvider>

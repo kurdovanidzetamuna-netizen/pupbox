@@ -47,6 +47,7 @@ const NAV_GROUPS = [
       { href: '/dashboard/blog', label: 'Blog Posts', icon: 'M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z' },
       { href: '/dashboard/cms', label: 'Terms & Privacy', icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
       { href: '/dashboard/faq', label: 'FAQ Manager', icon: 'M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
+      { href: '/dashboard/marketing', label: 'SEO & tracking', icon: 'M3 3v18h18M7 15l4-4 3 3 5-6' },
       { href: '/dashboard/promo-popups', label: 'Promo Popups', icon: 'M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z' },
     ],
   },
@@ -140,6 +141,7 @@ const NEEDS: [prefix: string, perm: string][] = [
   ['/dashboard/monthly-boxes', 'subscriptions.view'], ['/dashboard/box-campaigns', 'subscriptions.view'],
   ['/dashboard/page-builder', 'cms.view'], ['/dashboard/blog', 'cms.view'], ['/dashboard/cms', 'cms.view'], ['/dashboard/faq', 'cms.view'],
   ['/dashboard/promo-popups', 'cms.view'], ['/dashboard/emails', 'cms.view'], ['/dashboard/translations', 'cms.view'], ['/dashboard/admin-translations', 'cms.view'],
+  ['/dashboard/marketing', 'marketing.view'],
   ['/dashboard/settings', 'cms.edit'],
   ['/dashboard/sms', 'cms.edit'],
 ];

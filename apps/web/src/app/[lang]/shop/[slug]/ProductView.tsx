@@ -19,6 +19,7 @@ import PicksList from '@/components/shop/PicksList';
 import QuantityStepper from '@/components/shop/QuantityStepper';
 import InBasketTag from '@/components/shop/InBasketTag';
 import PerksStrip from '@/components/shop/PerksStrip';
+import { track } from '@/lib/tracking';
 
 const money = (n: unknown) => `₾${Number(n).toFixed(2)}`;
 const DOG_SIZES = ['EXTRA_SMALL', 'SMALL', 'MEDIUM', 'LARGE', 'EXTRA_LARGE'];
@@ -55,6 +56,12 @@ export default function ProductView({ product, related, content }: { product: an
   const short = pick(product.shortDescription, ka.shortDescription);
   const description = pick(product.description, ka.description);
   const goodFor = pick(product.goodFor, ka.goodFor);
+
+  // Ads and analytics: this product was looked at (sent only with the visitor's consent).
+  useEffect(() => {
+    const price = Number(product.salePrice ?? product.price);
+    track('ViewContent', { value: price, items: [{ id: product.id, name: product.name, price, quantity: 1 }] });
+  }, [product.id]); // eslint-disable-line react-hooks/exhaustive-deps
   const catName = product.category ? pick(product.category.name, product.category.translations?.ka?.name) : '';
   const look = categoryLook(product.category);
 

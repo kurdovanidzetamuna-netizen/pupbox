@@ -2,7 +2,8 @@
 import Link from '@/components/LangLink';
 import Confetti from '@/components/Confetti';
 import { useSearchParams } from 'next/navigation';
-import { Suspense, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
+import { track, itemsOf } from '@/lib/tracking';
 import { useLanguage } from '@/context/LanguageContext';
 import { FormAlert } from '@/components/ui/FormError';
 import { Heading } from '@/components/ui/Heading';
@@ -33,6 +34,22 @@ function ThankyouContent() {
   // told people they had paid when they hadn't.
   const isApproved = paymentStatus === 'approved';
   const isFailed = paymentStatus === 'declined' || paymentStatus === 'expired' || paymentStatus === 'reversed';
+
+  // Ads and analytics: the purchase, once per order even if this page is
+  // opened again. The order id pairs it with the one our server sends Meta.
+  useEffect(() => {
+    if (!isApproved || !orderId) return;
+    const key = `pb_bought_${orderId}`;
+    try { if (localStorage.getItem(key)) return; } catch { /* storage blocked: send anyway */ }
+    fetch(`${API_URL}/orders/my/${orderId}`, { headers: { Authorization: `Bearer ${localStorage.getItem('pupbox_token')}` } })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((o) => {
+        if (!o) return;
+        track('Purchase', { value: Number(o.total), items: itemsOf(o.items), orderId: o.id });
+        try { localStorage.setItem(key, '1'); } catch { /* fine */ }
+      })
+      .catch(() => {});
+  }, [isApproved, orderId]);
   const orderRef = orderId && (
     <p className="text-sm text-gray-400 -mt-6 mb-8">{t('ty.order')}: <span className="font-mono text-gray-600">{orderId.slice(-8).toUpperCase()}</span></p>
   );

@@ -1,7 +1,8 @@
 'use client';
 import MapPicker, { type Pin } from '@/components/MapPicker';
 import { formatDate } from '@/lib/dates';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { track, itemsOf, trackingForOrder } from '@/lib/tracking';
 import Link from '@/components/LangLink';
 import { useRouter } from 'next/navigation';
 import { useCart, cartHeaders } from '@/context/CartContext';
@@ -174,6 +175,14 @@ export default function CheckoutPage() {
   useEffect(() => {
     if (arrival && ready && !step) setStep(steps[0]);
   }, [arrival, ready]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Ads and analytics: checkout started, once per visit to this page.
+  const begun = useRef(false);
+  useEffect(() => {
+    if (begun.current || !cart?.items?.length) return;
+    begun.current = true;
+    track('InitiateCheckout', { value: Number(cart.total ?? cart.subtotal ?? 0), items: itemsOf(cart.items) });
+  }, [cart]);
 
   // Priced against this cart on the server, so a plan with delivery included
   // shows as free here exactly as it will be charged. The first option is
@@ -356,6 +365,8 @@ export default function CheckoutPage() {
           // A gift never auto-renews — the buyer must not be billed
           // indefinitely for someone else's dog.
           autoRenewal: offersRenewal && autoRenewal === true,
+          // Ad click and cookie choice: credits the ad that brought them (admin → SEO & tracking).
+          tracking: trackingForOrder(),
           ...(isGift ? {
             gift: {
               recipientName: form.giftRecipientName.trim(),
