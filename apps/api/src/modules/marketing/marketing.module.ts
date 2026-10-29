@@ -1,6 +1,8 @@
 import { Global, Module, Controller, Get, Put, Post, Body, Query, Req, Res, UseGuards, Header } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import type { Response } from 'express';
+import { Throttle } from '@nestjs/throttler';
+import { IsBoolean, IsIn, IsInt, IsOptional, IsString, Matches, Max, MaxLength, Min } from 'class-validator';
 import { PrismaService } from '../prisma/prisma.service';
 import { AdminJwtGuard } from '../admin-auth/admin-jwt.guard';
 import { AdminPerms } from '../admin-auth/admin-permissions';
@@ -34,6 +36,38 @@ class AdminMarketingController {
     const { value, rejected } = await saveMarketing(this.prisma, body, (req.user?.permissions ?? []).includes('marketing.code'));
     await this.audit.log({ adminUserId: req.user?.id, action: 'UPDATE', module: 'settings', entityType: 'MarketingSettings', entityId: 'config-marketing', before, after: forAdmin(value) });
     return { ...(await this.page(req)), rejected };
+  }
+
+  /**
+   * Cookie banner answers over the last `days`: each visitor's latest
+   * answer counted once, a day-by-day line, and the latest answers.
+   */
+  @Get('consents')
+  async consents(@Query('days') days = '30') {
+    const d = Math.min(365, Math.max(1, Math.round(Number(days)) || 30));
+    const rows = await this.prisma.cookieConsent.findMany({
+      where: { createdAt: { gte: new Date(Date.now() - d * 86400_000) } },
+      orderBy: { createdAt: 'desc' }, take: 50_000,
+      select: { visitorId: true, choice: true, analytics: true, ads: true, version: true, lang: true, path: true, createdAt: true },
+    });
+    const latest = new Map<string, (typeof rows)[number]>();
+    for (const r of rows) if (!latest.has(r.visitorId)) latest.set(r.visitorId, r);
+    const people = [...latest.values()];
+    const count = (f: (r: (typeof rows)[number]) => boolean) => people.filter(f).length;
+    const byDay = new Map<string, { all: number; needed: number; custom: number }>();
+    for (const r of people) {
+      const k = r.createdAt.toISOString().slice(0, 10);
+      const x = byDay.get(k) ?? { all: 0, needed: 0, custom: 0 };
+      x[r.choice as 'all' | 'needed' | 'custom'] = (x[r.choice as 'all'] ?? 0) + 1;
+      byDay.set(k, x);
+    }
+    return {
+      days: d, visitors: people.length, answers: rows.length,
+      all: count((r) => r.choice === 'all'), needed: count((r) => r.choice === 'needed'), custom: count((r) => r.choice === 'custom'),
+      analytics: count((r) => r.analytics), ads: count((r) => r.ads),
+      byDay: [...byDay].sort(([a], [b]) => a.localeCompare(b)).map(([date, v]) => ({ date, ...v })),
+      recent: rows.slice(0, 25).map(({ visitorId, ...r }) => ({ ...r, visitor: visitorId.slice(0, 8) })),
+    };
   }
 
   /** Sends one test event to Meta with the saved pixel and token. */
@@ -73,6 +107,16 @@ class AdminMarketingController {
   }
 }
 
+class ConsentDto {
+  @IsString() @Matches(/^[A-Za-z0-9-]{8,64}$/) visitorId: string;
+  @IsIn(['all', 'needed', 'custom']) choice: string;
+  @IsBoolean() analytics: boolean;
+  @IsBoolean() ads: boolean;
+  @IsInt() @Min(1) @Max(9999) version: number;
+  @IsOptional() @IsIn(['ka', 'en']) lang?: string;
+  @IsOptional() @IsString() @MaxLength(300) path?: string;
+}
+
 /** Public: the tracking IDs and checks every page needs. Never the Meta token. */
 @ApiTags('Marketing')
 @Controller('marketing')
@@ -82,6 +126,17 @@ class PublicMarketingController {
   @Get('config')
   @Header('Cache-Control', 'public, max-age=60')
   async config() { return publicMarketing(await marketingSettings(this.prisma)); }
+
+  /** A visitor answered the cookie banner: kept as proof of consent (no name, email or IP). */
+  @Post('consent')
+  @Throttle({ default: { limit: 20, ttl: 10 * 60_000 } })
+  async consent(@Body() b: ConsentDto) {
+    // "Only necessary" and "all" mean exactly that, whatever else was sent.
+    const analytics = b.choice === 'all' ? true : b.choice === 'needed' ? false : b.analytics;
+    const ads = b.choice === 'all' ? true : b.choice === 'needed' ? false : b.ads;
+    await this.prisma.cookieConsent.create({ data: { visitorId: b.visitorId, choice: b.choice, analytics, ads, version: b.version, lang: b.lang ?? null, path: b.path?.split('?')[0] ?? null } });
+    return { saved: true };
+  }
 }
 
 const esc = (s: unknown) => String(s ?? '').replace(/[<>&'"]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', "'": '&apos;', '"': '&quot;' })[c]!);

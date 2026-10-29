@@ -27,8 +27,16 @@ export interface Snippet {
   code: string;
   /** Load only after the visitor accepts cookies (anything that tracks). */
   consent: boolean;
+  /** Which cookie group it needs when consent is on. */
+  category: CookieGroup;
   on: boolean;
 }
+
+/** The groups visitors can say yes or no to (necessary cookies are always on). */
+export type CookieGroup = 'analytics' | 'ads';
+/** The banner's words, per language; empty ones use the site's own (packages/content strings). */
+export const CONSENT_TEXT_KEYS = ['title', 'text', 'accept', 'needed', 'choose', 'save', 'necessaryHint', 'analyticsHint', 'adsHint'] as const;
+export type ConsentTexts = Partial<Record<(typeof CONSENT_TEXT_KEYS)[number], string>>;
 
 export interface MarketingSettings {
   /** The code from each service's "verify with an HTML tag" option. */
@@ -52,8 +60,17 @@ export interface MarketingSettings {
     testCode: string;
   };
   tiktok: { pixel: string };
-  /** Ask visitors before any tracking loads (on by default; the law expects it). */
-  consent: { banner: boolean };
+  consent: {
+    /** Ask visitors before any tracking loads (on by default; the law expects it). */
+    banner: boolean;
+    /** Show it to every new visitor, even with no tracking set up yet. */
+    always: boolean;
+    /** Raised by "Ask everyone again": earlier answers no longer count. */
+    version: number;
+    /** The privacy page the banner links to. */
+    policy: string;
+    texts: { ka: ConsentTexts; en: ConsentTexts };
+  };
   seo: {
     /** Tell search engines to stay away from every page (test periods). */
     hideFromSearch: boolean;
@@ -66,7 +83,7 @@ export const MARKETING_DEFAULTS: MarketingSettings = {
   google: { ga4: '', gtm: '', ads: '', adsLabel: '' },
   meta: { pixel: '', capi: false, token: '', testCode: '' },
   tiktok: { pixel: '' },
-  consent: { banner: true },
+  consent: { banner: true, always: true, version: 1, policy: '/pages/privacy', texts: { ka: {}, en: {} } },
   seo: { hideFromSearch: false },
   snippets: [],
 };
@@ -130,9 +147,19 @@ function cleanSnippets(list: unknown): Snippet[] {
       place: SNIPPET_PLACES.includes(x.place) ? x.place : 'head',
       code,
       consent: x.consent !== false,
+      category: x.category === 'analytics' ? 'analytics' : 'ads',
       on: x.on !== false,
     }];
   });
+}
+
+function consentTexts(t: any): ConsentTexts {
+  const out: ConsentTexts = {};
+  for (const k of CONSENT_TEXT_KEYS) {
+    const v = typeof t?.[k] === 'string' ? t[k].trim() : '';
+    if (v) out[k] = v.slice(0, k === 'text' ? 600 : 200);
+  }
+  return out;
 }
 
 /** Cleans what is stored (or sent by admin); unknown or badly formed values become empty. */
@@ -158,7 +185,13 @@ export function cleanMarketing(c: any): MarketingSettings {
       testCode: id(c.meta?.testCode, FORMATS.metaTest),
     },
     tiktok: { pixel: id(c.tiktok?.pixel, FORMATS.tiktok, true, IN_CODE.tiktok) },
-    consent: { banner: c.consent?.banner !== false },
+    consent: {
+      banner: c.consent?.banner !== false,
+      always: c.consent?.always !== false,
+      version: Number.isInteger(c.consent?.version) && c.consent.version >= 1 && c.consent.version <= 9999 ? c.consent.version : 1,
+      policy: typeof c.consent?.policy === 'string' && /^(\/[\w\-/]*|https:\/\/\S+)$/.test(c.consent.policy.trim()) ? c.consent.policy.trim().slice(0, 300) : '/pages/privacy',
+      texts: { ka: consentTexts(c.consent?.texts?.ka), en: consentTexts(c.consent?.texts?.en) },
+    },
     seo: { hideFromSearch: c.seo?.hideFromSearch === true },
     snippets: cleanSnippets(c.snippets),
   };
@@ -247,7 +280,7 @@ export function publicMarketing(s: MarketingSettings) {
     tiktok: s.tiktok,
     consent: s.consent,
     seo: s.seo,
-    snippets: s.snippets.filter((x) => x.on).map(({ id, place, code, consent }) => ({ id, place, code, consent })),
+    snippets: s.snippets.filter((x) => x.on).map(({ id, place, code, consent, category }) => ({ id, place, code, consent, category })),
     metaTags: metaTagsOf(s.snippets),
   };
 }

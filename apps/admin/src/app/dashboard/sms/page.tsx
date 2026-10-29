@@ -17,18 +17,23 @@ type S = {
   codes: { resendSeconds: number; perHour: number; validMinutes: number };
   retries: { afterHours: number[]; textOnTries: number[] };
   texts: Record<string, { en?: string; ka?: string }>;
+  schedule: { renewalDays: number[]; endingDays: number[]; unpaidHours: number[]; cartHours: number[]; afterDeliveryHours: number };
+  limits: { enabled: boolean; perDay: number; gapMinutes: number };
   textDefaults?: Record<string, { label: string; fillIns: string[]; en: string; ka: string }>;
 };
 
 /** Which wording each on/off message uses (a declined card has three, depending on what happens next). */
-const WORDING: Record<string, string[]> = { ORDER_CUSTOMER: ['ORDER_CUSTOMER'], WELCOME: ['WELCOME'], PAYMENT_FAILED: ['RENEWAL_RETRY', 'RENEWAL_REFUSED', 'RENEWAL_ENDED'], PAYMENT_RECOVERED: ['PAYMENT_RECOVERED'], REFUND: ['REFUND'], EXTRA_CHARGE: ['EXTRA_CHARGE'] };
-const SAMPLE: Record<string, string> = { firstName: 'Nino', orderId: 'A1B2C3D4', items: '3 items', total: '₾99', amount: '₾89', nextTry: '23 Oct, 15:00', tries: '8', card: ' to your card ••1111' };
+const WORDING: Record<string, string[]> = {
+  ORDER_CUSTOMER: ['ORDER_CUSTOMER'], WELCOME: ['WELCOME'], PAYMENT_FAILED: ['RENEWAL_RETRY', 'RENEWAL_REFUSED', 'RENEWAL_ENDED'], PAYMENT_RECOVERED: ['PAYMENT_RECOVERED'], REFUND: ['REFUND'], EXTRA_CHARGE: ['EXTRA_CHARGE'],
+  RENEWAL_SOON: ['RENEWAL_SOON_CARD', 'RENEWAL_SOON_PAY'], PLAN_ENDING: ['PLAN_ENDING'], UNPAID_ORDER: ['UNPAID_ORDER'], CART_REMINDER: ['CART_REMINDER'], SHIPPED: ['SHIPPED'], DELIVERED: ['DELIVERED'], AFTER_DELIVERY: ['AFTER_DELIVERY'],
+};
+const SAMPLE: Record<string, string> = { firstName: 'Nino', orderId: 'A1B2C3D4', items: '3 items', total: '₾99', amount: '₾89', nextTry: '23 Oct, 15:00', tries: '8', card: ' to your card ••1111', plan: '6-month plan', date: '5 November', what: 'order #A1B2C3D4', tracking: ' Tracking: GE123456', dog: 'Rex' };
 const example = (s: S, key: string) => (WORDING[key] ?? []).map((k) => {
   const words = s.texts?.[k]?.en?.trim() || s.textDefaults?.[k]?.en || '';
   return words.replace(/\{\{(\w+)\}\}/g, (_, v) => SAMPLE[v] ?? '');
 }).filter(Boolean);
 
-const FILL: Record<string, string> = { firstName: 'first name', orderId: 'order number', items: 'number of items', total: 'total', amount: 'amount', nextTry: 'next try date', tries: 'number of tries', card: 'card ending' };
+const FILL: Record<string, string> = { firstName: 'first name', orderId: 'order number', items: 'number of items', total: 'total', amount: 'amount', nextTry: 'next try date', tries: 'number of tries', card: 'card ending', plan: 'plan name', date: 'date', what: 'order or box', tracking: 'tracking number', dog: 'dog’s name' };
 /** How many texts one message costs: Georgian letters fit 70 to a text (67 when split), Latin 160 (153). */
 function segments(text: string) {
   const unicode = /[^\x00-\x7F’—–…]/.test(text) || /[’—–…]/.test(text);
@@ -41,17 +46,25 @@ const TOPICS: { key: Topic; label: string; hint: string }[] = [
   { key: 'signups', label: '👋 New customers', hint: 'Name, phone and email' },
   { key: 'payments', label: '💳 Payment problems', hint: 'A renewal card was declined' },
 ];
-const CUSTOMER: { key: string; label: string; example: string }[] = [
+const CUSTOMER: { key: string; label: string; example: string; group?: 'reminder' | 'delivery'; hint?: string }[] = [
   { key: 'ORDER_CUSTOMER', label: 'Order paid', example: 'PupBox: Thank you, Nino! Order #A1B2C3D4 is paid — 3 items, ₾99. We’ll let you know when it ships.' },
   { key: 'WELCOME', label: 'Welcome after sign-up', example: 'PupBox: Welcome, Nino! Your account is ready. Tell us about your dog and pick a box: pupbox.ge' },
   { key: 'PAYMENT_FAILED', label: 'Renewal card declined', example: 'PupBox: Your plan renewal (₾89) didn’t go through. We’ll try again 23 Oct, 15:00, or pay now: pupbox.ge/account/subscriptions' },
   { key: 'PAYMENT_RECOVERED', label: 'Renewal paid after a retry', example: 'PupBox: Payment received (₾89) — your plan continues. Thank you!' },
   { key: 'REFUND', label: 'Money refunded', example: 'PupBox: We’ve refunded ₾15 for order #A1B2C3D4 to your card ••1111. It can take 3–5 working days to show.' },
   { key: 'EXTRA_CHARGE', label: 'Extra payment for added items', example: 'PupBox: We added items to your order #A1B2C3D4 as you asked. Please pay the difference of ₾12 here: pupbox.ge/account/orders' },
+  { key: 'SHIPPED', group: 'delivery', label: '🚚 On its way', example: 'PupBox: Your order #A1B2C3D4 is on its way! Tracking: GE123456', hint: 'When an order or monthly box is marked Shipped.' },
+  { key: 'DELIVERED', group: 'delivery', label: '📦 Delivered', example: 'PupBox: Your order #A1B2C3D4 has been delivered. Enjoy!', hint: 'When it’s marked Delivered.' },
+  { key: 'RENEWAL_SOON', group: 'reminder', label: '🔁 Renewal coming', example: 'PupBox: Nino, your 6-month plan renews on 5 November — we’ll charge ₾89 to your saved card.', hint: 'Days before a renewing plan’s date — see the schedule below.' },
+  { key: 'PLAN_ENDING', group: 'reminder', label: '⏳ Plan ending', example: 'PupBox: Nino, your 6-month plan ends on 5 November. Want more boxes? Renew here: …', hint: 'For plans that don’t renew by themselves.' },
+  { key: 'UNPAID_ORDER', group: 'reminder', label: '💳 Order not paid yet', example: 'PupBox: Nino, your order #A1B2C3D4 (₾99) isn’t paid yet. Finish it here: …', hint: 'Hours after an order was placed and not paid.' },
+  { key: 'CART_REMINDER', group: 'reminder', label: '🛒 Items left in the basket', example: 'PupBox: Nino, you left 3 items in your basket. It’s waiting for you: pupbox.ge/cart', hint: 'An offer: only to customers who agreed to SMS offers.' },
+  { key: 'AFTER_DELIVERY', group: 'reminder', label: '🐶 How did the dog like it?', example: 'PupBox: Nino, how did Rex like the box? Tell us — it helps us pick the next one.', hint: 'After a delivery; at most once a month per customer.' },
 ];
 const KIND: Record<string, string> = {
   OTP: 'Code', WELCOME: 'Welcome', NEW_CUSTOMER_ADMIN: 'New customer → team', ORDER_CUSTOMER: 'Order → customer', ORDER_ADMIN: 'Order → team',
   PAYMENT_FAILED: 'Card declined → customer', PAYMENT_FAILED_ADMIN: 'Card declined → team', PAYMENT_RECOVERED: 'Renewal paid', REFUND: 'Refund', EXTRA_CHARGE: 'Extra payment', TEST: 'Test',
+  RENEWAL_SOON: 'Renewal coming', PLAN_ENDING: 'Plan ending', UNPAID_ORDER: 'Not paid yet', CART_REMINDER: 'Basket reminder', SHIPPED: 'On its way', DELIVERED: 'Delivered', AFTER_DELIVERY: 'After delivery',
 };
 const STATUS_TONE: Record<string, [string, string]> = {
   SENT: ['var(--green-50)', 'var(--green-800)'], FAILED: ['var(--red-50)', 'var(--red-600)'], QUEUED: ['var(--amber-50)', 'var(--amber-700)'],
@@ -214,10 +227,12 @@ export default function SmsPage() {
           <Row title="🔒 Verification codes" hint="Always on — sign-up and changing a number need them.">
             <Switch on disabled label="Verification codes" onChange={() => undefined} />
           </Row>
-          {CUSTOMER.map((m) => (
-            <details key={m.key} style={{ borderTop: '1px solid var(--slate-100)' }}>
+          {CUSTOMER.map((m, i) => (
+            <div key={m.key}>
+            {m.group !== CUSTOMER[i - 1]?.group && <div style={{ margin: '14px 0 2px', fontSize: 12, fontWeight: 800, letterSpacing: '.04em', textTransform: 'uppercase', color: 'var(--slate-400)' }}>{m.group === 'delivery' ? 'Delivery updates' : 'Reminders — on a schedule'}</div>}
+            <details style={{ borderTop: '1px solid var(--slate-100)' }}>
               <summary style={{ listStyle: 'none', cursor: 'pointer' }}>
-                <Row title={m.label} hint="Example ▾">
+                <Row title={m.label} hint={`${m.hint ? `${m.hint} ` : ''}Example ▾`}>
                   <span onClick={(e) => e.preventDefault()}><Switch on={s.customer[m.key]} label={m.label} onChange={(v) => up((x) => { x.customer[m.key] = v; return x; })} /></span>
                 </Row>
               </summary>
@@ -226,6 +241,7 @@ export default function SmsPage() {
                 <span style={{ color: 'var(--slate-400)' }}>Sent in Georgian or English, in the customer’s language. Change the words under Wording below.</span>
               </p>
             </details>
+            </div>
           ))}
         </div>
       </Section>
@@ -258,6 +274,33 @@ export default function SmsPage() {
               </div>
             </details>
           ))}
+        </div>
+      </Section>
+
+      <Section title="Reminder schedule" hint="When each reminder goes. Add or remove steps; only the latest step that’s due is sent, and each goes once.">
+        <div style={{ display: 'grid', gap: 10 }}>
+          <Ladder title="🔁 Renewal coming" off={!s.customer.RENEWAL_SOON} unit="day" words="before the renewal date" values={s.schedule.renewalDays} max={60} count={6}
+            onChange={(v) => up((x) => { x.schedule.renewalDays = v; return x; })} />
+          <Ladder title="⏳ Plan ending" off={!s.customer.PLAN_ENDING} unit="day" words="before the plan ends" values={s.schedule.endingDays} max={60} count={6}
+            onChange={(v) => up((x) => { x.schedule.endingDays = v; return x; })} />
+          <Ladder title="💳 Order not paid yet" off={!s.customer.UNPAID_ORDER} unit="hour" words="after the order was placed" values={s.schedule.unpaidHours} max={720} count={5}
+            onChange={(v) => up((x) => { x.schedule.unpaidHours = v; return x; })} />
+          <Ladder title="🛒 Items left in the basket" off={!s.customer.CART_REMINDER} unit="hour" words="after the basket was last changed" values={s.schedule.cartHours} max={720} count={5}
+            onChange={(v) => up((x) => { x.schedule.cartHours = v; return x; })} />
+          <Ladder title="🐶 How did the dog like it?" off={!s.customer.AFTER_DELIVERY} unit="hour" words="after delivery" values={[s.schedule.afterDeliveryHours]} max={720} count={1}
+            onChange={(v) => up((x) => { x.schedule.afterDeliveryHours = v[0] ?? 72; return x; })} />
+        </div>
+      </Section>
+
+      <Section title="Limits" hint="So nobody gets too many texts. Applies to reminders only — codes, order, payment and delivery texts always go. A reminder over the limit waits; it isn’t lost.">
+        <div style={{ display: 'grid', gap: 12 }}>
+          <Row title="Limit reminders per customer" hint={s.limits.enabled ? `At most ${s.limits.perDay} a day, at least ${span(Math.max(1, Math.round(s.limits.gapMinutes / 60)))}${s.limits.gapMinutes % 60 ? ` (${s.limits.gapMinutes} min)` : ''} apart.` : 'Off: reminders go as soon as they’re due.'}>
+            <Switch on={s.limits.enabled} label="Limit reminders" onChange={(v) => up((x) => { x.limits.enabled = v; return x; })} />
+          </Row>
+          <div style={{ display: 'grid', gap: 10, opacity: s.limits.enabled ? 1 : 0.5 }}>
+            <Num label="At most" unit="reminders per customer a day" min={1} max={10} value={s.limits.perDay} onChange={(v) => up((x) => { x.limits.perDay = v; return x; })} />
+            <Num label="At least" unit="minutes between two reminders" min={0} max={1440} value={s.limits.gapMinutes} onChange={(v) => up((x) => { x.limits.gapMinutes = v; return x; })} />
+          </div>
         </div>
       </Section>
 
@@ -389,6 +432,38 @@ function Switch({ on, onChange, label, disabled, small }: { on: boolean; onChang
       style={{ flexShrink: 0, width: w, height: h, borderRadius: 99, border: 'none', padding: 3, cursor: disabled ? 'default' : 'pointer', background: on ? 'var(--teal-600)' : 'var(--slate-300)', opacity: disabled ? 0.55 : 1, transition: 'background .15s', display: 'inline-flex', justifyContent: on ? 'flex-end' : 'flex-start' }}>
       <span style={{ width: h - 6, height: h - 6, borderRadius: 99, background: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,.25)' }} />
     </button>
+  );
+}
+/** A list of "N days before" / "N hours after" steps, like the renewal retries: add, change, remove. */
+function Ladder({ title, off, unit, words, values, max, count, onChange }: { title: string; off: boolean; unit: 'day' | 'hour'; words: string; values: number[]; max: number; count: number; onChange: (v: number[]) => void }) {
+  const tidy = (v: number[]) => [...new Set(v.filter((n) => n >= 1 && n <= max))].sort((a, b) => (unit === 'day' ? b - a : a - b));
+  return (
+    <div style={{ border: '1px solid var(--slate-200b)', borderRadius: 14, padding: 12, display: 'grid', gap: 8, opacity: off ? 0.55 : 1 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+        <strong style={{ fontSize: 13.5, color: 'var(--slate-800)', flex: '1 1 auto' }}>{title}</strong>
+        {off && <span style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--slate-500)', background: 'var(--slate-100)', borderRadius: 99, padding: '2px 8px' }}>Message is off above</span>}
+      </div>
+      {values.map((v, i) => {
+        const days = unit === 'hour' && v % 24 === 0;
+        return (
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', fontSize: 13, color: 'var(--slate-600)' }}>
+            <NumInput min={1} value={unit === 'day' ? v : days ? v / 24 : v} aria-label={`${title} step ${i + 1}`} style={{ ...inp, width: 70, flex: '0 0 70px' }}
+              onBlur={() => onChange(tidy(values))}
+              onChange={(e) => { const n = Math.max(1, Math.round(Number(e.target.value) || 1)); const next = [...values]; next[i] = unit === 'day' ? n : days ? n * 24 : n; onChange(next); }} />
+            {unit === 'day' ? <span>{v === 1 ? 'day' : 'days'}</span> : (
+              <Dropdown aria-label={`${title} step ${i + 1} unit`} value={days ? 'days' : 'hours'} options={[{ value: 'hours', label: 'hours' }, { value: 'days', label: 'days' }]}
+                onChange={(u) => { const next = [...values]; next[i] = u === 'days' ? Math.max(1, Math.round(v / 24)) * 24 : v; onChange(next); }} />
+            )}
+            <span style={{ flex: '1 1 auto' }}>{words}</span>
+            {count > 1 && values.length > 1 && <button type="button" aria-label={`Remove step ${i + 1}`} onClick={() => onChange(values.filter((_, k) => k !== i))} style={{ ...btnLink, color: 'var(--red-600)' }}>✕</button>}
+          </div>
+        );
+      })}
+      {count > 1 && values.length < count && (
+        <button type="button" style={{ ...btnSoft, justifySelf: 'start', padding: '6px 11px', fontSize: 12.5 }}
+          onClick={() => { const free = (unit === 'day' ? [3, 14, 1, 2, 30, 5, 10, 21] : [24, 72, 6, 3, 12, 48, 168, 1]).find((n) => !values.includes(n)); if (free) onChange(tidy([...values, free])); }}>+ Add a step</button>
+      )}
+    </div>
   );
 }
 function Pill({ tone, children }: { tone: 'ok' | 'warn'; children: ReactNode }) {

@@ -12,7 +12,10 @@ import { normalisePhone } from '../auth/verification';
 export const SMS_SLUG = 'config-sms';
 
 /** Customer messages that can be switched on/off (codes always go: sign-up needs them). */
-export const CUSTOMER_KINDS = ['ORDER_CUSTOMER', 'WELCOME', 'PAYMENT_FAILED', 'PAYMENT_RECOVERED', 'REFUND', 'EXTRA_CHARGE'] as const;
+export const CUSTOMER_KINDS = ['ORDER_CUSTOMER', 'WELCOME', 'PAYMENT_FAILED', 'PAYMENT_RECOVERED', 'REFUND', 'EXTRA_CHARGE',
+  'RENEWAL_SOON', 'PLAN_ENDING', 'UNPAID_ORDER', 'CART_REMINDER', 'SHIPPED', 'DELIVERED', 'AFTER_DELIVERY'] as const;
+/** Scheduled reminders (sms-reminders.ts): these keep to the daily limit and the gap between texts. */
+export const REMINDER_KINDS = ['RENEWAL_SOON', 'PLAN_ENDING', 'UNPAID_ORDER', 'CART_REMINDER', 'AFTER_DELIVERY'] as const;
 /** What a team number can get. */
 export const TEAM_TOPICS = ['orders', 'signups', 'payments'] as const;
 export type TeamTopic = (typeof TEAM_TOPICS)[number];
@@ -40,6 +43,30 @@ export const SMS_TEXTS: Record<string, { label: string; fillIns: string[]; en: s
   PAYMENT_RECOVERED: { label: 'Renewal paid after a retry', fillIns: ['amount'],
     en: 'PupBox: Payment received ({{amount}}) — your plan continues. Thank you!',
     ka: 'PupBox: გადახდა მიღებულია ({{amount}}) — თქვენი გეგმა გრძელდება. მადლობა!' },
+  RENEWAL_SOON_CARD: { label: 'Renewal coming — saved card', fillIns: ['firstName', 'plan', 'date', 'amount'],
+    en: 'PupBox: {{firstName}}, your {{plan}} renews on {{date}} — we’ll charge {{amount}} to your saved card. Manage: pupbox.ge/account/subscriptions',
+    ka: 'PupBox: {{firstName}}, {{plan}} — განახლების თარიღი: {{date}}. შენახული ბარათიდან ჩამოიჭრება {{amount}}. მართვა: pupbox.ge/account/subscriptions' },
+  RENEWAL_SOON_PAY: { label: 'Renewal coming — pay by link', fillIns: ['firstName', 'plan', 'date', 'amount'],
+    en: 'PupBox: {{firstName}}, your {{plan}} renews on {{date}}. Pay {{amount}} to keep the boxes coming: pupbox.ge/account/subscriptions',
+    ka: 'PupBox: {{firstName}}, {{plan}} — განახლების თარიღი: {{date}}. ყუთების გასაგრძელებლად გადაიხადეთ {{amount}}: pupbox.ge/account/subscriptions' },
+  PLAN_ENDING: { label: 'Plan ending (doesn’t renew)', fillIns: ['firstName', 'plan', 'date'],
+    en: 'PupBox: {{firstName}}, your {{plan}} ends on {{date}}. Want more boxes? Renew here: pupbox.ge/account/subscriptions',
+    ka: 'PupBox: {{firstName}}, {{plan}} სრულდება — ბოლო თარიღი: {{date}}. გსურთ გაგრძელება? pupbox.ge/account/subscriptions' },
+  UNPAID_ORDER: { label: 'Order not paid yet', fillIns: ['firstName', 'orderId', 'total'],
+    en: 'PupBox: {{firstName}}, your order #{{orderId}} ({{total}}) isn’t paid yet. Finish it here: pupbox.ge/account/orders',
+    ka: 'PupBox: {{firstName}}, შეკვეთა #{{orderId}} ({{total}}) ჯერ არ არის გადახდილი. დაასრულეთ აქ: pupbox.ge/account/orders' },
+  CART_REMINDER: { label: 'Items left in the basket', fillIns: ['firstName', 'items'],
+    en: 'PupBox: {{firstName}}, you left {{items}} in your basket. It’s waiting for you: pupbox.ge/cart',
+    ka: 'PupBox: {{firstName}}, კალათაში დაგრჩათ {{items}}. გელოდებათ აქ: pupbox.ge/cart' },
+  SHIPPED: { label: 'On its way', fillIns: ['what', 'tracking'],
+    en: 'PupBox: Your {{what}} is on its way!{{tracking}}',
+    ka: 'PupBox: თქვენი {{what}} გზაშია!{{tracking}}' },
+  DELIVERED: { label: 'Delivered', fillIns: ['what'],
+    en: 'PupBox: Your {{what}} has been delivered. Enjoy!',
+    ka: 'PupBox: თქვენი {{what}} მიტანილია. ისიამოვნეთ!' },
+  AFTER_DELIVERY: { label: 'How did the dog like it?', fillIns: ['firstName', 'dog'],
+    en: 'PupBox: {{firstName}}, how did {{dog}} like the box? Tell us — it helps us pick the next one: pupbox.ge/account',
+    ka: 'PupBox: {{firstName}}, როგორ მოეწონა ყუთი თქვენს ძაღლს? მოგვწერეთ — შემდეგის შერჩევაში დაგვეხმარება: pupbox.ge/account' },
   REFUND: { label: 'Money refunded', fillIns: ['amount', 'orderId', 'card'],
     en: 'PupBox: We’ve refunded {{amount}} for order #{{orderId}}{{card}}. It can take 3–5 working days to show.',
     ka: 'PupBox: შეკვეთა #{{orderId}}-ზე დაგიბრუნეთ {{amount}}{{card}}. ასახვას 3–5 სამუშაო დღე შეიძლება დასჭირდეს.' },
@@ -72,17 +99,44 @@ export interface SmsSettings {
   retries: { afterHours: number[]; textOnTries: number[] };
   /** Admin's own wording per text and language; missing ones use SMS_TEXTS. */
   texts: Record<string, { en?: string; ka?: string }>;
+  /** When each scheduled reminder goes (sms-reminders.ts). */
+  schedule: {
+    /** Days before a renewing plan's date. */
+    renewalDays: number[];
+    /** Days before a plan that doesn't renew ends. */
+    endingDays: number[];
+    /** Hours after an order was placed and not paid. */
+    unpaidHours: number[];
+    /** Hours after the basket was last changed (only to customers who agreed to SMS offers). */
+    cartHours: number[];
+    /** Hours after delivery for the "how did the dog like it" text. */
+    afterDeliveryHours: number;
+  };
+  /** Reminders to one customer: at most perDay in 24 hours and gapMinutes apart; extra ones wait. */
+  limits: { enabled: boolean; perDay: number; gapMinutes: number };
 }
 
 export const SMS_DEFAULTS: SmsSettings = {
   enabled: true, apiKey: '', sender: '',
   team: [],
-  customer: { ORDER_CUSTOMER: true, WELCOME: true, PAYMENT_FAILED: true, PAYMENT_RECOVERED: true, REFUND: true, EXTRA_CHARGE: true },
+  customer: {
+    ORDER_CUSTOMER: true, WELCOME: true, PAYMENT_FAILED: true, PAYMENT_RECOVERED: true, REFUND: true, EXTRA_CHARGE: true,
+    RENEWAL_SOON: true, PLAN_ENDING: true, UNPAID_ORDER: true, CART_REMINDER: false, SHIPPED: true, DELIVERED: true, AFTER_DELIVERY: false,
+  },
   quiet: { enabled: true, from: '22:00', to: '09:00', team: false },
   codes: { resendSeconds: 60, perHour: 5, validMinutes: 10 },
   retries: { afterHours: [3, 7, 24, 48, 216, 384, 552], textOnTries: [1, 4, 6, 7, 8] },
   texts: {},
+  schedule: { renewalDays: [7, 1], endingDays: [7, 1], unpaidHours: [1, 24], cartHours: [3, 48], afterDeliveryHours: 72 },
+  limits: { enabled: true, perDay: 2, gapMinutes: 180 },
 };
+
+/** A list of whole numbers within min–max, no repeats, at most `max` of them, in order; else the default. */
+function steps(v: unknown, fallback: number[], min: number, maxValue: number, count: number, desc = false) {
+  if (!Array.isArray(v)) return fallback;
+  const xs = [...new Set(v.map(Number).filter((n) => Number.isFinite(n) && n >= min && n <= maxValue).map(Math.round))].sort((a, b) => (desc ? b - a : a - b));
+  return xs.slice(0, count);
+}
 
 const int = (v: unknown, fallback: number, min: number, max: number) => {
   const n = Math.round(Number(v));
@@ -106,7 +160,9 @@ export function cleanSms(c: any, legacy?: any): SmsSettings {
       topics: TEAM_TOPICS.filter((x) => (x === 'orders' ? legacy?.orderAdmin : x === 'signups' ? legacy?.signupAdmin : legacy?.paymentAdmin) !== false),
     }));
   const legacyCustomer = (k: string) => (k === 'ORDER_CUSTOMER' ? legacy?.orderCustomer : k === 'WELCOME' ? legacy?.signupCustomer : legacy?.paymentCustomer) !== false;
-  const customer = Object.fromEntries(CUSTOMER_KINDS.map((k) => [k, typeof c.customer?.[k] === 'boolean' ? c.customer[k] : legacyCustomer(k)])) as SmsSettings['customer'];
+  const OLD = ['ORDER_CUSTOMER', 'WELCOME', 'PAYMENT_FAILED', 'PAYMENT_RECOVERED', 'REFUND', 'EXTRA_CHARGE'];
+  const customer = Object.fromEntries(CUSTOMER_KINDS.map((k) => [k,
+    typeof c.customer?.[k] === 'boolean' ? c.customer[k] : OLD.includes(k) ? legacyCustomer(k) : SMS_DEFAULTS.customer[k]])) as SmsSettings['customer'];
 
   // Retries: rising, at least an hour apart from the start, at most 60 days, 1–12 of them.
   const hours = Array.isArray(c.retries?.afterHours) ? c.retries.afterHours.map(Number).filter((n: number) => Number.isFinite(n) && n >= 1 && n <= 1440).map(Math.round) : null;
@@ -134,6 +190,18 @@ export function cleanSms(c: any, legacy?: any): SmsSettings {
       const one = (l: 'en' | 'ka') => (typeof t[l] === 'string' && t[l].trim() && t[l].trim() !== SMS_TEXTS[k][l] ? t[l].trim().slice(0, 480) : undefined);
       return [k, { en: one('en'), ka: one('ka') }];
     }).filter(([, v]) => (v as any).en || (v as any).ka)),
+    schedule: {
+      renewalDays: steps(c.schedule?.renewalDays, SMS_DEFAULTS.schedule.renewalDays, 1, 60, 6, true),
+      endingDays: steps(c.schedule?.endingDays, SMS_DEFAULTS.schedule.endingDays, 1, 60, 6, true),
+      unpaidHours: steps(c.schedule?.unpaidHours, SMS_DEFAULTS.schedule.unpaidHours, 1, 720, 5),
+      cartHours: steps(c.schedule?.cartHours, SMS_DEFAULTS.schedule.cartHours, 1, 720, 5),
+      afterDeliveryHours: int(c.schedule?.afterDeliveryHours, SMS_DEFAULTS.schedule.afterDeliveryHours, 1, 720),
+    },
+    limits: {
+      enabled: c.limits?.enabled !== false,
+      perDay: int(c.limits?.perDay, SMS_DEFAULTS.limits.perDay, 1, 10),
+      gapMinutes: int(c.limits?.gapMinutes, SMS_DEFAULTS.limits.gapMinutes, 0, 1440),
+    },
   };
 }
 

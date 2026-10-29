@@ -6,7 +6,7 @@ import { notFound } from 'next/navigation';
 import AuthPopup from '@/components/AuthPopup';
 import Tracking from '@/components/Tracking';
 import { getMarketing } from '@/lib/marketing';
-import { anyTracking } from '@/lib/tracking';
+import { asksAboutCookies } from '@/lib/tracking';
 import '../globals.css';
 import { Noto_Sans_Georgian } from 'next/font/google';
 
@@ -128,7 +128,7 @@ export default async function RootLayout({ children, params }: Props) {
             {children}
             <AuthPopup />
             <Tracking config={marketing} />
-            <Footer site={site} cookies={anyTracking(marketing) && marketing!.consent.banner} />
+            <Footer site={site} cookies={asksAboutCookies(marketing)} />
             <ScrollReveal />
           </CartProvider>
         </LanguageProvider>
