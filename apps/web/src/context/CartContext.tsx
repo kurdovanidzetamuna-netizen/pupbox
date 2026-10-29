@@ -1,6 +1,7 @@
 'use client';
 import { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
 import { storedReferral, forgetReferral } from '@/lib/referral';
+import { track, itemsOf } from '@/lib/tracking';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 
@@ -38,6 +39,12 @@ interface CartContextType {
 }
 
 const CartContext = createContext<CartContextType | null>(null);
+
+/** Ads and analytics: what was just put in the basket (lib/tracking; nothing is sent without consent). */
+function added(cart: any, match: (line: any) => boolean, quantity = 1) {
+  const line = (cart?.items ?? []).filter(match).pop();
+  if (line) track('AddToCart', { value: Number(line.price) * quantity, items: itemsOf([{ ...line, quantity }]) });
+}
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [cart, setCart] = useState<any>(null);
@@ -78,21 +85,23 @@ export function CartProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener('pupbox:signed-out', onOut);
   }, [refresh]);
 
-  async function call(path: string, method = 'POST', body?: any) {
+  async function call(path: string, method = 'POST', body?: any): Promise<any> {
     setLoading(true);
     try {
       const res = await fetch(`${API_URL}/cart${path}`, { method, headers: getHeaders(), body: body ? JSON.stringify(body) : undefined });
-      if (res.ok) setCart(await res.json());
-      else { const e = await res.json(); throw new Error(e.message); }
+      if (!res.ok) { const e = await res.json(); throw new Error(e.message); }
+      const next = await res.json();
+      setCart(next);
+      return next;
     } finally { setLoading(false); }
   }
 
   return (
     <CartContext.Provider value={{
       cart, ready, loading, refresh,
-      addProduct: (productId, quantity = 1, personalisation) => call('/items', 'POST', { productId, quantity, ...(personalisation ? { personalisation } : {}) }),
-      addPlan: (planId) => call('/items', 'POST', { subscriptionPlanId: planId }),
-      addBox: (items, monthly, mystery = 0, replaceItemId) => call('/custom-box', 'POST', { items, monthly, mystery, ...(replaceItemId ? { replaceItemId } : {}) }),
+      addProduct: (productId, quantity = 1, personalisation) => call('/items', 'POST', { productId, quantity, ...(personalisation ? { personalisation } : {}) }).then((n) => added(n, (i) => i.productId === productId, quantity)),
+      addPlan: (planId) => call('/items', 'POST', { subscriptionPlanId: planId }).then((n) => added(n, (i) => i.subscriptionPlanId === planId)),
+      addBox: (items, monthly, mystery = 0, replaceItemId) => call('/custom-box', 'POST', { items, monthly, mystery, ...(replaceItemId ? { replaceItemId } : {}) }).then((n) => (replaceItemId ? undefined : added(n, (i) => !!i.customBoxId))),
       updateItem: (itemId, quantity) => call(`/items/${itemId}`, 'PUT', { quantity }),
       removeItem: (itemId) => call(`/items/${itemId}`, 'DELETE'),
       applyCoupon: (code) => call('/coupon', 'POST', { code }),

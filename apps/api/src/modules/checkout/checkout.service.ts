@@ -95,6 +95,7 @@ export class CheckoutService {
     longitude?: number;
     autoRenewal?: boolean;
     gift?: GiftDetails;
+    tracking?: Record<string, unknown>;
   }) {
     // Sign-up finishes with an email and SMS code; no order before that.
     const me = await this.prisma.user.findUnique({ where: { id: userId }, select: { emailVerified: true, phoneVerified: true } });
@@ -267,6 +268,7 @@ export class CheckoutService {
           referralCode: referral?.code ?? null,
           referralDiscount: referral?.discount ?? null,
           total,
+          ...(data.tracking ? { tracking: data.tracking as Prisma.InputJsonValue } : {}),
           items: {
             create: [...cart.items.filter((item: any) => !item.customBoxId).map((item: any) => ({
               productId: item.productId || null,

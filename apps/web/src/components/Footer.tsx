@@ -1,4 +1,5 @@
 'use client';
+import CookieSettingsLink from '@/components/CookieSettingsLink';
 import { useState } from 'react';
 import { sitePage, type StoredContent } from '@pupbox/content';
 import { usePage } from '@/lib/usePage';
@@ -89,7 +90,7 @@ function Newsletter() {
  * The tagline, links, contact and socials are edited in admin → Page Builder
  * → Header & Footer.
  */
-export default function Footer({ site }: { site: StoredContent | null }) {
+export default function Footer({ site, cookies = false }: { site: StoredContent | null; /** Ads/analytics are set up: offer to change the cookie choice. */ cookies?: boolean }) {
   const c = usePage(sitePage, site);
   const { t } = useLanguage();
   const { footer, contact, social } = c;
@@ -150,6 +151,7 @@ export default function Footer({ site }: { site: StoredContent | null }) {
             {footer.legalLinks.filter((l: L) => l.label).map((l: L, i: number) => (
               <SmartLink key={i} href={l.href} className="hover:text-teal-700 transition-colors">{l.label}</SmartLink>
             ))}
+            {cookies && <CookieSettingsLink className="hover:text-teal-700 transition-colors" />}
             <span className="inline-flex items-center gap-1.5">
               <Icon name="lock" className="w-3.5 h-3.5" />{t('ftr.pay')}
             </span>

@@ -55,6 +55,9 @@ export const PERMISSION_CATALOGUE: { key: string; group: string; name: string; d
   { key: 'crm.manage', group: 'CRM', name: 'Manage notification consent', description: 'Switch a customer’s email/SMS offers off when they ask.' },
   { key: 'cms.view', group: 'Site content', name: 'See site content', description: 'Pages, blog, FAQ, popups and translations.' },
   { key: 'cms.edit', group: 'Site content', name: 'Edit site content', description: 'Change and publish pages, blog, FAQ, popups, translations and shop settings.' },
+  { key: 'marketing.view', group: 'Marketing', name: 'See SEO & tracking', description: 'Google texts overview, tracking set-up (Google, Meta, TikTok) and the product feed addresses.' },
+  { key: 'marketing.manage', group: 'Marketing', name: 'Change SEO & tracking', description: 'Connect Google, Meta (Facebook & Instagram) and TikTok, site ownership codes, the cookie banner and hiding the site from search.' },
+  { key: 'marketing.code', group: 'Marketing', name: 'Add custom code to the site', description: 'Paste scripts from other services (chat widgets, heatmaps, extra pixels) into the site’s head or body. Code runs on every page, so give this only to people you trust fully.' },
   { key: 'admin.manage', group: 'Team', name: 'Manage the team', description: 'Add or remove admins, edit roles, see the audit log.' },
 ];
 

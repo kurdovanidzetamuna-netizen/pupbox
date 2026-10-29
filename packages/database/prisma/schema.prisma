@@ -731,6 +731,10 @@ model Order {
   /// When the gift card email actually went out; null = not yet. The hourly
   /// sender and the payment both claim it first, so a card is never sent twice.
   giftSentAt         DateTime?
+  /// Where the buyer came from and whether they accepted ad cookies:
+  /// { consent, fbp, fbc, gclid, ttclid, utm: {source, medium, campaign…}, landing, referrer, ip, ua }.
+  /// Credits ads (Meta Conversions API) and shows orders by source.
+  tracking           Json?
   createdAt        DateTime              @default(now())
   updatedAt        DateTime              @updatedAt
 

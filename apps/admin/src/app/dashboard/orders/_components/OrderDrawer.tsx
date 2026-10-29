@@ -220,6 +220,13 @@ export default function OrderDrawer({ order: initial, categories, onClose, onCha
           {refundedSum > 0 && <span style={{ color: 'var(--red-600)' }}>Refunded {money(refundedSum)}</span>}
         </Fact>
       </div>
+      {order.tracking && (
+        <p style={{ margin: 0, fontSize: 12.5, color: 'var(--slate-500)' }}>
+          <span style={label}>Came from</span>{' '}<strong style={{ color: 'var(--slate-700)' }}>{cameFrom(order.tracking)}</strong>
+          {order.tracking.utm?.campaign && <> · campaign “{order.tracking.utm.campaign}”</>}
+          {order.tracking.consent !== 'all' && <> · <span title="The buyer chose “Only necessary” cookies, so ad services weren’t told about this sale.">ads not told (no cookie consent)</span></>}
+        </p>
+      )}
       {(order.extraCharges?.length > 0 || order.parentOrder) && (
         <div style={{ ...card, background: 'var(--amber-50)', borderColor: 'var(--amber-200)' }}>
           {order.parentOrder && <p style={{ margin: 0, fontSize: 13 }}>Extra payment for order <strong>#{order.parentOrder.orderNumber.slice(-8).toUpperCase()}</strong> — ships with it once paid.</p>}
@@ -503,6 +510,16 @@ export default function OrderDrawer({ order: initial, categories, onClose, onCha
       {toast && <Toast text={toast.text} onUndo={toast.undoTo ? () => { move(toast.undoTo!, { quiet: true }).then(() => setToast({ text: `Back to ${STATUS_LABEL[toast.undoTo!]}` })); } : undefined} onClose={() => setToast(null)} />}
     </>
   );
+}
+
+/** Where the buyer came from, from what the site saved with the order (SEO & tracking). */
+function cameFrom(t: any): string {
+  if (t.fbc) return 'Facebook / Instagram ad';
+  if (t.gclid) return 'Google ad';
+  if (t.ttclid) return 'TikTok ad';
+  if (t.utm?.source) return [t.utm.source, t.utm.medium].filter(Boolean).join(' / ');
+  if (t.referrer) { try { return new URL(t.referrer).hostname.replace(/^www\./, ''); } catch { /* not a link */ } }
+  return 'Typed the address or a bookmark';
 }
 
 function Fact({ title, children, onClick }: { title: string; children: ReactNode; onClick?: () => void }) {

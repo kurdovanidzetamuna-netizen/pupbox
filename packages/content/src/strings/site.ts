@@ -1,6 +1,12 @@
 /** Header, mobile menu, footer and home page words, in both languages. */
 export const SITE_STRINGS: Record<string, { en: string; ka: string }> = {
   'popup.close':            { en: 'Close',                       ka: 'დახურვა' },
+  // Cookie choice (shown only when ads or analytics are set up in admin → SEO & tracking)
+  'cookie.title':           { en: 'Cookies, your choice',        ka: 'ქუქიები — შენი არჩევანია' },
+  'cookie.text':            { en: 'We use cookies to see how the site is used and to show you relevant Pupbox ads on Facebook, Instagram and Google. The ones the site needs to work are always on.', ka: 'ქუქიებით ვხედავთ, როგორ გამოიყენება საიტი, და Facebook-ზე, Instagram-სა და Google-ზე შესაბამის Pupbox-ის რეკლამას გაჩვენებთ. საიტის მუშაობისთვის საჭირო ქუქიები ყოველთვის ჩართულია.' },
+  'cookie.accept':          { en: 'Accept all',                  ka: 'ყველას დაშვება' },
+  'cookie.needed':          { en: 'Only necessary',              ka: 'მხოლოდ საჭირო' },
+  'cookie.settings':        { en: 'Cookie settings',             ka: 'ქუქიების პარამეტრები' },
   'popup.noThanks':         { en: 'No thanks',                   ka: 'არა, გმადლობ' },
   'popup.copy':             { en: 'Tap to copy',                 ka: 'შეეხე დასაკოპირებლად' },
   'popup.copied':           { en: 'Copied',                      ka: 'დაკოპირდა' },

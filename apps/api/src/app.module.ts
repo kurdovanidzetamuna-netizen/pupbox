@@ -29,6 +29,7 @@ import { BoxShipmentsModule } from './modules/box-shipments/box-shipments.module
 import { AuditModule } from './modules/audit/audit.module';
 import { EmailModule } from './modules/email/email.module';
 import { SmsModule } from './modules/sms/sms.module';
+import { MarketingModule } from './modules/marketing/marketing.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { NewsletterModule } from './modules/newsletter/newsletter.module';
 import { SellersModule } from './modules/sellers/sellers.module';
@@ -73,6 +74,7 @@ import { UploadModule } from './modules/upload/upload.module';
     ReportsModule,
     EmailModule,
     SmsModule,
+    MarketingModule,
     NotificationsModule,
     NewsletterModule,
     SellersModule,

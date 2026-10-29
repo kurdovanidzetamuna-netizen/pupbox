@@ -13,6 +13,7 @@ import { sendGiftCard } from '../gifts/gift-card';
 import { extendAfterRenewal } from '../subscriptions/renewal';
 import { shopSettings } from '../settings/settings';
 import { SmsNotify } from '../sms/sms-notify';
+import { MarketingService } from '../marketing/marketing.service';
 import { AutoRenewService } from './auto-renew';
 
 const BRAND: [RegExp, string][] = [[/visa/i, 'VISA'], [/master/i, 'Mastercard'], [/amex|american/i, 'AMEX'], [/maestro/i, 'Maestro']];
@@ -43,6 +44,7 @@ export class PaymentsService implements OnModuleInit, OnModuleDestroy {
     private email: EmailService,
     private products: ProductsService,
     private smsNotify: SmsNotify,
+    private marketing: MarketingService,
     private autoRenew: AutoRenewService,
   ) {}
 
@@ -315,6 +317,8 @@ export class PaymentsService implements OnModuleInit, OnModuleDestroy {
         this.notifyShop(order_id).catch((e) => this.logger.error(`New order email failed for ${order_id}: ${e.message}`));
         // Text messages: a thank-you to the customer, a summary to the team (each switchable in Settings).
         this.smsNotify.orderPaid(order_id);
+        // Meta: the purchase from our server too, if the buyer accepted ad cookies (admin → SEO & tracking).
+        this.marketing.orderPaid(order_id);
         // The inviter's referral reward follows once this order is past the
         // free-cancellation window (ReferralsService.grantDueRewards).
       }
