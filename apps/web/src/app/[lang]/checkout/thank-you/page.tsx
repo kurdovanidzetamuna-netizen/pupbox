@@ -7,8 +7,9 @@ import { track, itemsOf } from '@/lib/tracking';
 import { useLanguage } from '@/context/LanguageContext';
 import { FormAlert } from '@/components/ui/FormError';
 import { Heading } from '@/components/ui/Heading';
+import { API_URL } from '@/lib/api';
+import { savedToken } from '@/lib/authFetch';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 
 function Screen({ icon, title, sub, children }: { icon: string; title: string; sub: string; children: React.ReactNode }) {
   return (
@@ -41,7 +42,7 @@ function ThankyouContent() {
     if (!isApproved || !orderId) return;
     const key = `pb_bought_${orderId}`;
     try { if (localStorage.getItem(key)) return; } catch { /* storage blocked: send anyway */ }
-    fetch(`${API_URL}/orders/my/${orderId}`, { headers: { Authorization: `Bearer ${localStorage.getItem('pupbox_token')}` } })
+    fetch(`${API_URL}/orders/my/${orderId}`, { headers: { Authorization: `Bearer ${savedToken()}` } })
       .then((r) => (r.ok ? r.json() : null))
       .then((o) => {
         if (!o) return;
@@ -61,7 +62,7 @@ function ThankyouContent() {
     try {
       const res = await fetch(`${API_URL}/payments/initiate/${orderId}`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${localStorage.getItem('pupbox_token')}` },
+        headers: { Authorization: `Bearer ${savedToken()}` },
       });
       const data = res.ok ? await res.json() : null;
       if (!data?.checkoutUrl) throw new Error();

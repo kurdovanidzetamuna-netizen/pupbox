@@ -4,6 +4,8 @@ import Link from '@/components/LangLink';
 import { usePath } from '@/lib/path';
 import { useLanguage } from '@/context/LanguageContext';
 import { Icon } from '@/components/ui/icons';
+import { API_URL as API } from '@/lib/api';
+import { savedToken } from '@/lib/authFetch';
 
 interface Popup {
   id: string;
@@ -27,7 +29,6 @@ interface Popup {
   endsAt?: string;
 }
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 const DISMISSED_KEY = 'pupbox_dismissed_popups';
 const SHOWN_TODAY_KEY = 'pupbox_popups_shown_today';
 /** Phones have no mouse to "leave" with: an exit offer waits this long instead. */
@@ -108,7 +109,7 @@ export default function PromoPopup() {
         const res = await fetch(`${API}/cms/config-promo-popups`);
         if (!res.ok || cancelled) return;
         const all: Popup[] = (await res.json())?.content?.popups || [];
-        const signedIn = !!read(() => localStorage.getItem('pupbox_token'), null);
+        const signedIn = !!read(() => savedToken(), null);
         const dismissed = getDismissed(), shownToday = getShownToday();
         const p = all.find((x) => applies(x, path, signedIn) && !(x.showOncePerSession && dismissed.has(x.id)) && !(x.showOncePerDay && shownToday.has(x.id)));
         if (!p || cancelled) return;

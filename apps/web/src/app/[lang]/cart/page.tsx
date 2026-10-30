@@ -29,7 +29,8 @@ export default function CartPage() {
   const [couponLoading, setCouponLoading] = useState(false);
   const [promoOpen, setPromoOpen] = useState(false);
   // A code on the basket that takes nothing off yet (under its minimum, gift-only…), and why.
-  const issue: { reason: 'MIN' | 'GIFT' | 'NONE'; short?: number } | null = cart?.coupon && !cart?.referral ? cart.couponIssue ?? null : null;
+  const issue = cart?.coupon && !cart?.referral ? cart.couponIssue ?? null : null;
+  const coupon = cart?.coupon ?? null;
   // Which line a quantity change failed on, and why.
   const [qtyError, setQtyError] = useState<{ id: string; message: string } | null>(null);
 
@@ -76,11 +77,11 @@ export default function CartPage() {
         <div className="grid md:grid-cols-[minmax(0,1fr)_340px] gap-4 md:gap-6 items-start">
           {/* ── Items ── */}
           <ul className="space-y-2.5 sm:space-y-3">
-            {cart.items.map((item: any) => {
+            {cart.items.map((item) => {
               const fixed = item.subscriptionPlan || item.customBox;
               // Free stock left for this line, after other lines of the same product.
               const inv = item.product?.inventory;
-              const others = cart.items.filter((i: any) => i.id !== item.id && i.productId === item.productId).reduce((n: number, i: any) => n + i.quantity, 0);
+              const others = cart.items.filter((i) => i.id !== item.id && i.productId === item.productId).reduce((n, i) => n + i.quantity, 0);
               const max = inv ? Math.max(0, inv.quantity - (inv.reservedQty || 0) - others) : Infinity;
               const atMax = item.quantity >= max;
               return (
@@ -139,24 +140,24 @@ export default function CartPage() {
                   <span className={`w-10 h-10 shrink-0 rounded-[12px] bg-white flex items-center justify-center ${issue ? 'text-[#D98A00]' : 'text-teal-600'}`}><Icon name={cart.referral ? 'heart' : issue ? 'info' : 'check'} className="w-5 h-5" strokeWidth={2.6} /></span>
                   <div className="flex-1 min-w-0">
                     <p className={`text-[12px] font-semibold ${issue ? 'text-[#A86A00]' : 'text-teal-700'}`}>{cart.referral ? fill(t('cart.friendOn'), { name: cart.referral.inviterName || t('ref.friend') }) : issue ? t('cart.promoWaiting') : t('cart.promoOn')}</p>
-                    <p className="text-[15px] font-extrabold tracking-wider text-gray-900 font-mono truncate">{cart.referral?.code ?? cart.coupon.code}</p>
+                    <p className="text-[15px] font-extrabold tracking-wider text-gray-900 font-mono truncate">{cart.referral?.code ?? coupon?.code}</p>
                     <p className="text-[12px] text-teal-700">
                       {cart.referral
                         ? cart.referral.discount > 0
                           ? `${cart.referral.offer.type === 'PERCENTAGE' ? fill(t('cart.percentOff'), { v: cart.referral.offer.value }) : fill(t('cart.amountOff'), { v: gel(cart.referral.offer.value) })} · ${t('cart.firstOrder')}`
                           : cart.referral.offer.minOrder > cart.subtotal ? fill(t('cart.friendMin'), { v: gel(cart.referral.offer.minOrder) }) : t('cart.friendNotHere')
-                        : <>
-                          {cart.coupon.discountType === 'PERCENTAGE'
-                            ? fill(t('cart.percentOff'), { v: Number(cart.coupon.discountValue) })
-                            : fill(t('cart.amountOff'), { v: gel(cart.coupon.discountValue) })}
+                        : coupon && <>
+                          {coupon.discountType === 'PERCENTAGE'
+                            ? fill(t('cart.percentOff'), { v: Number(coupon.discountValue) })
+                            : fill(t('cart.amountOff'), { v: gel(coupon.discountValue) })}
                           {/* Only for some things: say which */}
-                          {cart.coupon.scopes && !['SHOP', 'BOX', 'CUSTOM_BOX', 'GIFT'].every((k) => cart.coupon.scopes.includes(k)) && ` · ${cart.coupon.scopes.map((x: string) => t(`cpn.${x}`)).join(', ')}`}
+                          {coupon.scopes && !['SHOP', 'BOX', 'CUSTOM_BOX', 'GIFT'].every((k) => coupon.scopes.includes(k)) && ` · ${coupon.scopes.map((x: string) => t(`cpn.${x}`)).join(', ')}`}
                           {/* Its other rules, so the discount shown isn't a surprise */}
                           {[
-                            cart.coupon.discountType === 'PERCENTAGE' && Number(cart.coupon.maxDiscount) > 0 && fill(t('cpn.upTo'), { v: gel(cart.coupon.maxDiscount) }),
-                            Number(cart.coupon.minOrderAmount) > 0 && fill(t('cpn.min'), { v: gel(cart.coupon.minOrderAmount) }),
-                            cart.coupon.minPlanMonths > 1 && fill(t('cpn.months'), { n: cart.coupon.minPlanMonths }),
-                            cart.coupon.firstOrderOnly && t('cpn.first'),
+                            coupon.discountType === 'PERCENTAGE' && Number(coupon.maxDiscount) > 0 && fill(t('cpn.upTo'), { v: gel(coupon.maxDiscount) }),
+                            Number(coupon.minOrderAmount) > 0 && fill(t('cpn.min'), { v: gel(coupon.minOrderAmount) }),
+                            (coupon.minPlanMonths ?? 0) > 1 && fill(t('cpn.months'), { n: coupon.minPlanMonths ?? 0 }),
+                            coupon.firstOrderOnly && t('cpn.first'),
                           ].filter(Boolean).map((x) => ` · ${x}`).join('')}
                         </>}
                     </p>
@@ -217,7 +218,7 @@ export default function CartPage() {
       <div className="md:hidden fixed inset-x-0 bottom-0 z-40 bg-white/95 backdrop-blur border-t border-gray-100 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] hdr-tabbar">
         <div className="flex items-center gap-3">
           <span className="flex -space-x-3 shrink-0" aria-hidden="true">
-            {cart.items.slice(0, 3).map((item: any, i: number) => (
+            {cart.items.slice(0, 3).map((item, i) => (
               <ProductThumb key={item.id} item={item} className="w-10 h-10 rounded-[14px] text-lg ring-[3px] ring-white" />
             ))}
           </span>

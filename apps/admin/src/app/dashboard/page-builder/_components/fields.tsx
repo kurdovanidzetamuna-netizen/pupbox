@@ -2,8 +2,8 @@
 import { useRef, useState, type CSSProperties } from 'react';
 import Link from 'next/link';
 import { emptyValue, isTranslatable, type Field, type Text } from '@pupbox/content';
+import { post } from '@/lib/api';
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 
 export const input: CSSProperties = {
   width: '100%', border: '1px solid var(--slate-200)', borderRadius: 9, padding: '8px 12px',
@@ -78,9 +78,8 @@ export function ImageInput({ value, onChange }: { value: string; onChange: (v: s
     try {
       const fd = new FormData();
       fd.append('file', f);
-      const res = await fetch(`${API}/admin/upload/image`, { method: 'POST', headers: { Authorization: `Bearer ${localStorage.getItem('admin_token')}` }, body: fd });
-      const data = await res.json().catch(() => null);
-      if (!res.ok || !data?.url) throw new Error(data?.message || 'Upload failed');
+      const data = await post('/admin/upload/image', fd, 'Upload failed');
+      if (!data?.url) throw new Error('Upload failed');
       onChange(data.url);
     } catch (e: any) {
       setError(e.message || 'Upload failed');

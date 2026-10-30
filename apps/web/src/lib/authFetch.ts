@@ -1,4 +1,13 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
+import { API_URL } from './api';
+
+const TOKEN_KEY = 'pupbox_token';
+/** The signed-in customer's token, or null (also on the server, where there is none). */
+export const savedToken = () => (typeof window === 'undefined' ? null : localStorage.getItem(TOKEN_KEY));
+
+/** The server's message for a refused request (validation sends a list: the first is enough). */
+export const apiError = (d: any, fallback: string): string => (Array.isArray(d?.message) ? d.message[0] : d?.message) || fallback;
+/** Same, read from the response. */
+export const responseError = async (res: Response, fallback: string) => apiError(await res.json().catch(() => ({})), fallback);
 
 export class SessionExpiredError extends Error {}
 
@@ -9,14 +18,14 @@ export class SessionExpiredError extends Error {}
  * error object as if it were their data.
  */
 export async function authFetch(path: string, init: RequestInit = {}) {
-  const token = localStorage.getItem('pupbox_token');
+  const token = savedToken();
   if (!token) throw new SessionExpiredError();
   const res = await fetch(`${API_URL}${path}`, {
     ...init,
     headers: { 'Content-Type': 'application/json', ...(init.headers || {}), Authorization: `Bearer ${token}` },
   });
   if (res.status === 401) {
-    localStorage.removeItem('pupbox_token');
+    localStorage.removeItem(TOKEN_KEY);
     throw new SessionExpiredError();
   }
   return res;

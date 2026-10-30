@@ -23,7 +23,7 @@ class AddressDto {
 }
 class UpdateAddressDto extends PartialType(AddressDto) {}
 
-const SELECT = { id: true, label: true, firstName: true, lastName: true, phone: true, city: true, addressLine1: true, addressLine2: true, latitude: true, longitude: true, isDefault: true, isGift: true } as const;
+export const ADDRESS_SELECT = { id: true, label: true, firstName: true, lastName: true, phone: true, city: true, addressLine1: true, addressLine2: true, latitude: true, longitude: true, isDefault: true, isGift: true } as const;
 
 /** The customer's saved delivery addresses: list, add, edit, remove, choose the default. */
 @ApiTags('My Addresses')
@@ -41,7 +41,7 @@ export class AddressesController {
 
   @Get()
   list(@Request() req: any) {
-    return this.prisma.address.findMany({ where: { userId: req.user.id, deletedAt: null }, orderBy: [{ isGift: 'asc' }, { isDefault: 'desc' }, { createdAt: 'desc' }], select: SELECT });
+    return this.prisma.address.findMany({ where: { userId: req.user.id, deletedAt: null }, orderBy: [{ isGift: 'asc' }, { isDefault: 'desc' }, { createdAt: 'desc' }], select: ADDRESS_SELECT });
   }
 
   @Post()
@@ -51,7 +51,7 @@ export class AddressesController {
     const count = await this.prisma.address.count({ where: { userId, deletedAt: null, isGift: false } });
     const isDefault = dto.isDefault === true || count === 0;
     if (isDefault) await this.prisma.address.updateMany({ where: { userId }, data: { isDefault: false } });
-    return this.prisma.address.create({ data: { ...dto, addressLine2: dto.addressLine2 || null, label: dto.label || null, userId, isDefault }, select: SELECT });
+    return this.prisma.address.create({ data: { ...dto, addressLine2: dto.addressLine2 || null, label: dto.label || null, userId, isDefault }, select: ADDRESS_SELECT });
   }
 
   @Patch(':id')
@@ -61,7 +61,7 @@ export class AddressesController {
     if (dto.isDefault === true && a.isGift) throw new BadRequestException('A gift address can’t be your default address.');
     if (dto.isDefault === true) await this.prisma.address.updateMany({ where: { userId: req.user.id }, data: { isDefault: false } });
     const { isDefault, ...rest } = dto;
-    return this.prisma.address.update({ where: { id }, data: { ...rest, ...(isDefault === true ? { isDefault: true } : {}) }, select: SELECT });
+    return this.prisma.address.update({ where: { id }, data: { ...rest, ...(isDefault === true ? { isDefault: true } : {}) }, select: ADDRESS_SELECT });
   }
 
   @Delete(':id')

@@ -1,7 +1,6 @@
 'use client';
 import { useState } from 'react';
-
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
+import { post, saveToken } from '@/lib/api';
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState('');
@@ -14,14 +13,8 @@ export default function AdminLoginPage() {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch(`${API}/admin/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(Array.isArray(data.message) ? data.message[0] : data.message || 'Login failed');
-      localStorage.setItem('admin_token', data.token);
+      const data = await post('/admin/auth/login', { email, password }, 'Login failed');
+      saveToken(data.token);
       window.location.href = '/dashboard';
     } catch (err: any) {
       setError(err.message);

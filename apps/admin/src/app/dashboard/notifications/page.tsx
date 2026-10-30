@@ -2,13 +2,9 @@
 import { Select } from '@/components/Dropdown';
 import { useCallback, useEffect, useState } from 'react';
 import CustomerDrawer from '@/components/CustomerDrawer';
+import { can, download, getOr, patch, today } from '@/lib/api';
+import { day } from '@/lib/format';
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
-const headers = () => ({ Authorization: `Bearer ${localStorage.getItem('admin_token')}`, 'Content-Type': 'application/json' });
-const day = (d?: string | null) => (d ? new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—');
-const can = (perm: string) => {
-  try { return (JSON.parse(atob((localStorage.getItem('admin_token') || '').split('.')[1])).permissions ?? []).includes(perm); } catch { return false; }
-};
 
 type Channel = '' | 'email' | 'sms';
 
@@ -37,12 +33,9 @@ export default function NotificationsPage() {
     if (status) qs.set('status', status);
     if (query) qs.set('search', query);
     try {
-      const [l, s] = await Promise.all([
-        fetch(`${API}/admin/crm/consents?${qs}`, { headers: headers() }),
-        fetch(`${API}/admin/crm/consents/summary`, { headers: headers() }),
-      ]);
-      if (l.ok) { const d = await l.json(); setRows(d.items); setTotal(d.total); }
-      if (s.ok) setSummary(await s.json());
+      const [l, s] = await Promise.all([getOr<any>(`/admin/crm/consents?${qs}`, null), getOr<any>('/admin/crm/consents/summary', null)]);
+      if (l) { setRows(l.items); setTotal(l.total); }
+      if (s) setSummary(s);
     } finally { setLoading(false); }
   }, [page, channel, status, query]);
 
@@ -52,17 +45,13 @@ export default function NotificationsPage() {
   async function optOut(u: any, ch: 'email' | 'sms') {
     const label = ch === 'email' ? 'email' : 'SMS';
     if (!confirm(`Switch ${label} offers OFF for ${u.firstName} ${u.lastName}? Only do this when the customer asked.`)) return;
-    const res = await fetch(`${API}/admin/crm/consents/${u.id}`, { method: 'PATCH', headers: headers(), body: JSON.stringify({ [ch]: false }) });
-    if (!res.ok) { const e = await res.json().catch(() => ({})); alert(e.message || 'Not changed.'); return; }
+    try { await patch(`/admin/crm/consents/${u.id}`, { [ch]: false }, 'Not changed.'); } catch (e: any) { alert(e.message); return; }
     load();
   }
 
   async function exportCsv(ch: 'email' | 'sms') {
-    const res = await fetch(`${API}/admin/crm/consents/export?channel=${ch}`, { headers: headers() });
-    if (!res.ok) { alert(res.status === 403 ? 'Your role can’t export audiences.' : 'Export failed.'); return; }
-    const url = URL.createObjectURL(await res.blob());
-    Object.assign(document.createElement('a'), { href: url, download: `pupbox-${ch}-audience-${new Date().toISOString().slice(0, 10)}.csv` }).click();
-    URL.revokeObjectURL(url);
+    try { await download(`/admin/crm/consents/export?channel=${ch}`, `pupbox-${ch}-audience-${today()}.csv`); }
+    catch (e: any) { alert(e.status === 403 ? 'Your role can’t export audiences.' : 'Export failed.'); }
   }
 
   const card = (label: string, value: any, sub: string, onClick?: () => void, action?: React.ReactNode) => (

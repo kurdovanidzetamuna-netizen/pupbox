@@ -2,9 +2,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { FilterSelect, SearchInput, Toolbar, StatCard, StatCards, Pagination, ActionButton } from '@/components/Toolbar';
 import { DateInput } from '@/components/DateField';
+import { download, getOr } from '@/lib/api';
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
-const token = () => localStorage.getItem('admin_token') ?? '';
 
 /** Each stage a referral moves through, in order, with how it shows. */
 const STAGES: Record<string, { label: string; bg: string; fg: string; border: string }> = {
@@ -52,9 +51,8 @@ export default function ReferralsPage() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const res = await fetch(`${API}/referrals/admin?${query({ page, limit })}`, { headers: { Authorization: `Bearer ${token()}` } });
-    if (res.ok) {
-      const data = await res.json();
+    const data = await getOr<any>(`/referrals/admin?${query({ page, limit })}`, null);
+    if (data) {
       setRows(data.referrals || []);
       setTotal(data.total || 0);
       setPages(data.pages || 1);
@@ -64,16 +62,11 @@ export default function ReferralsPage() {
 
   useEffect(() => { load(); }, [load]);
   useEffect(() => {
-    fetch(`${API}/referrals/admin/stats`, { headers: { Authorization: `Bearer ${token()}` } })
-      .then((r) => (r.ok ? r.json() : null)).then(setStats).catch(() => {});
+    getOr<any>('/referrals/admin/stats', null).then(setStats);
   }, []);
 
   async function exportCsv() {
-    const res = await fetch(`${API}/referrals/admin/export.csv?${query()}`, { headers: { Authorization: `Bearer ${token()}` } });
-    if (!res.ok) return;
-    const url = URL.createObjectURL(await res.blob());
-    const a = document.createElement('a'); a.href = url; a.download = `referrals${f.from ? `-${f.from}` : ''}${f.to ? `_${f.to}` : ''}.csv`; a.click();
-    URL.revokeObjectURL(url);
+    await download(`/referrals/admin/export.csv?${query()}`, `referrals${f.from ? `-${f.from}` : ''}${f.to ? `_${f.to}` : ''}.csv`).catch(() => {});
   }
 
   const filtered = !!(f.status || f.from || f.to || f.q);

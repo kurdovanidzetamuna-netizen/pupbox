@@ -15,10 +15,10 @@ import Button from '@/components/ui/Button';
 import { FormAlert } from '@/components/ui/FormError';
 import { Icon } from '@/components/ui/icons';
 import PawTrail from '@/components/PawTrail';
-import { authFetch, SessionExpiredError } from '@/lib/authFetch';
+import { authFetch, savedToken, SessionExpiredError } from '@/lib/authFetch';
 import { dogAge } from '@/lib/dog';
+import { API_URL as API } from '@/lib/api';
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 const STEPS = [
   { key: 'hello', emoji: '🐶' },
   { key: 'body', emoji: '📏' },
@@ -105,7 +105,7 @@ export default function DogEditor({ open, onClose, dog, onSaved, onExpired, welc
         const form = new FormData();
         form.append('file', photo.file);
         // Not authFetch: that sets a JSON content type, and this is a file.
-        const up = await fetch(`${API}/me/dogs/${saved.id}/photo`, { method: 'POST', body: form, headers: { Authorization: `Bearer ${localStorage.getItem('pupbox_token')}` } });
+        const up = await fetch(`${API}/me/dogs/${saved.id}/photo`, { method: 'POST', body: form, headers: { Authorization: `Bearer ${savedToken()}` } });
         const r = await up.json().catch(() => ({}));
         if (up.ok) saved = { ...saved, photoUrl: r.photoUrl };
       } else if (editing && dog.photoUrl && !photo.url) {

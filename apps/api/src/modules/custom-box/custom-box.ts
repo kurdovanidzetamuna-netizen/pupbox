@@ -2,6 +2,7 @@ import { BadRequestException } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
 import type { PrismaService } from '../prisma/prisma.service';
 import { shopSettings } from '../settings/settings';
+import { r2 } from '../../common/money';
 
 /**
  * What a customer may put in a box they build: its own catalogue, kept in
@@ -16,7 +17,6 @@ export const BOX_PRODUCT_WHERE = {
 
 export type BoxLine = { productId: string; quantity: number };
 
-const r2 = (n: number) => Math.round(n * 100) / 100;
 const MAX_PER_PRODUCT = 20;
 
 /** One row per product, whole numbers 1…20. */

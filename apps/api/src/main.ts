@@ -7,6 +7,7 @@ import helmet from 'helmet';
 import * as compression from 'compression';
 import * as cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
+import { PrismaErrorFilter } from './common/prisma-error.filter';
 
 /**
  * Tokens for customers and admins are signed with JWT_SECRET. The example
@@ -21,9 +22,13 @@ function assertProductionSecrets() {
   }
 }
 
-async function bootstrap() {
-  assertProductionSecrets();
-  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+/**
+ * Everything the server does to each request before a route sees it:
+ * proxy trust, uploaded files, security headers, CORS, the /api/v1 prefix
+ * and input checking. Shared with the tests, so they run the server exactly
+ * as it runs live.
+ */
+export function configureApp(app: NestExpressApplication) {
   // Behind a front server (Caddy) every request arrives from its address, so
   // rate limits would count all customers as one visitor. TRUST_PROXY=1 reads
   // the visitor's real address from the one proxy in front instead. Leave it
@@ -61,6 +66,14 @@ async function bootstrap() {
       forbidNonWhitelisted: true,
     }),
   );
+  app.useGlobalFilters(new PrismaErrorFilter());
+
+  return app;
+}
+
+async function bootstrap() {
+  assertProductionSecrets();
+  const app = configureApp(await NestFactory.create<NestExpressApplication>(AppModule));
 
   const config = new DocumentBuilder()
     .setTitle('Pupbox API')
@@ -78,4 +91,5 @@ async function bootstrap() {
   console.log(`Swagger docs at http://localhost:${port}/api/docs`);
 }
 
-bootstrap();
+// Started directly (node dist/main), not imported by the tests.
+if (require.main === module) bootstrap();

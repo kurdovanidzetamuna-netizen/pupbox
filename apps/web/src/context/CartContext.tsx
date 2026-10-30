@@ -2,8 +2,10 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
 import { storedReferral, forgetReferral } from '@/lib/referral';
 import { track, itemsOf } from '@/lib/tracking';
+import { API_URL } from '@/lib/api';
+import { savedToken } from '@/lib/authFetch';
+import type { Api } from '@pupbox/content';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 
 function getSessionId() {
   if (typeof window === 'undefined') return 'guest';
@@ -17,13 +19,13 @@ function getSessionId() {
  * the cart built before signing in into the account cart, once.
  */
 export function cartHeaders(): Record<string, string> {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('pupbox_token') : null;
+  const token = savedToken();
   return { 'Content-Type': 'application/json', 'x-session-id': getSessionId(), ...(token ? { Authorization: `Bearer ${token}` } : {}) };
 }
 const getHeaders = cartHeaders;
 
 interface CartContextType {
-  cart: any;
+  cart: Api.Cart | null;
   /** False until the first fetch finishes, so empty and not-loaded differ. */
   ready: boolean;
   loading: boolean;
@@ -41,13 +43,13 @@ interface CartContextType {
 const CartContext = createContext<CartContextType | null>(null);
 
 /** Ads and analytics: what was just put in the basket (lib/tracking; nothing is sent without consent). */
-function added(cart: any, match: (line: any) => boolean, quantity = 1) {
+function added(cart: Api.Cart | null, match: (line: Api.CartItem) => boolean, quantity = 1) {
   const line = (cart?.items ?? []).filter(match).pop();
   if (line) track('AddToCart', { value: Number(line.price) * quantity, items: itemsOf([{ ...line, quantity }]) });
 }
 
 export function CartProvider({ children }: { children: ReactNode }) {
-  const [cart, setCart] = useState<any>(null);
+  const [cart, setCart] = useState<Api.Cart | null>(null);
   const [loading, setLoading] = useState(false);
   const [ready, setReady] = useState(false);
 

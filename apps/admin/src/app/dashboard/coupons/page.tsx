@@ -1,14 +1,13 @@
 'use client';
-import UsedOn, { download } from './UsedOn';
+import UsedOn from './UsedOn';
 import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react';
 import FriendCodes from './FriendCodes';
 import SideDrawer from '@/components/SideDrawer';
 import NumberField from '@/components/NumberField';
 import DateField, { inDays, showDate, todayIso } from '@/components/DateField';
 import ConfirmSheet, { Toast } from '../orders/_components/ConfirmSheet';
+import { del, download, getOr, patch, post, today } from '@/lib/api';
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
-const headers = () => ({ Authorization: `Bearer ${localStorage.getItem('admin_token')}`, 'Content-Type': 'application/json' });
 
 /** What a promo code can take money off: any mix of these. */
 const SCOPES = [
@@ -105,20 +104,19 @@ export default function PromoCodesPage() {
   const [busy, setBusy] = useState(false);
 
   async function load() {
-    const r = await fetch(`${API}/admin/coupons`, { headers: headers() }).catch(() => null);
-    const d = r?.ok ? await r.json() : [];
+    const d = await getOr<any>('/admin/coupons', []);
     setCodes(Array.isArray(d) ? d : []);
     setLoading(false);
     return Array.isArray(d) ? d : [];
   }
   useEffect(() => {
     load();
-    fetch(`${API}/admin/box-tiers`, { headers: headers() }).then((r) => (r.ok ? r.json() : [])).then((t) => Array.isArray(t) && setTiers(t)).catch(() => {});
+    getOr<any>('/admin/box-tiers', []).then((t) => Array.isArray(t) && setTiers(t));
     // The plan lengths on sale (1, 3, 6, 12 months) for the "plans from" choice.
-    fetch(`${API}/subscription-plans`).then((r) => (r.ok ? r.json() : [])).then((p: any[]) => {
+    getOr<any[]>('/subscription-plans', []).then((p) => {
       const months = (x: any) => (x.durationUnit === 'YEAR' ? x.durationValue * 12 : x.durationUnit === 'MONTH' ? x.durationValue : 0);
       setLengths([...new Set((Array.isArray(p) ? p : []).map(months).filter((m) => m > 1))].sort((a, b) => a - b));
-    }).catch(() => {});
+    });
   }, []);
 
   const withStatus = useMemo(() => codes.map((c) => ({ ...c, status: statusOf(c) })), [codes]);
@@ -169,9 +167,7 @@ export default function PromoCodesPage() {
     if (isNew || !used) Object.assign(body, { discountType: form.discountType, discountValue: Number(form.discountValue) });
     if (isNew) body.code = form.code.trim().toUpperCase();
     try {
-      const r = await fetch(isNew ? `${API}/admin/coupons` : `${API}/admin/coupons/${current.id}`, { method: isNew ? 'POST' : 'PATCH', headers: headers(), body: JSON.stringify(body) });
-      const d = await r.json().catch(() => ({}));
-      if (!r.ok) throw new Error((Array.isArray(d.message) ? d.message[0] : d.message) || 'Not saved. Try again.');
+      await (isNew ? post('/admin/coupons', body, 'Not saved. Try again.') : patch(`/admin/coupons/${current.id}`, body, 'Not saved. Try again.'));
       setEditing(null);
       setToast(isNew ? `${body.code} created` : 'Changes saved');
       load();
@@ -182,15 +178,13 @@ export default function PromoCodesPage() {
   async function act(kind: 'pause' | 'resume' | 'stop' | 'delete') {
     setBusy(true);
     const id = current.id;
-    const r = await fetch(
-      kind === 'stop' ? `${API}/admin/coupons/${id}/stop` : `${API}/admin/coupons/${id}`,
-      kind === 'delete' ? { method: 'DELETE', headers: headers() }
-        : kind === 'stop' ? { method: 'POST', headers: headers() }
-        : { method: 'PATCH', headers: headers(), body: JSON.stringify({ isActive: kind === 'resume' }) },
-    ).catch(() => null);
-    const d = r ? await r.json().catch(() => ({})) : {};
-    setBusy(false); setConfirm(null);
-    if (!r?.ok) { setError((Array.isArray(d.message) ? d.message[0] : d.message) || 'That didn’t work. Try again.'); return; }
+    const failed = 'That didn’t work. Try again.';
+    let d;
+    try {
+      d = (await (kind === 'delete' ? del(`/admin/coupons/${id}`, failed)
+        : kind === 'stop' ? post(`/admin/coupons/${id}/stop`, undefined, failed)
+        : patch(`/admin/coupons/${id}`, { isActive: kind === 'resume' }, failed))) ?? {};
+    } catch (e: any) { setError(e.status ? e.message : failed); return; } finally { setBusy(false); setConfirm(null); }
     const list = await load();
     if (kind === 'delete' && d.deleted) { setEditing(null); setToast(`${current.code} deleted`); return; }
     const fresh = list.find((c: any) => c.id === id);
@@ -209,7 +203,7 @@ export default function PromoCodesPage() {
           <p style={{ fontSize: 13, color: 'var(--slate-500)', margin: '4px 0 0' }}>Discounts customers type in the basket — for the shop, boxes, gifts or delivery.</p>
         </div>
         <span style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-        <button type="button" onClick={() => download('/admin/coupons/export.csv', `promo-codes-${new Date().toISOString().slice(0, 10)}.csv`)} className="pc-btn soft">⬇ Export CSV</button>
+        <button type="button" onClick={() => download('/admin/coupons/export.csv', `promo-codes-${today()}.csv`).catch(() => {})} className="pc-btn soft">⬇ Export CSV</button>
         <button type="button" onClick={() => open('new')} className="pc-cta">
           <span style={{ fontSize: 18, lineHeight: 1 }}>＋</span> New promo code
         </button>

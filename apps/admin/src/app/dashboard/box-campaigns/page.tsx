@@ -4,8 +4,8 @@ import { useEffect, useState } from 'react';
 import FormField, { inputClass } from '@/components/FormField';
 import LangTabs, { type Lang } from '@/components/LangTabs';
 import { NumInput } from '@/components/NumberField';
+import { api, getOr, post, put } from '@/lib/api';
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const DOG_SIZES = ['', 'SMALL', 'MEDIUM', 'LARGE', 'XLARGE'];
 
@@ -24,22 +24,12 @@ export default function BoxCampaignsPage() {
   const [products, setProducts] = useState<any[]>([]);
   const [packingList, setPackingList] = useState<any[] | null>(null);
 
-  function token() {
-    // Guarded: this page is statically prerendered at build time, where there
-    // is no window and localStorage is undefined.
-    if (typeof window === 'undefined') return '';
-    return localStorage.getItem('admin_token') || '';
-  }
-  // Must stay a function — evaluating it in the component body ran during
-  // prerender and crashed the production build.
-  const headers = () => ({ Authorization: `Bearer ${token()}` });
-
   async function load() {
     setLoading(true);
     try {
       const [camps, prods] = await Promise.all([
-        fetch(`${API}/box-campaigns`, { headers: headers() }).then(r => r.json()),
-        fetch(`${API}/admin/products?includedInBox=true&limit=200`, { headers: headers() }).then(r => r.json()),
+        getOr<any>('/box-campaigns', []),
+        getOr<any>('/admin/products?includedInBox=true&limit=200', null),
       ]);
       setCampaigns(Array.isArray(camps) ? camps : []);
       setProducts(prods?.items || []);
@@ -55,27 +45,26 @@ export default function BoxCampaignsPage() {
     const hasKa = Object.values(ka).some(v => v.trim() !== '');
     const body: any = { ...form, dogSize: form.dogSize || null };
     if (hasKa) body.translations = { ka: { ...ka } };
-    await fetch(`${API}/box-campaigns`, { method: 'POST', headers: { ...headers(), 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    await post('/box-campaigns', body).catch(() => {});
     setSaving(false);
     setCreating(false);
     load();
   }
 
   async function toggleActive(c: any) {
-    await fetch(`${API}/box-campaigns/${c.id}`, { method: 'PUT', headers: { ...headers(), 'Content-Type': 'application/json' }, body: JSON.stringify({ isActive: !c.isActive }) });
+    await put(`/box-campaigns/${c.id}`, { isActive: !c.isActive }).catch(() => {});
     load();
   }
 
   async function setProductsForCampaign(campaignId: string, items: { productId: string; quantity: number }[]) {
-    await fetch(`${API}/box-campaigns/${campaignId}/products`, { method: 'PUT', headers: { ...headers(), 'Content-Type': 'application/json' }, body: JSON.stringify({ items }) });
+    await put(`/box-campaigns/${campaignId}/products`, { items }).catch(() => {});
     load();
     setSelected(null);
   }
 
   async function loadPackingList() {
     const now = new Date();
-    const res = await fetch(`${API}/box-campaigns/packing-list?year=${now.getFullYear()}&month=${now.getMonth() + 1}`, { headers: headers() });
-    setPackingList(await res.json());
+    api(`/box-campaigns/packing-list?year=${now.getFullYear()}&month=${now.getMonth() + 1}`).then(setPackingList).catch(() => {});
   }
 
   if (packingList) {

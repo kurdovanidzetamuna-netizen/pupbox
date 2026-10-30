@@ -5,12 +5,9 @@ import Dropdown from '@/components/Dropdown';
 import { DateInput } from '@/components/DateField';
 import { ActionButton, Pagination, StatCard, StatCards } from '@/components/Toolbar';
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
-const token = () => localStorage.getItem('admin_token');
-const can = (perm: string) => {
-  try { return (JSON.parse(atob((token() || '').split('.')[1])).permissions ?? []).includes(perm); } catch { return false; }
-};
-const day = (d?: string | null) => (d ? new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—');
+import { api, can, download, patch, today } from '@/lib/api';
+import { day } from '@/lib/format';
+
 const gel = (n: number) => `₾${n.toLocaleString('en-GB', { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 })}`;
 
 const PLAN: Record<string, { label: string; color: string; bg: string }> = {
@@ -55,9 +52,8 @@ export default function CustomersPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const r = await fetch(`${API}/admin/customers?${params({ page: String(page), limit: String(limit) })}`, { headers: { Authorization: `Bearer ${token()}` } });
-      if (r.ok) setData(await r.json());
-    } finally { setLoading(false); }
+      setData(await api(`/admin/customers?${params({ page: String(page), limit: String(limit) })}`));
+    } catch { /* keeps what's shown */ } finally { setLoading(false); }
   }, [params, page, limit]);
   useEffect(() => { load(); }, [load]);
   useEffect(() => { setPage(1); }, [f, query, limit]);
@@ -65,17 +61,13 @@ export default function CustomersPage() {
   useEffect(() => { const t = setTimeout(() => setQuery(f.search.trim()), 350); return () => clearTimeout(t); }, [f.search]);
 
   async function exportCsv() {
-    const r = await fetch(`${API}/admin/customers/export.csv?${params()}`, { headers: { Authorization: `Bearer ${token()}` } });
-    if (!r.ok) return;
-    const url = URL.createObjectURL(await r.blob());
-    const a = document.createElement('a'); a.href = url; a.download = `customers-${new Date().toISOString().slice(0, 10)}.csv`; a.click();
-    URL.revokeObjectURL(url);
+    await download(`/admin/customers/export.csv?${params()}`, `customers-${today()}.csv`).catch(() => {});
   }
 
   async function toggleStatus(id: string, current: string) {
     const next = current === 'BLOCKED' ? 'ACTIVE' : 'BLOCKED';
     if (next === 'BLOCKED' && !confirm('Block this customer? They are signed out and can’t sign in until unblocked.')) return;
-    await fetch(`${API}/admin/customers/${id}/status`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token()}` }, body: JSON.stringify({ status: next }) });
+    await patch(`/admin/customers/${id}/status`, { status: next }).catch(() => {});
     load();
   }
 

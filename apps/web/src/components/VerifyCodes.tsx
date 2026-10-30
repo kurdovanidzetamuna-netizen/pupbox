@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useLanguage } from '@/context/LanguageContext';
 import { fill } from '@/context/strings/purchase';
-import { authFetch } from '@/lib/authFetch';
+import { authFetch, responseError as message } from '@/lib/authFetch';
 import Confetti from '@/components/Confetti';
 import OtpInput from '@/components/ui/OtpInput';
 import PhoneInput from '@/components/ui/PhoneInput';
@@ -13,10 +13,6 @@ type Channel = 'PHONE' | 'EMAIL';
 interface Me { email: string; phone: string | null; emailVerified: boolean; phoneVerified: boolean }
 
 const mask = (phone: string | null) => (phone ? `${phone.slice(0, 7)}•••${phone.slice(-2)}` : '');
-const message = async (res: Response, fallback: string) => {
-  const d = await res.json().catch(() => ({}));
-  return (Array.isArray(d?.message) ? d.message[0] : d?.message) || fallback;
-};
 
 /**
  * Confirms the signed-in customer's phone (SMS code) and email (emailed

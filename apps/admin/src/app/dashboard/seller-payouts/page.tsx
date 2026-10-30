@@ -2,10 +2,10 @@
 import { Fragment, useEffect, useState } from 'react';
 import ErrorPopup from '@/components/ErrorPopup';
 import { DateInput } from '@/components/DateField';
+import { api, download, post } from '@/lib/api';
+import { day } from '@/lib/format';
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 const money = (n: number) => `₾${Number(n || 0).toFixed(2)}`;
-const day = (d: string | Date) => new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
 /** Quick spans for the date filter. */
@@ -38,15 +38,9 @@ export default function SellerPayoutsPage() {
   const [busy, setBusy] = useState(false);
   const [popup, setPopup] = useState<string[]>([]);
   const [done, setDone] = useState('');
-  const token = () => localStorage.getItem('admin_token') || '';
   const q = (extra: Record<string, string> = {}) => new URLSearchParams({ ...(range.from ? { from: range.from } : {}), ...(range.to ? { to: range.to } : {}), ...extra }).toString();
 
-  async function get(path: string) {
-    const res = await fetch(`${API}${path}`, { headers: { Authorization: `Bearer ${token()}` } });
-    const d = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(d.message || `Error ${res.status}`);
-    return d;
-  }
+  const get = (path: string) => api(path, { fallback: 'Could not load the payouts.' });
 
   async function load() {
     try {
@@ -66,12 +60,7 @@ export default function SellerPayoutsPage() {
   async function pay(row: any) {
     setBusy(true);
     try {
-      const res = await fetch(`${API}/admin/seller-payouts`, {
-        method: 'POST', headers: { Authorization: `Bearer ${token()}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sellerId: row.seller.id, ...(range.from ? { from: range.from } : {}), ...(range.to ? { to: range.to } : {}), note }),
-      });
-      const d = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(Array.isArray(d.message) ? d.message.join(' ') : d.message || 'Could not record the payout');
+      const d = await post('/admin/seller-payouts', { sellerId: row.seller.id, ...(range.from ? { from: range.from } : {}), ...(range.to ? { to: range.to } : {}), note }, 'Could not record the payout');
       setPaying(null); setNote('');
       setDone(`Recorded ${money(d.amount)} paid to ${row.seller.name} (${d.lines} line${d.lines === 1 ? '' : 's'}).`);
       setTimeout(() => setDone(''), 5000);
@@ -81,11 +70,8 @@ export default function SellerPayoutsPage() {
   }
 
   async function csv() {
-    const res = await fetch(`${API}/admin/seller-payouts/lines.csv?${q(open ? { sellerId: open } : {})}`, { headers: { Authorization: `Bearer ${token()}` } });
-    if (!res.ok) { setPopup([`Download failed (error ${res.status}).`]); return; }
-    const url = URL.createObjectURL(await res.blob());
-    const a = document.createElement('a'); a.href = url; a.download = `seller-payouts${range.from ? `-${range.from}` : ''}${range.to ? `_${range.to}` : ''}.csv`; a.click();
-    URL.revokeObjectURL(url);
+    await download(`/admin/seller-payouts/lines.csv?${q(open ? { sellerId: open } : {})}`, `seller-payouts${range.from ? `-${range.from}` : ''}${range.to ? `_${range.to}` : ''}.csv`)
+      .catch((e) => setPopup([`Download failed (error ${e.status ?? 'no connection'}).`]));
   }
 
   const th: React.CSSProperties = { padding: '10px 14px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: 'var(--slate-400)', textTransform: 'uppercase', letterSpacing: '0.06em', borderBottom: '1px solid var(--slate-200b)', background: 'var(--slate-50)', whiteSpace: 'nowrap' };

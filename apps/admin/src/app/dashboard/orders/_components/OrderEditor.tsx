@@ -1,12 +1,18 @@
 'use client';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { API, authHeaders, jsonHeaders, money, apiError, Thumb } from '../_lib';
+import { api, getOr, patch } from '@/lib/api';
+import { money, Thumb } from '../_lib';
 import CategoryPicker, { type Cat } from './CategoryPicker';
 import ConfirmSheet from './ConfirmSheet';
+import { couponDiscount, type Api } from '@pupbox/content';
 
 const EMPTY_ADDR = { firstName: '', lastName: '', phone: '', city: '', addressLine1: '', addressLine2: '', postalCode: '' };
 const SIZE: Record<string, string> = { EXTRA_SMALL: 'XS', SMALL: 'S', MEDIUM: 'M', LARGE: 'L', EXTRA_LARGE: 'XL' };
-const show = (a: any) => (a ? [a.addressLine1, a.addressLine2, a.city].filter(Boolean).join(', ') : '—');
+type AddressFields = Pick<Api.Address, 'addressLine1' | 'addressLine2' | 'city'>;
+/** A product found by the search, to add. */
+type Hit = Api.LineProduct & { deletedAt?: string | null };
+type Line = Api.AdminOrderDetail['items'][number];
+const show = (a: AddressFields | null | undefined) => (a ? [a.addressLine1, a.addressLine2, a.city].filter(Boolean).join(', ') : '—');
 
 /**
  * Change an order before it ships, in short numbered sections — what's in
@@ -21,32 +27,32 @@ const show = (a: any) => (a ? [a.addressLine1, a.addressLine2, a.city].filter(Bo
  * saved to their account too, so they see it next time.
  */
 export default function OrderEditor({ orderId, categories, onDone, onCancel }: {
-  orderId: string; categories: Cat[]; onDone: (order: any, summary?: string) => void; onCancel: () => void;
+  orderId: string; categories: Cat[]; onDone: (order: Api.AdminOrderDetail, summary?: string) => void; onCancel: () => void;
 }) {
-  const [order, setOrder] = useState<any>(null);
+  const [order, setOrder] = useState<Api.AdminOrderDetail | null>(null);
   const [qty, setQty] = useState<Record<string, number>>({});
-  const [added, setAdded] = useState<{ product: any; quantity: number }[]>([]);
+  const [added, setAdded] = useState<{ product: Hit; quantity: number }[]>([]);
   const [addressId, setAddressId] = useState('');
-  const [newAddr, setNewAddr] = useState<any>(null);
+  const [newAddr, setNewAddr] = useState<typeof EMPTY_ADDR | null>(null);
   const [addressForPlan, setAddressForPlan] = useState(true);
   const [dogId, setDogId] = useState('');
   const [gift, setGift] = useState({ name: '', message: '' });
   const [reason, setReason] = useState('');
   const [cat, setCat] = useState('');
   const [q, setQ] = useState('');
-  const [found, setFound] = useState<any[]>([]);
+  const [found, setFound] = useState<Hit[]>([]);
   const [review, setReview] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    fetch(`${API}/orders/admin/${orderId}`, { headers: authHeaders() }).then((r) => r.json()).then((o) => {
+    api(`/orders/admin/${orderId}`).then((o) => {
       setOrder(o);
       setQty(Object.fromEntries(o.items.filter(editableLine).map((i: any) => [i.id, i.quantity])));
       setAddressId(o.addressId || '');
       setDogId(o.dogId || '');
       setGift({ name: o.giftRecipientName || '', message: o.giftMessage || '' });
-    });
+    }).catch(() => {});
   }, [orderId]);
 
   const paid = order?.payments?.some((p: any) => ['PAID', 'PARTIALLY_REFUNDED'].includes(p.status));
@@ -57,7 +63,7 @@ export default function OrderEditor({ orderId, categories, onDone, onCancel }: {
     if (!order || (!slug && q.trim().length < 2)) { setFound([]); return; }
     const t = setTimeout(() => {
       const p = new URLSearchParams({ limit: '12', ...(slug ? { category: slug } : {}), ...(q.trim() ? { search: q.trim() } : {}) });
-      fetch(`${API}/admin/products?${p}`, { headers: authHeaders() }).then((r) => r.json()).then((d) => setFound((d.items || d.products || []).filter((x: any) => !x.deletedAt))).catch(() => setFound([]));
+      getOr<any>(`/admin/products?${p}`, {}).then((d) => setFound((d.items || d.products || []).filter((x: any) => !x.deletedAt)));
     }, 250);
     return () => clearTimeout(t);
   }, [slug, q, order]);
@@ -66,7 +72,8 @@ export default function OrderEditor({ orderId, categories, onDone, onCancel }: {
     if (!order) return [] as any[];
     const own = (order.user?.dogs ?? []) as any[];
     // A gift dog isn't one of the buyer's dogs — keep it choosable.
-    return order.dog && !own.some((d) => d.id === order.dog.id) ? [{ ...order.dog, gift: true }, ...own] : own;
+    const dog = order.dog;
+    return dog && !own.some((d) => d.id === dog.id) ? [{ ...dog, gift: true }, ...own] : own;
   }, [order]);
 
   // What changed, in words — for the bar and the review.
@@ -99,8 +106,8 @@ export default function OrderEditor({ orderId, categories, onDone, onCancel }: {
 
   if (!order) return <p style={{ color: 'var(--slate-400)', fontSize: 13 }}>Loading…</p>;
 
-  const lines = order.items as any[];
-  const unit = (p: any) => Number(p.salePrice ?? p.price);
+  const lines: Line[] = order.items;
+  const unit = (p: Hit) => Number(p.salePrice ?? p.price);
   const addedTotal = added.reduce((n, a) => n + unit(a.product) * a.quantity, 0);
   const fixedTotal = lines.filter((i) => !editableLine(i)).reduce((n, i) => n + Number(i.total), 0);
   // Paid: more of a line, or a new product, goes on an extra payment — this order's total only goes down.
@@ -113,7 +120,7 @@ export default function OrderEditor({ orderId, categories, onDone, onCancel }: {
     ...lines.filter(editableLine).map((i) => ({ ...i, quantity: Math.min(qty[i.id] ?? 0, paid ? i.quantity : 999) })),
     ...(paid ? [] : added.map((a) => ({ price: unit(a.product), quantity: a.quantity, productId: a.product.id }))),
   ];
-  const off = order.coupon ? promoDiscount(order.coupon, after, Number(order.deliveryCost), order.isGift) : null;
+  const off = order.coupon ? couponDiscount(order.coupon, after, Number(order.deliveryCost), { gift: order.isGift }) : null;
   const discount = off ? off.items + off.delivery : Math.min(Number(order.discountAmount), subtotal);
   const total = off
     ? Math.max(0, subtotal - off.items) + Number(order.deliveryCost) - off.delivery
@@ -127,9 +134,9 @@ export default function OrderEditor({ orderId, categories, onDone, onCancel }: {
     extraTotal > 0 ? `Extra payment ${money(extraTotal)} — the customer gets a link to pay` : null,
   ].filter(Boolean).join(' · ');
 
-  function add(p: any) {
+  function add(p: Hit) {
     // Already on the order (and not personalised): one more of that line.
-    const same = lines.find((i: any) => editableLine(i) && i.productId === p.id && !i.personalisation);
+    const same = lines.find((i) => editableLine(i) && i.productId === p.id && !i.personalisation);
     if (same) { setQty((x) => ({ ...x, [same.id]: (x[same.id] ?? 0) + 1 })); return; }
     setAdded((a) => (a.some((x) => x.product.id === p.id) ? a.map((x) => (x.product.id === p.id ? { ...x, quantity: x.quantity + 1 } : x)) : [...a, { product: p, quantity: 1 }]));
   }
@@ -137,23 +144,22 @@ export default function OrderEditor({ orderId, categories, onDone, onCancel }: {
   function openReview() {
     setError('');
     if (nothingLeft) { setError('An order needs at least one item. To drop everything, cancel the order instead.'); return; }
-    if (newAddr && ['firstName', 'lastName', 'phone', 'city', 'addressLine1'].some((k) => !String(newAddr[k] || '').trim())) {
+    if (newAddr && (['firstName', 'lastName', 'phone', 'city', 'addressLine1'] as const).some((k) => !String(newAddr[k] || '').trim())) {
       setError('The new address needs a name, phone, city and street.'); return;
     }
     setReview(true);
   }
 
   async function save() {
+    if (!order) return;
     setSaving(true); setError('');
     const body: any = { addressForPlan, dogId: dogId || null, reason: reason.trim() || undefined };
     if (newAddr) { body.address = newAddr; body.newAddress = true; }
     else if (addressId && addressId !== order.addressId) body.addressId = addressId;
     if (itemsChanged) body.items = [...lines.filter(editableLine).map((i) => ({ id: i.id, quantity: qty[i.id] ?? 0 })), ...added.map((a) => ({ productId: a.product.id, quantity: a.quantity }))];
     if (order.isGift) { body.giftRecipientName = gift.name; body.giftMessage = gift.message; }
-    const r = await fetch(`${API}/orders/admin/${orderId}`, { method: 'PATCH', headers: jsonHeaders(), body: JSON.stringify(body) });
-    const d = await r.json().catch(() => ({}));
-    setSaving(false); setReview(false);
-    if (!r.ok) { setError(apiError(d)); return; }
+    let d;
+    try { d = await patch(`/orders/admin/${orderId}`, body, 'Not saved.'); } catch (e: any) { setError(e.message); return; } finally { setSaving(false); setReview(false); }
     onDone(d, `Saved ${changes.length} change${changes.length === 1 ? '' : 's'}${extraTotal > 0 ? ' · extra payment sent' : ''}`);
   }
 
@@ -237,7 +243,7 @@ export default function OrderEditor({ orderId, categories, onDone, onCancel }: {
       <Section n={2} title={order.isGift ? 'Where it goes (the gift recipient)' : 'Where it goes'} hint="One of the customer’s addresses, or a new one — a new one is saved to their account too.">
         <div role="radiogroup" aria-label="Delivery address" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 220px), 1fr))', gap: 8 }}>
           {!addrs.some((a) => a.id === order.addressId) && order.address && (
-            <button type="button" role="radio" aria-checked={!newAddr && addressId === order.addressId} onClick={() => { setNewAddr(null); setAddressId(order.addressId); }}
+            <button type="button" role="radio" aria-checked={!newAddr && addressId === order.addressId} onClick={() => { setNewAddr(null); setAddressId(order.addressId ?? ''); }}
               style={{ ...pill(!newAddr && addressId === order.addressId), textAlign: 'left', padding: '11px 12px', borderRadius: 14 }}>
               <AddrCard a={order.address} on={!newAddr && addressId === order.addressId} note="this order’s address" />
             </button>
@@ -360,19 +366,7 @@ function AddrCard({ a, on, note }: { a: any; on: boolean; note: string }) {
 }
 
 /** A shop product line this screen may change (not a plan, built box or paid-out seller line). */
-const editableLine = (i: any) => !!i.productId && !i.customBoxId && !i.payoutId;
+const editableLine = (i: Pick<Api.OrderItem, 'productId' | 'customBoxId' | 'payoutId'>) => !!i.productId && !i.customBoxId && !i.payoutId;
 const stepBtn = { width: 30, height: 30, border: 'none', background: 'transparent', cursor: 'pointer', fontSize: 16, fontWeight: 700, color: 'var(--slate-600)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' } as const;
 const input = { border: '1.5px solid var(--slate-200)', borderRadius: 11, padding: '9px 12px', fontSize: 13.5, outline: 'none', background: 'var(--white)', width: '100%', boxSizing: 'border-box', fontFamily: 'inherit', color: 'var(--slate-900)' } as const;
 
-/** Same as the API's couponDiscount: off what the code is for; a fixed amount is shared, items first, then delivery. */
-function promoDiscount(c: any, lines: any[], delivery: number, gift: boolean) {
-  const value = (l: any) => Number(l.price) * l.quantity;
-  if (c.minOrderAmount && lines.reduce((n, l) => n + value(l), 0) < Number(c.minOrderAmount)) return { items: 0, delivery: 0 };
-  const scope = (l: any) => (l.customBoxId ? 'CUSTOM_BOX' : l.subscriptionPlanId ? (gift ? 'GIFT' : 'BOX') : 'SHOP');
-  const scopes: string[] = c.scopes ?? [];
-  const eligible = lines.filter((l) => scopes.includes(scope(l))).reduce((n, l) => n + value(l), 0);
-  const fee = scopes.includes('DELIVERY') ? Math.max(0, delivery) : 0;
-  if (c.discountType === 'PERCENTAGE') { const p = Number(c.discountValue) / 100; return { items: +(eligible * p).toFixed(2), delivery: +(fee * p).toFixed(2) }; }
-  const items = Math.min(Number(c.discountValue), eligible);
-  return { items: +items.toFixed(2), delivery: +Math.min(Number(c.discountValue) - items, fee).toFixed(2) };
-}

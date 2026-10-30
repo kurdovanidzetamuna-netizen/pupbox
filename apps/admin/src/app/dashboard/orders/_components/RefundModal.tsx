@@ -1,6 +1,8 @@
 'use client';
 import { useEffect, useMemo, useState } from 'react';
-import { API, jsonHeaders, money, apiError, Thumb } from '../_lib';
+import { post } from '@/lib/api';
+import { money, Thumb } from '../_lib';
+import type { Api } from '@pupbox/content';
 
 type Mode = 'FULL' | 'ITEMS' | 'AMOUNT';
 
@@ -11,13 +13,13 @@ type Mode = 'FULL' | 'ITEMS' | 'AMOUNT';
  * the payment provider, or "already done in Flitt's portal, just record it".
  * A summary line says exactly what will happen before the button does it.
  */
-export default function RefundModal({ order, onClose, onDone }: { order: any; onClose: () => void; onDone: (o: any, text: string) => void }) {
-  const payment = order.payments?.find((p: any) => ['PAID', 'PARTIALLY_REFUNDED'].includes(p.status));
-  const already = (payment?.refunds ?? []).reduce((n: number, r: any) => n + Number(r.amount), 0);
+export default function RefundModal({ order, onClose, onDone }: { order: Api.AdminOrder; onClose: () => void; onDone: (o: Api.AdminOrderDetail, text: string) => void }) {
+  const payment = order.payments?.find((p) => ['PAID', 'PARTIALLY_REFUNDED'].includes(p.status));
+  const already = (payment?.refunds ?? []).reduce((n, r) => n + Number(r.amount), 0);
   const left = Math.max(0, Number(payment?.amount ?? 0) - already);
   const shipped = ['SHIPPED', 'DELIVERED'].includes(order.status);
   const unshippedOpen = ['PAID', 'PROCESSING', 'PACKED'].includes(order.status);
-  const lines = (order.items ?? []) as any[];
+  const lines = order.items ?? [];
   const share = 1 - Math.min(Number(order.discountAmount || 0), Number(order.subtotal) || 1) / (Number(order.subtotal) || 1);
 
   const [mode, setMode] = useState<Mode>('FULL');
@@ -51,10 +53,8 @@ export default function RefundModal({ order, onClose, onDone }: { order: any; on
     const body: any = { mode, reason: reason.trim() || undefined, restock: mode !== 'AMOUNT' && restock, recordOnly };
     if (mode === 'AMOUNT') body.amount = value;
     if (mode === 'ITEMS') body.items = Object.entries(qty).filter(([, q]) => q > 0).map(([itemId, quantity]) => ({ itemId, quantity }));
-    const r = await fetch(`${API}/orders/admin/${order.id}/refunds`, { method: 'POST', headers: jsonHeaders(), body: JSON.stringify(body) });
-    const d = await r.json().catch(() => ({}));
-    setBusy(false);
-    if (!r.ok) { setError(apiError(d, 'Refund failed.')); return; }
+    let d;
+    try { d = await post(`/orders/admin/${order.id}/refunds`, body, 'Refund failed.'); } catch (e: any) { setError(e.message); return; } finally { setBusy(false); }
     onDone(d, `Refunded ${money(value)}`);
   }
 

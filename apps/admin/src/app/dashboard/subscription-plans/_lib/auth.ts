@@ -1,6 +1,8 @@
+import { token } from '@/lib/api';
+
 function decodeRole(): string {
   try {
-    const t = localStorage.getItem('admin_token');
+    const t = token();
     if (!t) return '';
     const payload = JSON.parse(atob(t.split('.')[1]));
     return (payload.role || '').toLowerCase();

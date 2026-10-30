@@ -51,7 +51,8 @@ import { UploadModule } from './modules/upload/upload.module';
       envFilePath: [resolve(process.cwd(), '.env'), resolve(process.cwd(), '../../.env')],
     }),
     // A plain sentence when someone hits a limit (the default reads "ThrottlerException: Too Many Requests").
-    ThrottlerModule.forRoot({ throttlers: [{ ttl: 60000, limit: 100 }], errorMessage: 'Too many tries in a short time. Please wait a few minutes and try again.' }),
+    // The automated tests sign up and order hundreds of times a minute; limits stay on everywhere else.
+    ThrottlerModule.forRoot({ throttlers: [{ ttl: 60000, limit: 100 }], errorMessage: 'Too many tries in a short time. Please wait a few minutes and try again.', skipIf: () => process.env.NODE_ENV === 'test' }),
     PrismaModule,
     AuthModule,
     UsersModule,

@@ -3,8 +3,8 @@ import { Select } from '@/components/Dropdown';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import QuickAddBoxItemModal from '@/components/QuickAddBoxItemModal';
+import { getOr, patch } from '@/lib/api';
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 
 const STATUS_COLORS: Record<string, { background: string; color: string; border: string }> = {
   ACTIVE:       { background: 'var(--green-50)', color: 'var(--green-800)', border: '1px solid var(--green-200)' },
@@ -173,21 +173,15 @@ export default function AdminProductsPage() {
   async function load() {
     setLoading(true);
     try {
-      const token = localStorage.getItem('admin_token');
       const qs = new URLSearchParams();
       if (status) qs.set('status', status);
       qs.set('limit', '200');
-      const [prodRes, catRes] = await Promise.all([
-        fetch(`${API}/admin/products?${qs}`, { headers: { Authorization: `Bearer ${token}` } }),
-        fetch(`${API}/admin/categories`, { headers: { Authorization: `Bearer ${token}` } }),
-      ]);
-      if (prodRes.ok) {
-        const data = await prodRes.json();
+      const [data, cats] = await Promise.all([getOr<any>(`/admin/products?${qs}`, null), getOr<any>('/admin/categories', null)]);
+      if (data) {
         setProducts(data.items || []);
         setTotal(data.total || 0);
       }
-      if (catRes.ok) {
-        const cats = await catRes.json();
+      if (cats) {
         setAllCategories((cats.items || cats || []).sort((a: any, b: any) => a.name.localeCompare(b.name)));
       }
     } catch { } finally {
@@ -230,13 +224,8 @@ export default function AdminProductsPage() {
     });
 
   async function toggleStatus(id: string, current: string) {
-    const token = localStorage.getItem('admin_token');
     const next = current === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
-    await fetch(`${API}/admin/products/${id}/status`, {
-      method: 'PATCH',
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: next }),
-    });
+    await patch(`/admin/products/${id}/status`, { status: next }).catch(() => {});
     await load();
     // Update viewing product if it's the same one
     setViewing((v: any) => v?.id === id ? { ...v, status: next } : v);

@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useMemo, useState } from 'react';
+import { del, getOr, patch, post } from '@/lib/api';
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 
 /** One permission, as the API lists it (the API is the only source of the list). */
 interface Perm { key: string; group: string; name: string; description: string }
@@ -57,17 +57,15 @@ export default function RolesPage() {
   const [error, setError] = useState('');
   const [confirmDelete, setConfirmDelete] = useState<Role | null>(null);
 
-  const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : '';
-  const headers: HeadersInit = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
   const groups = useMemo(() => byGroup(perms), [perms]);
   const nameOf = (key: string) => perms.find((p) => p.key === key)?.name ?? key;
 
   async function load() {
     setLoading(true);
     try {
-      const [r, p] = await Promise.all([fetch(`${API}/admin/roles`, { headers }), fetch(`${API}/admin/permissions`, { headers })]);
-      if (r.ok) setRoles(await r.json());
-      if (p.ok) setPerms(await p.json());
+      const [r, p] = await Promise.all([getOr<any>('/admin/roles', null), getOr<any>('/admin/permissions', null)]);
+      if (r) setRoles(r);
+      if (p) setPerms(p);
     } finally { setLoading(false); }
   }
 
@@ -95,12 +93,10 @@ export default function RolesPage() {
       const body = editing?.isSystem
         ? { description: form.description }
         : { ...form, name: form.name.trim(), permissionKeys: [...selected] };
-      const res = await fetch(editing ? `${API}/admin/roles/${editing.id}` : `${API}/admin/roles`, {
-        method: editing ? 'PATCH' : 'POST', headers, body: JSON.stringify(body),
-      });
-      if (!res.ok) {
-        const e = await res.json().catch(() => ({}));
-        setError(Array.isArray(e.message) ? e.message.join(' ') : e.message || `Not saved (error ${res.status}).`);
+      try { await (editing ? patch(`/admin/roles/${editing.id}`, body) : post('/admin/roles', body)); }
+      catch (e: any) {
+        const m = e.body?.message;
+        setError(Array.isArray(m) ? m.join(' ') : m || `Not saved (error ${e.status ?? 'no connection'}).`);
         return;
       }
       setShowModal(false); load();
@@ -108,11 +104,7 @@ export default function RolesPage() {
   }
 
   async function doDelete(r: Role) {
-    const res = await fetch(`${API}/admin/roles/${r.id}`, { method: 'DELETE', headers });
-    if (!res.ok) {
-      const e = await res.json().catch(() => ({}));
-      alert(e.message || 'Not deleted.');
-    }
+    await del(`/admin/roles/${r.id}`).catch((e) => alert(e.body?.message || 'Not deleted.'));
     setConfirmDelete(null); load();
   }
 

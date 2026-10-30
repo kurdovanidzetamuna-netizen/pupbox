@@ -2,9 +2,8 @@
 import { useEffect, useState } from 'react';
 import Composer, { GROUPS } from './Composer';
 import { ActionButton, StatCard, StatCards } from '@/components/Toolbar';
+import { getOr } from '@/lib/api';
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
-const headers = () => ({ Authorization: `Bearer ${localStorage.getItem('admin_token')}`, 'Content-Type': 'application/json' });
 const when = (d: string) => new Date(d).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 
 /**
@@ -18,7 +17,7 @@ export default function MessagesPage() {
   const [pushReady, setPushReady] = useState(false);
   const [open, setOpen] = useState(false);
 
-  const load = () => fetch(`${API}/admin/messages`, { headers: headers() }).then((r) => (r.ok ? r.json() : { items: [] })).then((d) => { setItems(d.items); setPushReady(!!d.pushReady); }).catch(() => setItems([]));
+  const load = () => getOr<any>('/admin/messages', { items: [] }).then((d) => { setItems(d.items ?? []); setPushReady(!!d.pushReady); });
   useEffect(() => { load(); }, []);
 
   const sent = items ?? [];

@@ -2,17 +2,13 @@
 import { useEffect, useState } from 'react';
 import { useLanguage } from '@/context/LanguageContext';
 import { fill } from '@/context/strings/purchase';
-import { authFetch } from '@/lib/authFetch';
+import { authFetch, responseError as message } from '@/lib/authFetch';
 import PhoneInput from '@/components/ui/PhoneInput';
 import OtpInput from '@/components/ui/OtpInput';
 import { FieldError } from '@/components/ui/FormError';
 import { Icon } from '@/components/ui/icons';
+import { API_URL } from '@/lib/api';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
-const message = async (res: Response, fallback: string) => {
-  const d = await res.json().catch(() => ({}));
-  return (Array.isArray(d?.message) ? d.message[0] : d?.message) || fallback;
-};
 
 export type PhoneConfirmed = { phone: string; proof?: string };
 

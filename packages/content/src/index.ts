@@ -10,6 +10,9 @@ export * from './resolve';
 export * from './faq';
 export * from './allergens';
 export * from './strings';
+export { couponDiscount, lineScope, meetsMinimum, planMonths, type CouponLine, type CouponRule } from './coupon';
+/** What the API sends back: `Api.Order`, `Api.Cart`… (type only). */
+export type * as Api from './api-types';
 export { sitePage, homePage, pricingPage, howItWorksPage, shopPage, blogPage };
 
 /** Every page editable in admin, in menu order. */

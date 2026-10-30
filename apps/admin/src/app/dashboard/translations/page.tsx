@@ -3,18 +3,8 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { PAGE_BUILDER_KEYS, BUILT_IN_STRINGS, STRING_AREAS, stringArea } from '@pupbox/content';
 import { ActionButton, StatCard, StatCards, Pagination } from '../../../components/Toolbar';
+import { api, post, saveCsv } from '@/lib/api';
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
-
-function exportCsv(rows: string[][], filename: string) {
-  const escape = (v: string) => `"${v.replace(/"/g, '""')}"`;
-  const csv = rows.map(r => r.map(escape).join(',')).join('\n');
-  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = filename; a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
 
 type Saved = { key: string; en: string; ka: string };
 type Row = { key: string; area: string; en: string; ka: string; defEn: string; defKa: string };
@@ -73,13 +63,11 @@ export default function TranslationsPage() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(50);
 
-  const token = () => localStorage.getItem('admin_token');
 
   // What admin changed earlier, laid over the built-in text. Saved keys the
   // site no longer uses are left out (they changed nothing).
   useEffect(() => {
-    fetch(`${API}/cms/admin/config-translations`, { headers: { Authorization: `Bearer ${token()}` } })
-      .then((r) => (r.ok ? r.json() : null))
+    api('/cms/admin/config-translations')
       .then((data) => {
         const list: Saved[] = data?.content?.strings || [];
         const by = new Map(list.map((s) => [s.key, s]));
@@ -94,12 +82,7 @@ export default function TranslationsPage() {
     setSaving(true); setFailed(false);
     try {
       const strings = next.filter(changed).map((r) => ({ id: r.key, key: r.key, en: r.en, ka: r.ka, pages: [r.area] }));
-      const res = await fetch(`${API}/cms`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token()}` },
-        body: JSON.stringify({ key: 'config-translations', slug: 'config-translations', title: 'Translations', status: 'PUBLISHED', content: { strings } }),
-      });
-      if (!res.ok) throw new Error();
+      await post('/cms', { key: 'config-translations', slug: 'config-translations', title: 'Translations', status: 'PUBLISHED', content: { strings } });
       setRows(next);
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
@@ -132,7 +115,7 @@ export default function TranslationsPage() {
           <ActionButton variant="secondary" onClick={() => {
             const out: string[][] = [['Key', 'Area', 'English', 'Georgian', 'Changed']];
             rows.forEach((r) => out.push([r.key, STRING_AREAS.find((a) => a.key === r.area)?.label ?? '', r.en, r.ka, changed(r) ? 'yes' : '']));
-            exportCsv(out, 'translations.csv');
+            saveCsv(out, 'translations.csv');
           }}>↓ Export CSV</ActionButton>
         </div>
       </div>

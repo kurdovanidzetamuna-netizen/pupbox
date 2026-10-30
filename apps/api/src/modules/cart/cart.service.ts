@@ -6,16 +6,18 @@ import { quoteBox, quoteSavedBox, tidy, type BoxLine } from '../custom-box/custo
 import { shopSettings } from '../settings/settings';
 import { checkReferralCode, referralDiscount } from '../referrals/referral-promo';
 import { couponDiscount, couponFit, couponGap, hasPaidBefore, meetsMinimum } from '../coupons/coupon-discount';
+import { orderPrice } from '../checkout/pricing';
+import { MAIN_IMAGE } from '../products/product-include';
 
 const cartInclude = {
   items: {
     orderBy: { createdAt: 'asc' as const },
     include: {
       // The main photo (else the first), and the category for a picture when there's none.
-      product: { include: { images: { orderBy: [{ isPrimary: 'desc' as const }, { sortOrder: 'asc' as const }], take: 1 }, inventory: true, category: { select: { slug: true, name: true } } } },
+      product: { include: { images: MAIN_IMAGE, inventory: true, category: { select: { slug: true, name: true } } } },
       subscriptionPlan: true,
       // A built box: what's in it, with names and pictures for the basket.
-      customBox: { include: { items: { orderBy: { id: 'asc' as const }, include: { product: { select: { id: true, name: true, slug: true, translations: true, price: true, salePrice: true, images: { orderBy: [{ isPrimary: 'desc' as const }, { sortOrder: 'asc' as const }], take: 1 }, category: { select: { slug: true, name: true } } } } } } } },
+      customBox: { include: { items: { orderBy: { id: 'asc' as const }, include: { product: { select: { id: true, name: true, slug: true, translations: true, price: true, salePrice: true, images: MAIN_IMAGE, category: { select: { slug: true, name: true } } } } } } } },
     },
   },
   coupon: true,
@@ -251,19 +253,17 @@ export class CartService {
     const methods = await this.prisma.deliveryMethod.findMany({ where: { isActive: true }, orderBy: { sortOrder: 'asc' } });
     const cheapest = Math.min(...methods.map(m => Number(m.price)));
     // A friend's code on a plan bought as a gift prices as a gift, as checkout will charge it.
-    const friendOff = cart.referral && cart.items && o.gift ? referralDiscount((await shopSettings(this.prisma)).referral, cart.items, o) : null;
+    const referral = cart.referral && cart.items ? (await shopSettings(this.prisma)).referral : null;
     return methods.map(m => {
       const effectivePrice = this.deliveryCostFor(m, cart, cheapest);
-      const off = cart.coupon && cart.items ? couponDiscount(cart.coupon, cart.items, effectivePrice, o) : null;
-      const itemsOff = off ? off.items : friendOff ?? cart.discountAmount ?? 0;
-      const couponOff = off?.delivery ?? 0;
+      const price = cart.items ? orderPrice(cart as any, effectivePrice, { gift: o.gift, referral }) : orderPrice({ subtotal: cart.subtotal, items: [] }, effectivePrice);
       return {
         ...m,
         effectivePrice,
         // Taken off this delivery fee by the coupon, and the order's discount and total with it.
-        couponOff,
-        discount: +(itemsOff + couponOff).toFixed(2),
-        total: +(Math.max(0, cart.subtotal - itemsOff) + effectivePrice - couponOff).toFixed(2),
+        couponOff: price.deliveryOff,
+        discount: price.discount,
+        total: price.total,
         isFree: effectivePrice === 0,
         // "Included with your plan" only where the plan fully covers it.
         includedWithPlan: !!cart.deliveryIncluded && effectivePrice === 0,

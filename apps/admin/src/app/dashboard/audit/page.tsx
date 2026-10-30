@@ -1,8 +1,8 @@
 'use client';
 import { Select } from '@/components/Dropdown';
 import { useState, useEffect, useCallback } from 'react';
+import { getOr } from '@/lib/api';
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 
 const ACTION_COLORS: Record<string, { background: string; color: string; border: string }> = {
   CREATE: { background: 'var(--green-50)', color: 'var(--green-800)', border: '1px solid var(--green-200)' },
@@ -22,12 +22,10 @@ export default function AuditLogPage() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const token = localStorage.getItem('admin_token');
     const qs = new URLSearchParams({ page: String(page), limit: '50' });
     if (module) qs.set('module', module);
-    const res = await fetch(`${API}/audit?${qs}`, { headers: { Authorization: `Bearer ${token}` } });
-    if (res.ok) {
-      const data = await res.json();
+    const data = await getOr<any>(`/audit?${qs}`, null);
+    if (data) {
       setLogs(data.items || []);
       setTotal(data.total || 0);
       setPages(data.pages || 1);

@@ -12,8 +12,8 @@ import AllergensCard from '@/components/AllergensCard';
 import SuitsCard, { EMPTY_SUITS, type Suits } from '@/components/SuitsCard';
 import SellerCard, { OURS, shopPrice, termsPayload, type SellerTerms } from '@/components/SellerCard';
 import { NumInput } from '@/components/NumberField';
+import { getOr, post } from '@/lib/api';
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 
 const disabledInput: React.CSSProperties = {
   ...inputClass(),
@@ -72,11 +72,7 @@ function NewProductForm() {
   const [dropZoneDrag, setDropZoneDrag] = useState(false);
 
   useEffect(() => {
-    const token = localStorage.getItem('admin_token');
-    fetch(`${API}/categories`, { headers: { Authorization: `Bearer ${token}` } })
-      .then(r => r.json())
-      .then(d => setCategories(Array.isArray(d) ? d : d.items || []))
-      .catch(() => {});
+    getOr<any>('/categories', []).then(d => setCategories(Array.isArray(d) ? d : d.items || []));
   }, []);
 
   function queueFiles(files: FileList | null) {
@@ -140,7 +136,6 @@ function NewProductForm() {
     setSaving(true);
     setError('');
     setFieldErrors({});
-    const token = localStorage.getItem('admin_token');
 
     const translations: any = {};
     const hasKa = Object.values(ka).some(v => v.trim() !== '');
@@ -169,32 +164,22 @@ function NewProductForm() {
     if (suits.goodFor.trim()) body.goodFor = suits.goodFor.trim();
 
     try {
-      const res = await fetch(`${API}/admin/products`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-      if (res.ok) {
-        const product = await res.json();
-        for (const file of queuedFiles) {
-          try {
-            const fd = new FormData();
-            fd.append('file', file);
-            const upRes = await fetch(`${API}/admin/upload/image`, { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: fd });
-            if (!upRes.ok) continue;
-            const { url } = await upRes.json();
-            await fetch(`${API}/admin/products/${product.id}/images`, { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ url }) });
-          } catch { /* non-fatal, product was created */ }
-        }
-        router.push('/dashboard/products');
+      const product = await post('/admin/products', body);
+      for (const file of queuedFiles) {
+        try {
+          const fd = new FormData();
+          fd.append('file', file);
+          const { url } = await post('/admin/upload/image', fd);
+          await post(`/admin/products/${product.id}/images`, { url });
+        } catch { /* non-fatal, product was created */ }
+      }
+      router.push('/dashboard/products');
+    } catch (e: any) {
+      if (Array.isArray(e.body?.message)) {
+        setFieldErrors(parseFieldErrors(e.body.message));
+        setError('Please fix the errors below.');
       } else {
-        const data = await res.json().catch(() => ({}));
-        if (Array.isArray(data.message)) {
-          setFieldErrors(parseFieldErrors(data.message));
-          setError('Please fix the errors below.');
-        } else {
-          setError(data.message || 'Failed to create product');
-        }
+        setError(e.body?.message || 'Failed to create product');
       }
     } finally {
       setSaving(false);

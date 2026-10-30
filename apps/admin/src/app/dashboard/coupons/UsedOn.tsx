@@ -1,20 +1,10 @@
 'use client';
 import { useEffect, useState } from 'react';
 import CustomerDrawer from '@/components/CustomerDrawer';
+import { download, getOr } from '@/lib/api';
+import { gel } from '@/lib/format';
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
-const auth = () => ({ Authorization: `Bearer ${localStorage.getItem('admin_token')}` });
-const gel = (n: number) => `₾${n.toFixed(2).replace(/\.00$/, '')}`;
 const when = (d: string) => new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-
-/** Download a file the API sends (CSV), keeping the admin's sign-in. */
-export async function download(path: string, name: string) {
-  const r = await fetch(`${API}${path}`, { headers: auth() });
-  if (!r.ok) return;
-  const url = URL.createObjectURL(await r.blob());
-  const a = document.createElement('a'); a.href = url; a.download = name; a.click();
-  URL.revokeObjectURL(url);
-}
 
 /**
  * Who used a promo code: every order it was on, newest first — customer,
@@ -28,7 +18,7 @@ export default function UsedOn({ id, code }: { id: string; code: string }) {
 
   useEffect(() => {
     setRows(null);
-    fetch(`${API}/admin/coupons/${id}/orders`, { headers: auth() }).then((r) => (r.ok ? r.json() : { orders: [] })).then((d) => setRows(d.orders)).catch(() => setRows([]));
+    getOr<any>(`/admin/coupons/${id}/orders`, { orders: [] }).then((d) => setRows(d.orders ?? []));
   }, [id]);
 
   if (!rows) return <p style={{ fontSize: 12.5, color: 'var(--slate-400)', margin: '4px 0 12px' }}>Loading who used it…</p>;
@@ -37,7 +27,7 @@ export default function UsedOn({ id, code }: { id: string; code: string }) {
     <div style={{ border: '1px solid var(--slate-200b)', borderRadius: 14, padding: '12px 14px', margin: '4px 0 12px', background: 'var(--white)' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 6 }}>
         <b style={{ fontSize: 13, color: 'var(--slate-900)' }}>Used on {rows.length} order{rows.length === 1 ? '' : 's'}</b>
-        {rows.length > 0 && <button type="button" onClick={() => download(`/admin/coupons/${id}/orders.csv`, `promo-${code}.csv`)} style={{ border: 'none', background: 'none', color: 'var(--teal-600)', fontSize: 12.5, fontWeight: 700, cursor: 'pointer' }}>⬇ CSV</button>}
+        {rows.length > 0 && <button type="button" onClick={() => download(`/admin/coupons/${id}/orders.csv`, `promo-${code}.csv`).catch(() => {})} style={{ border: 'none', background: 'none', color: 'var(--teal-600)', fontSize: 12.5, fontWeight: 700, cursor: 'pointer' }}>⬇ CSV</button>}
       </div>
       {rows.length === 0 && <p style={{ fontSize: 12.5, color: 'var(--slate-400)', margin: 0 }}>Nobody has used it yet.</p>}
       {shown.map((o) => (

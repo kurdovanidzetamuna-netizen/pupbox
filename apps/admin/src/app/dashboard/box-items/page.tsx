@@ -4,8 +4,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ActionButton, FilterSelect, SortBar, SearchInput, Toolbar, StatCard, StatCards, RowActions } from '@/components/Toolbar';
 import QuickAddBoxItemModal from '@/components/QuickAddBoxItemModal';
+import { getOr, patch } from '@/lib/api';
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 
 const STATUS_COLORS: Record<string, any> = {
   ACTIVE:       { background: 'var(--green-50)', color: 'var(--green-800)', border: '1px solid var(--green-200)' },
@@ -27,23 +27,20 @@ export default function BoxItemsPage() {
   const [plansByProduct, setPlansByProduct] = useState<Record<string, any[]>>({});
   const [showAddModal, setShowAddModal] = useState(false);
 
-  const token = () => localStorage.getItem('admin_token');
 
   async function load() {
     setLoading(true);
     try {
-      const [prodRes, catRes, planRes] = await Promise.all([
-        fetch(`${API}/admin/products?includedInBox=true&limit=200`, { headers: { Authorization: `Bearer ${token()}` } }),
-        fetch(`${API}/admin/categories`, { headers: { Authorization: `Bearer ${token()}` } }),
-        fetch(`${API}/admin/subscription-plans?limit=200`, { headers: { Authorization: `Bearer ${token()}` } }),
+      const [d, cats, pd] = await Promise.all([
+        getOr<any>('/admin/products?includedInBox=true&limit=200', null),
+        getOr<any>('/admin/categories', null),
+        getOr<any>('/admin/subscription-plans?limit=200', null),
       ]);
-      if (prodRes.ok) { const d = await prodRes.json(); setItems(d.items || []); }
-      if (catRes.ok) {
-        const cats = await catRes.json();
+      if (d) setItems(d.items || []);
+      if (cats) {
         setAllCategories((cats.items || cats || []).sort((a: any, b: any) => a.name.localeCompare(b.name)));
       }
-      if (planRes.ok) {
-        const pd = await planRes.json();
+      if (pd) {
         const plans: any[] = pd.items || pd || [];
         const map: Record<string, any[]> = {};
         for (const plan of plans) {
@@ -71,11 +68,7 @@ export default function BoxItemsPage() {
     setTogglingStatus(id);
     try {
       const next = current === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
-      await fetch(`${API}/admin/products/${id}/status`, {
-        method: 'PATCH',
-        headers: { Authorization: `Bearer ${token()}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: next }),
-      });
+      await patch(`/admin/products/${id}/status`, { status: next });
       await load();
     } catch { } finally { setTogglingStatus(null); }
   }

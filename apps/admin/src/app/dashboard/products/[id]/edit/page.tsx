@@ -12,8 +12,8 @@ import AllergensCard from '@/components/AllergensCard';
 import SuitsCard, { EMPTY_SUITS, suitsFromProduct, type Suits } from '@/components/SuitsCard';
 import SellerCard, { OURS, shopPrice, termsFromProduct, termsPayload, type SellerTerms } from '@/components/SellerCard';
 import { NumInput } from '@/components/NumberField';
+import { del, getOr, patch, post, put } from '@/lib/api';
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 
 export default function EditProductPage() {
   const router = useRouter();
@@ -53,10 +53,9 @@ export default function EditProductPage() {
 
 
   useEffect(() => {
-    const token = localStorage.getItem('admin_token');
     Promise.all([
-      fetch(`${API}/admin/products/${id}`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
-      fetch(`${API}/categories`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
+      getOr<any>(`/admin/products/${id}`, null),
+      getOr<any>('/categories', []),
     ]).then(([product, cats]) => {
       setCategories(Array.isArray(cats) ? cats : cats.items || []);
       // A wrong or deleted product: say so rather than show an empty form
@@ -122,26 +121,15 @@ export default function EditProductPage() {
     }
 
     setUploadingImage(true);
-    const token = localStorage.getItem('admin_token');
     const errors: string[] = [];
     try {
       for (const file of valid) {
         const formData = new FormData();
         formData.append('file', file);
-        const uploadRes = await fetch(`${API}/admin/upload/image`, {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${token}` },
-          body: formData,
-        });
-        if (!uploadRes.ok) { errors.push(`Failed to upload "${file.name}"`); continue; }
-        const { url } = await uploadRes.json();
-        const imgRes = await fetch(`${API}/admin/products/${productId}/images`, {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ url }),
-        });
-        if (!imgRes.ok) { errors.push(`Failed to save "${file.name}"`); continue; }
-        const img = await imgRes.json();
+        const uploaded = await post('/admin/upload/image', formData).catch(() => null);
+        if (!uploaded) { errors.push(`Failed to upload "${file.name}"`); continue; }
+        const img = await post(`/admin/products/${productId}/images`, { url: uploaded.url }).catch(() => null);
+        if (!img) { errors.push(`Failed to save "${file.name}"`); continue; }
         setImages(prev => [...prev, img]);
       }
       if (errors.length > 0) setImageError(errors.join('; '));
@@ -149,17 +137,12 @@ export default function EditProductPage() {
   }
 
   async function makeMain(imageId: string) {
-    const token = localStorage.getItem('admin_token');
-    const res = await fetch(`${API}/admin/products/${productId}/images/${imageId}/primary`, { method: 'PATCH', headers: { Authorization: `Bearer ${token}` } });
-    if (res.ok) setImages(await res.json());
+    await patch(`/admin/products/${productId}/images/${imageId}/primary`).then(setImages).catch(() => {});
   }
 
   async function removeImage(imageId: string) {
-    const token = localStorage.getItem('admin_token');
     try {
-      await fetch(`${API}/admin/products/${productId}/images/${imageId}`, {
-        method: 'DELETE', headers: { Authorization: `Bearer ${token}` },
-      });
+      await del(`/admin/products/${productId}/images/${imageId}`);
       setImages(prev => prev.filter(i => i.id !== imageId));
     } catch { }
   }
@@ -190,7 +173,6 @@ export default function EditProductPage() {
     setSaving(true);
     setError('');
     setFieldErrors({});
-    const token = localStorage.getItem('admin_token');
 
     const hasKa = Object.values(ka).some(v => v.trim() !== '');
     const body: any = {
@@ -216,21 +198,14 @@ export default function EditProductPage() {
     body.goodFor = suits.goodFor.trim();
 
     try {
-      const res = await fetch(`${API}/admin/products/${productId}`, {
-        method: 'PUT',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-      if (res.ok) {
-        router.push('/dashboard/products');
+      await put(`/admin/products/${productId}`, body);
+      router.push('/dashboard/products');
+    } catch (e: any) {
+      if (Array.isArray(e.body?.message)) {
+        setFieldErrors(parseFieldErrors(e.body.message));
+        setError('Please fix the errors below.');
       } else {
-        const data = await res.json().catch(() => ({}));
-        if (Array.isArray(data.message)) {
-          setFieldErrors(parseFieldErrors(data.message));
-          setError('Please fix the errors below.');
-        } else {
-          setError(data.message || 'Failed to save product');
-        }
+        setError(e.body?.message || 'Failed to save product');
       }
     } finally {
       setSaving(false);

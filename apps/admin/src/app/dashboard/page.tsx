@@ -2,13 +2,13 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { CustomSelect } from '../../components/Toolbar';
+import { ApiError, api, getOr } from '@/lib/api';
 import {
   CHANNEL, card, money, MetricCard, InsightCard, SectionHeader, Panel, EmptyState,
   StackedChannelChart, SimpleBarChart, ChartLegend, PaymentsPanel, RankRow, StockBadge, Delta,
   type SeriesPoint, type PaymentsSummary,
 } from '../../components/DashboardWidgets';
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 
 const RANGE_OPTIONS = [
   { value: '24h', label: 'Last 24 hours' },
@@ -90,22 +90,24 @@ export default function DashboardPage() {
     setLoading(true);
     setError(null);
     try {
-      const headers = { Authorization: `Bearer ${localStorage.getItem('admin_token') || ''}` };
-      const [oRes, pRes, plRes, iRes, bRes, gRes] = await Promise.all([
-        fetch(`${API}/analytics/overview?range=${r}`, { headers }),
-        fetch(`${API}/analytics/top-products?range=${r}&limit=6`, { headers }),
-        fetch(`${API}/analytics/top-plans?range=${r}&limit=6`, { headers }),
-        fetch(`${API}/analytics/inventory-alerts?limit=6`, { headers }),
-        fetch(`${API}/analytics/box-items`, { headers }),
-        fetch(`${API}/admin/gifts/summary`, { headers }),
+      const [overview, products, plans, inventory, boxes, gifts] = await Promise.all([
+        api(`/analytics/overview?range=${r}`).catch((e) => e as Error),
+        getOr(`/analytics/top-products?range=${r}&limit=6`, []),
+        getOr(`/analytics/top-plans?range=${r}&limit=6`, []),
+        getOr(`/analytics/inventory-alerts?limit=6`, null),
+        getOr('/analytics/box-items', []),
+        getOr('/admin/gifts/summary', null),
       ]);
-      setGifts(gRes.ok ? await gRes.json() : null);
-      if (!oRes.ok) throw new Error(oRes.status === 401 ? 'Session expired — please sign in again.' : `Analytics request failed (${oRes.status})`);
-      setOverview(await oRes.json());
-      setProducts(pRes.ok ? await pRes.json() : []);
-      setPlans(plRes.ok ? await plRes.json() : []);
-      setInventory(iRes.ok ? await iRes.json() : null);
-      setBoxes(bRes.ok ? await bRes.json() : []);
+      setGifts(gifts);
+      if (overview instanceof Error) {
+        const status = overview instanceof ApiError ? overview.status : 0;
+        throw new Error(status === 401 ? 'Session expired — please sign in again.' : status ? `Analytics request failed (${status})` : overview.message);
+      }
+      setOverview(overview);
+      setProducts(products);
+      setPlans(plans);
+      setInventory(inventory);
+      setBoxes(boxes);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not load dashboard data.');
     } finally {

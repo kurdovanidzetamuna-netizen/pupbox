@@ -1,8 +1,8 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { DEFAULT_FAQ, FAQ_PAGES, FAQ_SLUG, type FaqItem } from '@pupbox/content';
+import { getOr, post } from '@/lib/api';
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 // Which pages show questions, the saved-list slug and today's questions are
 // shared with the site, so a tick here always matches what the site shows.
 const PAGES = FAQ_PAGES;
@@ -27,14 +27,12 @@ export default function FAQPage() {
   const [lang, setLang] = useState<Lang>('en');
   const [filterPage, setFilterPage] = useState<string>('all');
 
-  const token = () => localStorage.getItem('admin_token');
 
   async function load() {
     setLoading(true);
     try {
-      const res = await fetch(`${API}/cms/admin/${FAQ_SLUG}`, { headers: { Authorization: `Bearer ${localStorage.getItem('admin_token')}` } });
       // Never saved yet: start from the questions the site shows today.
-      const data = res.ok ? await res.json() : null;
+      const data = await getOr<any>(`/cms/admin/${FAQ_SLUG}`, null);
       setItems((data?.content?.items as FAQItem[] | undefined) ?? DEFAULT_FAQ);
     } catch { } finally { setLoading(false); }
   }
@@ -44,14 +42,10 @@ export default function FAQPage() {
   async function persist(newItems: FAQItem[]) {
     setSaving(true);
     try {
-      await fetch(`${API}/cms`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token()}` },
-        body: JSON.stringify({ key: FAQ_SLUG, title: 'FAQ Items', slug: FAQ_SLUG, status: 'PUBLISHED', content: { items: newItems } }),
-      });
+      await post('/cms', { key: FAQ_SLUG, title: 'FAQ Items', slug: FAQ_SLUG, status: 'PUBLISHED', content: { items: newItems } });
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
-    } finally { setSaving(false); }
+    } catch { alert('Not saved — try again.'); } finally { setSaving(false); }
   }
 
   function openCreate() {

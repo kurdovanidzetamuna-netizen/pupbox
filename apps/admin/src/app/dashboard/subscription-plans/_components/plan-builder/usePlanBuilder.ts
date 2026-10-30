@@ -312,14 +312,12 @@ export function usePlanBuilder({ plan, onClose, onSaved, badges, addBadge }: Pla
       if (form.badge) body.badge = form.badge;
       if (form.description) body.description = form.description;
       const isNew = !plan.id;
-      const res = await savePlan(plan.id, body);
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        const msg = Array.isArray(errData.message) ? errData.message.join(', ') : (errData.message || 'Save failed');
-        setToast({ msg, type: 'error' });
+      let saved;
+      try { saved = await savePlan(plan.id, body); } catch (e: any) {
+        const m = e.body?.message;
+        setToast({ msg: Array.isArray(m) ? m.join(', ') : (m || 'Save failed'), type: 'error' });
         return;
       }
-      const saved = await res.json();
       if (isNew) { plan.id = saved.id; }
 
       // Enforce badge uniqueness: clear same badge from all other plans

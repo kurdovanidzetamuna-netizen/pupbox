@@ -2,8 +2,8 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import ChoiceNote from '../../../../../components/ChoiceNote';
+import { api } from '@/lib/api';
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 
 export default function InvoicePage() {
   const { id } = useParams<{ id: string }>();
@@ -12,9 +12,7 @@ export default function InvoicePage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    const token = localStorage.getItem('admin_token');
-    fetch(`${API}/orders/admin/${id}`, { headers: { Authorization: `Bearer ${token}` } })
-      .then(r => r.ok ? r.json() : Promise.reject('Not found'))
+    api(`/orders/admin/${id}`)
       .then(setOrder)
       .catch(() => setError('Order not found'))
       .finally(() => setLoading(false));

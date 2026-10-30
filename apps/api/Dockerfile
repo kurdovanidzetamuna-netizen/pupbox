@@ -14,7 +14,7 @@ FROM deps AS build
 COPY packages/database ./packages/database
 COPY apps/api ./apps/api
 RUN npx prisma generate --schema=packages/database/prisma/schema.prisma
-RUN cd apps/api && npx tsc --project tsconfig.json
+RUN cd apps/api && npx tsc --project tsconfig.build.json
 
 # Production image
 FROM base AS runner

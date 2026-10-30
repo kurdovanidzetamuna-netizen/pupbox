@@ -4,8 +4,8 @@ import { categoryOptions } from '@/components/categoryOptions';
 import { useState, useEffect, useRef } from 'react';
 import LangTabs, { type Lang } from '@/components/LangTabs';
 import { NumInput } from '@/components/NumberField';
+import { getOr, post } from '@/lib/api';
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/svg+xml', 'image/webp'];
 const ALLOWED_EXT = ['.jpg', '.jpeg', '.png', '.svg', '.webp'];
 const MAX_SIZE = 10 * 1024 * 1024;
@@ -41,13 +41,10 @@ export default function QuickAddBoxItemModal({ onClose, onCreated }: Props) {
   const [visible, setVisible] = useState(false);
   const nameRef = useRef<HTMLInputElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
-  const token = () => typeof window !== 'undefined' ? localStorage.getItem('admin_token') : '';
 
   useEffect(() => {
     requestAnimationFrame(() => setVisible(true));
-    fetch(`${API}/admin/categories`, { headers: { Authorization: `Bearer ${token()}` } })
-      .then(r => r.json()).then(d => setCategories((d.items || d || []).sort((a: any, b: any) => a.name.localeCompare(b.name))))
-      .catch(() => {});
+    getOr<any>('/admin/categories', []).then(d => setCategories((d.items || d || []).sort((a: any, b: any) => a.name.localeCompare(b.name))));
   }, []);
 
   useEffect(() => {
@@ -123,26 +120,15 @@ export default function QuickAddBoxItemModal({ onClose, onCreated }: Props) {
       if (form.shortDescription) body.shortDescription = form.shortDescription;
       if (form.categoryId) body.categoryId = form.categoryId;
 
-      const res = await fetch(`${API}/admin/products`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token()}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
+      const data = await post('/admin/products', body).catch((e) => {
+        throw new Error(Array.isArray(e.body?.message) ? e.body.message.join(', ') : e.body?.message);
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(Array.isArray(data.message) ? data.message.join(', ') : data.message);
 
       for (const file of queuedFiles) {
         const fd = new FormData();
         fd.append('file', file);
-        const upRes = await fetch(`${API}/admin/upload/image`, { method: 'POST', headers: { Authorization: `Bearer ${token()}` }, body: fd });
-        if (upRes.ok) {
-          const { url } = await upRes.json();
-          await fetch(`${API}/admin/products/${data.id}/images`, {
-            method: 'POST',
-            headers: { Authorization: `Bearer ${token()}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ url, alt: form.name }),
-          });
-        }
+        const uploaded = await post('/admin/upload/image', fd).catch(() => null);
+        if (uploaded) await post(`/admin/products/${data.id}/images`, { url: uploaded.url, alt: form.name }).catch(() => {});
       }
 
       setToast(`"${form.name}" created!`);

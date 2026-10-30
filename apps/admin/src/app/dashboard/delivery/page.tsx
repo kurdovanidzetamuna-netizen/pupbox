@@ -4,18 +4,12 @@ import SideDrawer from '@/components/SideDrawer';
 import NumberField from '@/components/NumberField';
 import { ActionButton } from '@/components/Toolbar';
 import { PURCHASE_STRINGS } from '@pupbox/content';
-
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
-const auth = () => ({ Authorization: `Bearer ${localStorage.getItem('admin_token')}` });
-const err = (d: any, f: string) => (Array.isArray(d?.message) ? d.message[0] : d?.message) || f;
-const can = (perm: string) => {
-  try { return (JSON.parse(atob((localStorage.getItem('admin_token') || '').split('.')[1])).permissions ?? []).includes(perm); } catch { return false; }
-};
+import { api, can, getOr } from '@/lib/api';
+import { gel } from '@/lib/format';
 
 type Method = { id: string; name: string; nameKa: string; price: number; freeThreshold: number | null; estimatedDays: string | null; isActive: boolean; sortOrder: number; orders: number };
 type Form = { name: string; nameKa: string; price: string; free: boolean; freeThreshold: string; days: string; isActive: boolean };
 const EMPTY: Form = { name: '', nameKa: '', price: '', free: false, freeThreshold: '', days: '', isActive: true };
-const gel = (n: number) => `₾${n.toFixed(2).replace(/\.00$/, '')}`;
 /** The Georgian name: admin's, else the site's built-in one for the original options. */
 const kaName = (m: { name: string; nameKa: string }) => m.nameKa || PURCHASE_STRINGS[`dm.${m.name}`]?.ka || '';
 const daysText = (d: string | null) => (!d ? '' : d === '1' ? 'next day' : `${d} days`);
@@ -37,15 +31,13 @@ export default function DeliveryPage() {
   const [edit, setEdit] = useState(false);
 
   const call = async (path: string, method: string, body?: unknown) => {
-    const r = await fetch(`${API}/admin/delivery${path}`, { method, headers: { ...auth(), 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined });
-    const d = await r.json().catch(() => ({}));
-    if (!r.ok) throw new Error(err(d, `Not saved (error ${r.status}).`));
+    const d = await api<Method[]>(`/admin/delivery${path}`, { method, body });
     setList(d);
     return d;
   };
   useEffect(() => {
     setEdit(can('cms.edit'));
-    fetch(`${API}/admin/delivery`, { headers: auth() }).then((r) => (r.ok ? r.json() : [])).then(setList).catch(() => setList([]));
+    getOr<Method[]>('/admin/delivery', []).then(setList);
   }, []);
   useEffect(() => { if (toast) { const t = setTimeout(() => setToast(''), 2500); return () => clearTimeout(t); } }, [toast]);
 

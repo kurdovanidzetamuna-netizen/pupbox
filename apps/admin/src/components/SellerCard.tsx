@@ -2,8 +2,8 @@
 import { Select } from '@/components/Dropdown';
 import { useEffect, useState } from 'react';
 import { NumInput } from '@/components/NumberField';
+import { getOr } from '@/lib/api';
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 
 export type SellerTerms = { sellerId: string; sellerPrice: string; marginType: 'FIXED' | 'PERCENT'; marginValue: string };
 export const OURS: SellerTerms = { sellerId: '', sellerPrice: '', marginType: 'FIXED', marginValue: '' };
@@ -38,8 +38,7 @@ export default function SellerCard({ value, onChange, salePrice, error, style }:
 }) {
   const [sellers, setSellers] = useState<any[]>([]);
   useEffect(() => {
-    fetch(`${API}/admin/sellers`, { headers: { Authorization: `Bearer ${localStorage.getItem('admin_token')}` } })
-      .then((r) => (r.ok ? r.json() : [])).then((d) => Array.isArray(d) && setSellers(d)).catch(() => {});
+    getOr<any>('/admin/sellers', []).then((d) => Array.isArray(d) && setSellers(d));
   }, []);
 
   const set = (k: keyof SellerTerms, v: string) => onChange({ ...value, [k]: v });

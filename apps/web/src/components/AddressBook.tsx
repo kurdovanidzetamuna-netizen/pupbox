@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useLanguage } from '@/context/LanguageContext';
 import { fill } from '@/context/strings/purchase';
-import { authFetch, SessionExpiredError } from '@/lib/authFetch';
+import { authFetch, responseError as msg, SessionExpiredError } from '@/lib/authFetch';
 import Modal from '@/components/ui/Modal';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import Field from '@/components/ui/Field';
@@ -24,10 +24,6 @@ const NAME_IDEAS = ['addr.n.home', 'addr.n.work', 'addr.n.country', 'addr.n.fami
 
 type Address = { id: string; label: string | null; firstName: string; lastName: string; phone: string; city: string; addressLine1: string; addressLine2: string | null; latitude: number | null; longitude: number | null; isDefault: boolean; isGift?: boolean };
 const EMPTY = { label: '', firstName: '', lastName: '', phone: '', city: '', addressLine1: '', addressLine2: '', isDefault: false };
-const msg = async (res: Response, fallback: string) => {
-  const d = await res.json().catch(() => ({}));
-  return (Array.isArray(d?.message) ? d.message[0] : d?.message) || fallback;
-};
 
 /** Saved delivery addresses: add, edit, remove, and pick the default. */
 export default function AddressBook({ onExpired, addTick = 0, onCount }: {

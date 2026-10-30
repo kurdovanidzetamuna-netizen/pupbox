@@ -36,18 +36,15 @@ export default function AdminSubscriptionPlansPage() {
     setLoading(true);
     setIsSuperAdmin(currentUserIsSuperAdmin());
     try {
-      const res = await fetchPlans();
-      if (res.ok) {
-        const data = await res.json();
-        setPlans(data);
-        // fetch order counts per plan
-        const counts: Record<string, number> = {};
-        await Promise.all(data.map(async (p: any) => {
-          const n = await fetchPlanOrderCount(p.id);
-          if (n !== undefined) counts[p.id] = n;
-        }));
-        setPlanOrderCounts(counts);
-      }
+      const data = await fetchPlans();
+      setPlans(data);
+      // fetch order counts per plan
+      const counts: Record<string, number> = {};
+      await Promise.all(data.map(async (p: any) => {
+        const n = await fetchPlanOrderCount(p.id);
+        if (n !== undefined) counts[p.id] = n;
+      }));
+      setPlanOrderCounts(counts);
     } catch { } finally { setLoading(false); }
   }
 

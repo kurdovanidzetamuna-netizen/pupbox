@@ -1,11 +1,10 @@
 'use client';
 import { useEffect, useState } from 'react';
+import { api } from '@/lib/api';
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 type Cat = { id: string; name: string; parentId: string | null };
 let cache: Promise<Cat[]> | null = null;
-const load = () => (cache ??= fetch(`${API}/admin/categories`, { headers: { Authorization: `Bearer ${localStorage.getItem('admin_token')}` } })
-  .then((r) => (r.ok ? r.json() : [])).catch(() => { cache = null; return []; }));
+const load = () => (cache ??= api<Cat[]>('/admin/categories').catch(() => { cache = null; return []; }));
 
 /**
  * What a dog loves, as shop categories — "Toys: Chew toys, Plush · Treats (any)" —

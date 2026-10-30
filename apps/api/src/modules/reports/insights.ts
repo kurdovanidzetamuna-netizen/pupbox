@@ -1,6 +1,7 @@
 import { BadRequestException } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
 import type { PrismaService } from '../prisma/prisma.service';
+import { r2 as round } from '../../common/money';
 
 export type InsightFilters = {
   from?: string; to?: string;
@@ -12,7 +13,6 @@ export type InsightFilters = {
 const DAY = 86400_000;
 const TZ = 4 * 3600_000; // Tbilisi, no daylight saving
 const list = (v?: string) => (v ? v.split(',').map((x) => x.trim()).filter(Boolean) : []);
-const round = (n: number) => Math.round(n * 100) / 100;
 const PAID = ['PAID', 'PARTIALLY_REFUNDED', 'REFUNDED'] as const;
 
 /** Start of the day / ISO week (Monday) / month a moment falls in, in Tbilisi time, as "YYYY-MM-DD". */

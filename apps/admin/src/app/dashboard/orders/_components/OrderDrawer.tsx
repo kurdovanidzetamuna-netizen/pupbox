@@ -3,11 +3,13 @@ import MapLink from '@/components/MapLink';
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import ChoiceNote from '../../../../components/ChoiceNote';
-import { API, authHeaders, jsonHeaders, apiError, money, STATUS_FLOW, STATUS_LABEL, EDITABLE, StatusBadge, TypeBadge, RefundDueBadge, Thumb } from '../_lib';
+import { getOr, patch, post } from '@/lib/api';
+import { money, STATUS_FLOW, STATUS_LABEL, EDITABLE, StatusBadge, TypeBadge, RefundDueBadge, Thumb } from '../_lib';
 import OrderEditor from './OrderEditor';
 import RefundModal from './RefundModal';
 import ConfirmSheet, { Toast } from './ConfirmSheet';
 import DogLikes from '@/components/DogLikes';
+import type { Api } from '@pupbox/content';
 
 /** Each move in words: the button, what it does, and whether to ask first. */
 const MOVE: Record<string, { verb: string; done: string; help: string; ask?: string }> = {
@@ -52,8 +54,22 @@ const iconBtn = { width: 38, height: 38, borderRadius: 11, border: '1.5px solid 
  *   Payment — card, date, method, every try and refund; Refund, Charge now.
  *   Activity — courier and tracking number, notes and history.
  */
-export default function OrderDrawer({ order: initial, categories, onClose, onChanged, startEditing = false }: any) {
-  const [order, setOrder] = useState<any>(initial);
+/** The list's row while the full order loads; the full order's extra parts once it arrives. */
+type Full = Api.AdminOrderDetail;
+export type DrawerOrder = Omit<Full, 'user' | 'subscription' | 'customerStats' | 'extraCharges' | 'parentOrder' | 'items'> & {
+  items: (Api.OrderItem & { customBox?: Api.BuiltBox | null })[];
+  user: Api.AdminOrderRow['user'] & Partial<Full['user']>;
+  subscription: (NonNullable<Api.AdminOrderRow['subscription']> & Partial<NonNullable<Full['subscription']>>) | null;
+  customerStats?: Full['customerStats'];
+  extraCharges?: Full['extraCharges'];
+  parentOrder?: Full['parentOrder'];
+};
+
+type Props = { order: Api.AdminOrderRow; categories: { id: string; name: string; slug: string }[]; onClose: () => void; onChanged: () => void; startEditing?: boolean };
+
+export default function OrderDrawer({ order: initial, categories, onClose, onChanged, startEditing = false }: Props) {
+  // The list's row until the full order arrives.
+  const [order, setOrder] = useState<DrawerOrder>(initial);
   const [editing, setEditing] = useState<boolean>(startEditing && EDITABLE.includes(initial.status));
   const [tab, setTab] = useState<Tab>('Overview');
   const [wide, setWide] = useState(false);
@@ -69,8 +85,8 @@ export default function OrderDrawer({ order: initial, categories, onClose, onCha
   const moreRef = useRef<HTMLDivElement>(null);
 
   const reload = useCallback(async () => {
-    const r = await fetch(`${API}/orders/admin/${initial.id}`, { headers: authHeaders() });
-    if (r.ok) { const o = await r.json(); setOrder(o); setTracking(o.trackingNumber || ''); }
+    const o = await getOr<Api.AdminOrderDetail | null>(`/orders/admin/${initial.id}`, null);
+    if (o) { setOrder(o); setTracking(o.trackingNumber || ''); }
   }, [initial.id]);
   useEffect(() => { reload(); }, [reload]);
 
@@ -96,18 +112,17 @@ export default function OrderDrawer({ order: initial, categories, onClose, onCha
   const forward = next.filter((s) => STATUS_FLOW.indexOf(s) > step).sort((a, b) => STATUS_FLOW.indexOf(a) - STATUS_FLOW.indexOf(b));
   const main = forward[0];
   const back = next.filter((s) => STATUS_FLOW.indexOf(s) >= 0 && STATUS_FLOW.indexOf(s) < step);
-  const paid = order.payments?.find((p: any) => ['PAID', 'PARTIALLY_REFUNDED'].includes(p.status));
-  const refundedSum = (order.payments ?? []).flatMap((p: any) => p.refunds ?? []).reduce((n: number, r: any) => n + Number(r.amount), 0);
-  const canRefund = !!paid && Number(paid.amount) - (paid.refunds ?? []).reduce((n: number, r: any) => n + Number(r.amount), 0) > 0.001;
+  const paid = order.payments?.find((p) => ['PAID', 'PARTIALLY_REFUNDED'].includes(p.status));
+  const refundedSum = (order.payments ?? []).flatMap((p) => p.refunds ?? []).reduce((n, r) => n + Number(r.amount), 0);
+  const canRefund = !!paid && Number(paid.amount) - (paid.refunds ?? []).reduce((n, r) => n + Number(r.amount), 0) > 0.001;
   const shortNo = (order.orderNumber || order.id).slice(-8).toUpperCase();
 
   async function move(to: string, opts: { reason?: string; quiet?: boolean } = {}) {
     setBusy(true); setError('');
     const from = order.status;
-    const r = await fetch(`${API}/orders/admin/${order.id}/status`, { method: 'PATCH', headers: jsonHeaders(), body: JSON.stringify({ status: to, ...(opts.reason ? { reason: opts.reason } : {}) }) });
-    const d = await r.json().catch(() => ({}));
-    setBusy(false); setConfirm(null); setMore(false);
-    if (!r.ok) { setError(apiError(d)); return; }
+    let d;
+    try { d = await patch(`/orders/admin/${order.id}/status`, { status: to, ...(opts.reason ? { reason: opts.reason } : {}) }, 'Not saved.'); }
+    catch (e: any) { setError(e.message); return; } finally { setBusy(false); setConfirm(null); setMore(false); }
     setOrder(d); onChanged();
     // Undo goes back to where it was, if that step is allowed from here.
     if (!opts.quiet) setToast({ text: MOVE[to]?.done ?? `Now ${STATUS_LABEL[to]}`, undoTo: (d.allowedNext ?? []).includes(from) ? from : undefined });
@@ -120,15 +135,13 @@ export default function OrderDrawer({ order: initial, categories, onClose, onCha
     setBusy(true);
     const stamp = new Date().toISOString().slice(0, 16).replace('T', ' ');
     const notes = extraNote ? [order.internalNotes, `${stamp}: ${extraNote}`].filter(Boolean).join('\n') : order.internalNotes;
-    await fetch(`${API}/orders/admin/${order.id}/tracking`, { method: 'PATCH', headers: jsonHeaders(), body: JSON.stringify({ trackingNumber: tracking.trim(), internalNotes: notes ?? '' }) });
+    await patch(`/orders/admin/${order.id}/tracking`, { trackingNumber: tracking.trim(), internalNotes: notes ?? '' }).catch(() => {});
     setBusy(false); setNote(''); await reload(); onChanged(); setToast({ text: extraNote ? 'Note added' : 'Tracking number saved' });
   }
   async function chargeNow() {
     setBusy(true); setError('');
-    const r = await fetch(`${API}/orders/admin/${order.id}/charge-now`, { method: 'POST', headers: jsonHeaders() });
-    const d = await r.json().catch(() => ({}));
-    setBusy(false);
-    if (!r.ok) { setError(apiError(d)); return; }
+    let d;
+    try { d = await post(`/orders/admin/${order.id}/charge-now`, undefined, 'Not saved.'); } catch (e: any) { setError(e.message); return; } finally { setBusy(false); }
     setOrder(d); onChanged();
     setToast({ text: d.status === 'PAID' ? 'Charged — the plan continues' : `Declined: ${d.lastChargeError ?? 'the bank said no'}` });
   }
@@ -137,8 +150,9 @@ export default function OrderDrawer({ order: initial, categories, onClose, onCha
   const dog = order.dog;
   const user = order.user ?? {};
   const notes = String(order.internalNotes || '').split('\n').filter(Boolean).reverse();
-  const planLine = (order.items ?? []).find((i: any) => i.subscriptionPlan);
-  const boxLine = (order.items ?? []).find((i: any) => i.customBox);
+  const came = order.tracking as Api.OrderTracking | null | undefined;
+  const planLine = (order.items ?? []).find((i) => i.subscriptionPlan);
+  const boxLine = (order.items ?? []).find((i) => i.customBox);
 
   // ── Tabs ──
   const overview = (
@@ -208,7 +222,7 @@ export default function OrderDrawer({ order: initial, categories, onClose, onCha
           <span style={{ color: 'var(--slate-400)' }}>{order.customerStats?.orders ?? '—'} orders · {money(order.customerStats?.totalPaid)} paid</span>
         </Fact>
         <Fact title="Dog" onClick={() => setTab('Customer & dog')}>
-          {dog ? <><strong>🐶 {dog.name}</strong><span>{[dog.breed, SIZE[dog.size] ?? dog.size].filter(Boolean).join(' · ') || '—'}</span>{dog.allergies?.length > 0 && <span style={{ color: 'var(--red-600)', fontWeight: 700 }}>⚠ {dog.allergies.join(', ')}</span>}</> : <span style={{ color: 'var(--slate-400)' }}>No dog on this order</span>}
+          {dog ? <><strong>🐶 {dog.name}</strong><span>{[dog.breed, SIZE[dog.size ?? ''] ?? dog.size].filter(Boolean).join(' · ') || '—'}</span>{dog.allergies?.length > 0 && <span style={{ color: 'var(--red-600)', fontWeight: 700 }}>⚠ {dog.allergies.join(', ')}</span>}</> : <span style={{ color: 'var(--slate-400)' }}>No dog on this order</span>}
         </Fact>
         <Fact title="Delivery" onClick={() => setTab('Activity')}>
           {addr ? <><strong>{addr.city}{addr.isGift && <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--violet-700)', background: 'var(--violet-50)', borderRadius: 99, padding: '1px 7px', marginLeft: 6 }}>🎁 {(addr.label || 'Gift').replace(/^Gift · /, 'Gift for ')}</span>}</strong><span>{addr.addressLine1}{addr.addressLine2 ? `, ${addr.addressLine2}` : ''}</span></> : <span style={{ color: 'var(--slate-400)' }}>No address</span>}
@@ -220,17 +234,17 @@ export default function OrderDrawer({ order: initial, categories, onClose, onCha
           {refundedSum > 0 && <span style={{ color: 'var(--red-600)' }}>Refunded {money(refundedSum)}</span>}
         </Fact>
       </div>
-      {order.tracking && (
+      {came && (
         <p style={{ margin: 0, fontSize: 12.5, color: 'var(--slate-500)' }}>
-          <span style={label}>Came from</span>{' '}<strong style={{ color: 'var(--slate-700)' }}>{cameFrom(order.tracking)}</strong>
-          {order.tracking.utm?.campaign && <> · campaign “{order.tracking.utm.campaign}”</>}
-          {order.tracking.consent !== 'all' && <> · <span title="The buyer chose “Only necessary” cookies, so ad services weren’t told about this sale.">ads not told (no cookie consent)</span></>}
+          <span style={label}>Came from</span>{' '}<strong style={{ color: 'var(--slate-700)' }}>{cameFrom(came)}</strong>
+          {came.utm?.campaign && <> · campaign “{came.utm.campaign}”</>}
+          {came.consent !== 'all' && <> · <span title="The buyer chose “Only necessary” cookies, so ad services weren’t told about this sale.">ads not told (no cookie consent)</span></>}
         </p>
       )}
-      {(order.extraCharges?.length > 0 || order.parentOrder) && (
+      {((order.extraCharges?.length ?? 0) > 0 || order.parentOrder) && (
         <div style={{ ...card, background: 'var(--amber-50)', borderColor: 'var(--amber-200)' }}>
           {order.parentOrder && <p style={{ margin: 0, fontSize: 13 }}>Extra payment for order <strong>#{order.parentOrder.orderNumber.slice(-8).toUpperCase()}</strong> — ships with it once paid.</p>}
-          {(order.extraCharges ?? []).map((x: any) => (
+          {(order.extraCharges ?? []).map((x) => (
             <p key={x.id} style={{ margin: '4px 0 0', fontSize: 13 }}>Extra payment <strong>#{x.orderNumber.slice(-8).toUpperCase()}</strong> · {money(x.total)} · {STATUS_LABEL[x.status] ?? x.status} — {x.items.map((i: any) => `${i.name} ×${i.quantity}`).join(', ')}</p>
           ))}
         </div>
@@ -243,12 +257,12 @@ export default function OrderDrawer({ order: initial, categories, onClose, onCha
       <div style={card}>
         <p style={label}>📦 Items · {order.items?.length || 0}</p>
         <div style={{ display: 'grid', gap: 12 }}>
-          {(order.items || []).map((it: any) => (
+          {(order.items || []).map((it) => (
             <div key={it.id} style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
               <Thumb item={it} size={48} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <p style={{ fontWeight: 700, color: 'var(--slate-800)', margin: 0, fontSize: 14 }}>{it.name}</p>
-                <ChoiceNote choice={it.personalisation} />
+                <ChoiceNote choice={it.personalisation as Api.Personalisation} />
                 <p style={{ fontSize: 12, color: 'var(--slate-400)', margin: '2px 0 0' }}>{it.quantity} × {money(it.price)}{it.sku ? ` · ${it.sku}` : ''}{it.product?.category ? ` · ${it.product.category.name}` : ''}</p>
               </div>
               <strong style={{ fontSize: 14 }}>{money(it.total)}</strong>
@@ -271,28 +285,28 @@ export default function OrderDrawer({ order: initial, categories, onClose, onCha
             <p style={{ margin: '0 0 10px', fontSize: 13.5 }}>
               <strong>{planLine.subscriptionPlan.tier ? `${planLine.subscriptionPlan.tier.emoji ?? ''} ${planLine.subscriptionPlan.tier.name}` : planLine.subscriptionPlan.name}</strong>
               {planLine.subscriptionPlan.tier && <span style={{ color: 'var(--slate-500)' }}> · {planLine.subscriptionPlan.tier.itemCount} items every box · {planLine.subscriptionPlan.durationValue} month plan</span>}
-              {dog && <span style={{ color: 'var(--slate-500)' }}> · picked for {dog.name}{dog.size ? ` (${SIZE[dog.size] ?? dog.size})` : ''}</span>}
+              {dog && <span style={{ color: 'var(--slate-500)' }}> · picked for {dog.name}{dog.size ? ` (${SIZE[dog.size ?? ''] ?? dog.size})` : ''}</span>}
             </p>
           )}
           {boxLine?.customBox && (
             <div style={{ marginBottom: 10 }}>
               <p style={{ margin: '0 0 6px', fontSize: 13.5, fontWeight: 700 }}>Built by the customer{boxLine.customBox.monthly ? ' · every month' : ''}</p>
               <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13, color: 'var(--slate-700)' }}>
-                {boxLine.customBox.items.map((x: any, i: number) => <li key={i}>{x.product.name} ×{x.quantity}</li>)}
+                {boxLine.customBox!.items.map((x, i) => <li key={i}>{x.product.name} ×{x.quantity}</li>)}
                 {boxLine.customBox.mysteryCount > 0 && <li>🎁 Mystery item ×{boxLine.customBox.mysteryCount} (you choose when packing)</li>}
               </ul>
             </div>
           )}
-          {order.subscription?.shipments?.length > 0 ? (
+          {(order.subscription?.shipments?.length ?? 0) > 0 ? (
             <div style={{ display: 'grid', gap: 8 }}>
-              {order.subscription.shipments.map((s: any) => (
+              {(order.subscription?.shipments ?? []).map((s) => (
                 <div key={s.id} style={{ border: '1px solid var(--slate-200b)', borderRadius: 12, padding: '10px 12px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, fontSize: 13 }}>
                     <strong>Box {s.boxNumber} · {new Date(s.year, s.month - 1).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })}</strong>
                     <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--slate-500)' }}>{String(s.status).replace('_', ' ').toLowerCase()}</span>
                   </div>
                   <p style={{ margin: '4px 0 0', fontSize: 12.5, color: 'var(--slate-600)' }}>
-                    {s.campaign ? `${s.campaign.name}: ${s.campaign.products.map((p: any) => `${p.product.name} ×${p.quantity}`).join(', ')}` : 'Contents not chosen yet (no box set up for this month).'}
+                    {s.campaign ? `${s.campaign.name}: ${s.campaign.products.map((p) => `${p.product.name} ×${p.quantity}`).join(', ')}` : 'Contents not chosen yet (no box set up for this month).'}
                   </p>
                 </div>
               ))}
@@ -314,10 +328,10 @@ export default function OrderDrawer({ order: initial, categories, onClose, onCha
           {user.email && <a href={`mailto:${user.email}`} style={{ ...btn('soft'), maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis' }}>✉️ {user.email}</a>}
         </div>
         <p style={{ margin: '10px 0 0', fontSize: 12, color: 'var(--slate-500)' }}>Offers: email {user.marketingEmail ? '✓' : '✗'} · SMS {user.marketingSms ? '✓' : '✗'} · writes in {user.language === 'en' ? 'English' : 'Georgian'}</p>
-        {user.addresses?.length > 0 && (
+        {(user.addresses?.length ?? 0) > 0 && (
           <div style={{ marginTop: 14 }}>
             <p style={label}>Saved addresses</p>
-            {user.addresses.map((a: any) => (
+            {(user.addresses ?? []).map((a) => (
               <p key={a.id} style={{ margin: '0 0 6px', fontSize: 12.5, color: a.id === order.addressId ? 'var(--teal-800)' : 'var(--slate-600)', fontWeight: a.id === order.addressId ? 700 : 400 }}>
                 {a.id === order.addressId ? '📍 ' : ''}{a.addressLine1}{a.addressLine2 ? `, ${a.addressLine2}` : ''}, {a.city} · {a.phone}{a.isDefault ? ' (default)' : ''}
               </p>
@@ -335,7 +349,7 @@ export default function OrderDrawer({ order: initial, categories, onClose, onCha
             </div>
             <div style={{ display: 'grid', gap: 3, fontSize: 13, color: 'var(--slate-700)', minWidth: 0 }}>
               <strong style={{ fontSize: 16, color: 'var(--slate-900)' }}>{dog.name} {dog.gender === 'MALE' ? '♂' : dog.gender === 'FEMALE' ? '♀' : ''}</strong>
-              <span>{[dog.breed, SIZE[dog.size] ?? dog.size, age(dog.birthday), dog.weightKg ? `${dog.weightKg} kg` : null].filter(Boolean).join(' · ') || '—'}</span>
+              <span>{[dog.breed, SIZE[dog.size ?? ''] ?? dog.size, age(dog.birthday), dog.weightKg ? `${dog.weightKg} kg` : null].filter(Boolean).join(' · ') || '—'}</span>
               {dog.birthday && <span>🎂 {day(dog.birthday)}</span>}
               <span style={{ color: dog.allergies?.length ? 'var(--red-600)' : 'var(--slate-400)', fontWeight: dog.allergies?.length ? 800 : 400 }}>{dog.allergies?.length ? `⚠ Allergic to: ${dog.allergies.join(', ')}` : 'No allergies'}</span>
               <DogLikes dog={dog} />
@@ -361,7 +375,7 @@ export default function OrderDrawer({ order: initial, categories, onClose, onCha
         </div>
       )}
       {(order.payments ?? []).length === 0 && <div style={card}><p style={{ margin: 0, color: 'var(--slate-500)', fontSize: 13.5 }}>No payment yet.</p></div>}
-      {(order.payments ?? []).map((p: any) => (
+      {(order.payments ?? []).map((p) => (
         <div key={p.id} style={card}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -385,10 +399,10 @@ export default function OrderDrawer({ order: initial, categories, onClose, onCha
           </div>
           {(p.refunds ?? []).length > 0 && (
             <div style={{ marginTop: 12, paddingTop: 10, borderTop: '1px dashed var(--slate-200)', display: 'grid', gap: 6 }}>
-              {p.refunds.map((r: any) => (
+              {(p.refunds ?? []).map((r) => (
                 <div key={r.id} style={{ fontSize: 12.5, color: 'var(--slate-700)' }}>
                   <strong style={{ color: 'var(--red-600)' }}>↩ {money(r.amount)}</strong> · {dateTime(r.createdAt)} · {r.method === 'PROVIDER' ? 'sent back by the provider' : 'recorded (done in the portal)'}
-                  {Array.isArray(r.items) && r.items.length > 0 && <> · {r.items.map((x: any) => `${x.name} ×${x.quantity}`).join(', ')}</>}
+                  {Array.isArray(r.items) && r.items.length > 0 && <> · {(r.items as { name: string; quantity: number }[]).map((x) => `${x.name} ×${x.quantity}`).join(', ')}</>}
                   {r.reason && <> — <em>{r.reason}</em></>}
                 </div>
               ))}
@@ -482,7 +496,7 @@ export default function OrderDrawer({ order: initial, categories, onClose, onCha
         <div style={{ padding: 'clamp(14px, 3vw, 24px)' }}>
           {editing
             ? <OrderEditor orderId={order.id} categories={categories} onCancel={() => setEditing(false)}
-                onDone={(o: any, summary?: string) => { setOrder(o); setEditing(false); onChanged(); setToast({ text: summary || 'Order updated' }); }} />
+                onDone={(o: Api.AdminOrderDetail, summary?: string) => { setOrder(o); setEditing(false); onChanged(); setToast({ text: summary || 'Order updated' }); }} />
             : body[tab]}
         </div>
       </section>
@@ -513,7 +527,7 @@ export default function OrderDrawer({ order: initial, categories, onClose, onCha
 }
 
 /** Where the buyer came from, from what the site saved with the order (SEO & tracking). */
-function cameFrom(t: any): string {
+function cameFrom(t: Api.OrderTracking): string {
   if (t.fbc) return 'Facebook / Instagram ad';
   if (t.gclid) return 'Google ad';
   if (t.ttclid) return 'TikTok ad';

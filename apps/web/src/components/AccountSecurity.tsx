@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/context/LanguageContext';
-import { authFetch, loginUrl, SessionExpiredError } from '@/lib/authFetch';
+import { authFetch, loginUrl, responseError as msg, SessionExpiredError } from '@/lib/authFetch';
 import Modal from '@/components/ui/Modal';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import Field from '@/components/ui/Field';
@@ -10,10 +10,6 @@ import IconButton from '@/components/ui/IconButton';
 import { Icon } from '@/components/ui/icons';
 import { revealFirstError } from '@/components/ui/FormError';
 
-const msg = async (res: Response, fallback: string) => {
-  const d = await res.json().catch(() => ({}));
-  return (Array.isArray(d?.message) ? d.message[0] : d?.message) || fallback;
-};
 
 /**
  * Sign-in & security, compact: a password row whose "Change" opens a short

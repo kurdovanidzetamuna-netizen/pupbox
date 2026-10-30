@@ -3,8 +3,8 @@ import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
 import Link from 'next/link';
 import { ActionButton } from '../../../components/Toolbar';
 import { NumInput } from '@/components/NumberField';
+import { getOr, post } from '@/lib/api';
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 const SLUG = 'config-settings';
 
 const card: CSSProperties = { background: 'var(--white)', border: '1px solid var(--slate-200b)', borderRadius: 14, padding: 22, marginBottom: 16 };
@@ -30,7 +30,7 @@ export default function SettingsPage() {
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
   useEffect(() => {
-    fetch(`${API}/cms/admin/${SLUG}`, { headers: { Authorization: `Bearer ${localStorage.getItem('admin_token')}` } }).then(r => (r.ok ? r.json() : null)).then(row => {
+    getOr<any>(`/cms/admin/${SLUG}`, null).then(row => {
       const c = row?.content ?? {};
       setContent(c);
       setV({
@@ -71,7 +71,7 @@ export default function SettingsPage() {
     if (orderEmail && !/^\S+@\S+\.\S+$/.test(orderEmail)) return setMsg({ ok: false, text: 'Enter a valid email address, or leave it empty.' });
     setSaving(true); setMsg(null);
     // Start from what's saved now: other pages (friend codes) keep their parts in the same record.
-    const latest = await fetch(`${API}/cms/admin/${SLUG}`, { headers: { Authorization: `Bearer ${localStorage.getItem('admin_token')}` } }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+    const latest = await getOr<any>(`/cms/admin/${SLUG}`, null);
     const next = {
       ...content,
       ...(latest?.content ?? {}),
@@ -81,14 +81,12 @@ export default function SettingsPage() {
       notifications: { ...(content.notifications ?? {}), orderEmail },
       customBox: { ...(content.customBox ?? {}), minItems, packingFee, monthlyDiscount, mystery: { enabled: v.mysteryOn, price: mPrice, max: mMax } },
     };
-    const res = await fetch(`${API}/cms`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('admin_token')}` },
-      body: JSON.stringify({ key: SLUG, slug: SLUG, title: 'Settings', status: 'PUBLISHED', content: next }),
-    });
-    setSaving(false);
-    if (res.ok) { setContent(next); setMsg({ ok: true, text: 'Saved. Applies from now on.' }); }
-    else setMsg({ ok: false, text: res.status === 401 ? 'Your session expired — sign in again.' : `Not saved (error ${res.status}).` });
+    try {
+      await post('/cms', { key: SLUG, slug: SLUG, title: 'Settings', status: 'PUBLISHED', content: next });
+      setContent(next); setMsg({ ok: true, text: 'Saved. Applies from now on.' });
+    } catch (e: any) {
+      setMsg({ ok: false, text: e.status === 401 ? 'Your session expired — sign in again.' : `Not saved (error ${e.status ?? 'no connection'}).` });
+    } finally { setSaving(false); }
   }
 
   const hours = Number(v.freeHours) || 0;

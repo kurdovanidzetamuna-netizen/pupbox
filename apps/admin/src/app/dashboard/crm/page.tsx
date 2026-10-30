@@ -2,8 +2,9 @@
 import { Select } from '@/components/Dropdown';
 import { useCallback, useEffect, useState } from 'react';
 import CustomerDrawer from '@/components/CustomerDrawer';
+import { api, can, download, today } from '@/lib/api';
+import { day } from '@/lib/format';
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 const SIZE: Record<string, string> = { EXTRA_SMALL: 'Extra small', SMALL: 'Small', MEDIUM: 'Medium', LARGE: 'Large', EXTRA_LARGE: 'Extra large', UNKNOWN: 'Not given' };
 const PLAN: Record<string, { label: string; color: string; bg: string }> = {
   active: { label: 'On a plan', color: 'var(--green-800)', bg: 'var(--green-50)' },
@@ -23,10 +24,6 @@ const SEGMENTS: { label: string; f: Partial<Filters> }[] = [
   { label: '💚 Active subscribers', f: { plan: 'active' } },
 ];
 
-const day = (d?: string | null) => (d ? new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—');
-const can = (perm: string) => {
-  try { return (JSON.parse(atob((localStorage.getItem('admin_token') || '').split('.')[1])).permissions ?? []).includes(perm); } catch { return false; }
-};
 
 /**
  * Customers' dogs for retention and CRM: who's on a plan, who lapsed, whose
@@ -45,7 +42,6 @@ export default function CrmPage() {
   const [exporting, setExporting] = useState(false);
   const [canExport, setCanExport] = useState(false);
 
-  const headers = () => ({ Authorization: `Bearer ${localStorage.getItem('admin_token')}` });
   const qs = (x: Filters, extra: Record<string, string> = {}) => {
     const p = new URLSearchParams(extra);
     Object.entries(x).forEach(([k, v]) => { if (v) p.set(k, v); });
@@ -55,14 +51,14 @@ export default function CrmPage() {
   const load = useCallback(async (x: Filters, pg: number) => {
     setLoading(true);
     try {
-      const res = await fetch(`${API}/admin/crm/dogs?${qs(x, { page: String(pg), limit: '50' })}`, { headers: headers() });
-      if (res.ok) { const d = await res.json(); setRows(d.items); setTotal(d.total); }
-    } finally { setLoading(false); }
+      const d = await api(`/admin/crm/dogs?${qs(x, { page: String(pg), limit: '50' })}`);
+      setRows(d.items); setTotal(d.total);
+    } catch { /* keeps what's shown */ } finally { setLoading(false); }
   }, []);
 
   useEffect(() => {
     setCanExport(can('crm.export'));
-    fetch(`${API}/admin/crm/summary`, { headers: headers() }).then(r => (r.ok ? r.json() : null)).then(setSummary).catch(() => {});
+    api('/admin/crm/summary').then(setSummary).catch(() => {});
   }, []);
   useEffect(() => { load(applied, page); }, [applied, page, load]);
 
@@ -71,13 +67,8 @@ export default function CrmPage() {
   async function exportCsv() {
     setExporting(true);
     try {
-      const res = await fetch(`${API}/admin/crm/dogs/export?${qs(applied)}`, { headers: headers() });
-      if (!res.ok) { alert(res.status === 403 ? 'Your role can’t export CRM lists.' : 'Export failed.'); return; }
-      const url = URL.createObjectURL(await res.blob());
-      const a = document.createElement('a');
-      a.href = url; a.download = `pupbox-dogs-${new Date().toISOString().slice(0, 10)}.csv`; a.click();
-      URL.revokeObjectURL(url);
-    } finally { setExporting(false); }
+      await download(`/admin/crm/dogs/export?${qs(applied)}`, `pupbox-dogs-${today()}.csv`);
+    } catch (e: any) { alert(e.status === 403 ? 'Your role can’t export CRM lists.' : 'Export failed.'); } finally { setExporting(false); }
   }
 
   const sel: React.CSSProperties = { border: '1px solid var(--slate-200)', borderRadius: 10, padding: '8px 10px', fontSize: 13, background: 'var(--white)', color: 'var(--slate-800)' };

@@ -2,18 +2,8 @@
 import { Select } from '@/components/Dropdown';
 import { useEffect, useState } from 'react';
 import { ActionButton, RowActions } from '../../../components/Toolbar';
+import { api, post, saveCsv } from '@/lib/api';
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
-
-function exportCsv(rows: string[][], filename: string) {
-  const escape = (v: string) => `"${v.replace(/"/g, '""')}"`;
-  const csv = rows.map(r => r.map(escape).join(',')).join('\n');
-  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = filename; a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
 
 const SECTIONS = [
   { key: 'nav',        label: 'Navigation',        icon: '🗂️' },
@@ -212,11 +202,9 @@ export default function AdminTranslationsPage() {
   const [editId, setEditId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
-  const token = () => localStorage.getItem('admin_token');
 
   useEffect(() => {
-    fetch(`${API}/cms/admin/admin-ui-translations`, { headers: { Authorization: `Bearer ${localStorage.getItem('admin_token')}` } })
-      .then(r => r.ok ? r.json() : null)
+    api('/cms/admin/admin-ui-translations')
       .then(data => {
         const existing: Translation[] = data?.content?.strings || [];
         setStrings(existing.length > 0 ? existing : SEED.map(s => ({ ...s, id: genId() })));
@@ -234,14 +222,10 @@ export default function AdminTranslationsPage() {
   async function persist(next: Translation[]) {
     setSaving(true);
     try {
-      await fetch(`${API}/cms`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token()}` },
-        body: JSON.stringify({ key: 'admin-ui-translations', slug: 'admin-ui-translations', title: 'Admin UI Translations', status: 'PUBLISHED', content: { strings: next } }),
-      });
+      await post('/cms', { key: 'admin-ui-translations', slug: 'admin-ui-translations', title: 'Admin UI Translations', status: 'PUBLISHED', content: { strings: next } });
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
-    } finally { setSaving(false); }
+    } catch { alert('Not saved — try again.'); } finally { setSaving(false); }
   }
 
   function saveInline(id: string, en: string, ka: string) {
@@ -308,7 +292,7 @@ export default function AdminTranslationsPage() {
             const sec = (id: string) => SECTIONS.find(s => s.key === id)?.label || id;
             const rows: string[][] = [['Key', 'Section', 'English', 'Georgian']];
             strings.forEach(s => rows.push([s.key, sec(s.section), s.en, s.ka]));
-            exportCsv(rows, 'admin-translations.csv');
+            saveCsv(rows, 'admin-translations.csv');
           }}>↓ Export CSV</ActionButton>
           <ActionButton onClick={() => { setForm(EMPTY_FORM); setEditId(null); setModal('add'); }}>+ Add String</ActionButton>
         </div>

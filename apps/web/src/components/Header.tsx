@@ -17,6 +17,7 @@ import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { Icon } from '@/components/ui/icons';
 import IconButton from '@/components/ui/IconButton';
 import Caps from '@/components/ui/Caps';
+import { savedToken } from '@/lib/authFetch';
 
 /** An icon for a menu link, picked from where it goes. */
 const iconFor = (href: string) =>
@@ -70,7 +71,7 @@ export default function Header({ site }: { site: StoredContent | null }) {
   // Read after every navigation: signing in and out happen on other pages.
   // <html data-auth> follows, for the next refresh's first paint.
   useEffect(() => {
-    const yes = !!localStorage.getItem('pupbox_token');
+    const yes = !!savedToken();
     setSignedIn(yes);
     document.documentElement.dataset.auth = yes ? 'in' : 'out';
     setDrawer(false);
@@ -79,7 +80,7 @@ export default function Header({ site }: { site: StoredContent | null }) {
   // Who you are: shown at once from what this device remembers, then refreshed.
   useEffect(() => {
     if (!signedIn) { setMe({ initial: '', name: '', email: '' }); return; }
-    const token = localStorage.getItem('pupbox_token') || '';
+    const token = savedToken() || '';
     // Only if it was saved for this same sign-in (another account may have signed in since).
     try { const saved = JSON.parse(localStorage.getItem('pupbox_me') || 'null'); if (saved?.t === token.slice(-16)) setMe(saved); } catch { /* ignore */ }
     fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1'}/users/me`, { headers: { Authorization: `Bearer ${token}` } })

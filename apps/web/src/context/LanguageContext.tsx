@@ -5,6 +5,8 @@ import { BUILT_IN_STRINGS as FB } from '@pupbox/content';
 import { LANG_COOKIE } from '@/lib/lang';
 import { usePathname, useRouter } from 'next/navigation';
 import { langOf, stripLang, withLang } from '@/lib/path';
+import { API_URL as API } from '@/lib/api';
+import { savedToken } from '@/lib/authFetch';
 
 type Lang = 'en' | 'ka';
 
@@ -22,11 +24,10 @@ const LanguageContext = createContext<LanguageContextType>({
   t: (key) => FB[key]?.ka ?? key,
 });
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 
 /** Signed-in customers get emails in the language they use the site in. */
 export function saveForEmails(l: Lang) {
-  const token = localStorage.getItem('pupbox_token');
+  const token = savedToken();
   if (!token) return;
   fetch(`${API}/users/me`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ language: l }) }).catch(() => {});
 }
