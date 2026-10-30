@@ -3,8 +3,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { cmsSlug, mergedSections, pageByKey, type StoredContent } from '@pupbox/content';
 import { FieldEditor } from '../_components/fields';
+import { getOr, post } from '@/lib/api';
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 const SITE = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
 
 type Values = Record<string, Record<string, unknown>>;
@@ -34,8 +34,7 @@ export default function PageEditor() {
     setLoading(true);
     let stored: StoredContent | null = null;
     try {
-      const res = await fetch(`${API}/cms/admin/${cmsSlug(page)}`, { headers: { Authorization: `Bearer ${localStorage.getItem('admin_token')}` } });
-      if (res.ok) stored = (await res.json())?.content ?? null;
+      stored = (await getOr<any>(`/cms/admin/${cmsSlug(page)}`, null))?.content ?? null;
     } catch {}
     const v = mergedSections(page, stored);
     const e = stored?.enabled ?? {};
@@ -61,15 +60,12 @@ export default function PageEditor() {
     setSaving(true);
     setMessage(null);
     try {
-      const res = await fetch(`${API}/cms`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('admin_token')}` },
-        body: JSON.stringify({
-          key: cmsSlug(page), slug: cmsSlug(page), title: page.label, status: 'PUBLISHED',
-          content: { version: 2, sections: values, enabled } satisfies StoredContent,
-        }),
+      await post('/cms', {
+        key: cmsSlug(page), slug: cmsSlug(page), title: page.label, status: 'PUBLISHED',
+        content: { version: 2, sections: values, enabled } satisfies StoredContent,
+      }).catch((e) => {
+        throw new Error(e.status === 401 ? 'Your session expired — sign in again, then save.' : `Not saved (error ${e.status ?? 'no connection'}).`);
       });
-      if (!res.ok) throw new Error(res.status === 401 ? 'Your session expired — sign in again, then save.' : `Not saved (error ${res.status}).`);
       setSavedSnapshot(snapshot);
       setMessage({ ok: true, text: 'Saved. The site shows it within 30 seconds.' });
     } catch (e: any) {

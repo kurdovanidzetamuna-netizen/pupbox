@@ -2,9 +2,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import Dropdown from '@/components/Dropdown';
 import { DateInput } from '@/components/DateField';
+import { api, download as fetchFile, getOr } from '@/lib/api';
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
-const token = () => (typeof window === 'undefined' ? '' : localStorage.getItem('admin_token') || '');
 const gel = (n: number) => `₾${Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
 const DAY = 86400_000;
 /** Today in Tbilisi as YYYY-MM-DD. */
@@ -77,8 +76,7 @@ function Insights() {
   const [metric, setMetric] = useState<'collected' | 'orders' | 'refunded'>('collected');
 
   useEffect(() => {
-    const h = { headers: { Authorization: `Bearer ${token()}` } };
-    const get = (u: string) => fetch(`${API}/${u}`, h).then((r) => (r.ok ? r.json() : [])).catch(() => []);
+    const get = (u: string) => getOr<any>(`/${u}`, []);
     get('admin/box-tiers').then((d) => setTiers(Array.isArray(d) ? d : []));
     get('admin/subscription-plans').then((d) => setPlans(Array.isArray(d) ? d.filter((p: any) => !p.deletedAt) : []));
     get('admin/categories').then((d) => setCats(Array.isArray(d) ? d.filter((c: any) => !c.deletedAt) : []));
@@ -95,8 +93,7 @@ function Insights() {
     if (!from || !to) return;
     let live = true;
     setLoading(true); setError('');
-    fetch(`${API}/reports/insights?${query}`, { headers: { Authorization: `Bearer ${token()}` } })
-      .then(async (r) => { const d = await r.json().catch(() => ({})); if (!r.ok) throw new Error(Array.isArray(d.message) ? d.message[0] : d.message || 'Could not load the numbers.'); return d; })
+    api(`/reports/insights?${query}`, { fallback: 'Could not load the numbers.' })
       .then((d) => {
         if (!live) return;
         setData(d);
@@ -115,11 +112,7 @@ function Insights() {
   }
 
   async function csv() {
-    const r = await fetch(`${API}/reports/insights.csv?${query}`, { headers: { Authorization: `Bearer ${token()}` } });
-    if (!r.ok) { alert('Download failed.'); return; }
-    const url = URL.createObjectURL(await r.blob());
-    const a = document.createElement('a'); a.href = url; a.download = `pupbox-insights-${from}-to-${to}.csv`; a.click();
-    URL.revokeObjectURL(url);
+    await fetchFile(`/reports/insights.csv?${query}`, `pupbox-insights-${from}-to-${to}.csv`).catch(() => alert('Download failed.'));
   }
 
   const active = Object.values(f).reduce((n, v) => n + v.length, 0);
@@ -348,16 +341,8 @@ function Exports() {
       const params = new URLSearchParams();
       if (hasDateRange && from) params.set('from', from);
       if (hasDateRange && to) params.set('to', to);
-      const res = await fetch(`${API}/reports/${key}?${params}`, { headers: { Authorization: `Bearer ${token()}` } });
-      if (!res.ok) {
-        const e = await res.json().catch(() => ({}));
-        alert(e.message || `Download failed (error ${res.status}).`);
-        return;
-      }
-      const url = URL.createObjectURL(await res.blob());
-      const a = document.createElement('a');
-      a.href = url; a.download = `${key}-report.csv`; a.click();
-      URL.revokeObjectURL(url);
+      try { await fetchFile(`/reports/${key}?${params}`, `${key}-report.csv`); }
+      catch (e: any) { alert(e.status ? e.message : 'Download failed.'); return; }
       setDownloaded((d) => [...d, key]);
       setTimeout(() => setDownloaded((d) => d.filter((x) => x !== key)), 3000);
     } finally {

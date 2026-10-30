@@ -5,8 +5,8 @@ import { useEffect, useState } from 'react';
 import FormField, { inputClass } from '@/components/FormField';
 import ErrorPopup from '@/components/ErrorPopup';
 import { NumInput } from '@/components/NumberField';
+import { del, getOr, post, put } from '@/lib/api';
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 const EMOJI = ['🥩', '🍗', '🐟', '🧀', '🍪', '🥕', '🦴', '🦆', '🪢', '🏀', '🧩', '🐿️', '🪃', '🧸', '🧴', '🐾', '🦷', '🧤', '🌿', '🎀', '🥣', '🏷️', '🧣', '🛏️'];
 const EMPTY = { emoji: '🦴', name: '', nameKa: '', short: '', shortKa: '', categoryId: '', price: '', stock: '50', popular: false, mystery: true, active: true };
 type Form = typeof EMPTY;
@@ -30,16 +30,12 @@ export default function CustomBoxItemsPage() {
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [popup, setPopup] = useState<string[]>([]);
-  const token = () => localStorage.getItem('admin_token');
 
   async function load() {
     setLoading(true);
-    const [p, c] = await Promise.all([
-      fetch(`${API}/admin/products?limit=500`, { headers: { Authorization: `Bearer ${token()}` } }),
-      fetch(`${API}/admin/categories`, { headers: { Authorization: `Bearer ${token()}` } }),
-    ]);
-    if (p.ok) { const d = await p.json(); setItems((d.items ?? []).filter((x: any) => x.inCustomBox && !x.standaloneSale)); }
-    if (c.ok) { const d = await c.json(); setCats(d.items ?? d ?? []); }
+    const [p, c] = await Promise.all([getOr<any>('/admin/products?limit=500', null), getOr<any>('/admin/categories', null)]);
+    if (p) setItems((p.items ?? []).filter((x: any) => x.inCustomBox && !x.standaloneSale));
+    if (c) setCats(c.items ?? c ?? []);
     setLoading(false);
   }
   useEffect(() => { load(); }, []);
@@ -71,18 +67,18 @@ export default function CustomBoxItemsPage() {
       status: form.active ? 'ACTIVE' : 'INACTIVE', standaloneSale: false, includedInBox: false, inCustomBox: true,
       inMystery: form.mystery, boxEmoji: form.emoji, boxPopular: form.popular, stockQuantity: Number(form.stock),
     };
-    const res = await fetch(edit ? `${API}/admin/products/${edit.id}` : `${API}/admin/products`, {
-      method: edit ? 'PUT' : 'POST', headers: { Authorization: `Bearer ${token()}`, 'Content-Type': 'application/json' }, body: JSON.stringify(body),
-    });
-    setSaving(false);
-    if (res.ok) { setShow(false); load(); }
-    else { const d = await res.json().catch(() => ({})); setPopup([Array.isArray(d.message) ? d.message.join(' ') : d.message || 'Could not save']); }
+    try {
+      await (edit ? put(`/admin/products/${edit.id}`, body) : post('/admin/products', body));
+      setShow(false); load();
+    } catch (e: any) {
+      const m = e.body?.message;
+      setPopup([Array.isArray(m) ? m.join(' ') : m || 'Could not save']);
+    } finally { setSaving(false); }
   }
 
   async function remove(x: any) {
     if (!confirm(`Remove “${x.name}” from the custom box?`)) return;
-    const res = await fetch(`${API}/admin/products/${x.id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token()}` } });
-    if (!res.ok) setPopup(['Could not remove it']);
+    await del(`/admin/products/${x.id}`).catch(() => setPopup(['Could not remove it']));
     load();
   }
 

@@ -3,9 +3,8 @@ import { useEffect, useState } from 'react';
 import SideDrawer from '@/components/SideDrawer';
 import Dropdown from '@/components/Dropdown';
 import { ActionButton } from '@/components/Toolbar';
+import { getOr, post } from '@/lib/api';
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
-const headers = () => ({ Authorization: `Bearer ${localStorage.getItem('admin_token')}`, 'Content-Type': 'application/json' });
 
 export const GROUPS = [
   { value: 'all', label: 'Everyone' },
@@ -32,14 +31,14 @@ export default function Composer({ open, onClose, onSent, pushReady, ids, who }:
   useEffect(() => { if (open) { setF(ids ? { ...EMPTY, consentOnly: false } : EMPTY); setError(''); } }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!open || ids) return;
-    fetch(`${API}/admin/customers?limit=5`, { headers: headers() }).then((r) => r.json()).then((d) => setTags(d.tags ?? [])).catch(() => {});
+    getOr<any>('/admin/customers?limit=5', {}).then((d) => setTags(d.tags ?? []));
   }, [open, ids]);
   const audience = ids ? { group: 'customers', ids } : { group: f.group, tag: f.group === 'tag' ? f.tag : undefined, consentOnly: f.consentOnly };
   useEffect(() => {
     if (!open) return;
     setCount(null);
     const t = setTimeout(() => {
-      fetch(`${API}/admin/messages/audience`, { method: 'POST', headers: headers(), body: JSON.stringify(audience) }).then((r) => (r.ok ? r.json() : null)).then(setCount).catch(() => {});
+      post('/admin/messages/audience', audience).then(setCount, () => setCount(null));
     }, 250);
     return () => clearTimeout(t);
   }, [open, f.group, f.tag, f.consentOnly, ids?.join(',')]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -51,10 +50,8 @@ export default function Composer({ open, onClose, onSent, pushReady, ids, who }:
     if (!ready || !count) return;
     if (!confirm(`Send this to ${count.customers} customer${count.customers === 1 ? '' : 's'}? It can’t be taken back.`)) return;
     setBusy(true); setError('');
-    const r = await fetch(`${API}/admin/messages`, { method: 'POST', headers: headers(), body: JSON.stringify({ ...f, link: f.link.trim() || undefined, ctaTextEn: f.ctaTextEn.trim() || undefined, ctaTextKa: f.ctaTextKa.trim() || undefined, group: undefined, tag: undefined, consentOnly: undefined, audience, push: pushReady && f.push }) });
-    const d = await r.json().catch(() => ({}));
-    setBusy(false);
-    if (!r.ok) { setError((Array.isArray(d.message) ? d.message[0] : d.message) || 'Not sent.'); return; }
+    try { await post('/admin/messages', { ...f, link: f.link.trim() || undefined, ctaTextEn: f.ctaTextEn.trim() || undefined, ctaTextKa: f.ctaTextKa.trim() || undefined, group: undefined, tag: undefined, consentOnly: undefined, audience, push: pushReady && f.push }, 'Not sent.'); }
+    catch (e: any) { setError(e.message); return; } finally { setBusy(false); }
     onSent();
   }
 

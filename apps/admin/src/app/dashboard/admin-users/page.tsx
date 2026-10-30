@@ -1,8 +1,8 @@
 'use client';
 import { Select } from '@/components/Dropdown';
 import { useEffect, useState } from 'react';
+import { del, getOr, patch, post } from '@/lib/api';
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 
 interface Role { id: string; name: string; }
 interface AdminUser {
@@ -66,20 +66,18 @@ export default function AdminUsersPage() {
   const [error, setError] = useState('');
   const [confirmDelete, setConfirmDelete] = useState<AdminUser | null>(null);
 
-  const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : '';
-  const headers: HeadersInit = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
 
   async function load(p = page, q = search) {
     setLoading(true);
     try {
-      const res = await fetch(`${API}/admin/users?page=${p}&limit=20${q ? `&search=${encodeURIComponent(q)}` : ''}`, { headers });
-      if (res.ok) { const data = await res.json(); setUsers(data.items); setPages(data.pages); }
+      const data = await getOr<any>(`/admin/users?page=${p}&limit=20${q ? `&search=${encodeURIComponent(q)}` : ''}`, null);
+      if (data) { setUsers(data.items); setPages(data.pages); }
     } finally { setLoading(false); }
   }
 
   async function loadRoles() {
-    const res = await fetch(`${API}/admin/roles`, { headers });
-    if (res.ok) setRoles(await res.json());
+    const d = await getOr<any>('/admin/roles', null);
+    if (d) setRoles(d);
   }
 
   useEffect(() => { load(); loadRoles(); }, []);
@@ -97,17 +95,14 @@ export default function AdminUsersPage() {
     try {
       const body: any = { ...form };
       if (!body.password) delete body.password;
-      const res = await fetch(
-        editing ? `${API}/admin/users/${editing.id}` : `${API}/admin/users`,
-        { method: editing ? 'PATCH' : 'POST', headers, body: JSON.stringify(body) }
-      );
-      if (!res.ok) { const e = await res.json(); setError(e.message || 'Error'); return; }
+      try { await (editing ? patch(`/admin/users/${editing.id}`, body) : post('/admin/users', body)); }
+      catch (e: any) { setError(e.body?.message || 'Error'); return; }
       setShowModal(false); load();
     } finally { setSaving(false); }
   }
 
   async function doDelete(u: AdminUser) {
-    await fetch(`${API}/admin/users/${u.id}`, { method: 'DELETE', headers });
+    await del(`/admin/users/${u.id}`).catch(() => {});
     setConfirmDelete(null); load();
   }
 

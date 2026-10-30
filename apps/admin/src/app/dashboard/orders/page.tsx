@@ -2,10 +2,12 @@
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import Dropdown, { type DropdownOption } from '@/components/Dropdown';
-import { API, authHeaders, STATUS_LABEL, TYPE_LABELS, TYPE_ICONS, EDITABLE, StatusBadge, TypeBadge, RefundDueBadge, Thumb } from './_lib';
+import { api, getOr } from '@/lib/api';
+import { STATUS_LABEL, TYPE_LABELS, TYPE_ICONS, EDITABLE, StatusBadge, TypeBadge, RefundDueBadge, Thumb } from './_lib';
 import OrderDrawer from './_components/OrderDrawer';
 import { categoryTree, type Cat } from './_components/CategoryPicker';
 import { DateInput } from '@/components/DateField';
+import type { Api } from '@pupbox/content';
 
 const gel = (v: number) => (Math.abs(v) >= 10000 ? `₾${(v / 1000).toFixed(1)}k` : `₾${v.toLocaleString('en-US', { maximumFractionDigits: 0 })}`);
 const PAGE = 20;
@@ -40,7 +42,7 @@ const label = { fontSize: 11, color: 'var(--slate-400)', fontWeight: 700, textTr
  * its page, ✎ to edit one that hasn't shipped. Cards instead of a table on phones.
  */
 export default function AdminOrdersPage() {
-  const [orders, setOrders] = useState<any[]>([]);
+  const [orders, setOrders] = useState<Api.AdminOrderRow[]>([]);
   const [plans, setPlans] = useState<any[]>([]);
   const [categories, setCategories] = useState<Cat[]>([]);
   const [total, setTotal] = useState(0);
@@ -55,7 +57,7 @@ export default function AdminOrdersPage() {
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState('');
   const [loading, setLoading] = useState(true);
-  const [selected, setSelected] = useState<{ order: any; edit: boolean } | null>(null);
+  const [selected, setSelected] = useState<{ order: Api.AdminOrderRow; edit: boolean } | null>(null);
   const [summary, setSummary] = useState<any>(null);
 
   // Filters change fast (two ticks in a row): only the newest answer may land.
@@ -73,7 +75,7 @@ export default function AdminOrdersPage() {
       if (dateTo) q.set('dateTo', dateTo);
       if (search.trim()) q.set('search', search.trim());
       if (sort) { q.set('sortBy', sort.split('_')[0]); q.set('sortDir', sort.split('_')[1]); }
-      const data = await (await fetch(`${API}/orders/admin?${q}`, { headers: authHeaders() })).json();
+      const data = await api(`/orders/admin?${q}`);
       if (mine !== latest.current) return;
       setOrders(data.orders || []);
       setTotal(data.total || 0);
@@ -91,10 +93,10 @@ export default function AdminOrdersPage() {
   }, []);
 
   useEffect(() => {
-    fetch(`${API}/admin/subscription-plans`, { headers: authHeaders() }).then((r) => r.json())
+    api('/admin/subscription-plans')
       .then((d) => setPlans((d.items || d || []).sort((a: any, b: any) => (a.tier?.sortOrder ?? 99) - (b.tier?.sortOrder ?? 99) || a.durationValue - b.durationValue)))
       .catch(() => {});
-    fetch(`${API}/admin/categories`, { headers: authHeaders() }).then((r) => r.json()).then((d) => setCategories(categoryTree(Array.isArray(d) ? d : []))).catch(() => {});
+    getOr<any>('/admin/categories', []).then((d) => setCategories(categoryTree(Array.isArray(d) ? d : [])));
   }, []);
 
   const f = <T,>(set: (v: T) => void) => (v: T) => { set(v); setPage(1); };
@@ -298,7 +300,7 @@ export default function AdminOrdersPage() {
 const when = (d: string) => new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 
 /** Up to three little pictures and the first item's name, "+2 more". */
-function Inside({ items = [] }: { items?: any[] }) {
+function Inside({ items = [] }: { items?: Api.OrderItem[] }) {
   const n = items.reduce((s, i) => s + i.quantity, 0);
   return (
     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
@@ -313,7 +315,7 @@ function Inside({ items = [] }: { items?: any[] }) {
   );
 }
 
-function RowActions({ o, onEdit }: { o: any; onEdit: () => void }) {
+function RowActions({ o, onEdit }: { o: Api.AdminOrderRow; onEdit: () => void }) {
   const small = { fontSize: 12, fontWeight: 700, borderRadius: 9, padding: '6px 10px', textDecoration: 'none', cursor: 'pointer', whiteSpace: 'nowrap' as const };
   return (
     // Invoice always first, Edit always second (an empty slot when it can't be edited) — nothing jumps around.

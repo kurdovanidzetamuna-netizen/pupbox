@@ -3,8 +3,8 @@ import { Select } from '@/components/Dropdown';
 import { useEffect, useState } from 'react';
 import FormField, { inputClass } from '@/components/FormField';
 import LangTabs, { type Lang } from '@/components/LangTabs';
+import { api, patch, post } from '@/lib/api';
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 
 const inp = { width: '100%', border: '1px solid var(--slate-200)', borderRadius: 10, padding: '9px 14px', fontSize: 13, outline: 'none', boxSizing: 'border-box' as const };
 const lbl = { display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--slate-400)', textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: 6 };
@@ -18,13 +18,11 @@ export default function AdminCmsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  function token() { return localStorage.getItem('admin_token') || ''; }
 
   async function load() {
     setLoading(true);
     try {
-      const res = await fetch(`${API}/cms/admin/all`, { headers: { Authorization: `Bearer ${token()}` } });
-      const data = await res.json();
+      const data = await api('/cms/admin/all');
       setPages(Array.isArray(data) ? data : []);
     } catch { } finally {
       setLoading(false);
@@ -39,11 +37,7 @@ export default function AdminCmsPage() {
     const hasKa = Object.values(ka).some(v => v.trim() !== '');
     const body: any = { title: editing.title, seoTitle: editing.seoTitle, seoDesc: editing.seoDesc, status: editing.status, content: { html: editing.contentHtml } };
     if (hasKa) body.translations = { ka: { ...ka, content: { html: ka.contentHtml } } };
-    await fetch(`${API}/cms/${editing.slug}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token()}` },
-      body: JSON.stringify(body),
-    });
+    await patch(`/cms/${editing.slug}`, body).catch(() => {});
     setSaving(false);
     setEditing(null);
     load();
@@ -52,11 +46,7 @@ export default function AdminCmsPage() {
   async function createPage() {
     const slug = prompt('Page slug (e.g. "about", "terms"):');
     if (!slug) return;
-    await fetch(`${API}/cms`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token()}` },
-      body: JSON.stringify({ key: slug, title: slug, slug, status: 'DRAFT' }),
-    });
+    await post('/cms', { key: slug, title: slug, slug, status: 'DRAFT' }).catch(() => {});
     load();
   }
 

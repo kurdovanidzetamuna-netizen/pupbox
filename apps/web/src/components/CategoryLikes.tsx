@@ -1,8 +1,8 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useLanguage } from '@/context/LanguageContext';
+import { API_URL as API } from '@/lib/api';
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 
 export type ShopCategory = { id: string; name: string; slug: string; parentId: string | null; sortOrder?: number; translations?: any };
 

@@ -1,7 +1,5 @@
 import type { BoxConfig, GiftBox } from './types';
 
-export const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
-
 export const EMPTY_FORM = {
   name: '', slug: '', durationValue: 1, durationUnit: 'MONTH', boxCount: 1,
   monthlyPrice: '', discountPercent: '',

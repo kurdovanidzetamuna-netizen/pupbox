@@ -4,9 +4,8 @@ import Link from 'next/link';
 import FormField, { inputClass } from '@/components/FormField';
 import LangTabs, { type Lang } from '@/components/LangTabs';
 import { ActionButton, StatCard, StatCards, Toolbar } from '@/components/Toolbar';
+import { del, getOr, post, put } from '@/lib/api';
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
-const headers = () => ({ Authorization: `Bearer ${localStorage.getItem('admin_token')}`, 'Content-Type': 'application/json' });
 const gel = (n: any) => `₾${Number(n).toFixed(Number(n) % 1 ? 2 : 0)}`;
 
 const EMPTY = {
@@ -32,8 +31,7 @@ export default function BoxTiersPage() {
 
   async function load() {
     setLoading(true);
-    const r = await fetch(`${API}/admin/box-tiers`, { headers: headers() }).catch(() => null);
-    setTiers(r?.ok ? await r.json() : []);
+    setTiers(await getOr<any[]>('/admin/box-tiers', []));
     setLoading(false);
   }
   useEffect(() => { load(); }, []);
@@ -59,16 +57,15 @@ export default function BoxTiersPage() {
       emoji: edit.emoji, featured: edit.featured, isActive: edit.isActive, sortOrder: Number(edit.sortOrder),
       translations: { ...(edit.translations || {}), ka: { ...edit.ka, highlights: lines(edit.ka.highlights) } },
     };
-    const r = await fetch(edit.id ? `${API}/admin/box-tiers/${edit.id}` : `${API}/admin/box-tiers`, { method: edit.id ? 'PUT' : 'POST', headers: headers(), body: JSON.stringify(body) });
-    setSaving(false);
-    if (!r.ok) { const d = await r.json().catch(() => ({})); setError(Array.isArray(d.message) ? d.message.join(', ') : d.message || 'Save failed'); return; }
+    try { await (edit.id ? put(`/admin/box-tiers/${edit.id}`, body) : post('/admin/box-tiers', body)); }
+    catch (e: any) { const m = e.body?.message; setError(Array.isArray(m) ? m.join(', ') : m || 'Save failed'); return; }
+    finally { setSaving(false); }
     setEdit(null); load();
   }
 
   async function remove(t: any) {
     if (!confirm(`Delete "${t.name}"?`)) return;
-    const r = await fetch(`${API}/admin/box-tiers/${t.id}`, { method: 'DELETE', headers: headers() });
-    if (!r.ok) { const d = await r.json().catch(() => ({})); alert(d.message || 'Could not delete'); return; }
+    try { await del(`/admin/box-tiers/${t.id}`); } catch (e: any) { alert(e.body?.message || 'Could not delete'); return; }
     load();
   }
 

@@ -3,8 +3,7 @@ import { Select } from '@/components/Dropdown';
 import MapLink from '@/components/MapLink';
 import { useState, useEffect, useRef } from 'react';
 import { ALLERGENS } from '@pupbox/content';
-
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
+import { api, getOr, patch, post } from '@/lib/api';
 
 const STATUS_COLORS: Record<string, { background: string; color: string; border: string }> = {
   ACTIVE:         { background: 'var(--green-50)', color: 'var(--green-800)', border: '1px solid var(--green-200)' },
@@ -63,11 +62,8 @@ function DogEditor({ sub, onSaved, onDone }: { sub: any; onSaved: () => void; on
   const toggle = (k: string) => setV(x => ({ ...x, allergies: has(k) ? x.allergies.filter(a => a.toLowerCase() !== k.toLowerCase()) : [...x.allergies, k] }));
   async function save() {
     if (!v.name.trim()) return setErr('The dog needs a name.');
-    const res = await fetch(`${API}/admin/subscriptions/${sub.id}/dog`, {
-      method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('admin_token')}` },
-      body: JSON.stringify({ name: v.name, size: v.size, allergies: v.allergies, specialNotes: v.specialNotes }),
-    });
-    if (!res.ok) { const r = await res.json().catch(() => ({})); return setErr((Array.isArray(r.message) ? r.message[0] : r.message) || 'Not saved.'); }
+    try { await patch(`/admin/subscriptions/${sub.id}/dog`, { name: v.name, size: v.size, allergies: v.allergies, specialNotes: v.specialNotes }, 'Not saved.'); }
+    catch (e: any) { return setErr(e.message); }
     onSaved(); onDone();
   }
   const custom = v.allergies.filter(a => !ALLERGENS.some(x => x.key.toLowerCase() === a.toLowerCase()));
@@ -104,12 +100,9 @@ function AddressEditor({ sub, onSaved, onDone }: { sub: any; onSaved: () => void
   const [v, setV] = useState({ firstName: a.firstName ?? '', lastName: a.lastName ?? '', phone: a.phone ?? '', city: a.city ?? '', addressLine1: a.addressLine1 ?? '', addressLine2: a.addressLine2 ?? '' });
   const [err, setErr] = useState('');
   async function save() {
-    const res = await fetch(`${API}/admin/subscriptions/${sub.id}/address`, {
-      method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('admin_token')}` },
-      body: JSON.stringify({ ...v, addressLine2: v.addressLine2 || undefined }),
-    });
-    const r = await res.json().catch(() => ({}));
-    if (!res.ok) return setErr((Array.isArray(r.message) ? 'Check: name, a valid phone, city and street are all needed.' : r.message) || 'Not saved.');
+    let r;
+    try { r = await patch(`/admin/subscriptions/${sub.id}/address`, { ...v, addressLine2: v.addressLine2 || undefined }, 'Not saved.'); }
+    catch (e: any) { return setErr(Array.isArray(e.body?.message) ? 'Check: name, a valid phone, city and street are all needed.' : e.message); }
     if (r.alreadyPacked) alert('Saved. This month’s box was already packed with the old address — relabel it by hand.');
     onSaved(); onDone();
   }
@@ -287,14 +280,12 @@ export default function AdminSubscriptionsPage() {
     const seq = ++requestSeq.current;
     setLoading(true);
     try {
-      const token = localStorage.getItem('admin_token');
       const params = new URLSearchParams();
       if (status) params.set('status', status);
       if (gifts) params.set('gifts', '1');
       const qs = params.toString() ? `?${params}` : '';
-      const res = await fetch(`${API}/admin/subscriptions${qs}`, { headers: { Authorization: `Bearer ${token}` } });
-      if (res.ok) {
-        const data = await res.json();
+      const data = await getOr<any>(`/admin/subscriptions${qs}`, null);
+      if (data) {
         if (seq !== requestSeq.current) return; // a newer request has since been issued
         setSubs(data.items || []);
         setTotal(data.total || 0);
@@ -316,25 +307,22 @@ export default function AdminSubscriptionsPage() {
   async function resendGiftCard(id: string) {
     setResending(id);
     try {
-      const token = localStorage.getItem('admin_token');
-      const res = await fetch(`${API}/admin/gifts/${id}/resend`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
-      const body = await res.json().catch(() => ({}));
-      alert(res.ok ? `Gift note resent to ${body.to}` : `Could not resend: ${body.message ?? res.status}`);
-    } catch {
-      alert('Could not resend the gift note.');
+      const body = await post(`/admin/gifts/${id}/resend`);
+      alert(`Gift note resent to ${body.to}`);
+    } catch (e: any) {
+      alert(e.status ? `Could not resend: ${e.message}` : 'Could not resend the gift note.');
     } finally {
       setResending(null);
     }
   }
 
-  const auth = () => ({ Authorization: `Bearer ${localStorage.getItem('admin_token')}`, 'Content-Type': 'application/json' });
-
   /** Cancel under the shop's rule — admin sees what the customer gets before confirming. */
   async function askCancel(sub: any, e?: React.MouseEvent) {
     e?.stopPropagation();
-    const res = await fetch(`${API}/admin/subscriptions/${sub.id}/cancel-preview`, { headers: auth() });
-    const p = await res.json().catch(() => null);
-    if (!res.ok || !p) { alert(p?.message || 'Could not work out the cancellation.'); return; }
+    let p;
+    try { p = await api(`/admin/subscriptions/${sub.id}/cancel-preview`, { fallback: 'Could not work out the cancellation.' }); }
+    catch (e: any) { alert(e.message); return; }
+    if (!p) { alert('Could not work out the cancellation.'); return; }
     const name = `${sub.user?.firstName} ${sub.user?.lastName}`;
     const what = p.kind === 'free'
       ? `Within the free ${p.freeHours}-hour window: no box is sent and ₾${p.refund.toFixed(2)} is refunded in full.`
@@ -342,8 +330,7 @@ export default function AdminSubscriptionsPage() {
     setConfirm({
       title: `Cancel ${name}’s subscription?`, message: what, label: 'Yes, cancel', color: 'var(--red-600)',
       run: async () => {
-        const r = await fetch(`${API}/admin/subscriptions/${sub.id}/cancel`, { method: 'POST', headers: auth(), body: JSON.stringify({ reason: 'Cancelled by admin' }) });
-        if (!r.ok) alert((await r.json().catch(() => ({}))).message || 'Not cancelled.');
+        await post(`/admin/subscriptions/${sub.id}/cancel`, { reason: 'Cancelled by admin' }, 'Not cancelled.').catch((e) => alert(e.message));
       },
     });
   }
@@ -353,8 +340,7 @@ export default function AdminSubscriptionsPage() {
     setConfirm({
       title: 'Resume this subscription?', message: `${sub.user?.firstName}’s boxes start again from the next monthly list.`, label: 'Yes, resume', color: 'var(--teal-600)',
       run: async () => {
-        const r = await fetch(`${API}/admin/subscriptions/${sub.id}`, { method: 'PATCH', headers: auth(), body: JSON.stringify({ status: 'ACTIVE' }) });
-        if (!r.ok) alert((await r.json().catch(() => ({}))).message || 'Not resumed.');
+        await patch(`/admin/subscriptions/${sub.id}`, { status: 'ACTIVE' }, 'Not resumed.').catch((e) => alert(e.message));
       },
     });
   }
@@ -514,8 +500,8 @@ export default function AdminSubscriptionsPage() {
           onResume={sub => askResume(sub)}
           onSaved={async () => {
             // Show the edit straight away in the open panel and in the list.
-            const r = await fetch(`${API}/admin/subscriptions/${selected.id}`, { headers: auth() });
-            if (r.ok) { const fresh = await r.json(); setSelected((cur: any) => (cur ? { ...cur, ...fresh } : cur)); }
+            const fresh = await getOr<any>(`/admin/subscriptions/${selected.id}`, null);
+            if (fresh) { setSelected((cur: any) => (cur ? { ...cur, ...fresh } : cur)); }
             load();
           }}
         />

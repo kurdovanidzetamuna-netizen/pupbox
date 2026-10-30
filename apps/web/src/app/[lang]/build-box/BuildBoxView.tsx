@@ -50,11 +50,11 @@ export default function BuildBoxView({ products, config: raw }: { products: any[
     if (loaded.current) return;
     if (editId) {
       if (!ready) return;
-      const line = cart?.items?.find((i: any) => i.id === editId && i.customBox);
-      if (line) {
-        setPicks(Object.fromEntries(line.customBox.items.map((x: any) => [x.productId, x.quantity])));
-        setMystery(line.customBox.mysteryCount ?? 0);
-        setMonthly(!!line.customBox.monthly);
+      const box = cart?.items?.find((i) => i.id === editId)?.customBox;
+      if (box) {
+        setPicks(Object.fromEntries(box.items.map((x) => [x.productId, x.quantity])));
+        setMystery(box.mysteryCount ?? 0);
+        setMonthly(!!box.monthly);
       }
     } else {
       try {

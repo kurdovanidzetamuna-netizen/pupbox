@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useTheme } from '@/components/ThemeProvider';
+import { AUTH_EVENT, clearToken, getOr, token as savedToken } from '@/lib/api';
 
 const NAV_GROUPS = [
   {
@@ -163,7 +164,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   useEffect(() => {
     function signOut() {
-      localStorage.removeItem('admin_token');
+      clearToken();
       router.replace('/login');
     }
 
@@ -171,7 +172,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     // every page's fetch 401s and the `catch {}` around it renders an empty
     // state — so the panel silently looks like a database with no data in it
     // rather than a session that has run out.
-    const token = localStorage.getItem('admin_token');
+    const token = savedToken();
     if (!token) return signOut();
 
     try {
@@ -184,26 +185,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
     // The token's permission list is from sign-in time; a role edited since
     // (e.g. CRM access added) shows at once with the current list.
-    fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1'}/admin/auth/me`, { headers: { Authorization: `Bearer ${token}` } })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((me) => { if (Array.isArray(me?.permissions)) setPerms(me.permissions); })
-      .catch(() => {});
+    getOr<any>('/admin/auth/me', null).then((me) => { if (Array.isArray(me?.permissions)) setPerms(me.permissions); });
 
     // The local check cannot catch a token the server rejects for other
     // reasons (secret rotated, admin removed), so treat any 401 from our API
-    // as the end of the session too.
-    const originalFetch = window.fetch;
-    window.fetch = async (...args) => {
-      const res = await originalFetch(...args);
-      const url = typeof args[0] === 'string' ? args[0] : (args[0] as Request)?.url ?? '';
-      if (res.status === 401) {
-        if (url.includes('/api/v1/') && !url.includes('/auth/login')) signOut();
-      }
-      // The role doesn't cover this: say so, instead of an empty screen.
-      if (res.status === 403 && url.includes('/api/v1/')) setDenied('Your role doesn’t allow this. Ask an administrator for access.');
-      return res;
+    // as the end of the session too. A 403: the role doesn't cover this —
+    // say so, instead of an empty screen.
+    const onAuth = (e: Event) => {
+      const status = (e as CustomEvent<number>).detail;
+      if (status === 401) signOut();
+      if (status === 403) setDenied('Your role doesn’t allow this. Ask an administrator for access.');
     };
-    return () => { window.fetch = originalFetch; };
+    window.addEventListener(AUTH_EVENT, onAuth);
+    return () => window.removeEventListener(AUTH_EVENT, onAuth);
   }, [router]);
 
   function isActive(href: string, exact?: boolean) {
@@ -253,7 +247,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             )}
             {theme === 'dark' ? 'Light mode' : 'Dark mode'}
           </button>
-          <button onClick={() => { localStorage.removeItem('admin_token'); router.push('/login'); }} style={S.signOut}>
+          <button onClick={() => { clearToken(); router.push('/login'); }} style={S.signOut}>
             <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24" style={{ flexShrink: 0 }}>
               <path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
             </svg>

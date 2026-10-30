@@ -3,6 +3,9 @@ import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { AdminJwtGuard } from '../admin-auth/admin-jwt.guard';
 import { OrdersService } from './orders.service';
+import { OrderStatusService } from './order-status.service';
+import { OrderRefundsService } from './order-refunds.service';
+import { OrderEditService } from './order-edit.service';
 import { AutoRenewService } from '../payments/auto-renew';
 import { IsArray, IsBoolean, IsEnum, IsIn, IsInt, IsNumber, IsOptional, IsString, MaxLength, Min, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
@@ -63,7 +66,13 @@ class AdminEditDto {
 
 @Controller('orders')
 export class OrdersController {
-  constructor(private readonly ordersService: OrdersService, private readonly autoRenew: AutoRenewService) {}
+  constructor(
+    private readonly ordersService: OrdersService,
+    private readonly status: OrderStatusService,
+    private readonly refunds: OrderRefundsService,
+    private readonly edits: OrderEditService,
+    private readonly autoRenew: AutoRenewService,
+  ) {}
 
   @Get('my')
   @ApiBearerAuth()
@@ -113,7 +122,7 @@ export class OrdersController {
   @UseGuards(AdminJwtGuard)
   @AdminPerms({ write: 'orders.manage' })
   adminEdit(@Param('id') id: string, @Body() body: AdminEditDto, @Request() req: any) {
-    return this.ordersService.adminEdit(id, body, req.user?.id);
+    return this.edits.adminEdit(id, body, req.user?.id);
   }
 
   /** Give money back: all, an amount, or chosen items (through Flitt when it can). */
@@ -122,7 +131,7 @@ export class OrdersController {
   @UseGuards(AdminJwtGuard)
   @AdminPerms({ write: 'payments.refund' })
   adminRefund(@Param('id') id: string, @Body() body: RefundNowDto, @Request() req: any) {
-    return this.ordersService.refund(id, body, req.user?.id);
+    return this.refunds.refund(id, body, req.user?.id);
   }
 
   /** An unpaid renewal: charge the saved card now (outside the retry schedule). */
@@ -140,7 +149,7 @@ export class OrdersController {
   @UseGuards(AdminJwtGuard)
   @AdminPerms({ write: 'orders.manage' })
   adminUpdateStatus(@Param('id') id: string, @Body() body: AdminStatusDto) {
-    return this.ordersService.adminUpdateStatus(id, body.status, { refundAmount: body.refundAmount, reason: body.reason });
+    return this.status.adminUpdateStatus(id, body.status, { refundAmount: body.refundAmount, reason: body.reason });
   }
 
   @Post('admin/:id/refund')
@@ -148,7 +157,7 @@ export class OrdersController {
   @UseGuards(AdminJwtGuard)
   @AdminPerms({ write: 'payments.refund' })
   adminRecordRefund(@Param('id') id: string, @Body() body: RefundDto) {
-    return this.ordersService.recordRefund(id, body.amount, body.reason);
+    return this.refunds.recordRefund(id, body.amount, body.reason);
   }
 
   @Patch('admin/:id/tracking')

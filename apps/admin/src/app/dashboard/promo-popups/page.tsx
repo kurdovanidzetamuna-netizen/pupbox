@@ -6,10 +6,9 @@ import DateField from '@/components/DateField';
 import NumberField from '@/components/NumberField';
 import { ActionButton, StatCard, StatCards } from '@/components/Toolbar';
 import { ImageInput } from '../page-builder/_components/fields';
+import { getOr, post } from '@/lib/api';
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 const SLUG = 'config-promo-popups';
-const auth = () => ({ Authorization: `Bearer ${localStorage.getItem('admin_token')}` });
 
 const TRIGGERS = [
   { value: 'on_load', label: 'As soon as the page opens' },
@@ -92,23 +91,22 @@ export default function PromoPopupsPage() {
 
   async function load() {
     const [c, s] = await Promise.all([
-      fetch(`${API}/cms/admin/${SLUG}`, { headers: auth() }).then((r) => (r.ok ? r.json() : null)).catch(() => null),
-      fetch(`${API}/cms/admin/popup-stats`, { headers: auth() }).then((r) => (r.ok ? r.json() : [])).catch(() => []),
+      getOr<any>(`/cms/admin/${SLUG}`, null),
+      getOr<any[]>('/cms/admin/popup-stats', []),
     ]);
     setPopups((c?.content?.popups ?? []) as Popup[]);
     setStats(Object.fromEntries((s as any[]).map((x) => [x.popupId, x])));
   }
   useEffect(() => {
     load();
-    fetch(`${API}/admin/coupons`, { headers: auth() }).then((r) => (r.ok ? r.json() : [])).then((l: any[]) => setCodes(l.filter((x) => x.isActive && !x.stoppedAt).map((x) => x.code))).catch(() => {});
+    getOr<any[]>('/admin/coupons', []).then((l) => setCodes(l.filter((x) => x.isActive && !x.stoppedAt).map((x) => x.code)));
   }, []);
   useEffect(() => { if (toast) { const t = setTimeout(() => setToast(''), 2500); return () => clearTimeout(t); } }, [toast]);
 
   async function saveAll(next: Popup[], msg: string) {
     setBusy(true); setError('');
     try {
-      const r = await fetch(`${API}/cms`, { method: 'POST', headers: { ...auth(), 'Content-Type': 'application/json' }, body: JSON.stringify({ key: SLUG, slug: SLUG, title: 'Promo pop-ups', status: 'PUBLISHED', content: { popups: next } }) });
-      if (!r.ok) throw new Error();
+      await post('/cms', { key: SLUG, slug: SLUG, title: 'Promo pop-ups', status: 'PUBLISHED', content: { popups: next } });
       setPopups(next); setToast(msg); return true;
     } catch { setError('Not saved — try again.'); return false; } finally { setBusy(false); }
   }

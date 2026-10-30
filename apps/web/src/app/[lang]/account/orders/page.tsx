@@ -14,6 +14,7 @@ import Segmented from '@/components/ui/Segmented';
 import PlansList from '@/components/account/PlansList';
 import OrdersList from '@/components/account/OrdersList';
 import Menu from '@/components/ui/Menu';
+import type { Api } from '@pupbox/content';
 
 type Sort = 'new' | 'old' | 'high' | 'low';
 type View = 'grid' | 'list';
@@ -26,7 +27,7 @@ const PLAN_GROUPS: Record<string, (s: any) => boolean> = {
   finished: s => s.status === 'EXPIRED' || (s.status === 'ACTIVE' && !!s.cancelledAt),
   cancelled: s => s.status === 'CANCELLED',
 };
-const ORDER_GROUPS: Record<string, (o: any) => boolean> = {
+const ORDER_GROUPS: Record<string, (o: Api.CustomerOrder) => boolean> = {
   active: o => ['PAID', 'PROCESSING', 'PACKED', 'SHIPPED'].includes(o.status),
   unpaid: o => o.status === 'PENDING',
   delivered: o => o.status === 'DELIVERED',
@@ -44,7 +45,7 @@ export default function OrdersAndPlansPage() {
   const router = useRouter();
   const { t } = useLanguage();
   const [subs, setSubs] = useState<any[]>([]);
-  const [orders, setOrders] = useState<any[]>([]);
+  const [orders, setOrders] = useState<Api.CustomerOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [tab, setTab] = useState<Tab | null>(null);

@@ -1,10 +1,9 @@
 'use client';
 import { useEffect, useState, type CSSProperties } from 'react';
 import { NumInput } from '@/components/NumberField';
+import { getOr, put } from '@/lib/api';
+import { gel } from '@/lib/format';
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
-const auth = () => ({ Authorization: `Bearer ${localStorage.getItem('admin_token')}`, 'Content-Type': 'application/json' });
-const gel = (n: number) => `₾${Number(n || 0).toFixed(2).replace(/\.00$/, '')}`;
 
 type Offer = { enabled: boolean; friendType: 'PERCENTAGE' | 'FIXED'; friendValue: number; appliesTo: string[]; minOrder: number; inviterReward: number };
 const SCOPES = [
@@ -29,7 +28,7 @@ export default function FriendCodes() {
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
   useEffect(() => {
-    fetch(`${API}/referrals/admin/offer`, { headers: auth() }).then((r) => (r.ok ? r.json() : null)).then((d) => { if (d) { setSaved(d.offer); setO(d.offer); setStats(d.stats); } });
+    getOr<any>('/referrals/admin/offer', null).then((d) => { if (d) { setSaved(d.offer); setO(d.offer); setStats(d.stats); } });
   }, []);
   if (!o || !saved) return null;
   const dirty = JSON.stringify(o) !== JSON.stringify(saved);
@@ -39,10 +38,8 @@ export default function FriendCodes() {
 
   async function save() {
     setBusy(true); setMsg(null);
-    const r = await fetch(`${API}/referrals/admin/offer`, { method: 'PUT', headers: auth(), body: JSON.stringify(o) });
-    const d = await r.json().catch(() => ({}));
-    setBusy(false);
-    if (!r.ok) { setMsg({ ok: false, text: (Array.isArray(d.message) ? d.message[0] : d.message) || 'Not saved.' }); return; }
+    let d;
+    try { d = await put('/referrals/admin/offer', o, 'Not saved.'); } catch (e: any) { setMsg({ ok: false, text: e.message }); return; } finally { setBusy(false); }
     setSaved(d.offer); setO(d.offer); setStats(d.stats);
     setMsg({ ok: true, text: 'Saved — applies to the next basket.' });
   }

@@ -2,8 +2,8 @@
 import { useEffect, useState } from 'react';
 import FormField, { inputClass, parseFieldErrors } from '@/components/FormField';
 import ErrorPopup from '@/components/ErrorPopup';
+import { del, getOr, patch, post } from '@/lib/api';
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 
 const EMPTY = { name: '', slug: '', logoUrl: '', description: '', descriptionKa: '', contactName: '', email: '', phone: '', notes: '', isActive: true };
 type Form = typeof EMPTY;
@@ -28,12 +28,11 @@ export default function SellersPage() {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [popupErrors, setPopupErrors] = useState<string[]>([]);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
-  const token = () => localStorage.getItem('admin_token');
 
   async function load() {
     setLoading(true);
-    const res = await fetch(`${API}/admin/sellers`, { headers: { Authorization: `Bearer ${token()}` } });
-    if (res.ok) setList(await res.json());
+    const d = await getOr<any>('/admin/sellers', null);
+    if (d) setList(d);
     setLoading(false);
   }
   useEffect(() => { load(); }, []);
@@ -58,9 +57,8 @@ export default function SellersPage() {
     setUploading(true);
     try {
       const fd = new FormData(); fd.append('file', file);
-      const res = await fetch(`${API}/admin/upload/image`, { method: 'POST', headers: { Authorization: `Bearer ${token()}` }, body: fd });
-      const d = await res.json().catch(() => ({}));
-      if (res.ok && d.url) set('logoUrl', d.url); else setError(d.message || 'Upload failed');
+      const d = await post('/admin/upload/image', fd).catch((e) => ({ error: e.body?.message || 'Upload failed' }));
+      if (d?.url) set('logoUrl', d.url); else setError(d?.error || 'Upload failed');
     } finally { setUploading(false); }
   }
 
@@ -71,24 +69,20 @@ export default function SellersPage() {
     if (!form.slug.trim()) errs.slug = 'Slug is required';
     if (Object.keys(errs).length) { setFieldErrors(errs); setPopupErrors(Object.values(errs)); return; }
     setSaving(true); setError(''); setFieldErrors({});
-    const res = await fetch(editId ? `${API}/admin/sellers/${editId}` : `${API}/admin/sellers`, {
-      method: editId ? 'PATCH' : 'POST',
-      headers: { Authorization: `Bearer ${token()}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
-    });
-    if (res.ok) { setShowForm(false); load(); }
-    else {
-      const d = await res.json().catch(() => ({}));
-      if (Array.isArray(d.message)) { setFieldErrors(parseFieldErrors(d.message)); setError('Please fix the errors below.'); }
-      else setError(d.message || 'Save failed');
+    try {
+      await (editId ? patch(`/admin/sellers/${editId}`, form) : post('/admin/sellers', form));
+      setShowForm(false); load();
+    } catch (e: any) {
+      if (Array.isArray(e.body?.message)) { setFieldErrors(parseFieldErrors(e.body.message)); setError('Please fix the errors below.'); }
+      else setError(e.body?.message || 'Save failed');
     }
     setSaving(false);
   }
 
   async function remove(id: string) {
-    const res = await fetch(`${API}/admin/sellers/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token()}` } });
+    const failed = await del(`/admin/sellers/${id}`).then(() => '', (e) => e.body?.message || 'Could not delete');
     setDeleteConfirm(null);
-    if (!res.ok) { const d = await res.json().catch(() => ({})); setPopupErrors([d.message || 'Could not delete']); }
+    if (failed) setPopupErrors([failed]);
     load();
   }
 

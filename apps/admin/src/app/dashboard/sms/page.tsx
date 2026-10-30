@@ -4,9 +4,7 @@ import Dropdown from '@/components/Dropdown';
 import { NumInput } from '@/components/NumberField';
 import TimeInput from '@/components/TimeInput';
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
-const auth = () => ({ Authorization: `Bearer ${localStorage.getItem('admin_token')}` });
-const err = (d: any, f: string) => (Array.isArray(d?.message) ? d.message[0] : d?.message) || f;
+import { api, getOr, post, put } from '@/lib/api';
 
 type Topic = 'orders' | 'signups' | 'payments';
 type Team = { name: string; phone: string; active: boolean; topics: Topic[] };
@@ -96,13 +94,13 @@ export default function SmsPage() {
   const [testTo, setTestTo] = useState('');
   const [unpaidCancel, setUnpaidCancel] = useState(2);
 
-  const loadStatus = () => fetch(`${API}/admin/sms/status`, { headers: auth() }).then((r) => (r.ok ? r.json() : null)).then(setStatus).catch(() => setStatus(null));
-  const loadLog = (st = logFilter) => fetch(`${API}/admin/sms/log?limit=30`, { headers: auth() }).then((r) => (r.ok ? r.json() : [])).then((d) => setLog(st ? d.filter((x: any) => x.status === st) : d)).catch(() => setLog([]));
+  const loadStatus = () => getOr('/admin/sms/status', null).then(setStatus);
+  const loadLog = (st = logFilter) => getOr<any[]>('/admin/sms/log?limit=30', []).then((d) => setLog(st ? d.filter((x) => x.status === st) : d));
   useEffect(() => {
-    fetch(`${API}/admin/sms/settings`, { headers: auth() }).then((r) => r.json()).then((d) => { setSaved(d); setS(d); });
+    api<S>('/admin/sms/settings').then((d) => { setSaved(d); setS(d); }).catch(() => {});
     loadStatus(); loadLog('');
     // When unpaid orders are cancelled (Settings): reminder steps after that never go.
-    fetch(`${API}/cms/admin/config-settings`, { headers: auth() }).then((r) => (r.ok ? r.json() : null)).then((row) => setUnpaidCancel(Number(row?.content?.orders?.unpaidHours) || 2)).catch(() => {});
+    getOr<any>('/cms/admin/config-settings', null).then((row) => setUnpaidCancel(Number(row?.content?.orders?.unpaidHours) || 2));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -121,21 +119,20 @@ export default function SmsPage() {
     if (bad) { setMsg({ ok: false, text: `“${bad.phone || 'empty'}” isn’t a mobile number. Write it like 599 12 34 56.` }); return; }
     setSaving(true); setMsg(null);
     const body = { ...s, ...(newKey !== null ? { apiKey: newKey.trim() } : {}) };
-    const r = await fetch(`${API}/admin/sms/settings`, { method: 'PUT', headers: { ...auth(), 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-    const d = await r.json().catch(() => ({}));
-    setSaving(false);
-    if (!r.ok) { setMsg({ ok: false, text: err(d, `Not saved (error ${r.status}).`) }); return; }
-    setSaved(d); setS(d); setNewKey(null);
-    setMsg({ ok: true, text: 'Saved — applies to the next message.' });
-    loadStatus();
+    try {
+      const d = await put<S>('/admin/sms/settings', body);
+      setSaved(d); setS(d); setNewKey(null);
+      setMsg({ ok: true, text: 'Saved — applies to the next message.' });
+      loadStatus();
+    } catch (e: any) { setMsg({ ok: false, text: e.message }); } finally { setSaving(false); }
   }
 
   async function test(to: string) {
     setTesting(to); setMsg(null);
-    const r = await fetch(`${API}/admin/sms/test`, { method: 'POST', headers: { ...auth(), 'Content-Type': 'application/json' }, body: JSON.stringify({ to }) });
-    const d = await r.json().catch(() => ({}));
-    setTesting('');
-    setMsg(r.ok ? { ok: true, text: `Test sent to ${pretty(d.to)}.` } : { ok: false, text: err(d, 'Not sent.') });
+    try {
+      const d = await post('/admin/sms/test', { to }, 'Not sent.');
+      setMsg({ ok: true, text: `Test sent to ${pretty(d.to)}.` });
+    } catch (e: any) { setMsg({ ok: false, text: e.message }); } finally { setTesting(''); }
     loadLog(); loadStatus();
   }
 

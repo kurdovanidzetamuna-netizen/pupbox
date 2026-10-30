@@ -1,9 +1,8 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import { ActionButton } from '@/components/Toolbar';
+import { del, getOr, post, put } from '@/lib/api';
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
-const headers = () => ({ Authorization: `Bearer ${localStorage.getItem('admin_token')}`, 'Content-Type': 'application/json' });
 
 type Text = { subject: string; heading: string; body: string; button?: string; after?: string };
 type Kind = { key: string; label: string; about: string; fillIns: string[]; ka: { builtIn: Text; saved: Text | null }; en: { builtIn: Text; saved: Text | null } };
@@ -33,7 +32,7 @@ export default function EmailsPage() {
   const [msg, setMsg] = useState('');
   const focused = useRef<{ field: keyof Text; el: HTMLInputElement | HTMLTextAreaElement } | null>(null);
 
-  const load = () => fetch(`${API}/admin/email-templates`, { headers: headers() }).then((r) => (r.ok ? r.json() : null)).then(setData).catch(() => {});
+  const load = () => getOr<any>('/admin/email-templates', null).then((d) => d && setData(d));
   useEffect(() => { load(); }, []);
 
   const kind = data?.items.find((k) => k.key === key);
@@ -48,8 +47,7 @@ export default function EmailsPage() {
   useEffect(() => {
     if (!form) return;
     const t = setTimeout(() => {
-      fetch(`${API}/admin/email-templates/${key}/${lang}/preview`, { method: 'POST', headers: headers(), body: JSON.stringify(form) })
-        .then((r) => (r.ok ? r.json() : null)).then((p) => p && setPreview(p)).catch(() => {});
+      post(`/admin/email-templates/${key}/${lang}/preview`, form).then((p) => p && setPreview(p)).catch(() => {});
     }, 400);
     return () => clearTimeout(t);
   }, [form, key, lang]);
@@ -72,16 +70,13 @@ export default function EmailsPage() {
   async function save() {
     if (!form) return;
     setBusy(true); setMsg('');
-    const r = await fetch(`${API}/admin/email-templates/${key}/${lang}`, { method: 'PUT', headers: headers(), body: JSON.stringify(form) });
-    const d = await r.json().catch(() => ({}));
-    setBusy(false);
-    if (!r.ok) { setMsg((Array.isArray(d.message) ? d.message[0] : d.message) || 'Not saved.'); return; }
+    try { await put(`/admin/email-templates/${key}/${lang}`, form, 'Not saved.'); } catch (e: any) { setMsg(e.message); return; } finally { setBusy(false); }
     setMsg('✓ Saved — the next email uses these words.'); load();
   }
   async function reset() {
     if (!confirm('Go back to the original words for this email?')) return;
     setBusy(true);
-    await fetch(`${API}/admin/email-templates/${key}/${lang}`, { method: 'DELETE', headers: headers() });
+    await del(`/admin/email-templates/${key}/${lang}`).catch(() => {});
     setBusy(false); setMsg('Back to the original words.'); load();
   }
 

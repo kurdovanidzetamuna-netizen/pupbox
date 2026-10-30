@@ -1,6 +1,7 @@
 import { BadRequestException } from '@nestjs/common';
 import type { PrismaService } from '../prisma/prisma.service';
 import { shopSettings } from '../settings/settings';
+import { r2 as round } from '../../common/money';
 
 export async function freeCancelHours(prisma: PrismaService): Promise<number> {
   return (await shopSettings(prisma)).freeCancelHours;
@@ -71,7 +72,6 @@ export async function planCancellation(prisma: PrismaService, subscriptionId: st
   };
 }
 
-const round = (n: number) => Math.round(n * 100) / 100;
 
 /** Last moment of the current calendar month. */
 export const endOfMonth = (d: Date) => new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59);

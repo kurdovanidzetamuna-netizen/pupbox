@@ -3,8 +3,8 @@ import MapLink, { mapUrl } from '@/components/MapLink';
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react';
 import Link from 'next/link';
 import { ActionButton } from '../../../components/Toolbar';
+import { api, getOr, patch, saveCsv } from '@/lib/api';
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const SIZE: Record<string, string> = { EXTRA_SMALL: 'XS', SMALL: 'S', MEDIUM: 'M', LARGE: 'L', EXTRA_LARGE: 'XL' };
 
@@ -49,13 +49,11 @@ export default function MonthlyBoxesPage() {
   const [notice, setNotice] = useState('');
   const [showPick, setShowPick] = useState(false);
 
-  const auth = () => ({ Authorization: `Bearer ${localStorage.getItem('admin_token')}`, 'Content-Type': 'application/json' });
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API}/admin/box-shipments?year=${ym.year}&month=${ym.month}`, { headers: auth() });
-      setData(res.ok ? await res.json() : null);
+      setData(await getOr<any>(`/admin/box-shipments?year=${ym.year}&month=${ym.month}`, null));
     } finally {
       setLoading(false);
     }
@@ -66,9 +64,7 @@ export default function MonthlyBoxesPage() {
   async function call(path: string, method: string, body: unknown, done: (r: any) => string) {
     setBusy(true); setNotice('');
     try {
-      const res = await fetch(`${API}/admin/box-shipments${path}`, { method, headers: auth(), body: JSON.stringify(body) });
-      const r = await res.json().catch(() => ({}));
-      setNotice(res.ok ? done(r) : (Array.isArray(r.message) ? r.message[0] : r.message) || 'Something went wrong.');
+      setNotice(await api(`/admin/box-shipments${path}`, { method, body, fallback: 'Something went wrong.' }).then((r) => done(r ?? {}), (e) => e.message));
       setSelected(new Set());
       await load();
     } finally {
@@ -98,16 +94,12 @@ export default function MonthlyBoxesPage() {
         STATUS[i.status as Status].label, i.trackingNumber ?? '', mapUrl(a),
       ]);
     }
-    const csv = rows.map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
-    const url = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' }));
-    const a = Object.assign(document.createElement('a'), { href: url, download: `boxes-${ym.year}-${String(ym.month).padStart(2, '0')}-${filter.toLowerCase()}.csv` });
-    a.click();
-    URL.revokeObjectURL(url);
+    saveCsv(rows, `boxes-${ym.year}-${String(ym.month).padStart(2, '0')}-${filter.toLowerCase()}.csv`);
   }
 
   async function saveTracking(id: string, value: string, previous: string | null) {
     if ((previous ?? '') === value.trim()) return;
-    await fetch(`${API}/admin/box-shipments/${id}/tracking`, { method: 'PATCH', headers: auth(), body: JSON.stringify({ trackingNumber: value }) });
+    await patch(`/admin/box-shipments/${id}/tracking`, { trackingNumber: value }).catch(() => {});
   }
 
   return (

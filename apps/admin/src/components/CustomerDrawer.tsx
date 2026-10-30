@@ -2,10 +2,10 @@
 import { useEffect, useState } from 'react';
 import DogLikes from './DogLikes';
 import Composer from '@/app/dashboard/messages/Composer';
+import { ApiError, api, del, patch, post } from '@/lib/api';
+import { day, gel } from '@/lib/format';
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 const SIZE: Record<string, string> = { EXTRA_SMALL: 'XS', SMALL: 'S', MEDIUM: 'M', LARGE: 'L', EXTRA_LARGE: 'XL' };
-const day = (d?: string | null) => (d ? new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—');
 
 function age(birthday?: string | null) {
   if (!birthday) return null;
@@ -16,9 +16,6 @@ function age(birthday?: string | null) {
 const badge = (ok: boolean, yes: string, no: string) => (
   <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 999, background: ok ? 'var(--green-50)' : 'var(--amber-50)', color: ok ? 'var(--green-800)' : 'var(--amber-700)' }}>{ok ? `✓ ${yes}` : no}</span>
 );
-
-const gel = (n: number) => `₾${Number(n).toFixed(2).replace(/\.00$/, '')}`;
-const auth = () => ({ Authorization: `Bearer ${localStorage.getItem('admin_token')}`, 'Content-Type': 'application/json' });
 
 /**
  * One customer in full, as a side panel: contact and consent, money, the
@@ -34,44 +31,38 @@ export default function CustomerDrawer({ id, onClose, onChanged }: { id: string;
   const [tagDraft, setTagDraft] = useState('');
   const [writing, setWriting] = useState(false);
   const [pushReady, setPushReady] = useState(false);
-  useEffect(() => { fetch(`${API}/me/push/key`).then((r) => r.json()).then((d) => setPushReady(!!d.enabled)).catch(() => {}); }, []);
+  useEffect(() => { api('/me/push/key').then((d) => setPushReady(!!d?.enabled)).catch(() => {}); }, []);
 
   async function saveTags(tags: string[]) {
-    const r = await fetch(`${API}/admin/customers/${id}/tags`, { method: 'PATCH', headers: auth(), body: JSON.stringify({ tags }) });
-    if (r.ok) { const d = await r.json(); setC((x: any) => ({ ...x, tags: d.crmTags })); onChanged?.(); }
-    else setNote('Tags not saved — your role may not allow it.');
+    try { const d = await patch(`/admin/customers/${id}/tags`, { tags }); setC((x: any) => ({ ...x, tags: d.crmTags })); onChanged?.(); }
+    catch { setNote('Tags not saved — your role may not allow it.'); }
   }
   async function addNote() {
     if (!draft.trim()) return;
     setBusy('note');
-    const r = await fetch(`${API}/admin/customers/${id}/notes`, { method: 'POST', headers: auth(), body: JSON.stringify({ body: draft.trim() }) });
-    setBusy('');
-    if (r.ok) { const n = await r.json(); setC((x: any) => ({ ...x, notes: [n, ...x.notes] })); setDraft(''); }
-    else setNote('Note not saved — your role may not allow it.');
+    try { const n = await post(`/admin/customers/${id}/notes`, { body: draft.trim() }); setC((x: any) => ({ ...x, notes: [n, ...x.notes] })); setDraft(''); }
+    catch { setNote('Note not saved — your role may not allow it.'); } finally { setBusy(''); }
   }
   async function deleteNote(noteId: string) {
     if (!confirm('Delete this note?')) return;
-    const r = await fetch(`${API}/admin/customers/${id}/notes/${noteId}`, { method: 'DELETE', headers: auth() });
-    if (r.ok) setC((x: any) => ({ ...x, notes: x.notes.filter((n: any) => n.id !== noteId) }));
+    await del(`/admin/customers/${id}/notes/${noteId}`).then(() => setC((x: any) => ({ ...x, notes: x.notes.filter((n: any) => n.id !== noteId) }))).catch(() => {});
   }
 
   // Confirm (or un-confirm) a phone or email by hand; kept in the audit log.
   async function setVerified(channel: 'PHONE' | 'EMAIL', verified: boolean) {
     if (!verified && !confirm(`Remove the ${channel === 'PHONE' ? 'phone' : 'email'} confirmation? The customer will be asked to confirm it again.`)) return;
     setBusy(channel); setNote('');
-    const r = await fetch(`${API}/admin/customers/${id}/verify`, { method: 'PATCH', headers: { Authorization: `Bearer ${localStorage.getItem('admin_token')}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ channel, verified }) });
-    const d = await r.json().catch(() => ({}));
-    setBusy('');
-    if (!r.ok) { setNote((Array.isArray(d.message) ? d.message[0] : d.message) || 'Not saved.'); return; }
+    let d;
+    try { d = await patch(`/admin/customers/${id}/verify`, { channel, verified }, 'Not saved.'); } catch (e: any) { setNote(e.message); return; } finally { setBusy(''); }
     setC((x: any) => ({ ...x, ...d }));
     setNote(verified ? `✓ ${channel === 'PHONE' ? 'Phone' : 'Email'} marked as confirmed` : 'Confirmation removed');
   }
 
   useEffect(() => {
     setC(null); setError('');
-    fetch(`${API}/admin/customers/${id}`, { headers: { Authorization: `Bearer ${localStorage.getItem('admin_token')}` } })
-      .then(async (r) => (r.ok ? setC(await r.json()) : setError(r.status === 403 ? 'Your role doesn’t allow this.' : 'Could not load this customer.')))
-      .catch(() => setError('Could not load this customer.'));
+    api(`/admin/customers/${id}`)
+      .then(setC)
+      .catch((e) => setError(e instanceof ApiError && e.status === 403 ? 'Your role doesn’t allow this.' : 'Could not load this customer.'));
   }, [id]);
 
   useEffect(() => {

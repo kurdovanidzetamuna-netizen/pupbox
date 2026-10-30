@@ -8,6 +8,7 @@ import { AuditService } from '../audit/audit.service';
 import { AdminPerms } from '../admin-auth/admin-permissions';
 import { AdminJwtGuard } from '../admin-auth/admin-jwt.guard';
 import { dateRange, toCsv } from '../reports/reports.service';
+import { r2 } from '../../common/money';
 
 /**
  * When a seller's line is owed:
@@ -21,7 +22,6 @@ const UPCOMING: OrderStatus[] = ['PAID', 'PROCESSING', 'PACKED', 'SHIPPED'];
 const SOLD = [...UPCOMING, ...DUE];
 
 type State = 'due' | 'upcoming' | 'paid';
-const r2 = (n: number) => Math.round(n * 100) / 100;
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 /** A day as it was in Tbilisi, e.g. 2026-10-12. */
 const tbilisiDay = (d: Date) => d.toLocaleDateString('en-CA', { timeZone: 'Asia/Tbilisi' });

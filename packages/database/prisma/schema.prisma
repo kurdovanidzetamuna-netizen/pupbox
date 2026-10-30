@@ -300,6 +300,9 @@ model Dog {
 
   subscriptions    CustomerSubscription[]
   orders           Order[]
+
+  // Looked up by these often (Postgres doesn’t index links by itself).
+  @@index([userId])
 }
 
 // ─── ADDRESSES ───────────────────────────────────────────────────────────────
@@ -330,6 +333,9 @@ model Address {
   orders       Order[]
   boxShipments BoxShipment[]
   subscriptions CustomerSubscription[]
+
+  // Looked up by these often (Postgres doesn’t index links by itself).
+  @@index([userId])
 }
 
 // ─── PRODUCT CATEGORIES ──────────────────────────────────────────────────────
@@ -437,6 +443,11 @@ model Product {
   boxItems         BoxCampaignProduct[]
   cartItems        CartItem[]
   customBoxItems   CustomBoxItem[]
+
+  // Looked up by these often (Postgres doesn’t index links by itself).
+  @@index([categoryId])
+  @@index([sellerId])
+  @@index([status])
 }
 
 model ProductImage {
@@ -448,6 +459,9 @@ model ProductImage {
   isPrimary Boolean  @default(false)
   sortOrder Int      @default(0)
   createdAt DateTime @default(now())
+
+  // Looked up by these often (Postgres doesn’t index links by itself).
+  @@index([productId])
 }
 
 // ─── INVENTORY ───────────────────────────────────────────────────────────────
@@ -654,6 +668,10 @@ model Cart {
   updatedAt DateTime   @updatedAt
 
   items     CartItem[]
+
+  // Looked up by these often (Postgres doesn’t index links by itself).
+  @@index([userId])
+  @@index([sessionId])
 }
 
 model CartItem {
@@ -673,6 +691,10 @@ model CartItem {
   customBox          CustomBox?        @relation(fields: [customBoxId], references: [id])
   createdAt          DateTime          @default(now())
   updatedAt          DateTime          @updatedAt
+
+  // Looked up by these often (Postgres doesn’t index links by itself).
+  @@index([cartId])
+  @@index([customBoxId])
 }
 
 // ─── ORDERS ──────────────────────────────────────────────────────────────────
@@ -840,6 +862,9 @@ model Refund {
   items       Json?
   adminUserId String?
   createdAt   DateTime  @default(now())
+
+  // Looked up by these often (Postgres doesn’t index links by itself).
+  @@index([paymentId])
 }
 
 // ─── COUPONS ─────────────────────────────────────────────────────────────────
@@ -897,6 +922,11 @@ model CouponUsage {
   user      User     @relation(fields: [userId], references: [id])
   orderId   String?
   usedAt    DateTime @default(now())
+
+  // Looked up by these often (Postgres doesn’t index links by itself).
+  @@index([couponId, userId])
+  @@index([userId])
+  @@index([orderId])
 }
 
 // ─── REFERRALS ───────────────────────────────────────────────────────────────
@@ -913,6 +943,10 @@ model Referral {
   rewardedAt  DateTime?
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
+
+  // Looked up by these often (Postgres doesn’t index links by itself).
+  @@index([inviterId])
+  @@index([invitedId])
 }
 
 // ─── CMS ─────────────────────────────────────────────────────────────────────
@@ -1055,6 +1089,11 @@ model AuditLog {
   ip          String?
   userAgent   String?
   createdAt   DateTime    @default(now())
+
+  // Looked up by these often (Postgres doesn’t index links by itself).
+  @@index([createdAt])
+  @@index([module, createdAt])
+  @@index([entityId])
 }
 
 enum BoxShipmentStatus {
@@ -1366,6 +1405,9 @@ model CustomBox {
   cartItems     CartItem[]
   orderItems    OrderItem[]
   subscriptions CustomerSubscription[]
+
+  // Looked up by these often (Postgres doesn’t index links by itself).
+  @@index([userId])
 }
 
 model CustomBoxItem {

@@ -1,11 +1,8 @@
 'use client';
-/** Shared bits of the orders screens: API, labels, colours and badges. */
+import type { Api } from '@pupbox/content';
+/** Shared bits of the orders screens: labels, colours and badges. */
 
-export const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
-export const authHeaders = () => ({ Authorization: `Bearer ${localStorage.getItem('admin_token')}` });
-export const jsonHeaders = () => ({ ...authHeaders(), 'Content-Type': 'application/json' });
-export const money = (v: any) => `₾${Number(v || 0).toFixed(2)}`;
-export const apiError = (r: any, fallback = 'Not saved.') => (Array.isArray(r?.message) ? r.message[0] : r?.message) || fallback;
+export const money = (v: Api.Money | null | undefined) => `₾${Number(v || 0).toFixed(2)}`;
 
 /** Words a person uses, not the enum. Order follows the life of an order. */
 export const STATUS_LABEL: Record<string, string> = {
@@ -58,7 +55,7 @@ export function RefundDueBadge() {
 }
 
 /** A product line's small picture, or its kind of line. */
-export function Thumb({ item, size = 36 }: { item: any; size?: number }) {
+export function Thumb({ item, size = 36 }: { item: { product?: { images?: { url: string }[] } | null; subscriptionPlanId?: string | null; customBoxId?: string | null }; size?: number }) {
   const img = item.product?.images?.[0]?.url;
   const box = { width: size, height: size, borderRadius: Math.round(size / 4), flexShrink: 0 } as const;
   return img

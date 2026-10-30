@@ -5,8 +5,8 @@ import FormField, { inputClass, parseFieldErrors } from '@/components/FormField'
 import LangTabs, { type Lang } from '@/components/LangTabs';
 import ErrorPopup from '@/components/ErrorPopup';
 import { NumInput } from '@/components/NumberField';
+import { del, getOr, post, put } from '@/lib/api';
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 
 const EMPTY_FORM = { name: '', slug: '', description: '', seoTitle: '', seoDesc: '', sortOrder: '0', parentId: '' };
 const EMPTY_KA = { name: '', description: '', seoTitle: '', seoDesc: '' };
@@ -33,9 +33,8 @@ export default function AdminCategoriesPage() {
 
   async function load() {
     setLoading(true);
-    const token = localStorage.getItem('admin_token');
-    const res = await fetch(`${API}/admin/categories`, { headers: { Authorization: `Bearer ${token}` } });
-    if (res.ok) setCategories(await res.json());
+    const d = await getOr<any>('/admin/categories', null);
+    if (d) setCategories(d);
     setLoading(false);
   }
 
@@ -91,35 +90,27 @@ export default function AdminCategoriesPage() {
     setSaving(true);
     setError('');
     setFieldErrors({});
-    const token = localStorage.getItem('admin_token');
     const hasKa = Object.values(ka).some(v => v.trim() !== '');
     const body: any = { name: form.name, slug: form.slug, description: form.description || undefined, seoTitle: form.seoTitle || undefined, seoDesc: form.seoDesc || undefined, sortOrder: Number(form.sortOrder) };
     if (editId) body.parentId = form.parentId || null; else if (form.parentId) body.parentId = form.parentId;
     if (hasKa) body.translations = { ka: { ...ka } };
-    const url = editId ? `${API}/admin/categories/${editId}` : `${API}/admin/categories`;
-    const res = await fetch(url, {
-      method: editId ? 'PUT' : 'POST',
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-    if (res.ok) {
+    try {
+      await (editId ? put(`/admin/categories/${editId}`, body) : post('/admin/categories', body));
       setShowForm(false);
       load();
-    } else {
-      const d = await res.json().catch(() => ({}));
-      if (Array.isArray(d.message)) {
-        setFieldErrors(parseFieldErrors(d.message));
+    } catch (e: any) {
+      if (Array.isArray(e.body?.message)) {
+        setFieldErrors(parseFieldErrors(e.body.message));
         setError('Please fix the errors below.');
       } else {
-        setError(d.message || 'Save failed');
+        setError(e.body?.message || 'Save failed');
       }
     }
     setSaving(false);
   }
 
   async function handleDelete(id: string) {
-    const token = localStorage.getItem('admin_token');
-    await fetch(`${API}/admin/categories/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
+    await del(`/admin/categories/${id}`).catch(() => {});
     setDeleteConfirm(null);
     load();
   }

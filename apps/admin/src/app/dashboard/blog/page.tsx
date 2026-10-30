@@ -3,8 +3,8 @@ import { Select } from '@/components/Dropdown';
 import { useEffect, useState } from 'react';
 import FormField, { inputClass } from '@/components/FormField';
 import LangTabs, { type Lang } from '@/components/LangTabs';
+import { api, del, post, put } from '@/lib/api';
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 const EMPTY = { title: '', slug: '', excerpt: '', content: '', featuredImage: '', authorName: '', status: 'DRAFT', seoTitle: '', seoDesc: '' };
 const EMPTY_KA = { title: '', excerpt: '', content: '', seoTitle: '', seoDesc: '' };
 
@@ -22,13 +22,11 @@ export default function AdminBlogPage() {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
 
-  function token() { return localStorage.getItem('admin_token') || ''; }
 
   async function load() {
     setLoading(true);
     try {
-      const res = await fetch(`${API}/blog/admin/posts?limit=50`, { headers: { Authorization: `Bearer ${token()}` } });
-      const data = await res.json();
+      const data = await api('/blog/admin/posts?limit=50');
       setPosts(data.posts || []);
       setTotal(data.total || 0);
     } catch { } finally {
@@ -46,9 +44,7 @@ export default function AdminBlogPage() {
     const hasKa = Object.values(ka).some((v: any) => String(v).trim() !== '');
     const body = { ...editing };
     if (hasKa) body.translations = { ka: { ...ka } };
-    const method = editing.id ? 'PUT' : 'POST';
-    const url = editing.id ? `${API}/blog/admin/posts/${editing.id}` : `${API}/blog/admin/posts`;
-    await fetch(url, { method, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token()}` }, body: JSON.stringify(body) });
+    await (editing.id ? put(`/blog/admin/posts/${editing.id}`, body) : post('/blog/admin/posts', body)).catch(() => {});
     setSaving(false);
     setEditing(null);
     load();
@@ -57,7 +53,7 @@ export default function AdminBlogPage() {
   async function deletePost(id: string) {
     if (!confirm('Delete this post?')) return;
     setDeleting(id);
-    await fetch(`${API}/blog/admin/posts/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token()}` } });
+    await del(`/blog/admin/posts/${id}`).catch(() => {});
     setDeleting(null);
     load();
   }

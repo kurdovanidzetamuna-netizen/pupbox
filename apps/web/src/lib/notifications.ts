@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useSyncExternalStore } from 'react';
-import { authFetch } from '@/lib/authFetch';
+import { authFetch, savedToken } from '@/lib/authFetch';
 
 export type Notice = {
   id: string;
@@ -25,7 +25,7 @@ export function setUnread(n: number) {
 }
 
 export async function refreshUnread() {
-  if (!localStorage.getItem('pupbox_token')) return setUnread(0);
+  if (!savedToken()) return setUnread(0);
   try {
     const r = await authFetch('/me/notifications/unread-count');
     if (r.ok) setUnread((await r.json()).unreadCount);
