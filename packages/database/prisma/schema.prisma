@@ -616,6 +616,8 @@ model DeliveryMethod {
   price           Decimal  @db.Decimal(10, 2)
   freeThreshold   Decimal? @db.Decimal(10, 2)
   estimatedDays   String?  // e.g. "2-3"
+  /// Georgian words set in admin → Delivery: { ka: { name, description } }.
+  translations    Json?
   isActive        Boolean  @default(true)
   sortOrder       Int      @default(0)
   createdAt       DateTime @default(now())

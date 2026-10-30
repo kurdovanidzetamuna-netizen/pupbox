@@ -706,7 +706,7 @@ export default function CheckoutPage() {
                         onChange={() => { setSelectedDelivery(m.id); setErrs(e => ({ ...e, delivery: '' })); }}>
                         <span className="flex-1 flex items-center justify-between gap-3">
                           <span>
-                            <span className="block font-medium text-gray-900 text-sm">{t(`dm.${m.name}`, m.name)}</span>
+                            <span className="block font-medium text-gray-900 text-sm">{(lang === 'ka' && m.translations?.ka?.name) || t(`dm.${m.name}`, m.name)}</span>
                             {days && <span className="block text-xs text-gray-400">{days === '1' ? t('co.delivery.day') : fill(t('co.delivery.days'), { n: days })}</span>}
                           </span>
                         <span className="text-right">

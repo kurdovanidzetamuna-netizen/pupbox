@@ -127,7 +127,7 @@ export const SMS_DEFAULTS: SmsSettings = {
   codes: { resendSeconds: 60, perHour: 5, validMinutes: 10 },
   retries: { afterHours: [3, 7, 24, 48, 216, 384, 552], textOnTries: [1, 4, 6, 7, 8] },
   texts: {},
-  schedule: { renewalDays: [7, 1], endingDays: [7, 1], unpaidHours: [1, 24], cartHours: [3, 48], afterDeliveryHours: 72 },
+  schedule: { renewalDays: [7, 1], endingDays: [7, 1], unpaidHours: [1], cartHours: [3, 48], afterDeliveryHours: 72 },
   limits: { enabled: true, perDay: 2, gapMinutes: 180 },
 };
 
