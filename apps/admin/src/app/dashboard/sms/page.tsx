@@ -94,12 +94,15 @@ export default function SmsPage() {
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [testing, setTesting] = useState('');
   const [testTo, setTestTo] = useState('');
+  const [unpaidCancel, setUnpaidCancel] = useState(2);
 
   const loadStatus = () => fetch(`${API}/admin/sms/status`, { headers: auth() }).then((r) => (r.ok ? r.json() : null)).then(setStatus).catch(() => setStatus(null));
   const loadLog = (st = logFilter) => fetch(`${API}/admin/sms/log?limit=30`, { headers: auth() }).then((r) => (r.ok ? r.json() : [])).then((d) => setLog(st ? d.filter((x: any) => x.status === st) : d)).catch(() => setLog([]));
   useEffect(() => {
     fetch(`${API}/admin/sms/settings`, { headers: auth() }).then((r) => r.json()).then((d) => { setSaved(d); setS(d); });
     loadStatus(); loadLog('');
+    // When unpaid orders are cancelled (Settings): reminder steps after that never go.
+    fetch(`${API}/cms/admin/config-settings`, { headers: auth() }).then((r) => (r.ok ? r.json() : null)).then((row) => setUnpaidCancel(Number(row?.content?.orders?.unpaidHours) || 2)).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -284,7 +287,8 @@ export default function SmsPage() {
           <Ladder title="⏳ Plan ending" off={!s.customer.PLAN_ENDING} unit="day" words="before the plan ends" values={s.schedule.endingDays} max={60} count={6}
             onChange={(v) => up((x) => { x.schedule.endingDays = v; return x; })} />
           <Ladder title="💳 Order not paid yet" off={!s.customer.UNPAID_ORDER} unit="hour" words="after the order was placed" values={s.schedule.unpaidHours} max={720} count={5}
-            onChange={(v) => up((x) => { x.schedule.unpaidHours = v; return x; })} />
+            onChange={(v) => up((x) => { x.schedule.unpaidHours = v; return x; })}
+            warn={s.schedule.unpaidHours.some((h) => h >= unpaidCancel) ? `Unpaid orders are cancelled after ${unpaidCancel} hour${unpaidCancel === 1 ? '' : 's'} (Settings), so steps from then on never go.` : ''} />
           <Ladder title="🛒 Items left in the basket" off={!s.customer.CART_REMINDER} unit="hour" words="after the basket was last changed" values={s.schedule.cartHours} max={720} count={5}
             onChange={(v) => up((x) => { x.schedule.cartHours = v; return x; })} />
           <Ladder title="🐶 How did the dog like it?" off={!s.customer.AFTER_DELIVERY} unit="hour" words="after delivery" values={[s.schedule.afterDeliveryHours]} max={720} count={1}
@@ -435,7 +439,7 @@ function Switch({ on, onChange, label, disabled, small }: { on: boolean; onChang
   );
 }
 /** A list of "N days before" / "N hours after" steps, like the renewal retries: add, change, remove. */
-function Ladder({ title, off, unit, words, values, max, count, onChange }: { title: string; off: boolean; unit: 'day' | 'hour'; words: string; values: number[]; max: number; count: number; onChange: (v: number[]) => void }) {
+function Ladder({ title, off, unit, words, values, max, count, onChange, warn }: { title: string; off: boolean; unit: 'day' | 'hour'; words: string; values: number[]; max: number; count: number; onChange: (v: number[]) => void; warn?: string }) {
   const tidy = (v: number[]) => [...new Set(v.filter((n) => n >= 1 && n <= max))].sort((a, b) => (unit === 'day' ? b - a : a - b));
   return (
     <div style={{ border: '1px solid var(--slate-200b)', borderRadius: 14, padding: 12, display: 'grid', gap: 8, opacity: off ? 0.55 : 1 }}>
@@ -459,6 +463,7 @@ function Ladder({ title, off, unit, words, values, max, count, onChange }: { tit
           </div>
         );
       })}
+      {warn && <p role="note" style={{ margin: 0, fontSize: 12, fontWeight: 600, color: 'var(--amber-700)', background: 'var(--amber-50)', borderRadius: 8, padding: '6px 10px' }}>⚠️ {warn}</p>}
       {count > 1 && values.length < count && (
         <button type="button" style={{ ...btnSoft, justifySelf: 'start', padding: '6px 11px', fontSize: 12.5 }}
           onClick={() => { const free = (unit === 'day' ? [3, 14, 1, 2, 30, 5, 10, 21] : [24, 72, 6, 3, 12, 48, 168, 1]).find((n) => !values.includes(n)); if (free) onChange(tidy([...values, free])); }}>+ Add a step</button>

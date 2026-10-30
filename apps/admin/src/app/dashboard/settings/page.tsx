@@ -24,7 +24,7 @@ function Card({ title, intro, children }: { title: string; intro: ReactNode; chi
 /** Shop rules admin can change without a developer. Stored as the CMS row config-settings; they apply at once. */
 export default function SettingsPage() {
   const [content, setContent] = useState<any>({});
-  const [v, setV] = useState({ freeHours: '12', noticeDays: '7', graceDays: '3', orderEmail: '', boxMin: '3', boxFee: '5', boxMonthly: '10', mysteryOn: true, mysteryPrice: '15', mysteryMax: '2' });
+  const [v, setV] = useState({ unpaidHours: '2', extraDays: '7', freeHours: '12', noticeDays: '7', graceDays: '3', orderEmail: '', boxMin: '3', boxFee: '5', boxMonthly: '10', mysteryOn: true, mysteryPrice: '15', mysteryMax: '2' });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
@@ -34,6 +34,8 @@ export default function SettingsPage() {
       const c = row?.content ?? {};
       setContent(c);
       setV({
+        unpaidHours: String(c.orders?.unpaidHours ?? 2),
+        extraDays: String(c.orders?.extraPaymentDays ?? 7),
         freeHours: String(c.cancellation?.freeHours ?? 12),
         noticeDays: String(c.renewal?.noticeDays ?? 7),
         graceDays: String(c.renewal?.graceDays ?? 3),
@@ -62,6 +64,9 @@ export default function SettingsPage() {
     const mPrice = Number(v.mysteryPrice), mMax = Number(v.mysteryMax);
     if (!(mPrice >= 0 && mPrice <= 500)) return setMsg({ ok: false, text: 'Mystery item price: ₾0 to ₾500.' });
     if (!(Number.isInteger(mMax) && mMax >= 1 && mMax <= 10)) return setMsg({ ok: false, text: 'Mystery items per box: 1 to 10.' });
+    const unpaidHours = Number(v.unpaidHours), extraPaymentDays = Number(v.extraDays);
+    if (!(Number.isInteger(unpaidHours) && unpaidHours >= 1 && unpaidHours <= 168)) return setMsg({ ok: false, text: 'Unpaid orders: 1 to 168 hours.' });
+    if (!(Number.isInteger(extraPaymentDays) && extraPaymentDays >= 1 && extraPaymentDays <= 30)) return setMsg({ ok: false, text: 'Extra payments: 1 to 30 days.' });
     const orderEmail = v.orderEmail.trim();
     if (orderEmail && !/^\S+@\S+\.\S+$/.test(orderEmail)) return setMsg({ ok: false, text: 'Enter a valid email address, or leave it empty.' });
     setSaving(true); setMsg(null);
@@ -70,6 +75,7 @@ export default function SettingsPage() {
     const next = {
       ...content,
       ...(latest?.content ?? {}),
+      orders: { ...(content.orders ?? {}), unpaidHours, extraPaymentDays },
       cancellation: { ...(content.cancellation ?? {}), freeHours },
       renewal: { ...(content.renewal ?? {}), noticeDays, graceDays },
       notifications: { ...(content.notifications ?? {}), orderEmail },
@@ -92,6 +98,16 @@ export default function SettingsPage() {
       <p style={{ fontSize: 13, color: 'var(--slate-400)', margin: '4px 0 24px' }}>Shop rules that take effect straight away.</p>
       {loading ? <p style={{ color: 'var(--slate-400)' }}>Loading…</p> : (
         <>
+          <Card title="Unpaid orders" intro="An order that isn’t paid in time is cancelled by itself: its stock goes back on sale and its promo code can be used again. A payment that still arrives later brings the order back.">
+            <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 14, color: 'var(--slate-700)', marginBottom: 10, flexWrap: 'wrap' }}>
+              Cancel an unpaid order after <NumInput min={1} max={168} value={v.unpaidHours} onChange={set('unpaidHours')} style={numInput} /> hours
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 14, color: 'var(--slate-700)', flexWrap: 'wrap' }}>
+              Extra payment for added items: wait <NumInput min={1} max={30} value={v.extraDays} onChange={set('extraDays')} style={numInput} /> days
+            </label>
+            <p style={{ fontSize: 12, color: 'var(--slate-400)', margin: '10px 0 0' }}>The “Order not paid yet” text (Text messages) only goes while the order is still open.</p>
+          </Card>
+
           <Card title="Cancelling a subscription" intro="Within the free window after paying, and before any box ships, a customer can cancel for free and gets everything back. After it, they keep the box for the month they cancel in; later months stop and are refunded at the plan’s monthly price.">
             <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 14, color: 'var(--slate-700)' }}>
               Free cancellation window: <NumInput min={0} max={720} value={v.freeHours} onChange={set('freeHours')} style={numInput} /> hours after paying

@@ -30,6 +30,7 @@ import { AuditModule } from './modules/audit/audit.module';
 import { EmailModule } from './modules/email/email.module';
 import { SmsModule } from './modules/sms/sms.module';
 import { MarketingModule } from './modules/marketing/marketing.module';
+import { DeliveryModule } from './modules/delivery/delivery.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { NewsletterModule } from './modules/newsletter/newsletter.module';
 import { SellersModule } from './modules/sellers/sellers.module';
@@ -75,6 +76,7 @@ import { UploadModule } from './modules/upload/upload.module';
     EmailModule,
     SmsModule,
     MarketingModule,
+    DeliveryModule,
     NotificationsModule,
     NewsletterModule,
     SellersModule,

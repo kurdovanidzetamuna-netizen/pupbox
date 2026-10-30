@@ -31,7 +31,6 @@ function cardDetails(body: Record<string, any>) {
 }
 
 /** How long an order may wait for payment before its stock and coupon are freed (checked every 15 minutes). */
-const UNPAID_TTL_MS = 2 * 60 * 60 * 1000;
 
 @Injectable()
 export class PaymentsService implements OnModuleInit, OnModuleDestroy {
@@ -64,26 +63,28 @@ export class PaymentsService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
-   * Orders left unpaid for two hours (payment page closed, card abandoned)
-   * are cancelled: their stock goes back on sale, the coupon can be used
+   * Orders left unpaid (payment page closed, card abandoned) for the hours
+   * set in admin → Settings (2 by default) are cancelled: their stock goes back on sale, the coupon can be used
    * again, and the subscription they created is dropped. A payment that still
    * arrives later reinstates the order (see applyPaymentResult).
    */
   async expireUnpaid() {
+    const { unpaidHours, extraPaymentDays } = await shopSettings(this.prisma);
+    const hours = `${unpaidHours} hour${unpaidHours === 1 ? '' : 's'}`;
     const stale = await this.prisma.order.findMany({
-      // Renewal orders wait for their own deadline (renewal.ts), not 2 hours.
-      // An extra payment for an edited order gets a week (the customer is told by text and email).
+      // Renewal orders wait for their own deadline (renewal.ts).
+      // An extra payment for an edited order gets longer (the customer is told by text and email).
       where: {
         status: 'PENDING', type: { not: 'RENEWAL' }, payments: { none: { status: 'PAID' } },
-        OR: [{ parentOrderId: null, createdAt: { lt: new Date(Date.now() - UNPAID_TTL_MS) } }, { parentOrderId: { not: null }, createdAt: { lt: new Date(Date.now() - 7 * 86400_000) } }],
+        OR: [{ parentOrderId: null, createdAt: { lt: new Date(Date.now() - unpaidHours * 3600_000) } }, { parentOrderId: { not: null }, createdAt: { lt: new Date(Date.now() - extraPaymentDays * 86400_000) } }],
       },
       select: { id: true },
     });
     let expired = 0;
     for (const o of stale) {
-      if (await cancelUnpaidOrder(this.prisma, o.id, 'Cancelled automatically: not paid within 2 hours.')) expired++;
+      if (await cancelUnpaidOrder(this.prisma, o.id, `Cancelled automatically: not paid within ${hours}.`)) expired++;
     }
-    if (expired) this.logger.log(`Cancelled ${expired} order(s) left unpaid for 2 hours`);
+    if (expired) this.logger.log(`Cancelled ${expired} order(s) left unpaid for ${hours}`);
     return { expired };
   }
 

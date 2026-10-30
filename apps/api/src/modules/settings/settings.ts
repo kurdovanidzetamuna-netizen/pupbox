@@ -12,6 +12,10 @@ export interface ShopSettings {
   renewalGraceDays: number;
   /** Where "new order" emails go; empty = none. */
   orderNotifyEmail: string;
+  /** An order not paid this many hours after it was placed is cancelled (stock and coupon go back). */
+  unpaidHours: number;
+  /** An extra payment for items added to a paid order waits this many days. */
+  extraPaymentDays: number;
   /** A friend's referral code used as a promo code: what the friend gets on their first order, and what the inviter gets. */
   referral: ReferralOffer;
   /** Building your own box: at least this many items, a packing fee, and % off the products for a monthly box. */
@@ -52,7 +56,7 @@ export function cleanReferral(r: any): ReferralOffer {
 }
 
 const DEFAULTS: ShopSettings = {
-  freeCancelHours: 12, renewalNoticeDays: 7, renewalGraceDays: 3, orderNotifyEmail: '',
+  freeCancelHours: 12, renewalNoticeDays: 7, renewalGraceDays: 3, orderNotifyEmail: '', unpaidHours: 2, extraPaymentDays: 7,
   referral: REFERRAL_DEFAULTS,
   customBox: { minItems: 3, packingFee: 5, monthlyDiscount: 10, mystery: { enabled: true, price: 15, max: 2 } },
 };
@@ -70,6 +74,8 @@ export async function shopSettings(prisma: PrismaService): Promise<ShopSettings>
     renewalNoticeDays: num(c.renewal?.noticeDays, DEFAULTS.renewalNoticeDays, 60),
     renewalGraceDays: num(c.renewal?.graceDays, DEFAULTS.renewalGraceDays, 60),
     orderNotifyEmail: typeof c.notifications?.orderEmail === 'string' ? c.notifications.orderEmail.trim() : '',
+    unpaidHours: Math.max(1, Math.round(num(c.orders?.unpaidHours, DEFAULTS.unpaidHours, 168))),
+    extraPaymentDays: Math.max(1, Math.round(num(c.orders?.extraPaymentDays, DEFAULTS.extraPaymentDays, 30))),
     referral: cleanReferral(c.referral),
     customBox: {
       minItems: Math.max(1, Math.round(num(c.customBox?.minItems, DEFAULTS.customBox.minItems, 50))),
