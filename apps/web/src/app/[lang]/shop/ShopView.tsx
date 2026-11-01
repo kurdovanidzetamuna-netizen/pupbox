@@ -32,6 +32,8 @@ type Props = {
   page: number;
   categories: any[];
   brands: string[];
+  /** Georgian names of the tags among them. */
+  brandKa?: Record<string, string>;
   content: StoredContent | null;
   sellers: any[];
 };
@@ -42,7 +44,7 @@ type Props = {
  * grid with quick add, and paging. Filters live in the address, so every
  * view can be shared and Back works.
  */
-export default function ShopView({ products, total, pages, page, categories, brands, content, sellers }: Props) {
+export default function ShopView({ products, total, pages, page, categories, brands, brandKa = {}, content, sellers }: Props) {
   const { t, lang } = useLanguage();
   const c = usePage(shopPage, content);
   const router = useRouter();
@@ -193,10 +195,10 @@ export default function ShopView({ products, total, pages, page, categories, bra
                 ...DOG_SIZES.map((s) => ({ label: `${t(`dog.size.${s}`)} · ${t(`dog.sizeHint.${s}`)}`, checked: size === s, onClick: () => go({ size: s }) })),
               ]} />
             {brands.length > 0 && (
-              <Menu icon="filter" size="md" tone="mint" title={t('shop.brands')} onReset={() => go({ brand: null })} resetDisabled={!brand} resetLabel={t('shop.reset')} label={brand ? `${t('shop.brands')}: ${t(`collection.${brand}`, brand)}` : t('shop.brands')} active={!!brand}
+              <Menu icon="filter" size="md" tone="mint" title={t('shop.brands')} onReset={() => go({ brand: null })} resetDisabled={!brand} resetLabel={t('shop.reset')} label={brand ? `${t('shop.brands')}: ${(lang === 'ka' && brandKa[brand]) || t(`collection.${brand}`, brand)}` : t('shop.brands')} active={!!brand}
                 items={[
                   { label: t('shop.allBrands'), checked: !brand, onClick: () => go({ brand: null }) },
-                  ...brands.map((b) => ({ label: t(`collection.${b}`, b), checked: brand === b, onClick: () => go({ brand: b }) })),
+                  ...brands.map((b) => ({ label: (lang === 'ka' && brandKa[b]) || t(`collection.${b}`, b), checked: brand === b, onClick: () => go({ brand: b }) })),
                 ]} />
             )}
             <Menu icon="sort" size="md" tone="mint" title={t('shop.sort')} onReset={() => go({ sort: null })} resetDisabled={!sort} resetLabel={t('shop.reset')} label={`${t('shop.sort')}: ${t(SORTS.find((x) => x.v === sort)?.k ?? 'shop.sort.default')}`} active={!!sort}

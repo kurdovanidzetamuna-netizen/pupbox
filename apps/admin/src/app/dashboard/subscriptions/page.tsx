@@ -2,7 +2,7 @@
 import { Select } from '@/components/Dropdown';
 import MapLink from '@/components/MapLink';
 import { useState, useEffect, useRef } from 'react';
-import { ALLERGENS } from '@pupbox/content';
+import { useAllergens } from '@/lib/allergens';
 import { api, getOr, patch, post } from '@/lib/api';
 
 const STATUS_COLORS: Record<string, { background: string; color: string; border: string }> = {
@@ -66,6 +66,7 @@ function DogEditor({ sub, onSaved, onDone }: { sub: any; onSaved: () => void; on
     catch (e: any) { return setErr(e.message); }
     onSaved(); onDone();
   }
+  const ALLERGENS = useAllergens();
   const custom = v.allergies.filter(a => !ALLERGENS.some(x => x.key.toLowerCase() === a.toLowerCase()));
   return (
     <div style={{ padding: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>

@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { ALLERGENS } from '@pupbox/content';
+import { useAllergens } from '@/lib/allergens';
 
 /**
  * What a dog could react to in this product. Monthly Boxes warns when a box
@@ -9,6 +9,7 @@ import { ALLERGENS } from '@pupbox/content';
 export default function AllergensCard({ value, onChange, disabled, style }: {
   value: string[]; onChange: (v: string[]) => void; disabled?: boolean; style?: React.CSSProperties;
 }) {
+  const ALLERGENS = useAllergens();
   const [other, setOther] = useState('');
   const has = (k: string) => value.some((v) => v.toLowerCase() === k.toLowerCase());
   const toggle = (k: string) => onChange(has(k) ? value.filter((v) => v.toLowerCase() !== k.toLowerCase()) : [...value, k]);

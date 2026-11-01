@@ -1,4 +1,4 @@
-import { ALLERGENS } from '@pupbox/content';
+import { allergenLabel } from '@/lib/allergens';
 import { fill } from '@/context/strings/purchase';
 
 type T = (key: string, fallback?: string) => string;
@@ -34,8 +34,7 @@ export function birthdayLine(birthday: string | null | undefined, t: T): string 
 
 /** An allergy, food or toy key in the visitor's language. */
 export function dogOption(key: string, lang: string, t: T) {
-  const known = ALLERGENS.find((x) => x.key.toLowerCase() === key.toLowerCase());
-  return known ? (lang === 'ka' ? known.ka : known.key) : t(`dog.opt.${key}`, key);
+  return allergenLabel(key, lang) ?? t(`dog.opt.${key}`, key);
 }
 
 export const SIZE_SHORT: Record<string, string> = { EXTRA_SMALL: 'XS', SMALL: 'S', MEDIUM: 'M', LARGE: 'L', EXTRA_LARGE: 'XL' };

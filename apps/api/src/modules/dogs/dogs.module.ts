@@ -10,6 +10,11 @@ import { ApiBearerAuth, ApiTags, ApiOperation } from '@nestjs/swagger';
 import { IsString, IsOptional, IsArray, IsNumber, IsEnum, IsDateString, ArrayMaxSize, MaxLength } from 'class-validator';
 import { Type } from 'class-transformer';
 import { PartialType } from '@nestjs/swagger';
+import { ValidateNested } from 'class-validator';
+import { PrismaService } from '../prisma/prisma.service';
+import { AdminJwtGuard } from '../admin-auth/admin-jwt.guard';
+import { AdminPerms } from '../admin-auth/admin-permissions';
+import { allergenList, saveAllergens } from './allergens';
 
 enum DogGender { MALE = 'MALE', FEMALE = 'FEMALE' }
 enum DogSize { EXTRA_SMALL = 'EXTRA_SMALL', SMALL = 'SMALL', MEDIUM = 'MEDIUM', LARGE = 'LARGE', EXTRA_LARGE = 'EXTRA_LARGE' }
@@ -81,9 +86,36 @@ class DogsController {
   }
 }
 
+class AllergenDto {
+  @IsString() @MaxLength(40) key: string;
+  @IsOptional() @IsString() @MaxLength(40) ka?: string;
+}
+class AllergensDto {
+  @IsArray() @ArrayMaxSize(60) @ValidateNested({ each: true }) @Type(() => AllergenDto) allergens: AllergenDto[];
+}
+
+/** The ready-made allergies, in both languages, for the dog and product forms. */
+@ApiTags('Allergies')
+@Controller('allergens')
+class AllergensController {
+  constructor(private prisma: PrismaService) {}
+  @Get() list() { return allergenList(this.prisma); }
+}
+
+@ApiTags('Admin — Allergies')
+@ApiBearerAuth()
+@UseGuards(AdminJwtGuard)
+@AdminPerms({ read: 'products.view', write: 'products.edit' })
+@Controller('admin/allergens')
+class AdminAllergensController {
+  constructor(private prisma: PrismaService) {}
+  @Get() list() { return allergenList(this.prisma); }
+  @Put() save(@Body() dto: AllergensDto) { return saveAllergens(this.prisma, dto.allergens.map((a) => ({ key: a.key, ka: a.ka ?? '' }))); }
+}
+
 @Module({
   providers: [DogsService],
-  controllers: [DogsController],
+  controllers: [DogsController, AllergensController, AdminAllergensController],
   exports: [DogsService],
 })
 export class DogsModule {}

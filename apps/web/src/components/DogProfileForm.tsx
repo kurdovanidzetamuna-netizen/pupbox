@@ -8,6 +8,8 @@ import Field from '@/components/ui/Field';
 import { Icon } from '@/components/ui/icons';
 import DatePicker from '@/components/ui/DatePicker';
 import CategoryLikes from '@/components/CategoryLikes';
+import { useAllergens } from '@/lib/allergens';
+import { dogOption } from '@/lib/dog';
 
 /**
  * Tell-us-about-your-dog, as tappable choices rather than a form.
@@ -117,7 +119,7 @@ export function Chip({ active, onClick, children, tone = 'teal' }: { active: boo
 export function ChipGroup({ options, selected, onChange, tone = 'teal', addLabel }: {
   options: string[]; selected: string[]; onChange: (v: string[]) => void; tone?: 'teal' | 'red'; addLabel: string;
 }) {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const [custom, setCustom] = useState('');
   const toggle = (v: string) => onChange(selected.includes(v) ? selected.filter((x) => x !== v) : [...selected, v]);
   const addCustom = () => {
@@ -132,7 +134,7 @@ export function ChipGroup({ options, selected, onChange, tone = 'teal', addLabel
   return (
     <div>
       <div className="flex flex-wrap gap-1.5">
-        {options.map((o) => <Chip key={o} active={selected.includes(o)} onClick={() => toggle(o)} tone={tone}>{t(`dog.opt.${o}`, o)}</Chip>)}
+        {options.map((o) => <Chip key={o} active={selected.includes(o)} onClick={() => toggle(o)} tone={tone}>{dogOption(o, lang, t)}</Chip>)}
         {extras.map((e) => <Chip key={e} active onClick={() => toggle(e)} tone={tone}>{e}</Chip>)}
       </div>
       <div className="flex gap-1.5 mt-2 max-w-sm">
@@ -197,6 +199,7 @@ export default function DogProfileForm({ value, onChange, showOptional = true, c
   /** When the size is required (a gift) and missing. */
   sizeError?: string;
 }) {
+  const allergyOptions = useAllergens().map((a) => a.key);
   const { t } = useLanguage();
   const [expanded, setExpanded] = useState(false);
   const set = <K extends keyof DogProfile>(k: K, v: DogProfile[K]) => onChange({ ...value, [k]: v });
@@ -218,7 +221,7 @@ export default function DogProfileForm({ value, onChange, showOptional = true, c
 
       <Section title={t('dog.allergies')} hint={t('dog.allergiesHint')}>
         <ChipGroup
-          options={COMMON_ALLERGIES}
+          options={allergyOptions}
           selected={value.allergies}
           onChange={(allergies) => {
             // Marking something as an allergy must also drop it from the

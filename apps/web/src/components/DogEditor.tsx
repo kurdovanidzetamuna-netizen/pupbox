@@ -4,7 +4,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { fill } from '@/context/strings/purchase';
 import {
   emptyDogProfile, fromDog, toDogPayload, type DogProfile,
-  Section, ChipGroup, SizePicker, COMMON_ALLERGIES, SIZES, cleanWeight, KgTag,
+  Section, ChipGroup, SizePicker, SIZES, cleanWeight, KgTag,
 } from '@/components/DogProfileForm';
 import CategoryLikes from '@/components/CategoryLikes';
 import Modal from '@/components/ui/Modal';
@@ -18,6 +18,7 @@ import PawTrail from '@/components/PawTrail';
 import { authFetch, savedToken, SessionExpiredError } from '@/lib/authFetch';
 import { dogAge } from '@/lib/dog';
 import { API_URL as API } from '@/lib/api';
+import { useAllergens } from '@/lib/allergens';
 
 const STEPS = [
   { key: 'hello', emoji: '🐶' },
@@ -50,6 +51,7 @@ export default function DogEditor({ open, onClose, dog, onSaved, onExpired, welc
   welcome?: boolean;
   startStep?: number;
 }) {
+  const allergyOptions = useAllergens().map((a) => a.key);
   const { t } = useLanguage();
   const editing = !!dog;
   const [step, setStep] = useState(0);
@@ -254,7 +256,7 @@ export default function DogEditor({ open, onClose, dog, onSaved, onExpired, welc
           <>
           {group(2)}
           <Section title={t('dog.allergies')} hint={t('dog.allergiesHint')}>
-            <ChipGroup options={COMMON_ALLERGIES} selected={draft.allergies} tone="red" addLabel={t('dog.allergiesAdd')}
+            <ChipGroup options={allergyOptions} selected={draft.allergies} tone="red" addLabel={t('dog.allergiesAdd')}
               onChange={(allergies) => {
                 // An allergy can't also be a favourite food.
                 const blocked = new Set(allergies.map((a) => a.toLowerCase()));

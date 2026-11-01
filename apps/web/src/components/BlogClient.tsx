@@ -108,7 +108,7 @@ export default function BlogClient({ posts, total, pages, page, categories, cont
             )}
 
             {pages > 1 && (
-              <nav className="flex justify-center items-center gap-1.5 mt-10" aria-label="pages">
+              <nav className="flex justify-center items-center gap-1.5 mt-10" aria-label={t('aria.pages')}>
                 {page > 1 && <Link href={`/blog?page=${page - 1}`} aria-label="←" className="w-10 h-10 rounded-full flex items-center justify-center bg-gray-100 text-gray-600 hover:bg-gray-200"><Icon name="arrow" className="w-4 h-4 rotate-180" /></Link>}
                 {Array.from({ length: pages }, (_, i) => i + 1).map(p => (
                   <Link key={p} href={`/blog?page=${p}`} aria-current={page === p ? 'page' : undefined}

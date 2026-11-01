@@ -1,5 +1,5 @@
 import { Suspense } from 'react';
-import { api } from '@/lib/api';
+import { api, fetchAPI } from '@/lib/api';
 import { shopPage } from '@pupbox/content';
 import { getStoredContent, pageMetadata } from '@/lib/content';
 import ShopView from './ShopView';
@@ -25,13 +25,16 @@ export default async function ShopPage({
   }
 
   // Caught per-promise: one failing request shouldn't blank the whole page.
-  const [{ items: products, total, pages }, categories, brands, content, sellers] = await Promise.all([
+  const [{ items: products, total, pages }, categories, brands, content, sellers, tags] = await Promise.all([
     api.products.list(params).catch(() => ({ items: [] as any[], total: 0, pages: 0 })),
     api.categories.list().catch(() => [] as any[]),
     api.products.brands().catch(() => [] as string[]),
     getStoredContent(shopPage),
     api.sellers.list().catch(() => [] as any[]),
+    fetchAPI<{ name: string; translations?: { ka?: { name?: string } } | null }[]>('/tags', { cache: 'no-store' }).catch(() => []),
   ]);
+  // A tag's Georgian name, for the filter list (admin → Tags).
+  const brandKa = Object.fromEntries(tags.filter((x) => x.translations?.ka?.name).map((x) => [x.name, x.translations!.ka!.name!]));
 
   const lang = asLang(route.lang);
   const list = {
@@ -43,7 +46,7 @@ export default async function ShopPage({
     <Suspense fallback={null}>
       <JsonLd data={[list, breadcrumbs(lang, [{ name: 'Pupbox', path: '/' }, { name: lang === 'en' ? 'Shop' : 'მაღაზია', path: '/shop' }])]} />
       <ShopView products={products} total={total} pages={pages} page={Number(searchParams.page || 1)}
-        categories={categories as any[]} brands={brands} content={content} sellers={sellers} />
+        categories={categories as any[]} brands={brands} brandKa={brandKa} content={content} sellers={sellers} />
     </Suspense>
   );
 }

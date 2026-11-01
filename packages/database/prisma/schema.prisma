@@ -368,6 +368,8 @@ model ProductTag {
   name        String
   slug        String   @unique
   description String?
+  /// { ka: { name } } — the tag's name on the Georgian site.
+  translations Json?
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

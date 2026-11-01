@@ -1,7 +1,7 @@
 'use client';
 import Link from '@/components/LangLink';
 import { useEffect, useRef, useState } from 'react';
-import { shopPage, ALLERGENS, type StoredContent } from '@pupbox/content';
+import { shopPage, type StoredContent } from '@pupbox/content';
 import { usePage } from '@/lib/usePage';
 import { useLanguage } from '@/context/LanguageContext';
 import ShareButtons from '@/components/ShareButtons';
@@ -20,6 +20,7 @@ import QuantityStepper from '@/components/shop/QuantityStepper';
 import InBasketTag from '@/components/shop/InBasketTag';
 import PerksStrip from '@/components/shop/PerksStrip';
 import { track } from '@/lib/tracking';
+import { allergenLabel, useAllergens } from '@/lib/allergens';
 
 const money = (n: unknown) => `₾${Number(n).toFixed(2)}`;
 const DOG_SIZES = ['EXTRA_SMALL', 'SMALL', 'MEDIUM', 'LARGE', 'EXTRA_LARGE'];
@@ -99,7 +100,12 @@ export default function ProductView({ product, related, content }: { product: an
   }, []);
 
   const allergens: string[] = product.allergens ?? [];
-  const allergenName = (a: string) => (lang === 'ka' ? ALLERGENS.find((x) => x.key.toLowerCase() === a.toLowerCase())?.ka ?? a : a);
+  // Tags that are on, named in the shopper's language (admin → Tags).
+  type Tag = { id: string; name: string; isActive?: boolean; translations?: { ka?: { name?: string } } | null };
+  const tags: Tag[] = (product.tags ?? []).map((x: { tag: Tag }) => x.tag).filter((x: Tag) => x.isActive !== false);
+  const tagName = (x: Tag) => (lang === 'ka' && x.translations?.ka?.name?.trim()) || t(`collection.${x.name}`, x.name);
+  useAllergens(); // the shop's list, so names below are current
+  const allergenName = (a: string) => allergenLabel(a, lang) ?? a;
 
   /** The buy controls: one place, used in the page and in the phone bar. */
   const buy = (compact: boolean) => soldOut ? (
@@ -119,7 +125,7 @@ export default function ProductView({ product, related, content }: { product: an
     <main className="min-h-screen bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-8 sm:pt-10 pb-28 sm:pb-14">
         {/* Where you are */}
-        <nav aria-label="breadcrumb" className="flex items-center gap-1.5 text-[12.5px] text-gray-400 mb-5 overflow-hidden">
+        <nav aria-label={t('aria.breadcrumb')} className="flex items-center gap-1.5 text-[12.5px] text-gray-400 mb-5 overflow-hidden">
           <Link href="/shop" className="inline-flex items-center gap-1 hover:text-teal-700 shrink-0">
             <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" aria-hidden="true"><path d="M15 6l-6 6 6 6" /></svg>
             {c.header.heading}
@@ -261,7 +267,7 @@ export default function ProductView({ product, related, content }: { product: an
         </div>
 
         {/* About: the description with what to know at a glance */}
-        {(description || goodFor || allergens.length > 0 || product.tags?.length > 0) && (
+        {(description || goodFor || allergens.length > 0 || tags.length > 0) && (
           <section className="mt-12 sm:mt-14 rounded-3xl bg-gray-50 p-5 sm:p-8">
             <div className="grid lg:grid-cols-[minmax(0,1fr)_280px] gap-6 lg:gap-10">
               <div className="min-w-0">
@@ -275,7 +281,7 @@ export default function ProductView({ product, related, content }: { product: an
                 {description && <p className="text-[14px] sm:text-[15px] leading-relaxed text-gray-600 whitespace-pre-line max-w-2xl">{description}</p>}
                 <ShareButtons title={name} className="mt-5" />
               </div>
-              {(allergens.length > 0 || product.tags?.length > 0) && (
+              {(allergens.length > 0 || tags.length > 0) && (
                 <dl className="space-y-4 lg:border-l lg:border-gray-200/70 lg:pl-8">
                   {allergens.length > 0 && (
                     <div>
@@ -285,11 +291,11 @@ export default function ProductView({ product, related, content }: { product: an
                       </dd>
                     </div>
                   )}
-                  {product.tags?.length > 0 && (
+                  {tags.length > 0 && (
                     <div>
                       <dt className="text-[11px] font-bold uppercase tracking-wider text-gray-400 mb-2">{t('pdp.tags')}</dt>
                       <dd className="flex flex-wrap gap-1.5">
-                        {product.tags.map((x: any) => <span key={x.tag.id} className="h-7 px-2.5 inline-flex items-center rounded-full bg-white ring-1 ring-gray-200/70 text-gray-600 text-[12px] font-medium">{t(`collection.${x.tag.name}`, x.tag.name)}</span>)}
+                        {tags.map((x) => <span key={x.id} className="h-7 px-2.5 inline-flex items-center rounded-full bg-white ring-1 ring-gray-200/70 text-gray-600 text-[12px] font-medium">{tagName(x)}</span>)}
                       </dd>
                     </div>
                   )}
