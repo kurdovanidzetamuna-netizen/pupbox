@@ -24,7 +24,7 @@ export default function AdminSubscriptionPlansPage() {
   const [viewMode, setViewMode] = useState<ViewMode>('card');
   const [planOrderCounts, setPlanOrderCounts] = useState<Record<string, number>>({});
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
-  const { badges, addBadge, removeBadge } = useBadges();
+  const { badges, labels, error: badgeError, addBadge, removeBadge, setKa } = useBadges();
   const [showBadgeManager, setShowBadgeManager] = useState(false);
   const [viewPlan, setViewPlan] = useState<any>(null);
   const [page, setPage] = useState(1);
@@ -155,9 +155,11 @@ export default function AdminSubscriptionPlansPage() {
       {/* Badge manager */}
       {showBadgeManager && (
         <BadgeManagerModal
-          badges={badges}
+          labels={labels}
           addBadge={addBadge}
           removeBadge={removeBadge}
+          setKa={setKa}
+          error={badgeError}
           input={badgeManagerInput}
           setInput={setBadgeManagerInput}
           onClose={() => setShowBadgeManager(false)}

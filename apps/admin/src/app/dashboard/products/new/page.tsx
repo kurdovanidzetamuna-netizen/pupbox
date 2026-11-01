@@ -9,6 +9,7 @@ import PricingSection from '@/components/PricingSection';
 import ErrorPopup from '@/components/ErrorPopup';
 import PersonalisationCard, { EMPTY_PERSONALISATION, personalisationFromProduct, personalisationPayload, type PersonalisationForm } from '@/components/PersonalisationCard';
 import AllergensCard from '@/components/AllergensCard';
+import TagPicker from '@/components/TagPicker';
 import SuitsCard, { EMPTY_SUITS, type Suits } from '@/components/SuitsCard';
 import SellerCard, { OURS, shopPrice, termsPayload, type SellerTerms } from '@/components/SellerCard';
 import { NumInput } from '@/components/NumberField';
@@ -57,6 +58,7 @@ function NewProductForm() {
   const [ka, setKa] = useState({ name: '', shortDescription: '', description: '', seoTitle: '', seoDesc: '' });
   const [personalisation, setPersonalisation] = useState<PersonalisationForm>(EMPTY_PERSONALISATION);
   const [allergens, setAllergens] = useState<string[]>([]);
+  const [tagIds, setTagIds] = useState<string[]>([]);
   const [suits, setSuits] = useState<Suits>(EMPTY_SUITS);
   const [seller, setSeller] = useState<SellerTerms>(OURS);
   // A seller's product: the shop price follows their price + our margin.
@@ -158,6 +160,7 @@ function NewProductForm() {
     const chosen = personalisationPayload(personalisation);
     if (chosen) body.personalisation = chosen;
     if (allergens.length) body.allergens = allergens;
+    if (tagIds.length) body.tagIds = tagIds;
     if (seller.sellerId) Object.assign(body, termsPayload(seller));
     if (suits.dogSizes.length) body.dogSizes = suits.dogSizes;
     if (suits.lifeStages.length) body.lifeStages = suits.lifeStages;
@@ -362,6 +365,11 @@ function NewProductForm() {
                   <option value="">No category</option>
                   {categoryOptions(categories).map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
                 </Select>
+              </FormField>
+            </div>
+            <div style={{ marginTop: 14 }}>
+              <FormField label="Tags">
+                <TagPicker value={tagIds} onChange={setTagIds} />
               </FormField>
             </div>
             <div style={{ display: 'flex', gap: 20, marginTop: 14, flexWrap: 'wrap' }}>

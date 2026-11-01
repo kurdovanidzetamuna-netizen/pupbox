@@ -3,10 +3,12 @@ import { SubscriptionPlansService } from './subscription-plans.service';
 import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards } from '@nestjs/common';
 import { AdminJwtGuard } from '../admin-auth/admin-jwt.guard';
 import { ApiBearerAuth, ApiTags, ApiOperation } from '@nestjs/swagger';
-import { IsString, IsNumber, IsInt, IsOptional, IsBoolean, IsArray, IsEnum, IsIn, Min } from 'class-validator';
+import { IsString, IsNumber, IsInt, IsOptional, IsBoolean, IsArray, IsEnum, IsIn, Min, MaxLength, ArrayMaxSize, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 import { AdminPerms } from '../admin-auth/admin-permissions';
 import { PartialType } from '@nestjs/swagger';
+import { PrismaService } from '../prisma/prisma.service';
+import { badgeList, saveBadges } from './badges';
 
 enum DurationUnit { DAY = 'DAY', WEEK = 'WEEK', MONTH = 'MONTH', YEAR = 'YEAR' }
 
@@ -40,6 +42,14 @@ class CreatePlanDto {
 /** Validated like create, every field optional (a bare Partial<> isn't checked at all). */
 class UpdatePlanDto extends PartialType(CreatePlanDto) {}
 
+class BadgeDto {
+  @IsString() @MaxLength(30) en: string;
+  @IsOptional() @IsString() @MaxLength(30) ka?: string;
+}
+class BadgesDto {
+  @IsArray() @ArrayMaxSize(40) @ValidateNested({ each: true }) @Type(() => BadgeDto) badges: BadgeDto[];
+}
+
 class GroupListedDto {
   @IsIn(['BOX_TYPES', 'OTHER']) group: 'BOX_TYPES' | 'OTHER';
   @IsBoolean() listed: boolean;
@@ -48,8 +58,10 @@ class GroupListedDto {
 @ApiTags('Subscription Plans')
 @Controller('subscription-plans')
 class SubscriptionPlansController {
-  constructor(private service: SubscriptionPlansService) {}
+  constructor(private service: SubscriptionPlansService, private prisma: PrismaService) {}
   @Get() @ApiOperation({ summary: 'List active plans' }) findAll() { return this.service.findAll(false); }
+  /** Plan badges in both languages, for the plan cards. */
+  @Get('badges') badges() { return badgeList(this.prisma); }
   @Get(':slug') findOne(@Param('slug') slug: string) { return this.service.findOne(slug); }
 }
 
@@ -59,8 +71,11 @@ class SubscriptionPlansController {
 @AdminPerms({ read: 'subscriptions.view', write: 'subscriptions.manage' })
 @Controller('admin/subscription-plans')
 class AdminSubscriptionPlansController {
-  constructor(private service: SubscriptionPlansService) {}
+  constructor(private service: SubscriptionPlansService, private prisma: PrismaService) {}
   @Get() findAll() { return this.service.findAll(true); }
+  /** The badge list, shared by everyone in admin. */
+  @Get('badges') badges() { return badgeList(this.prisma); }
+  @Put('badges') saveBadges(@Body() dto: BadgesDto) { return saveBadges(this.prisma, dto.badges.map((b) => ({ en: b.en, ka: b.ka ?? '' }))); }
   @Get(':id') findOne(@Param('id') id: string) { return this.service.findById(id); }
   @Post() create(@Body() dto: CreatePlanDto) { return this.service.create(dto as any); }
   @Post('show-on-site') showOnSite(@Body() dto: GroupListedDto) { return this.service.setGroupListed(dto.group, dto.listed); }

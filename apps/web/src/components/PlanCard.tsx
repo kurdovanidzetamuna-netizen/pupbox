@@ -8,6 +8,7 @@ import { fill } from '@/context/strings/purchase';
 import { planText, planBenefits } from '@/lib/localize';
 import PlanDetails from '@/components/PlanDetails';
 import type { PlanLabels } from '@/lib/planLabels';
+import { useBadgeName } from '@/lib/badges';
 
 interface Props {
   plan: any;
@@ -22,6 +23,7 @@ export default function PlanCard({ plan, isGift = false, labels: L }: Props) {
   const [loading, setLoading] = useState(false);
   const [showAll, setShowAll] = useState(false);
   const { t, lang } = useLanguage();
+  const badgeName = useBadgeName();
   const name = planText(plan, 'name', lang);
 
   // Admin stores the badge label as shown there ("Most Popular", "Best Value",
@@ -83,7 +85,7 @@ export default function PlanCard({ plan, isGift = false, labels: L }: Props) {
   const tone = isGift ? 'lilac' : 'teal';
   const label = isGift
     ? L.giftBadge
-    : isPopular ? L.popular : isBest ? L.bestValue : badge;
+    : isPopular ? L.popular : isBest ? L.bestValue : badgeName(badge, lang);
   const perMonth = Number(plan.monthlyEquivPrice) || 0;
   const save = Number(plan.discountPercent) || 0;
 

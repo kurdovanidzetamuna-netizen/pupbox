@@ -47,7 +47,7 @@ export default function ForgotPasswordPage() {
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">{t('login.email')}</label>
                 <input id="email" type="email" autoComplete="email" value={email} onChange={e => { setEmail(e.target.value); setError(''); setEmailError(''); }} aria-invalid={!!emailError}
-                  className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 ${emailError ? 'border-red-400 bg-red-50' : 'border-gray-200'}`} placeholder="you@example.com" />
+                  className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 ${emailError ? 'border-red-400 bg-red-50' : 'border-gray-200'}`} placeholder={t('form.emailPh')} />
                 <FieldError message={emailError} />
                 <FormAlert message={error} className="mt-3" />
               </div>

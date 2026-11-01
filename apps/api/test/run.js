@@ -40,12 +40,15 @@ async function freshDatabase() {
 (async () => {
   // The server and the tests type-check first: that is also where the shared
   // data descriptions are compared with the server (contracts.test.ts).
+  console.log('1/3 Checking the code (about 20 seconds)…');
   const tsc = spawnSync('npx', ['tsc', '--noEmit', '-p', resolve(__dirname, '../tsconfig.json')], { cwd: resolve(__dirname, '..'), stdio: 'inherit' });
   if (tsc.status !== 0) { console.error('Type check failed (see above). No tests were run.'); process.exit(1); }
+  console.log('2/3 Preparing a fresh test database…');
   await freshDatabase();
   const filter = process.argv[2] ?? '';
   const files = readdirSync(__dirname).filter((f) => f.endsWith('.test.ts') && f.includes(filter)).map((f) => join(__dirname, f));
   if (!files.length) { console.error(`No test files match "${filter}".`); process.exit(1); }
+  console.log(`3/3 Running ${files.length} test file${files.length === 1 ? '' : 's'}…\n`);
   const r = spawnSync(process.execPath, ['--test', '--test-concurrency=1', '-r', 'ts-node/register/transpile-only', ...files], {
     cwd: resolve(__dirname, '..'),
     stdio: 'inherit',
