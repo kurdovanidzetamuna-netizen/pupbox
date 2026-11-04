@@ -9,10 +9,16 @@ const LANGS = ['ka', 'en'];
  * goes to the visitor's last language, Georgian if they have none yet. The
  * language in the address is remembered for server-rendered pages.
  */
+/** Old addresses that live elsewhere now; sent there before any page is drawn. */
+const MOVED: Record<string, { path: string; hash?: string }> = { '/subscribe': { path: '/prices', hash: '#plans' } };
+
 export function middleware(req: NextRequest) {
   const { pathname, search } = req.nextUrl;
   const first = pathname.split('/')[1];
-  if (LANGS.includes(first)) {
+  const lang = LANGS.includes(first) ? first : null;
+  const rest = lang ? pathname.slice(lang.length + 1) || '/' : pathname;
+  const moved = MOVED[rest];
+  if (lang && !moved) {
     const res = NextResponse.next();
     if (req.cookies.get(LANG_COOKIE)?.value !== first) {
       res.cookies.set(LANG_COOKIE, first, { path: '/', maxAge: 31536000, sameSite: 'lax' });
@@ -20,10 +26,11 @@ export function middleware(req: NextRequest) {
     return res;
   }
   const saved = req.cookies.get(LANG_COOKIE)?.value;
-  const lang = saved && LANGS.includes(saved) ? saved : 'ka';
+  const to = lang ?? (saved && LANGS.includes(saved) ? saved : 'ka');
   const url = req.nextUrl.clone();
-  url.pathname = `/${lang}${pathname === '/' ? '' : pathname}`;
+  url.pathname = `/${to}${moved ? moved.path : pathname === '/' ? '' : pathname}`;
   url.search = search;
+  if (moved?.hash) url.hash = moved.hash;
   // Behind Caddy the site is reached over plain http; send people to the
   // address they actually used (https://pupbox.ge), in one hop.
   const proto = req.headers.get('x-forwarded-proto')?.split(',')[0].trim();
