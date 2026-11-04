@@ -50,13 +50,18 @@ export class CmsController {
     return rows.filter((r) => r.status === 'PUBLISHED' && !PRIVATE_SLUGS.includes(r.slug));
   }
 
-  /** Admin: every page, drafts included. Declared before ':slug'. */
+  /**
+   * Admin → Terms & Privacy: every page, drafts included. Declared before
+   * ':slug'. Settings kept as "config-…" rows (badges, allergies, pricing,
+   * header…) are left out: each has its own admin page, and editing one here
+   * as a page would break it.
+   */
   @Get('admin/all')
   @ApiBearerAuth()
   @UseGuards(AdminJwtGuard)
   @AdminPerms({ read: 'cms.view' })
   async findAllAdmin() {
-    return (await this.cmsService.findAll()).filter((r) => !SECRET_SLUGS.includes(r.slug));
+    return (await this.cmsService.findAll()).filter((r) => !SECRET_SLUGS.includes(r.slug) && !r.slug.startsWith('config-'));
   }
 
   /** Admin: views and taps for every pop-up. */

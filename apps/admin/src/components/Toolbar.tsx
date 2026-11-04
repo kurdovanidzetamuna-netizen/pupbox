@@ -240,7 +240,7 @@ export function StatCard({ value, label, theme = 'teal' }: {
 }) {
   const t = STAT_THEMES[theme];
   return (
-    <div style={{
+    <div className="adm-stat" style={{
       background: t.bg,
       border: `1.5px solid ${t.border}`,
       borderRadius: 14,
@@ -352,7 +352,7 @@ export function RowActions({
 
 export function StatCards({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 24 }}>
+    <div className="adm-stats" style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 24 }}>
       {children}
     </div>
   );

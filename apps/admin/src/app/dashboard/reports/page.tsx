@@ -4,6 +4,7 @@ import Dropdown from '@/components/Dropdown';
 import { DateInput } from '@/components/DateField';
 import { api, download as fetchFile, getOr } from '@/lib/api';
 import { tbilisiDay } from '@pupbox/content';
+import { useCompact } from '@/lib/media';
 
 const gel = (n: number) => `₾${Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
 const DAY = 86400_000;
@@ -283,13 +284,15 @@ function Bars({ rows, money, unit, empty = 'Nothing in this period.', tone }: { 
 /** A plain bar chart in SVG — one bar per day/week/month; hover or tap a bar for its numbers. */
 function Chart({ rows, metric, by }: { rows: { date: string; collected: number; refunded: number; orders: number }[]; metric: 'collected' | 'orders' | 'refunded'; by: string }) {
   const [hover, setHover] = useState<number | null>(null);
+  // A narrower drawing on phones, so its labels shrink less and stay readable.
+  const compact = useCompact();
   if (!rows.length) return null;
-  const W = 720, H = 220, PAD = 28;
+  const W = compact ? 360 : 720, H = compact ? 200 : 220, PAD = compact ? 30 : 28, FS = compact ? 13 : 10;
   const max = Math.max(...rows.map((r) => r[metric]), 1);
   const bw = (W - PAD) / rows.length;
   const fmt = (n: number) => (metric === 'orders' ? String(n) : gel(n));
   const label = (d: string) => new Date(`${d}T00:00:00Z`).toLocaleDateString('en-GB', by === 'month' ? { month: 'short', year: '2-digit', timeZone: 'UTC' } : { day: 'numeric', month: 'short', timeZone: 'UTC' });
-  const every = Math.ceil(rows.length / 8);
+  const every = Math.ceil(rows.length / (compact ? 4 : 8));
   const total = rows.reduce((n, r) => n + r[metric], 0);
   const h = hover !== null ? rows[hover] : null;
   return (
@@ -302,7 +305,7 @@ function Chart({ rows, metric, by }: { rows: { date: string; collected: number; 
         {[0.25, 0.5, 0.75, 1].map((g) => (
           <g key={g}>
             <line x1={PAD} x2={W} y1={H - g * (H - 10)} y2={H - g * (H - 10)} stroke="var(--slate-100)" />
-            <text x={0} y={H - g * (H - 10) + 4} fontSize="10" fill="var(--slate-400)">{metric === 'orders' ? Math.round(max * g) : Math.round(max * g) >= 1000 ? `${Math.round(max * g / 100) / 10}k` : Math.round(max * g)}</text>
+            <text x={0} y={H - g * (H - 10) + 4} fontSize={FS} fill="var(--slate-400)">{metric === 'orders' ? Math.round(max * g) : Math.round(max * g) >= 1000 ? `${Math.round(max * g / 100) / 10}k` : Math.round(max * g)}</text>
           </g>
         ))}
         {rows.map((r, i) => {
@@ -312,7 +315,7 @@ function Chart({ rows, metric, by }: { rows: { date: string; collected: number; 
               <rect x={PAD + i * bw} y={0} width={bw} height={H} fill="transparent" />
               <rect x={PAD + i * bw + bw * 0.15} y={H - bh} width={Math.max(1, bw * 0.7)} height={bh} rx={Math.min(4, bw * 0.3)}
                 fill={metric === 'refunded' ? '#f87171' : hover === i ? 'var(--teal-700)' : 'var(--teal-500)'} />
-              {i % every === 0 && <text x={PAD + i * bw + bw / 2} y={H + 16} fontSize="10" textAnchor="middle" fill="var(--slate-400)">{label(r.date)}</text>}
+              {i % every === 0 && <text x={PAD + i * bw + bw / 2} y={H + 16} fontSize={FS} textAnchor="middle" fill="var(--slate-400)">{label(r.date)}</text>}
             </g>
           );
         })}

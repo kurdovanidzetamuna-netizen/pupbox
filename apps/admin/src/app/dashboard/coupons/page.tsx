@@ -516,8 +516,8 @@ function Toggle({ on, onChange, title, text }: { on: boolean; onChange: (v: bool
 }
 
 const CSS = `
-.pc-cta { display: inline-flex; align-items: center; gap: 8px; border: none; border-radius: 13px; padding: 11px 18px; background: var(--teal-600); color: #fff; font-size: 14px; font-weight: 800; cursor: pointer; box-shadow: 0 8px 22px -8px var(--teal-500); transition: transform .12s, box-shadow .12s; white-space: nowrap; }
-.pc-cta:hover { transform: translateY(-1px); box-shadow: 0 12px 26px -8px var(--teal-500); }
+.pc-cta { display: inline-flex; align-items: center; gap: 8px; border: none; border-radius: 13px; padding: 11px 18px; background: var(--teal-600); color: #fff; font-size: 14px; font-weight: 800; cursor: pointer; transition: background-color .12s; white-space: nowrap; }
+.pc-cta:hover { background: var(--teal-700); }
 .pc-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 18px; }
 .pc-stats.mini { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 12px; }
 .pc-stats.mini .pc-stat { padding: 10px 12px; }
@@ -526,7 +526,7 @@ const CSS = `
 .pc-tabs { display: flex; gap: 4px; padding: 4px; background: var(--slate-100); border-radius: 14px; overflow-x: auto; max-width: 100%; scrollbar-width: none; }
 .pc-tab { display: inline-flex; align-items: center; gap: 6px; border: none; background: transparent; padding: 8px 12px; border-radius: 10px; font-size: 13px; font-weight: 700; color: var(--slate-500); cursor: pointer; white-space: nowrap; }
 .pc-tab.on { background: var(--white); color: var(--slate-900); box-shadow: 0 1px 3px rgba(15,23,42,.1); }
-.pc-count { font-size: 11px; font-weight: 800; padding: 1px 7px; border-radius: 99px; background: var(--slate-200); color: var(--slate-600); }
+.pc-count { font-size: 12px; font-weight: 800; padding: 1px 7px; border-radius: 99px; background: var(--slate-200); color: var(--slate-600); }
 .pc-tab.on .pc-count { background: var(--teal-100); color: var(--teal-800); }
 .pc-search { flex: 1; min-width: 180px; display: flex; align-items: center; gap: 8px; height: 42px; padding: 0 12px; border-radius: 12px; background: var(--white); border: 1.5px solid var(--slate-200); color: var(--slate-400); }
 .pc-search:focus-within { border-color: var(--teal-400); box-shadow: 0 0 0 3px var(--teal-100); }
@@ -536,10 +536,10 @@ const CSS = `
 .pc-row.dim { opacity: .62; }
 .pc-codecell { min-width: 0; }
 .pc-code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-weight: 800; font-size: 14px; letter-spacing: .06em; color: var(--slate-900); background: var(--slate-100); padding: 5px 10px; border-radius: 9px; border: 1.5px dashed var(--slate-300); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
-.pc-note { margin: 5px 0 0; font-size: 11.5px; color: var(--slate-500); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pc-note { margin: 5px 0 0; font-size: 12px; color: var(--slate-500); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pc-icon { width: 28px; height: 28px; flex-shrink: 0; border: none; border-radius: 8px; background: transparent; color: var(--slate-400); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
 .pc-icon:hover { background: var(--slate-100); color: var(--teal-700); }
-.pc-pill { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 99px; font-size: 11.5px; font-weight: 800; white-space: nowrap; }
+.pc-pill { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 99px; font-size: 12px; font-weight: 800; white-space: nowrap; }
 .pc-meter { height: 5px; border-radius: 99px; background: var(--slate-100); margin-top: 5px; overflow: hidden; max-width: 160px; }
 .pc-meter span { display: block; height: 100%; border-radius: 99px; background: var(--teal-500); }
 .pc-skel { height: 74px; border-radius: 16px; background: linear-gradient(90deg, var(--slate-100), var(--slate-50), var(--slate-100)); background-size: 200% 100%; animation: pcSk 1.2s infinite linear; }

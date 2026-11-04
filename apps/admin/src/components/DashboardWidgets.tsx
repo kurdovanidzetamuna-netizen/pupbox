@@ -76,7 +76,7 @@ export function MetricCard({
   href?: string;
 }) {
   const body = (
-    <div style={{ ...card, padding: 20, display: 'flex', gap: 14, alignItems: 'flex-start', height: '100%', boxSizing: 'border-box' }}>
+    <div className="adm-metric" style={{ ...card, padding: 20, display: 'flex', gap: 14, alignItems: 'flex-start', height: '100%', boxSizing: 'border-box' }}>
       {emoji && (
         <div style={{ width: 42, height: 42, borderRadius: 11, background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 19, flexShrink: 0 }}>
           {emoji}
@@ -259,6 +259,28 @@ type ChartMetric = 'revenue' | 'orders';
  * Revenue or order volume per bucket, stacked so the channel mix is readable
  * at a glance and the column height still shows the combined total.
  */
+/**
+ * The dates under a bar chart. With many bars, printing every label turns the
+ * axis into a smear (and on a phone cuts each one short): at most five, spread
+ * evenly and always whole, the first and the last always among them.
+ */
+function AxisLabels({ labels }: { labels: string[] }) {
+  const n = labels.length;
+  const marks = n <= 5 ? labels.map((_, i) => i) : [...new Set([0, Math.round((n - 1) / 4), Math.round((n - 1) / 2), Math.round((3 * (n - 1)) / 4), n - 1])];
+  return (
+    <div style={{ position: 'relative', height: 20, borderTop: '1px solid var(--slate-200b)' }}>
+      {marks.map((i) => {
+        const first = i === 0, last = i === n - 1 && n > 1;
+        return (
+          <span key={i} style={{ position: 'absolute', top: 6, left: first ? 0 : last ? '100%' : `${((i + 0.5) / n) * 100}%`, transform: first ? 'none' : last ? 'translateX(-100%)' : 'translateX(-50%)', fontSize: 11, color: 'var(--slate-400)', whiteSpace: 'nowrap' }}>
+            {labels[i]}
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
 export function StackedChannelChart({ series, metric, height = 200 }: { series: SeriesPoint[]; metric: ChartMetric; height?: number }) {
   const valueOf = (p: SeriesPoint) =>
     metric === 'revenue'
@@ -269,8 +291,6 @@ export function StackedChannelChart({ series, metric, height = 200 }: { series: 
   const max = Math.max(...totals, 1);
   const fmt = (v: number) => (metric === 'revenue' ? money(v) : String(v));
 
-  // With many buckets, printing every label turns the axis into a smear.
-  const labelStep = series.length > 24 ? 4 : series.length > 14 ? 2 : 1;
 
   if (series.length === 0) return <EmptyState emoji="📊" text="No activity in this period" height={height} />;
 
@@ -295,13 +315,7 @@ export function StackedChannelChart({ series, metric, height = 200 }: { series: 
           );
         })}
       </div>
-      <div style={{ display: 'flex', gap: series.length > 20 ? 2 : 5, borderTop: '1px solid var(--slate-200b)', paddingTop: 6 }}>
-        {series.map((p, i) => (
-          <div key={i} style={{ flex: 1, minWidth: 0, fontSize: 9.5, color: 'var(--slate-400)', textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden' }}>
-            {i % labelStep === 0 ? p.label : ''}
-          </div>
-        ))}
-      </div>
+      <AxisLabels labels={series.map((p) => p.label)} />
     </div>
   );
 }
@@ -327,7 +341,6 @@ export function SimpleBarChart({ series, color, height = 130 }: {
 }) {
   if (series.length === 0) return <EmptyState emoji="👥" text="No registrations in this period" height={height} />;
   const max = Math.max(...series.map((s) => s.value), 1);
-  const labelStep = series.length > 24 ? 4 : series.length > 14 ? 2 : 1;
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'flex-end', gap: series.length > 20 ? 2 : 5, height, marginBottom: 8 }}>
@@ -337,13 +350,7 @@ export function SimpleBarChart({ series, color, height = 130 }: {
           </div>
         ))}
       </div>
-      <div style={{ display: 'flex', gap: series.length > 20 ? 2 : 5, borderTop: '1px solid var(--slate-200b)', paddingTop: 6 }}>
-        {series.map((s, i) => (
-          <div key={i} style={{ flex: 1, minWidth: 0, fontSize: 9.5, color: 'var(--slate-400)', textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden' }}>
-            {i % labelStep === 0 ? s.label : ''}
-          </div>
-        ))}
-      </div>
+      <AxisLabels labels={series.map((s) => s.label)} />
     </div>
   );
 }

@@ -257,7 +257,7 @@ export default function DashboardPage() {
             action={{ label: 'All subscriptions', href: '/dashboard/subscriptions' }}
           />
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14 }}>
+          <div className="adm-metrics" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14 }}>
             <MetricCard label="Box revenue" emoji="💎" accent={CHANNEL.subscription.accent} bg={CHANNEL.subscription.bg}
               value={money(sub.revenue)} change={sub.revenueChange} sub={`${money(sub.aov)} average paid order`} />
             <MetricCard label="Box orders" emoji="🧾" accent={CHANNEL.subscription.accent} bg={CHANNEL.subscription.bg}
@@ -311,7 +311,7 @@ export default function DashboardPage() {
             action={{ label: 'All products', href: '/dashboard/products' }}
           />
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14 }}>
+          <div className="adm-metrics" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14 }}>
             <MetricCard label="Shop revenue" emoji="💵" accent={CHANNEL.ecommerce.accent} bg={CHANNEL.ecommerce.bg}
               value={money(ecom.revenue)} change={ecom.revenueChange} sub={`${money(ecom.aov)} average paid basket`} />
             <MetricCard label="Shop orders" emoji="🛒" accent={CHANNEL.ecommerce.accent} bg={CHANNEL.ecommerce.bg}
