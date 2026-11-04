@@ -107,7 +107,7 @@ function NavGroup({ group, isActive }: { group: typeof NAV_GROUPS[0]; isActive: 
 
   return (
     <div style={{ marginBottom: 4 }}>
-      <div style={S.groupHeader(open)} onClick={() => setOpen(o => !o)}>
+      <div style={S.groupHeader(open)} className="adm-grouphead" role="button" tabIndex={0} aria-expanded={open} onClick={() => setOpen(o => !o)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen(o => !o); } }}>
         <span style={S.groupLabel}>{group.label}</span>
         <span style={S.chevron(open)}>
           <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
@@ -121,7 +121,7 @@ function NavGroup({ group, isActive }: { group: typeof NAV_GROUPS[0]; isActive: 
           {group.items.map(item => {
             const active = isActive(item.href, item.exact);
             return (
-              <Link key={item.href} href={item.href} style={S.navLink(active)}>
+              <Link key={item.href} href={item.href} style={S.navLink(active)} className="adm-navlink" aria-current={active ? 'page' : undefined}>
                 <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24" style={{ flexShrink: 0 }}>
                   <path d={item.icon} />
                 </svg>
@@ -152,6 +152,19 @@ const NEEDS: [prefix: string, perm: string][] = [
 ];
 const needFor = (href: string) => NEEDS.find(([p]) => href === p || href.startsWith(p + '/'))?.[1];
 
+const ALL_ITEMS = NAV_GROUPS.flatMap((g) => g.items.map((i) => ({ ...i, group: g.label })));
+/** The menu item a page belongs to (the longest matching address), for the phone title bar. */
+const itemFor = (path: string) =>
+  ALL_ITEMS.filter((i) => (i.exact ? path === i.href : path === i.href || path.startsWith(i.href + '/')))
+    .sort((a, b) => b.href.length - a.href.length)[0];
+/** Phones and tablets: the four places used most, then the full menu. */
+const TABS = ['/dashboard', '/dashboard/orders', '/dashboard/subscriptions', '/dashboard/customers'];
+const TAB_LABEL: Record<string, string> = { '/dashboard': 'Home' };
+
+function Svg({ d, size = 22, sw = 1.8 }: { d: string; size?: number; sw?: number }) {
+  return <svg width={size} height={size} fill="none" stroke="currentColor" strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24" aria-hidden="true" style={{ flexShrink: 0 }}><path d={d} /></svg>;
+}
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [perms, setPerms] = useState<string[] | null>(null);
   const [denied, setDenied] = useState('');
@@ -162,7 +175,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const { theme, toggleTheme } = useTheme();
   // Phones and small tablets: the menu slides in from the left.
   const [menu, setMenu] = useState(false);
-  useEffect(() => { setMenu(false); }, [pathname]);
+  const [q, setQ] = useState('');
+  useEffect(() => { setMenu(false); setQ(''); }, [pathname]);
 
   useEffect(() => {
     function signOut() {
@@ -202,22 +216,83 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return () => window.removeEventListener(AUTH_EVENT, onAuth);
   }, [router]);
 
+  // Phones: every table reads as a stack of cards. Each cell gets its column's
+  // heading as a label (CSS shows it before the value), so no page has to
+  // build a second, phone-only list.
+  useEffect(() => {
+    const main = document.querySelector('.adm-main');
+    if (!main) return;
+    const label = () => main.querySelectorAll<HTMLTableElement>('table:not(.ord-table):not([data-keep-table])').forEach((t) => {
+      const heads = [...t.querySelectorAll('thead th')].map((th) => (th.textContent || '').trim());
+      if (!heads.length) return;
+      t.classList.add('adm-cardify');
+      t.querySelectorAll('tbody tr').forEach((tr) => {
+        let col = 0;
+        [...tr.children].forEach((td) => {
+          const want = heads[col] ?? '';
+          if (td.getAttribute('data-label') !== want) td.setAttribute('data-label', want);
+          col += Number((td as HTMLTableCellElement).colSpan) || 1;
+        });
+      });
+    });
+    label();
+    const mo = new MutationObserver(() => label());
+    mo.observe(main, { childList: true, subtree: true });
+    return () => mo.disconnect();
+  }, []);
+
+  // The bar on top names the page by its own heading ("New product", "Edit
+  // Blueberry Biscuits"), else by its menu entry.
+  const [heading, setHeading] = useState('');
+  useEffect(() => {
+    const main = document.querySelector('.adm-main');
+    if (!main) return;
+    const read = () => setHeading(((main.querySelector('h1')?.textContent) || '').replace(/^[^\p{L}\p{N}]+/u, '').trim());
+    read();
+    const mo = new MutationObserver(read);
+    mo.observe(main, { childList: true, subtree: true, characterData: true });
+    return () => mo.disconnect();
+  }, [pathname]);
+
+  const here = itemFor(pathname);
+  const deeper = here && pathname !== here.href && !pathname.startsWith('/dashboard/page-builder/');
+  const allowed = (href: string) => { const n = needFor(href); return !n || !perms || perms.includes(n); };
+  const found = q.trim() ? ALL_ITEMS.filter((i) => allowed(i.href) && `${i.label} ${i.group}`.toLowerCase().includes(q.trim().toLowerCase())) : null;
+
   function isActive(href: string, exact?: boolean) {
     return exact ? pathname === href : pathname === href || pathname.startsWith(href + '/');
   }
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh' }}>
-      {/* Small screens: a bar with the menu button; the sidebar is a drawer */}
+      {/* Phones and tablets: the page's name on top, the main places at the bottom, the full menu as a sheet. */}
       <div className="adm-topbar">
-        <button type="button" onClick={() => setMenu(true)} aria-label="Open menu" aria-expanded={menu} className="adm-burger">
-          <svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16" /></svg>
+        {deeper ? (
+          <Link href={here!.href} aria-label={`Back to ${here!.label}`} className="adm-iconbtn"><Svg d="M15 19l-7-7 7-7" sw={2.2} /></Link>
+        ) : (
+          <div style={{ ...S.logoIcon, width: 32, height: 32 }} aria-hidden="true">🐾</div>
+        )}
+        <div className="adm-title">{heading || here?.label || 'Pupbox'}</div>
+        <button type="button" onClick={toggleTheme} aria-label={theme === 'dark' ? 'Light mode' : 'Dark mode'} className="adm-iconbtn">
+          <Svg d={theme === 'dark' ? 'M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z' : 'M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z'} size={20} />
         </button>
-        <div style={S.logoIcon}>🐾</div>
-        <div style={S.logoText}>Pupbox</div>
       </div>
+      <nav className="adm-tabbar" aria-label="Main">
+        {TABS.filter(allowed).map((href) => {
+          const it = ALL_ITEMS.find((i) => i.href === href)!;
+          const on = !menu && isActive(href, it.exact);
+          return (
+            <Link key={href} href={href} className="adm-tab" data-on={on || undefined} aria-current={on ? 'page' : undefined}>
+              <span className="adm-tab-ic"><Svg d={it.icon} /></span>{TAB_LABEL[href] ?? it.label}
+            </Link>
+          );
+        })}
+        <button type="button" onClick={() => setMenu((m) => !m)} className="adm-tab" data-on={menu || (!!here && !TABS.includes(here.href)) || undefined} aria-expanded={menu} aria-controls="adm-menu">
+          <span className="adm-tab-ic"><Svg d="M4 6h16M4 12h16M4 18h16" /></span>Menu
+        </button>
+      </nav>
       {menu && <div className="adm-backdrop" onClick={() => setMenu(false)} aria-hidden="true" />}
-      <aside style={S.sidebar} className="adm-sidebar" data-open={menu || undefined}>
+      <aside id="adm-menu" style={S.sidebar} className="adm-sidebar" data-open={menu || undefined}>
         <div style={S.logo}>
           <div style={S.logoIcon}>🐾</div>
           <div>
@@ -226,16 +301,29 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </div>
 
-        <div style={S.nav}>
-          {NAV_GROUPS
-            .map(group => ({ ...group, items: group.items.filter(i => { const n = needFor(i.href); return !n || !perms || perms.includes(n); }) }))
+        <div className="adm-search">
+          <Svg d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z" size={16} sw={2} />
+          <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Find a page…" aria-label="Find a page" />
+          <button type="button" onClick={() => setMenu(false)} aria-label="Close menu" className="adm-menu-close">×</button>
+        </div>
+        <div style={S.nav} className="adm-nav">
+          {found ? (
+            found.length ? found.map((it) => (
+              <Link key={it.href} href={it.href} style={S.navLink(isActive(it.href, it.exact))} className="adm-navlink">
+                <Svg d={it.icon} size={15} />
+                <span style={{ flex: 1 }}>{it.label}</span>
+                <span style={{ fontSize: 11, color: 'var(--slate-400)' }}>{it.group}</span>
+              </Link>
+            )) : <p style={{ fontSize: 13, color: 'var(--slate-400)', padding: '8px 10px' }}>No page called “{q}”.</p>
+          ) : NAV_GROUPS
+            .map(group => ({ ...group, items: group.items.filter((i) => allowed(i.href)) }))
             .filter(group => group.items.length > 0)
             .map(group => (
               <NavGroup key={group.label} group={group} isActive={isActive} />
             ))}
         </div>
 
-        <div style={S.bottom}>
+        <div style={S.bottom} className="adm-menu-bottom">
           <button onClick={toggleTheme} style={S.themeToggle}>
             {theme === 'dark' ? (
               <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24" style={{ flexShrink: 0 }}>

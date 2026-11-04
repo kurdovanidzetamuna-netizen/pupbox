@@ -135,7 +135,7 @@ export default function FAQPage() {
         })}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: editing !== null || form.question !== '' ? '1fr 400px' : '1fr', gap: 20, alignItems: 'start' }}>
+      <div className="faq-grid" style={{ display: 'grid', gridTemplateColumns: editing !== null || form.question !== '' ? '1fr 400px' : '1fr', gap: 20, alignItems: 'start' }}>
 
         {/* FAQ list */}
         <div style={{ background: 'var(--white)', borderRadius: 16, border: '1px solid var(--slate-200b)', overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
@@ -156,8 +156,8 @@ export default function FAQPage() {
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
                     {/* Sort controls */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 2, flexShrink: 0, marginTop: 2 }}>
-                      <button onClick={() => moveItem(item.id, -1)} disabled={idx === 0} style={{ width: 20, height: 20, border: '1px solid var(--slate-200)', borderRadius: 4, background: 'var(--white)', cursor: idx === 0 ? 'default' : 'pointer', fontSize: 10, opacity: idx === 0 ? 0.3 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>▲</button>
-                      <button onClick={() => moveItem(item.id, 1)} disabled={idx === displayed.length - 1} style={{ width: 20, height: 20, border: '1px solid var(--slate-200)', borderRadius: 4, background: 'var(--white)', cursor: idx === displayed.length - 1 ? 'default' : 'pointer', fontSize: 10, opacity: idx === displayed.length - 1 ? 0.3 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>▼</button>
+                      <button aria-label="Move up" onClick={() => moveItem(item.id, -1)} disabled={idx === 0} style={{ width: 20, height: 20, border: '1px solid var(--slate-200)', borderRadius: 4, background: 'var(--white)', cursor: idx === 0 ? 'default' : 'pointer', fontSize: 10, opacity: idx === 0 ? 0.3 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>▲</button>
+                      <button aria-label="Move down" onClick={() => moveItem(item.id, 1)} disabled={idx === displayed.length - 1} style={{ width: 20, height: 20, border: '1px solid var(--slate-200)', borderRadius: 4, background: 'var(--white)', cursor: idx === displayed.length - 1 ? 'default' : 'pointer', fontSize: 10, opacity: idx === displayed.length - 1 ? 0.3 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>▼</button>
                     </div>
 
                     <div style={{ flex: 1, minWidth: 0 }}>

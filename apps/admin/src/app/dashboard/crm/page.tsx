@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import CustomerDrawer from '@/components/CustomerDrawer';
 import { api, can, download, today } from '@/lib/api';
 import { day } from '@/lib/format';
+import FilterBar from '@/components/FilterBar';
 
 const SIZE: Record<string, string> = { EXTRA_SMALL: 'Extra small', SMALL: 'Small', MEDIUM: 'Medium', LARGE: 'Large', EXTRA_LARGE: 'Extra large', UNKNOWN: 'Not given' };
 const PLAN: Record<string, { label: string; color: string; bg: string }> = {
@@ -14,6 +15,8 @@ const PLAN: Record<string, { label: string; color: string; bg: string }> = {
 const ALLERGIES = ['chicken', 'beef', 'lamb', 'fish', 'wheat', 'dairy', 'soy', 'egg'];
 
 type Filters = { search: string; size: string; breed: string; allergy: string; plan: string; consent: string; birthdayWithin: string; photo: string };
+/** The filters (search aside) counted on the phone's Filters button. */
+const FILTER_KEYS = ['size', 'breed', 'allergy', 'plan', 'consent', 'birthdayWithin', 'photo'] as const;
 const EMPTY: Filters = { search: '', size: '', breed: '', allergy: '', plan: '', consent: '', birthdayWithin: '', photo: '' };
 
 /** Ready-made segments for the usual retention campaigns. */
@@ -118,18 +121,22 @@ export default function CrmPage() {
         ))}
       </div>
 
-      <form onSubmit={e => { e.preventDefault(); apply(f); }} style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginBottom: 16 }}>
-        <input value={f.search} onChange={e => setF({ ...f, search: e.target.value })} placeholder="Dog, owner, email or phone…" style={{ ...sel, minWidth: 220 }} />
-        <Select value={f.size} onChange={e => setF({ ...f, size: e.target.value })} style={sel}><option value="">Any size</option>{Object.entries(SIZE).filter(([k]) => k !== 'UNKNOWN').map(([k, v]) => <option key={k} value={k}>{v}</option>)}</Select>
-        <input value={f.breed} onChange={e => setF({ ...f, breed: e.target.value })} placeholder="Breed" style={{ ...sel, width: 120 }} />
-        <Select value={f.allergy} onChange={e => setF({ ...f, allergy: e.target.value })} style={sel}><option value="">Any allergy</option>{ALLERGIES.map(a => <option key={a} value={a}>{a}</option>)}</Select>
-        <Select value={f.plan} onChange={e => setF({ ...f, plan: e.target.value })} style={sel}><option value="">Any plan status</option><option value="active">On a plan</option><option value="ended">Lapsed</option><option value="none">Never subscribed</option></Select>
-        <Select value={f.birthdayWithin} onChange={e => setF({ ...f, birthdayWithin: e.target.value })} style={sel}><option value="">Any birthday</option><option value="7">Birthday in 7 days</option><option value="30">in 30 days</option><option value="90">in 90 days</option></Select>
-        <Select value={f.consent} onChange={e => setF({ ...f, consent: e.target.value })} style={sel}><option value="">Any consent</option><option value="yes">Marketing OK</option><option value="no">No consent</option></Select>
-        <Select value={f.photo} onChange={e => setF({ ...f, photo: e.target.value })} style={sel}><option value="">Photo or not</option><option value="yes">Has photo</option><option value="no">No photo</option></Select>
-        <button type="submit" style={{ background: 'var(--slate-900)', color: 'var(--white)', border: 'none', borderRadius: 10, padding: '8px 14px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Apply</button>
-        <button type="button" onClick={() => apply(EMPTY)} style={{ background: 'none', border: 'none', color: 'var(--slate-400)', fontSize: 12, cursor: 'pointer' }}>Clear</button>
-        <span style={{ fontSize: 12, color: 'var(--slate-400)', marginLeft: 'auto' }}>{total} dogs</span>
+      <form onSubmit={e => { e.preventDefault(); apply(f); }} style={{ marginBottom: 16 }}>
+        <FilterBar active={FILTER_KEYS.filter((k) => applied[k]).length} onClear={() => apply({ ...EMPTY, search: f.search })} onApply={() => apply(f)}
+          search={<input value={f.search} onChange={e => setF({ ...f, search: e.target.value })} placeholder="Dog, owner, email or phone…" aria-label="Search dogs" style={{ ...sel, width: '100%', minWidth: 0, boxSizing: 'border-box' }} />}
+          after={<span style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', width: '100%' }}>
+            <button type="submit" style={{ background: 'var(--slate-900)', color: 'var(--white)', border: 'none', borderRadius: 10, padding: '8px 14px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Apply</button>
+            <button type="button" onClick={() => apply(EMPTY)} style={{ background: 'none', border: 'none', color: 'var(--slate-400)', fontSize: 12, cursor: 'pointer' }}>Clear</button>
+            <span style={{ fontSize: 12, color: 'var(--slate-400)', marginLeft: 'auto' }}>{total} dogs</span>
+          </span>}>
+          <Select value={f.size} onChange={e => setF({ ...f, size: e.target.value })} style={sel}><option value="">Any size</option>{Object.entries(SIZE).filter(([k]) => k !== 'UNKNOWN').map(([k, v]) => <option key={k} value={k}>{v}</option>)}</Select>
+          <input value={f.breed} onChange={e => setF({ ...f, breed: e.target.value })} placeholder="Breed" style={{ ...sel, width: 120 }} />
+          <Select value={f.allergy} onChange={e => setF({ ...f, allergy: e.target.value })} style={sel}><option value="">Any allergy</option>{ALLERGIES.map(a => <option key={a} value={a}>{a}</option>)}</Select>
+          <Select value={f.plan} onChange={e => setF({ ...f, plan: e.target.value })} style={sel}><option value="">Any plan status</option><option value="active">On a plan</option><option value="ended">Lapsed</option><option value="none">Never subscribed</option></Select>
+          <Select value={f.birthdayWithin} onChange={e => setF({ ...f, birthdayWithin: e.target.value })} style={sel}><option value="">Any birthday</option><option value="7">Birthday in 7 days</option><option value="30">in 30 days</option><option value="90">in 90 days</option></Select>
+          <Select value={f.consent} onChange={e => setF({ ...f, consent: e.target.value })} style={sel}><option value="">Any consent</option><option value="yes">Marketing OK</option><option value="no">No consent</option></Select>
+          <Select value={f.photo} onChange={e => setF({ ...f, photo: e.target.value })} style={sel}><option value="">Photo or not</option><option value="yes">Has photo</option><option value="no">No photo</option></Select>
+        </FilterBar>
       </form>
 
       <div style={{ background: 'var(--white)', borderRadius: 16, border: '1px solid var(--slate-200b)', overflow: 'auto' }}>

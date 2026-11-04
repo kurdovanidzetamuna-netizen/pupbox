@@ -195,7 +195,7 @@ function NewProductForm() {
   return (
     <div style={{ padding: 32, maxWidth: 800 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 28 }}>
-        <button onClick={() => router.push('/dashboard/products')} style={{ fontSize: 13, color: 'var(--slate-400)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>← Products</button>
+        <button className="adm-back" onClick={() => router.push('/dashboard/products')} style={{ fontSize: 13, color: 'var(--slate-400)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>← Products</button>
         <h1 style={{ fontSize: 22, fontWeight: 800, color: 'var(--slate-900)', margin: 0 }}>New Product</h1>
       </div>
 
@@ -433,12 +433,14 @@ function NewProductForm() {
           </FormField>
         </div>
 
-        <div style={{ display: 'flex', gap: 10 }}>
-          <button type="submit" disabled={saving} style={{ background: 'var(--teal-600)', color: 'var(--white)', border: 'none', borderRadius: 10, padding: '10px 24px', fontSize: 13, fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1 }}>
-            {saving ? 'Creating…' : 'Create Product'}
-          </button>
+        {/* Cancel left, save right; on phones the row stays at the bottom of the screen */}
+        <div className="adm-savebar" style={{ display: 'flex', gap: 10 }}>
           <button type="button" onClick={() => router.push('/dashboard/products')} style={{ background: 'var(--slate-100)', color: 'var(--slate-500)', border: 'none', borderRadius: 10, padding: '10px 24px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
             Cancel
+          </button>
+          <span style={{ flex: 1 }} />
+          <button type="submit" disabled={saving} style={{ background: 'var(--teal-600)', color: 'var(--white)', border: 'none', borderRadius: 10, padding: '10px 24px', fontSize: 13, fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1 }}>
+            {saving ? 'Creating…' : 'Create Product'}
           </button>
         </div>
       </form>

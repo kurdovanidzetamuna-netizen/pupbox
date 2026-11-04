@@ -7,6 +7,7 @@ import { ActionButton, Pagination, StatCard, StatCards } from '@/components/Tool
 
 import { api, can, download, patch, today } from '@/lib/api';
 import { day } from '@/lib/format';
+import FilterBar from '@/components/FilterBar';
 
 const gel = (n: number) => `₾${n.toLocaleString('en-GB', { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 })}`;
 
@@ -21,6 +22,8 @@ const SORTS = [
 ];
 
 type F = { search: string; status: string; plan: string; consent: string; language: string; city: string; tag: string; buyer: string; joinedFrom: string; joinedTo: string; sort: string };
+/** The filters (search and sort aside) that count on the phone's Filters button. */
+const FILTER_KEYS = ['status', 'plan', 'consent', 'language', 'city', 'tag', 'buyer', 'joinedFrom', 'joinedTo'] as const;
 const EMPTY: F = { search: '', status: '', plan: '', consent: '', language: '', city: '', tag: '', buyer: '', joinedFrom: '', joinedTo: '', sort: 'joined' };
 
 /**
@@ -105,10 +108,12 @@ export default function CustomersPage() {
         </StatCards>
       )}
 
-      {/* Filters */}
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', margin: '18px 0 14px' }}>
-        <input value={f.search} onChange={(e) => set('search')(e.target.value)} placeholder="Name, email or phone…" aria-label="Search customers"
-          style={{ flex: '1 1 220px', minWidth: 0, padding: '9px 12px', fontSize: 13, border: '1px solid var(--slate-200)', borderRadius: 10, outline: 'none', background: 'var(--white)', color: 'var(--slate-900)' }} />
+      {/* Filters: in a row on computers, behind a "Filters" button on phones */}
+      <div style={{ margin: '18px 0 14px' }}>
+        <FilterBar active={FILTER_KEYS.filter((k) => f[k]).length} onClear={() => setF({ ...EMPTY, sort: f.sort, search: f.search })}
+          search={<input value={f.search} onChange={(e) => set('search')(e.target.value)} placeholder="Name, email or phone…" aria-label="Search customers"
+          style={{ width: '100%', minWidth: 0, boxSizing: 'border-box', padding: '9px 12px', fontSize: 13, border: '1px solid var(--slate-200)', borderRadius: 10, outline: 'none', background: 'var(--white)', color: 'var(--slate-900)' }} />}
+          after={<Dropdown aria-label="Sort" icon="↕" value={f.sort} onChange={set('sort')} options={SORTS} />}>
         <Dropdown aria-label="Plan" label="Plan" placeholder="Plan: all" value={f.plan} onChange={set('plan')} options={[{ value: '', label: 'All' }, { value: 'active', label: 'On a plan' }, { value: 'ended', label: 'Lapsed' }, { value: 'none', label: 'Never had one' }]} />
         <Dropdown aria-label="Bought" label="Bought" placeholder="Bought: all" value={f.buyer} onChange={set('buyer')} options={[{ value: '', label: 'All' }, { value: 'yes', label: 'Paid at least once' }, { value: 'no', label: 'Never paid' }]} />
         <Dropdown aria-label="City" label="City" placeholder="City: all" value={f.city} onChange={set('city')} options={[{ value: '', label: 'All' }, ...(data?.cities ?? []).map((c: string) => ({ value: c, label: c }))]} />
@@ -119,8 +124,8 @@ export default function CustomersPage() {
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--slate-500)' }}>
           Joined <DateInput aria-label="Joined from" value={f.joinedFrom} onChange={(e) => set('joinedFrom')(e.target.value)} emptyLabel="Any time" /> – <DateInput aria-label="Joined to" value={f.joinedTo} onChange={(e) => set('joinedTo')(e.target.value)} emptyLabel="Today" />
         </span>
-        <Dropdown aria-label="Sort" icon="↕" value={f.sort} onChange={set('sort')} options={SORTS} />
-        {filtered && <button type="button" onClick={() => setF({ ...EMPTY, sort: f.sort })} style={{ border: 'none', background: 'none', color: 'var(--teal-600)', fontSize: 12.5, fontWeight: 700, cursor: 'pointer' }}>↺ Clear filters</button>}
+        </FilterBar>
+        {filtered && <button type="button" onClick={() => setF({ ...EMPTY, sort: f.sort })} style={{ marginTop: 6, border: 'none', background: 'none', color: 'var(--teal-600)', fontSize: 12.5, fontWeight: 700, cursor: 'pointer' }}>↺ Clear filters</button>}
       </div>
 
       <div style={{ background: 'var(--white)', borderRadius: 16, border: '1px solid var(--slate-200b)', overflow: 'hidden', opacity: loading && data ? 0.6 : 1, transition: 'opacity .15s' }}>

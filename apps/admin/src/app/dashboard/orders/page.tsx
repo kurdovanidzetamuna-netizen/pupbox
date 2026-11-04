@@ -9,6 +9,7 @@ import { categoryTree, type Cat } from './_components/CategoryPicker';
 import { DateInput } from '@/components/DateField';
 import type { Api } from '@pupbox/content';
 import { TBILISI, tbilisiDay, tbilisiMonth } from '@pupbox/content';
+import FilterBar from '@/components/FilterBar';
 
 const gel = (v: number) => (Math.abs(v) >= 10000 ? `₾${(v / 1000).toFixed(1)}k` : `₾${v.toLocaleString('en-US', { maximumFractionDigits: 0 })}`);
 const PAGE = 20;
@@ -154,13 +155,13 @@ export default function AdminOrdersPage() {
 
       {/* What matches, next to everything */}
       {summary && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 170px), 1fr))', gap: 12, marginBottom: 18 }}>
+        <div className="adm-kpis" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 170px), 1fr))', gap: 12, marginBottom: 18 }}>
           {cards.map((c) => (
-            <div key={c.label} style={{ background: 'var(--white)', borderRadius: 16, border: '1px solid var(--slate-200b)', padding: '14px 16px' }}>
+            <div key={c.label} className="adm-kpi" style={{ background: 'var(--white)', borderRadius: 16, border: '1px solid var(--slate-200b)', padding: '14px 16px' }}>
               <div style={label}>{c.label}</div>
               <div style={{ fontSize: 24, fontWeight: 800, color: c.accent, lineHeight: 1.15, marginTop: 4 }}>{c.value}</div>
               <div style={{ fontSize: 11.5, color: 'var(--slate-500)', marginTop: 3 }}>{c.sub}</div>
-              {c.of && <div style={{ fontSize: 11, color: 'var(--slate-400)', marginTop: 6, paddingTop: 6, borderTop: '1px dashed var(--slate-200)' }}>{c.of}</div>}
+              {c.of && <div className="adm-kpi-of" style={{ fontSize: 11, color: 'var(--slate-400)', marginTop: 6, paddingTop: 6, borderTop: '1px dashed var(--slate-200)' }}>{c.of}</div>}
             </div>
           ))}
         </div>
@@ -178,28 +179,30 @@ export default function AdminOrdersPage() {
 
       {/* Filters: combine freely; several choices in one = any of them */}
       <div style={{ background: 'var(--white)', border: '1px solid var(--slate-200b)', borderRadius: 16, padding: 12, marginBottom: 14 }}>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
-          <div style={{ position: 'relative', flex: '1 1 220px', minWidth: 0 }}>
+        <FilterBar active={chips.filter((c) => c.key !== 's').length} onClear={() => { setTypes([]); setPlanIds([]); setCatIds([]); setPeriod(''); setDateFrom(''); setDateTo(''); setPage(1); }}
+          search={
+          <div style={{ position: 'relative', width: '100%', minWidth: 0 }}>
             <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--slate-400)', pointerEvents: 'none' }}>
               <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
             </span>
             <input value={search} onChange={(e) => f(setSearch)(e.target.value)} placeholder="Order #, name, email, phone or product…" aria-label="Search orders"
-              style={{ width: '100%', boxSizing: 'border-box', height: 36, padding: '0 32px 0 34px', fontSize: 13, border: '1.5px solid var(--slate-200)', borderRadius: 10, outline: 'none' }} />
+              style={{ width: '100%', boxSizing: 'border-box', height: 40, padding: '0 32px 0 34px', fontSize: 13, border: '1.5px solid var(--slate-200)', borderRadius: 10, outline: 'none', background: 'var(--white)', color: 'var(--slate-900)' }} />
             {search && <button onClick={() => f(setSearch)('')} aria-label="Clear search" style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--slate-400)', fontSize: 16 }}>×</button>}
           </div>
+          }
+          after={<Dropdown aria-label="Sort" value={sort} onChange={f(setSort)} options={SORTS} icon="↕︎" />}>
           <Dropdown multiple aria-label="Category" label="Category" placeholder="Category" value={catIds} onChange={f(setCatIds)} options={catOpts} icon="🏷️" />
           <Dropdown multiple aria-label="Channel" label="Channel" placeholder="Channel" value={types} onChange={f(setTypes)} options={typeOpts} icon="🛒" />
           <Dropdown multiple aria-label="Plan" label="Plan" placeholder="Plan" value={planIds} onChange={f(setPlanIds)} options={planOpts} icon="📦" searchable />
           <Dropdown aria-label="Date" label="Date" placeholder="Any date" value={period} onChange={pickPeriod} options={[{ value: '', label: 'Any date' }, ...PERIODS]} icon="📅" />
-          <Dropdown aria-label="Sort" value={sort} onChange={f(setSort)} options={SORTS} icon="↕︎" />
-        </div>
         {period === 'custom' && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
             <DateInput aria-label="From date" value={dateFrom} onChange={(e) => f(setDateFrom)(e.target.value)} />
             <span style={{ color: 'var(--slate-400)' }}>–</span>
             <DateInput aria-label="To date" value={dateTo} onChange={(e) => f(setDateTo)(e.target.value)} />
-          </div>
+          </span>
         )}
+        </FilterBar>
         {chips.length > 0 && (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 10, paddingTop: 10, borderTop: '1px solid var(--slate-100)' }}>
             {chips.map((c) => (
@@ -320,7 +323,7 @@ function RowActions({ o, onEdit }: { o: Api.AdminOrderRow; onEdit: () => void })
   const small = { fontSize: 12, fontWeight: 700, borderRadius: 9, padding: '6px 10px', textDecoration: 'none', cursor: 'pointer', whiteSpace: 'nowrap' as const };
   return (
     // Invoice always first, Edit always second (an empty slot when it can't be edited) — nothing jumps around.
-    <span style={{ display: 'inline-grid', gridTemplateColumns: '38px 70px', gap: 6, flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
+    <span className="adm-keepgrid" style={{ display: 'inline-grid', gridTemplateColumns: '38px 70px', gap: 6, flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
       <Link href={`/dashboard/orders/${o.id}/invoice`} target="_blank" title="Invoice" aria-label="Invoice" style={{ ...small, color: 'var(--teal-700)', background: 'var(--teal-50)', border: '1px solid var(--teal-200)', textAlign: 'center' }}>🧾</Link>
       {EDITABLE.includes(o.status)
         ? <button onClick={onEdit} title="Edit order" aria-label={`Edit order ${(o.orderNumber || o.id).slice(-8)}`} style={{ ...small, border: '1px solid var(--slate-200)', background: 'var(--white)', color: 'var(--slate-700)' }}>✎ Edit</button>

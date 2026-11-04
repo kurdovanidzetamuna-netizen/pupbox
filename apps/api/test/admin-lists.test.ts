@@ -70,3 +70,25 @@ describe('ready-made allergies', () => {
     await prisma.cMSPage.deleteMany({ where: { slug: 'config-allergens' } });
   });
 });
+
+describe('pages list (Terms & Privacy)', () => {
+  test('settings kept as config-… rows are not listed as pages', async () => {
+    const a = await admin();
+    expectStatus(await post('/cms', { key: 'terms-test', slug: 'terms-test', title: 'Terms test', status: 'DRAFT' }, a), '2xx');
+    const slugs = expectStatus(await get('/cms/admin/all', a), 200).map((p: any) => p.slug);
+    assert.ok(slugs.includes('terms-test'));
+    assert.ok(!slugs.some((x: string) => x.startsWith('config-')), slugs.join(', '));
+  });
+});
+
+describe('audit log', () => {
+  test('an admin change shows in the log the admin page reads (logs, total, limit)', async () => {
+    const a = await admin();
+    expectStatus(await post('/admin/tags', { name: `Audit ${Date.now()}` }, a), '2xx');
+    const r = expectStatus(await get('/audit?page=1&limit=5', a), 200);
+    assert.ok(Array.isArray(r.logs) && r.logs.length > 0, 'logs');
+    assert.ok(r.total >= r.logs.length);
+    assert.equal(r.limit, 5);
+    assert.equal(r.logs[0].module, 'products');
+  });
+});

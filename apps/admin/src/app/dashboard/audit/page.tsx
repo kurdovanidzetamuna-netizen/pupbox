@@ -27,9 +27,10 @@ export default function AuditLogPage() {
     if (module) qs.set('module', module);
     const data = await getOr<any>(`/audit?${qs}`, null);
     if (data) {
-      setLogs(data.items || []);
+      // The server sends { logs, total, page, limit }.
+      setLogs(data.logs || []);
       setTotal(data.total || 0);
-      setPages(data.pages || 1);
+      setPages(Math.max(1, Math.ceil((data.total || 0) / (data.limit || 50))));
     }
     setLoading(false);
   }, [page, module]);
@@ -90,7 +91,7 @@ export default function AuditLogPage() {
                   <tr key={log.id} style={{ borderBottom: '1px solid var(--slate-50)' }}>
                     <td style={{ padding: '12px 18px', color: 'var(--slate-500)', whiteSpace: 'nowrap', fontSize: 12 }}>{formatDate(log.createdAt)}</td>
                     <td style={{ padding: '12px 18px' }}>
-                      <div style={{ fontWeight: 600, color: 'var(--slate-800)', fontSize: 12 }}>{log.admin?.name || log.admin?.email || 'System'}</div>
+                      <div style={{ fontWeight: 600, color: 'var(--slate-800)', fontSize: 12 }}>{[log.adminUser?.firstName, log.adminUser?.lastName].filter(Boolean).join(' ') || log.adminUser?.email || 'System'}</div>
                     </td>
                     <td style={{ padding: '12px 18px' }}>
                       <span style={{ fontFamily: 'monospace', fontSize: 11, background: 'var(--slate-100)', color: 'var(--slate-600)', padding: '2px 8px', borderRadius: 6 }}>{log.module || '—'}</span>
