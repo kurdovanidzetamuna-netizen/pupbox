@@ -1,3 +1,5 @@
+import { tbilisiDay } from '@pupbox/content';
+
 /**
  * The one way admin pages talk to the API: the address, the signed-in
  * token, and what to do with an answer. A 401 or 403 is announced as
@@ -70,7 +72,7 @@ export function saveCsv(rows: unknown[][], name: string) {
 }
 
 /** Today as 2026-10-30, for file names. */
-export const today = () => new Date().toISOString().slice(0, 10);
+export const today = () => tbilisiDay();
 
 /** Fetches a file from the API (a CSV export, say) and saves it; throws an ApiError when refused. */
 export async function download(path: string, name: string, fallback = 'Export failed.') {

@@ -8,6 +8,7 @@ import OrderDrawer from './_components/OrderDrawer';
 import { categoryTree, type Cat } from './_components/CategoryPicker';
 import { DateInput } from '@/components/DateField';
 import type { Api } from '@pupbox/content';
+import { TBILISI, tbilisiDay, tbilisiMonth } from '@pupbox/content';
 
 const gel = (v: number) => (Math.abs(v) >= 10000 ? `₾${(v / 1000).toFixed(1)}k` : `₾${v.toLocaleString('en-US', { maximumFractionDigits: 0 })}`);
 const PAGE = 20;
@@ -17,12 +18,12 @@ const SORTS: DropdownOption[] = [
   { value: '', label: 'Newest first' }, { value: 'createdAt_asc', label: 'Oldest first' },
   { value: 'total_desc', label: 'Highest total' }, { value: 'total_asc', label: 'Lowest total' },
 ];
-const day = (d: Date) => d.toISOString().slice(0, 10);
+const day = (d: Date) => tbilisiDay(d);
 const PERIODS: { value: string; label: string; range: () => [string, string] }[] = [
   { value: 'today', label: 'Today', range: () => [day(new Date()), day(new Date())] },
   { value: '7', label: 'Last 7 days', range: () => [day(new Date(Date.now() - 6 * 864e5)), day(new Date())] },
   { value: '30', label: 'Last 30 days', range: () => [day(new Date(Date.now() - 29 * 864e5)), day(new Date())] },
-  { value: 'month', label: 'This month', range: () => { const n = new Date(); return [day(new Date(n.getFullYear(), n.getMonth(), 1)), day(n)]; } },
+  { value: 'month', label: 'This month', range: () => [tbilisiMonth().first, tbilisiDay()] },
   { value: 'custom', label: 'Pick dates…', range: () => ['', ''] },
 ];
 
@@ -297,7 +298,7 @@ export default function AdminOrdersPage() {
   );
 }
 
-const when = (d: string) => new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+const when = (d: string) => new Date(d).toLocaleDateString('en-GB', { timeZone: TBILISI, day: 'numeric', month: 'short', year: 'numeric' });
 
 /** Up to three little pictures and the first item's name, "+2 more". */
 function Inside({ items = [] }: { items?: Api.OrderItem[] }) {

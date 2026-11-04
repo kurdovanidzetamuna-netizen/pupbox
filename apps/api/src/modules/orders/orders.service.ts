@@ -83,8 +83,9 @@ export class OrdersService {
     if (and.length) base.AND = and;
     if (dateFrom || dateTo) {
       base.createdAt = {};
-      if (dateFrom) base.createdAt.gte = new Date(dateFrom);
-      if (dateTo) { const d = new Date(dateTo); d.setHours(23, 59, 59, 999); base.createdAt.lte = d; }
+      // Whole Tbilisi days: "2026-11-04" runs from its midnight to the next one there
+      if (dateFrom) base.createdAt.gte = new Date(`${dateFrom.slice(0, 10)}T00:00:00+04:00`);
+      if (dateTo) base.createdAt.lte = new Date(`${dateTo.slice(0, 10)}T23:59:59.999+04:00`);
     }
     if (search) {
       base.OR = [

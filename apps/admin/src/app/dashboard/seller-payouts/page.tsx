@@ -4,16 +4,15 @@ import ErrorPopup from '@/components/ErrorPopup';
 import { DateInput } from '@/components/DateField';
 import { api, download, post } from '@/lib/api';
 import { day } from '@/lib/format';
+import { tbilisiMonth } from '@pupbox/content';
 
 const money = (n: number) => `₾${Number(n || 0).toFixed(2)}`;
-const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
 /** Quick spans for the date filter. */
 function preset(k: 'this' | 'last' | 'all') {
-  const now = new Date();
   if (k === 'all') return { from: '', to: '' };
-  const m = k === 'this' ? now.getMonth() : now.getMonth() - 1;
-  return { from: iso(new Date(now.getFullYear(), m, 1)), to: iso(new Date(now.getFullYear(), m + 1, 0)) };
+  const m = tbilisiMonth(k === 'this' ? 0 : -1);
+  return { from: m.first, to: m.last };
 }
 
 const STATE: Record<string, { label: string; bg: string; color: string }> = {

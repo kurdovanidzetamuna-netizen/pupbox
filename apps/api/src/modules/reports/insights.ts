@@ -2,6 +2,7 @@ import { BadRequestException } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
 import type { PrismaService } from '../prisma/prisma.service';
 import { r2 as round } from '../../common/money';
+import { TBILISI_OFFSET } from '../../common/tbilisi';
 
 export type InsightFilters = {
   from?: string; to?: string;
@@ -11,13 +12,12 @@ export type InsightFilters = {
 };
 
 const DAY = 86400_000;
-const TZ = 4 * 3600_000; // Tbilisi, no daylight saving
 const list = (v?: string) => (v ? v.split(',').map((x) => x.trim()).filter(Boolean) : []);
 const PAID = ['PAID', 'PARTIALLY_REFUNDED', 'REFUNDED'] as const;
 
 /** Start of the day / ISO week (Monday) / month a moment falls in, in Tbilisi time, as "YYYY-MM-DD". */
 function bucket(d: Date, by: 'day' | 'week' | 'month') {
-  const t = new Date(d.getTime() + TZ);
+  const t = new Date(d.getTime() + TBILISI_OFFSET);
   if (by === 'month') return `${t.getUTCFullYear()}-${String(t.getUTCMonth() + 1).padStart(2, '0')}-01`;
   if (by === 'week') t.setUTCDate(t.getUTCDate() - ((t.getUTCDay() + 6) % 7));
   return t.toISOString().slice(0, 10);

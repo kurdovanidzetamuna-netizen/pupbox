@@ -7,6 +7,7 @@ import { AdminJwtGuard } from '../admin-auth/admin-jwt.guard';
 import { ReferralsService, type ReferralFilters } from './referrals.service';
 import { AdminPerms } from '../admin-auth/admin-permissions';
 import { AuditService } from '../audit/audit.service';
+import { tbilisiDay } from '../../common/tbilisi';
 
 @ApiTags('referrals')
 @Controller('referrals')
@@ -69,7 +70,7 @@ export class ReferralsController {
   @UseGuards(AdminJwtGuard)
   @AdminPerms({ read: 'users.view' })
   async adminCsv(@Res() res: Response, @Query() f: ReferralFilters) {
-    const day = (d?: Date | null) => (d ? new Date(d).toISOString().slice(0, 10) : '');
+    const day = (d?: Date | null) => (d ? tbilisiDay(new Date(d)) : '');
     const name = (u?: { firstName?: string | null; lastName?: string | null } | null) => [u?.firstName, u?.lastName].filter(Boolean).join(' ');
     const rows = (await this.referralsService.adminExport(f)).map((r) => ({
       date: day(r.createdAt),

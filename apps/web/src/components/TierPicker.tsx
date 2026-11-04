@@ -82,7 +82,7 @@ export default function TierPicker({ tiers, gift = false }: { tiers: any[]; gift
       )}
 
       {/* The boxes: rows on phones, side by side from tablets. Tap to pick. */}
-      <div role="radiogroup" aria-label={t('tier.pick')} className="grid md:grid-cols-3 gap-3.5 md:gap-4 text-left">
+      <div role="radiogroup" aria-label={t('tier.pick')} className="grid grid-cols-1 md:grid-cols-3 gap-3.5 md:gap-4 text-left">
         {tiers.map((tier, i) => {
           const p = planOf(tier);
           const on = picked?.id === tier.id;
@@ -92,7 +92,7 @@ export default function TierPicker({ tiers, gift = false }: { tiers: any[]; gift
           return (
             <button key={tier.id} type="button" role="radio" aria-checked={on} disabled={!p} onClick={() => setPickedId(tier.id)}
               aria-label={p ? `${name}, ${money(perMonth)} ${t('tier.perMonth')}, ${fill(t('tier.itemsShort'), { n: tier.itemCount })}` : name}
-              className={`relative flex md:flex-col items-center md:items-stretch gap-3 md:gap-4 text-left rounded-[22px] p-3.5 md:p-5 transition-[background-color,box-shadow] duration-200 focus:outline-none focus-visible:ring-4 focus-visible:ring-teal-200 disabled:opacity-50 disabled:cursor-not-allowed motion-safe:animate-[fadeUp_0.35s_ease-out_both] ${
+              className={`relative min-w-0 flex md:flex-col items-center md:items-stretch gap-3 md:gap-4 text-left rounded-[22px] p-3.5 md:p-5 transition-[background-color,box-shadow] duration-200 focus:outline-none focus-visible:ring-4 focus-visible:ring-teal-200 disabled:opacity-50 disabled:cursor-not-allowed motion-safe:animate-[fadeUp_0.35s_ease-out_both] ${
                 on ? A.on : `bg-white ring-1 ring-gray-200 ${A.hover}`}`}
               style={{ animationDelay: `${i * 60}ms` }}>
               {tier.featured && (
@@ -101,11 +101,11 @@ export default function TierPicker({ tiers, gift = false }: { tiers: any[]; gift
                 </span>
               )}
               <span className="flex items-center md:items-start lg:items-center md:flex-col lg:flex-row gap-3 md:gap-2.5 lg:gap-3 min-w-0 flex-1 md:flex-none">
-                <span className={`w-11 h-11 md:w-12 md:h-12 shrink-0 rounded-[14px] flex items-center justify-center text-[24px] transition-colors ${on ? 'bg-white' : 'bg-gray-50'}`} aria-hidden="true">{tier.emoji || '📦'}</span>
+                <span className={`max-[339px]:hidden w-11 h-11 md:w-12 md:h-12 shrink-0 rounded-[14px] flex items-center justify-center text-[24px] transition-colors ${on ? 'bg-white' : 'bg-gray-50'}`} aria-hidden="true">{tier.emoji || '📦'}</span>
                 <span className="min-w-0">
                   <span className="block text-[16px] md:text-[18px] font-extrabold text-gray-900 leading-tight">{name}</span>
                   {/* How full the box is: one dot per item */}
-                  <span className="mt-1 flex items-center gap-1.5">
+                  <span className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
                     <span className="flex gap-[3px]" aria-hidden="true">
                       {Array.from({ length: tier.itemCount }, (_, k) => (
                         <span key={k} className={`w-2 h-2 rounded-[3px] ${A.dot} motion-safe:animate-[pop_0.3s_ease-out_both]`} style={{ animationDelay: `${150 + k * 35}ms`, opacity: 0.45 + (k / tier.itemCount) * 0.55 }} />

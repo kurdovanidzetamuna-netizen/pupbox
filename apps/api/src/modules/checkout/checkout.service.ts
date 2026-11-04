@@ -10,6 +10,7 @@ import { checkReferralCode, referralDiscount } from '../referrals/referral-promo
 import { couponGap, hasPaidBefore } from '../coupons/coupon-discount';
 import { orderPrice } from './pricing';
 import { orderAddress } from './order-address';
+import { TBILISI_OFFSET } from '../../common/tbilisi';
 
 export interface GiftDetails {
   recipientName: string;
@@ -24,7 +25,7 @@ export interface GiftDetails {
 }
 
 /** Today's date in Tbilisi (UTC+4, no daylight saving), as YYYY-MM-DD. */
-const tbilisiToday = () => new Date(Date.now() + 4 * 3600_000).toISOString().slice(0, 10);
+const tbilisiToday = () => new Date(Date.now() + TBILISI_OFFSET).toISOString().slice(0, 10);
 
 /**
  * When a gift starts: null = as soon as it's paid. A chosen day means 09:00
@@ -37,7 +38,7 @@ function giftSendDate(raw?: string): Date | null {
   const day = String(raw).slice(0, 10);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) throw new BadRequestException('Choose a valid start date for the gift');
   const today = tbilisiToday();
-  const max = new Date(Date.now() + 4 * 3600_000 + 365 * 86400_000).toISOString().slice(0, 10);
+  const max = new Date(Date.now() + TBILISI_OFFSET + 365 * 86400_000).toISOString().slice(0, 10);
   if (day < today) throw new BadRequestException('The gift can’t start in the past');
   if (day > max) throw new BadRequestException('A gift can start up to a year ahead');
   return day === today ? null : new Date(`${day}T09:00:00+04:00`);

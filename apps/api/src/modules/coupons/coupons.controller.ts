@@ -7,6 +7,7 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { PrismaService } from '../prisma/prisma.service';
 import { AdminPerms } from '../admin-auth/admin-permissions';
 import { AdminJwtGuard } from '../admin-auth/admin-jwt.guard';
+import { tbilisiDay } from '../../common/tbilisi';
 
 const csvCell = (v: unknown) => { const t = v == null ? '' : String(v); return /[",\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t; };
 
@@ -170,13 +171,13 @@ export class CouponsController {
   async exportCsv(@Res() res: Response) {
     const list = await this.list();
     const head = ['Code', 'Description', 'Type', 'Value', 'Works on', 'Status', 'Starts', 'Ends', 'Uses', 'Use limit', 'Paid orders', 'Taken off (GEL)', 'Sales (GEL)'];
-    const day = (d: any) => (d ? new Date(d).toISOString().slice(0, 10) : '');
+    const day = (d: any) => (d ? tbilisiDay(new Date(d)) : '');
     const lines = (list as any[]).map((c) => [
       c.code, c.description ?? '', c.discountType, Number(c.discountValue), (c.scopes ?? []).join(' '), c.stoppedAt ? 'stopped' : c.isActive ? 'on' : 'off',
       day(c.startsAt), day(c.expiresAt), c.usedCount ?? c._count?.usages ?? 0, c.usageLimit ?? '', c.stats?.orders ?? 0, Number(c.stats?.discount ?? 0).toFixed(2), Number(c.stats?.sales ?? 0).toFixed(2),
     ].map(csvCell).join(','));
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-    res.setHeader('Content-Disposition', `attachment; filename="promo-codes-${new Date().toISOString().slice(0, 10)}.csv"`);
+    res.setHeader('Content-Disposition', `attachment; filename="promo-codes-${tbilisiDay()}.csv"`);
     res.send('\uFEFF' + [head.join(','), ...lines].join('\n'));
   }
 

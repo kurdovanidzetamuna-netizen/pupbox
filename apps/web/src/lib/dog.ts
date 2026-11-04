@@ -1,14 +1,17 @@
 import { allergenLabel } from '@/lib/allergens';
 import { fill } from '@/context/strings/purchase';
+import { daysBetween } from '@pupbox/content';
+import { myToday } from '@/lib/dates';
 
 type T = (key: string, fallback?: string) => string;
 
 /** "2 წლის და 3 თვის", "5 თვის", from a birthday. */
 export function dogAge(birthday: string | null | undefined, t: T): string | null {
   if (!birthday) return null;
-  const b = new Date(birthday), now = new Date();
-  let months = (now.getFullYear() - b.getFullYear()) * 12 + now.getMonth() - b.getMonth();
-  if (now.getDate() < b.getDate()) months--;
+  const [by, bm, bd] = birthday.slice(0, 10).split('-').map(Number);
+  const [ty, tm, td] = myToday().split('-').map(Number); // the owner's own today
+  let months = (ty - by) * 12 + tm - bm;
+  if (td < bd) months--;
   if (months < 1) return t('dogs.ageNew');
   const y = Math.floor(months / 12), m = months % 12;
   if (!y) return fill(t('dogs.ageM'), { n: m });
@@ -18,11 +21,12 @@ export function dogAge(birthday: string | null | undefined, t: T): string | null
 /** Days until the next birthday (0 = today), or null without one. */
 export function daysToBirthday(birthday: string | null | undefined): number | null {
   if (!birthday) return null;
-  const b = new Date(birthday), now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  let next = new Date(now.getFullYear(), b.getMonth(), b.getDate());
-  if (next < today) next = new Date(now.getFullYear() + 1, b.getMonth(), b.getDate());
-  return Math.round((next.getTime() - today.getTime()) / 86400_000);
+  // A birthday is a calendar day; "today" is the owner's own, wherever they are
+  const md = birthday.slice(5, 10), today = myToday(), year = Number(today.slice(0, 4));
+  const on = (y: number) => (md === '02-29' && new Date(Date.UTC(y, 1, 29)).getUTCMonth() !== 1 ? `${y}-02-28` : `${y}-${md}`);
+  let next = on(year);
+  if (next < today) next = on(year + 1);
+  return daysBetween(today, next);
 }
 
 /** "Birthday in 12 days", only when it's within a month. */

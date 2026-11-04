@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { TBILISI_OFFSET, tbilisiDay } from '../../common/tbilisi';
 
 export interface DogFilters {
   search?: string;
@@ -22,7 +23,8 @@ const DAY = 86400_000;
 /** Days from today until the dog's next birthday (0 = today). */
 function daysToBirthday(birthday: Date | null, now = new Date()): number | null {
   if (!birthday) return null;
-  const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  const t = new Date(now.getTime() + TBILISI_OFFSET); // today in Tbilisi
+  const today = new Date(Date.UTC(t.getUTCFullYear(), t.getUTCMonth(), t.getUTCDate()));
   let next = new Date(Date.UTC(today.getUTCFullYear(), birthday.getUTCMonth(), birthday.getUTCDate()));
   if (next < today) next = new Date(Date.UTC(today.getUTCFullYear() + 1, birthday.getUTCMonth(), birthday.getUTCDate()));
   return Math.round((next.getTime() - today.getTime()) / DAY);
@@ -126,7 +128,7 @@ export class CrmService {
     const head = ['dog', 'breed', 'size', 'gender', 'birthday', 'age_years', 'days_to_birthday', 'allergies', 'photo', 'gift_dog', 'plan_status', 'plan', 'plan_ends',
       'owner_first_name', 'owner_last_name', 'owner_email', 'owner_phone', 'owner_language', 'marketing_consent'];
     const cell = (v: unknown) => {
-      let s = v instanceof Date ? v.toISOString().slice(0, 10) : String(v ?? '');
+      let s = v instanceof Date ? tbilisiDay(v) : String(v ?? '');
       // A phone number like +995… is safe as it is; campaign tools need the +.
       if (/^[=+\-@\t\r]/.test(s) && !/^\+\d{6,15}$/.test(s)) s = `'${s}`;
       s = s.replace(/"/g, '""');

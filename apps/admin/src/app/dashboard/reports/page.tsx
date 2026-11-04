@@ -3,11 +3,12 @@ import { useEffect, useMemo, useState } from 'react';
 import Dropdown from '@/components/Dropdown';
 import { DateInput } from '@/components/DateField';
 import { api, download as fetchFile, getOr } from '@/lib/api';
+import { tbilisiDay } from '@pupbox/content';
 
 const gel = (n: number) => `₾${Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
 const DAY = 86400_000;
 /** Today in Tbilisi as YYYY-MM-DD. */
-const today = () => new Date(Date.now() + 4 * 3600_000).toISOString().slice(0, 10);
+const today = () => tbilisiDay();
 const shift = (d: string, days: number) => new Date(new Date(`${d}T00:00:00Z`).getTime() + days * DAY).toISOString().slice(0, 10);
 
 const PRESETS = [

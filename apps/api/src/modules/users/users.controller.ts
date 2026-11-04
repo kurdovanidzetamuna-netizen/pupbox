@@ -11,6 +11,7 @@ import { consentUpdate } from './consent';
 import { AdminPerms } from '../admin-auth/admin-permissions';
 import { AdminJwtGuard } from '../admin-auth/admin-jwt.guard';
 import { AuditService } from '../audit/audit.service';
+import { tbilisiDay } from '../../common/tbilisi';
 
 const USER_SELECT = {
   id: true,
@@ -160,7 +161,7 @@ export class AdminCustomersController {
   async exportCsv(@Res() res: Response, @Query() q: CustomerQuery) {
     const { rows } = await customerRows(this.prisma, q, true);
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-    res.setHeader('Content-Disposition', `attachment; filename="customers-${new Date().toISOString().slice(0, 10)}.csv"`);
+    res.setHeader('Content-Disposition', `attachment; filename="customers-${tbilisiDay()}.csv"`);
     res.send(customersCsv(rows));
   }
 

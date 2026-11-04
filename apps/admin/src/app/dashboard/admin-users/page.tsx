@@ -2,6 +2,7 @@
 import { Select } from '@/components/Dropdown';
 import { useEffect, useState } from 'react';
 import { del, getOr, patch, post } from '@/lib/api';
+import { TBILISI } from '@pupbox/content';
 
 
 interface Role { id: string; name: string; }
@@ -159,7 +160,7 @@ export default function AdminUsersPage() {
                 <td style={{ padding: '12px 16px' }}>
                   <span style={{ background: STATUS_BG[u.status] || 'var(--slate-100)', color: STATUS_COLOR[u.status] || 'var(--slate-600)', borderRadius: 20, padding: '3px 9px', fontSize: 11, fontWeight: 600 }}>{u.status}</span>
                 </td>
-                <td style={{ padding: '12px 16px', color: 'var(--slate-400)', fontSize: 12 }}>{u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleDateString() : '—'}</td>
+                <td style={{ padding: '12px 16px', color: 'var(--slate-400)', fontSize: 12 }}>{u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleDateString('en-GB', { timeZone: TBILISI }) : '—'}</td>
                 <td style={{ padding: '12px 16px', textAlign: 'right', whiteSpace: 'nowrap' }}>
                   <button onClick={() => openEdit(u)} style={{ background: 'none', border: 'none', color: 'var(--teal-600)', fontWeight: 600, fontSize: 12, cursor: 'pointer', marginRight: 12 }}>Edit</button>
                   <button onClick={() => setConfirmDelete(u)} style={{ background: 'none', border: 'none', color: 'var(--red-500)', fontWeight: 600, fontSize: 12, cursor: 'pointer' }}>Delete</button>

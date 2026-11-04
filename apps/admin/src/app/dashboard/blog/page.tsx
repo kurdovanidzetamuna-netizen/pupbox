@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import FormField, { inputClass } from '@/components/FormField';
 import LangTabs, { type Lang } from '@/components/LangTabs';
 import { api, del, post, put } from '@/lib/api';
+import { TBILISI } from '@pupbox/content';
 
 const EMPTY = { title: '', slug: '', excerpt: '', content: '', featuredImage: '', authorName: '', status: 'DRAFT', seoTitle: '', seoDesc: '' };
 const EMPTY_KA = { title: '', excerpt: '', content: '', seoTitle: '', seoDesc: '' };
@@ -210,7 +211,7 @@ export default function AdminBlogPage() {
                       <span style={{ ...sb, display: 'inline-flex', alignItems: 'center', padding: '2px 10px', borderRadius: 999, fontSize: 11, fontWeight: 600 }}>{p.status}</span>
                     </td>
                     <td style={{ padding: '14px 18px', fontSize: 12, color: 'var(--slate-400)' }}>
-                      {p.publishedAt ? new Date(p.publishedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
+                      {p.publishedAt ? new Date(p.publishedAt).toLocaleDateString('en-GB', { timeZone: TBILISI, day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
                     </td>
                     <td style={{ padding: '14px 18px' }}>
                       <div style={{ display: 'flex', gap: 6 }}>

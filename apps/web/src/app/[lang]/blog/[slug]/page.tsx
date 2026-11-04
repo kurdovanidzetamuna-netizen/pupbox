@@ -7,6 +7,7 @@ import { Heading } from '@/components/ui/Heading';
 import ShareButtons from '@/components/ShareButtons';
 import { JsonLd, ORG, breadcrumbs } from '@/lib/jsonld';
 import { SITE_URL, T as tx, asLang, atLang, seo, type Lang } from '@/lib/seo';
+import { TBILISI } from '@pupbox/content';
 
 async function getPost(slug: string) {
   const res = await fetch(`${API_URL}/blog/posts/${slug}`, { next: { revalidate: 300 } });
@@ -105,7 +106,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string;
         <div className="flex items-center gap-4 text-sm text-gray-400 mb-8">
           {post.authorName && <span className="text-gray-600 font-medium">{post.authorName}</span>}
           {post.publishedAt && (
-            <time dateTime={post.publishedAt}>{new Date(post.publishedAt).toLocaleDateString(lang === 'en' ? 'en-GB' : 'ka-GE', { day: 'numeric', month: 'long', year: 'numeric' })}</time>
+            <time dateTime={post.publishedAt}>{new Date(post.publishedAt).toLocaleDateString(lang === 'en' ? 'en-GB' : 'ka-GE', { timeZone: TBILISI, day: 'numeric', month: 'long', year: 'numeric' })}</time>
           )}
         </div>
 

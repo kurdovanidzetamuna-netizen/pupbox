@@ -54,7 +54,7 @@ export default function PlansList({ subs, setSubs, toast, view = 'list' }: {
   const setA = (k: keyof typeof addr) => (v: string) => { setAddr(a => ({ ...a, [k]: v })); setAddrError(''); setAddrErrs(e => ({ ...e, [k]: '' })); };
 
   const expired = () => router.replace(loginUrl('/account/orders?tab=plans'));
-  const date = (d: string) => formatDate(new Date(d), lang, { day: 'numeric', month: 'short', year: 'numeric' });
+  const date = (d: string) => formatDate(d, lang, { day: 'numeric', month: 'short', year: 'numeric' }, 'shop'); // plan days are the shop's
   const months = (n: number) => (n === 1 ? t('sub.month') : fill(t('sub.months'), { n }));
   const boxes = (n: number) => (n === 1 ? t('sub.box') : fill(t('sub.boxes'), { n }));
 
@@ -384,7 +384,7 @@ export default function PlansList({ subs, setSubs, toast, view = 'list' }: {
                         return (
                           <li key={b.id} className={`shrink-0 rounded-2xl px-3 py-2 min-w-[112px] ${ok ? 'bg-teal-50' : 'bg-gray-50'}`} title={b.trackingNumber ? `${t('sub.tracking')}: ${b.trackingNumber}` : undefined}>
                             <p className="text-[12.5px] font-bold text-gray-900">{fill(t('sub.boxN'), { n: b.boxNumber })}</p>
-                            <p className="text-[11px] text-gray-400">{formatDate(new Date(b.year, b.month - 1, 1), lang, { month: 'long', year: 'numeric' })}</p>
+                            <p className="text-[11px] text-gray-400">{formatDate(`${b.year}-${String(b.month).padStart(2, '0')}-01`, lang, { month: 'long', year: 'numeric' }, 'calendar')}</p>
                             <p className={`mt-1 text-[11px] font-bold flex items-center gap-1 ${ok ? 'text-teal-700' : 'text-gray-500'}`}>
                               <Icon name={b.status === 'DELIVERED' ? 'check' : ok ? 'truck' : 'box'} className="w-3.5 h-3.5" strokeWidth={2} />{t(`sub.box.${b.status}`, b.status)}
                             </p>

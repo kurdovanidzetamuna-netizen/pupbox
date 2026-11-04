@@ -4,6 +4,7 @@ import MapLink from '@/components/MapLink';
 import { useState, useEffect, useRef } from 'react';
 import { useAllergens } from '@/lib/allergens';
 import { api, getOr, patch, post } from '@/lib/api';
+import { TBILISI } from '@pupbox/content';
 
 const STATUS_COLORS: Record<string, { background: string; color: string; border: string }> = {
   ACTIVE:         { background: 'var(--green-50)', color: 'var(--green-800)', border: '1px solid var(--green-200)' },
@@ -135,7 +136,7 @@ function DetailModal({ sub, onClose, onCancel, onResume, onSaved }: {
   }, [onClose]);
 
   const sc = STATUS_COLORS[sub.status] || STATUS_COLORS.EXPIRED;
-  const day = (d?: string) => d ? new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
+  const day = (d?: string) => d ? new Date(d).toLocaleDateString('en-GB', { timeZone: TBILISI, day: 'numeric', month: 'short', year: 'numeric' }) : '—';
   const ended = ['CANCELLED', 'EXPIRED'].includes(sub.status);
   const sectionHead = (title: string, key: 'dog' | 'address', canEdit: boolean) => (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '0 0 8px' }}>
@@ -437,7 +438,7 @@ export default function AdminSubscriptionsPage() {
                         <p style={{ fontSize: 11, color: 'var(--amber-700)', margin: '3px 0 0' }}>
                           → for {s.giftRecipientName || 'a friend'}{s.address?.city ? `, ${s.address.city}` : ''}
                           {s.startDate && new Date(s.startDate) > new Date() && (
-                            <span style={{ color: 'var(--slate-400)' }}> · starts {new Date(s.startDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                            <span style={{ color: 'var(--slate-400)' }}> · starts {new Date(s.startDate).toLocaleDateString('en-GB', { timeZone: TBILISI, day: 'numeric', month: 'short', year: 'numeric' })}</span>
                           )}
                         </p>
                       )}
@@ -461,7 +462,7 @@ export default function AdminSubscriptionsPage() {
                       </div>
                     </td>
                     <td style={{ padding: '14px 18px', fontSize: 12, color: 'var(--slate-500)' }}>
-                      {s.nextRenewalAt ? new Date(s.nextRenewalAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '—'}
+                      {s.nextRenewalAt ? new Date(s.nextRenewalAt).toLocaleDateString('en-GB', { timeZone: TBILISI, day: 'numeric', month: 'short' }) : '—'}
                     </td>
                     <td style={{ padding: '14px 18px' }} onClick={e => e.stopPropagation()}>
                       <div style={{ display: 'flex', gap: 6 }}>

@@ -6,6 +6,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { Icon } from '@/components/ui/icons';
 import { API_URL as API } from '@/lib/api';
 import { savedToken } from '@/lib/authFetch';
+import { tbilisiDay } from '@pupbox/content';
 
 interface Popup {
   id: string;
@@ -58,7 +59,8 @@ function pageName(path: string): string {
   if (first === 'subscribe') return 'prices';
   return first;
 }
-const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+// Popups run on the shop's calendar: a popup ending on the 30th ends at midnight in Tbilisi
+const today = () => tbilisiDay();
 
 function applies(p: Popup, path: string, signedIn: boolean) {
   if (!p.active) return false;

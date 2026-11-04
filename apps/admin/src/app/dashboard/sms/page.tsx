@@ -5,6 +5,7 @@ import { NumInput } from '@/components/NumberField';
 import TimeInput from '@/components/TimeInput';
 
 import { api, getOr, post, put } from '@/lib/api';
+import { TBILISI } from '@pupbox/content';
 
 type Topic = 'orders' | 'signups' | 'payments';
 type Team = { name: string; phone: string; active: boolean; topics: Topic[] };
@@ -374,10 +375,10 @@ export default function SmsPage() {
                   <span style={{ flex: 1, minWidth: 0 }}>
                     <strong style={{ color: 'var(--slate-800)' }}>{KIND[l.kind] ?? l.kind}</strong> <span style={{ color: 'var(--slate-500)' }}>→ {pretty(l.to)}</span>
                     <span style={{ display: 'block', color: 'var(--slate-600)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{l.text}</span>
-                    {l.status === 'QUEUED' && l.sendAt && <span style={{ display: 'block', color: 'var(--amber-700)' }}>Goes at {new Date(l.sendAt).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>}
+                    {l.status === 'QUEUED' && l.sendAt && <span style={{ display: 'block', color: 'var(--amber-700)' }}>Goes at {new Date(l.sendAt).toLocaleString('en-GB', { timeZone: TBILISI, day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>}
                     {l.error && <span style={{ display: 'block', color: 'var(--red-600)' }}>{l.error}</span>}
                   </span>
-                  <span style={{ flexShrink: 0, color: 'var(--slate-400)', fontSize: 11.5 }}>{new Date(l.createdAt).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+                  <span style={{ flexShrink: 0, color: 'var(--slate-400)', fontSize: 11.5 }}>{new Date(l.createdAt).toLocaleString('en-GB', { timeZone: TBILISI, day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
                 </div>
               );
             })}

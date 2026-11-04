@@ -1,15 +1,16 @@
 'use client';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { tbilisiDay } from '@pupbox/content';
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const DAYS = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
 
 const iso = (y: number, m: number, d: number) => `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
 const parse = (v: string) => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(v || ''); return m ? { y: +m[1], m: +m[2] - 1, d: +m[3] } : null; };
-export const todayIso = () => { const n = new Date(); return iso(n.getFullYear(), n.getMonth(), n.getDate()); };
+export const todayIso = () => tbilisiDay();
 /** Today plus some days, as YYYY-MM-DD. */
-export const inDays = (n: number) => { const d = new Date(); d.setDate(d.getDate() + n); return iso(d.getFullYear(), d.getMonth(), d.getDate()); };
+export const inDays = (n: number) => tbilisiDay(Date.now(), n);
 export const showDate = (v: string) => { const p = parse(v); return p ? `${p.d} ${MONTHS[p.m].slice(0, 3)} ${p.y}` : ''; };
 
 /**

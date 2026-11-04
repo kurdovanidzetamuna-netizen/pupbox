@@ -99,8 +99,8 @@ export default function PhoneOtpField({ id, label, value, onChange, onConfirmed,
       <PhoneInput id={id} label={label} value={value} required error={error || (stage === 'idle' ? err : '')} floatLabel={floatLabel} autoFocus={autoFocus}
         trailing={badge} onChange={edit} />
       {stage === 'idle' && (
-        <div className="mt-2 flex items-center justify-between gap-3">
-          <p className="px-1 text-[11.5px] text-gray-500 leading-snug">{!error && !err ? t('otp.hint') : ''}</p>
+        <div className="mt-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+          <p className="min-w-0 flex-1 basis-40 px-1 text-[11.5px] text-gray-500 leading-snug">{!error && !err ? t('otp.hint') : ''}</p>
           <button type="button" onClick={send} disabled={busy}
             className="shrink-0 h-9 px-4 rounded-full bg-teal-600 text-white text-[12.5px] font-bold hover:bg-teal-700 disabled:opacity-60 whitespace-nowrap inline-flex items-center gap-1.5">
             <Icon name="chat" className="w-4 h-4" />{busy ? '…' : t('otp.send')}

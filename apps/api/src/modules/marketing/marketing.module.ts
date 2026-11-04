@@ -9,6 +9,7 @@ import { AdminPerms } from '../admin-auth/admin-permissions';
 import { AuditService } from '../audit/audit.service';
 import { MarketingService } from './marketing.service';
 import { marketingSettings, saveMarketing, publicMarketing, forAdmin } from './marketing-settings';
+import { tbilisiDay } from '../../common/tbilisi';
 
 // Read when used: .env is loaded after this file.
 const site = () => (process.env.NEXT_PUBLIC_SITE_URL || 'https://pupbox.ge').replace(/\/$/, '');
@@ -56,7 +57,7 @@ class AdminMarketingController {
     const count = (f: (r: (typeof rows)[number]) => boolean) => people.filter(f).length;
     const byDay = new Map<string, { all: number; needed: number; custom: number }>();
     for (const r of people) {
-      const k = r.createdAt.toISOString().slice(0, 10);
+      const k = tbilisiDay(r.createdAt);
       const x = byDay.get(k) ?? { all: 0, needed: 0, custom: 0 };
       x[r.choice as 'all' | 'needed' | 'custom'] = (x[r.choice as 'all'] ?? 0) + 1;
       byDay.set(k, x);

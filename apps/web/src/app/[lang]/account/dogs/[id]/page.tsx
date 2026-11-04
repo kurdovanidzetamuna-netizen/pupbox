@@ -149,7 +149,7 @@ export default function DogProfilePage() {
           ['🎈', t('dogs.age'), age],
           ['📏', t('dogs.size'), dog.size ? `${SIZE_SHORT[dog.size]} · ${t(`dog.size.${dog.size}`)}` : null],
           ['⚖️', t('dog.weight'), dog.weightKg != null ? `${dog.weightKg} ${t('dog.kg')}` : null],
-          ['🎂', t('dog.birthday'), dog.birthday ? formatDate(dog.birthday, lang) : null],
+          ['🎂', t('dog.birthday'), dog.birthday ? formatDate(dog.birthday, lang, undefined, 'calendar') : null],
         ].map(([icon, label, value], i) => (
           <div key={label as string} className="bg-white rounded-2xl ring-1 ring-gray-200/60 px-3.5 py-3 animate-[fadeUp_0.4s_ease-out_both]" style={{ animationDelay: `${60 + i * 50}ms` }}>
             <p className="text-[11.5px] text-gray-400 flex items-center gap-1.5"><span aria-hidden="true">{icon}</span>{label}</p>
@@ -188,7 +188,7 @@ export default function DogProfilePage() {
                 <Link href="/account/orders?tab=plans" className="flex items-center gap-3 rounded-2xl bg-gray-50 hover:bg-teal-50 px-3 py-2.5 transition-colors">
                   <span className="flex-1 min-w-0">
                     <span className="block text-[13px] font-bold text-gray-900 truncate">{planText(s.plan, 'name', lang)}</span>
-                    <span className="block text-[11.5px] text-gray-500">{fill(t('dogs.boxes'), { sent: s.boxesDelivered, total: s.boxesTotal })}{s.endDate && <> · {fill(t('dogs.until'), { date: formatDate(s.endDate, lang) })}</>}</span>
+                    <span className="block text-[11.5px] text-gray-500">{fill(t('dogs.boxes'), { sent: s.boxesDelivered, total: s.boxesTotal })}{s.endDate && <> · {fill(t('dogs.until'), { date: formatDate(s.endDate, lang, undefined, 'shop') })}</>}</span>
                   </span>
                   <svg className="w-4 h-4 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>
                 </Link>

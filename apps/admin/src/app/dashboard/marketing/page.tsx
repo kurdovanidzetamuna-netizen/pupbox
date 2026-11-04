@@ -6,6 +6,7 @@ import { PasteBox } from './_parts/PasteBox';
 import { CustomCode } from './_parts/CustomCode';
 import { Cookies } from './_parts/Cookies';
 import { GoogleTexts } from './_parts/GoogleTexts';
+import { TBILISI } from '@pupbox/content';
 
 const TABS: { key: Tab; label: string }[] = [
   { key: 'connect', label: '📈 Ads & analytics' },
@@ -153,7 +154,7 @@ export default function MarketingPage() {
                       <span style={{ fontWeight: 800, color: r.ok ? 'var(--green-800)' : 'var(--red-600)' }}>{r.ok ? '✓' : '✕'}</span>
                       <span style={{ fontWeight: 700 }}>{r.event}</span>
                       <span>{r.message}</span>
-                      <span style={{ color: 'var(--slate-400)' }}>{new Date(r.at).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+                      <span style={{ color: 'var(--slate-400)' }}>{new Date(r.at).toLocaleString('en-GB', { timeZone: TBILISI, day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
                     </li>
                   ))}
                 </ul>

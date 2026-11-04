@@ -1,4 +1,5 @@
 import { DurationUnit } from '@prisma/client';
+import { TBILISI_OFFSET } from '../../common/tbilisi';
 
 /**
  * The dates a subscription gets when it starts: when it ends, and — only if
@@ -11,14 +12,17 @@ export function subscriptionPeriod(
   plan: { durationValue: number; durationUnit: DurationUnit },
   autoRenewal: boolean,
 ): { startDate: Date; endDate: Date; nextRenewalAt: Date | null } {
-  const end = new Date(start);
+  // Counted on Tbilisi's calendar whatever clock the server runs on, so a plan
+  // bought at 1am on the 1st ends on the 1st, not the last day of the month.
+  const end = new Date(start.getTime() + TBILISI_OFFSET);
   const n = plan.durationValue;
   switch (plan.durationUnit) {
-    case 'DAY': end.setDate(end.getDate() + n); break;
-    case 'WEEK': end.setDate(end.getDate() + 7 * n); break;
+    case 'DAY': end.setUTCDate(end.getUTCDate() + n); break;
+    case 'WEEK': end.setUTCDate(end.getUTCDate() + 7 * n); break;
     case 'MONTH': addMonths(end, n); break;
     case 'YEAR': addMonths(end, 12 * n); break;
   }
+  end.setTime(end.getTime() - TBILISI_OFFSET);
   return { startDate: start, endDate: end, nextRenewalAt: autoRenewal ? end : null };
 }
 
@@ -27,8 +31,8 @@ export function subscriptionPeriod(
  * when it's shorter: 31 January + 1 month is 28 February, not 3 March.
  */
 function addMonths(d: Date, n: number) {
-  const day = d.getDate();
-  d.setDate(1);
-  d.setMonth(d.getMonth() + n);
-  d.setDate(Math.min(day, new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate()));
+  const day = d.getUTCDate();
+  d.setUTCDate(1);
+  d.setUTCMonth(d.getUTCMonth() + n);
+  d.setUTCDate(Math.min(day, new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)).getUTCDate()));
 }

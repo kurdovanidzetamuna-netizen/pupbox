@@ -47,7 +47,7 @@ export function useWording() {
       name: d.firstName ?? '', dog: d.dogName ?? '', recipient: d.recipient ?? '',
       box: d.boxNumber ?? '', of: d.boxesTotal ?? '', code: d.couponCode ?? '',
       plan: (lang === 'ka' ? d.plan?.ka : d.plan?.en) ?? '',
-      date: d.renewsOn ? formatDate(new Date(d.renewsOn), lang, { day: 'numeric', month: 'long' }) : '',
+      date: d.renewsOn ? formatDate(d.renewsOn, lang, { day: 'numeric', month: 'long' }, 'shop') : '',
     };
     let titleKey = `ntf.${n.type}.t`;
     if ((n.type === 'BOX_SHIPPED' || n.type === 'BOX_DELIVERED') && d.gift && d.recipient) titleKey = `ntf.${n.type}.tGift`;

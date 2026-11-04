@@ -19,6 +19,7 @@ import { authFetch, savedToken, SessionExpiredError } from '@/lib/authFetch';
 import { dogAge } from '@/lib/dog';
 import { API_URL as API } from '@/lib/api';
 import { useAllergens } from '@/lib/allergens';
+import { myToday } from '@/lib/dates';
 
 const STEPS = [
   { key: 'hello', emoji: '🐶' },
@@ -245,7 +246,7 @@ export default function DogEditor({ open, onClose, dog, onSaved, onExpired, welc
                 hint={t('dog.weightHint')} trailing={<KgTag />} />
               <div>
                 <DatePicker id="dog-birthday" label={t('dog.birthday')} value={draft.birthday} onChange={(v) => set('birthday', v)}
-                  max={new Date().toISOString().slice(0, 10)} startView="years" hint={age ? undefined : t('dog.birthdayHint')} />
+                  max={myToday()} startView="years" hint={age ? undefined : t('dog.birthdayHint')} />
                 {age && <p className="mt-1 px-1 text-[12px] font-semibold text-teal-700 motion-safe:animate-[fadeUp_0.2s_ease-out]">{fill(t('dogEd.age'), { age })}</p>}
               </div>
             </div>

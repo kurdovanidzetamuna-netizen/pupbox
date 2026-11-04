@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
 import { API_URL } from '@/lib/api';
 import { Heading } from '@/components/ui/Heading';
+import { TBILISI } from '@pupbox/content';
 
 async function getCategory(slug: string) {
   const res = await fetch(`${API_URL}/blog/categories`, { next: { revalidate: 600 } });
@@ -69,7 +70,7 @@ export default async function BlogCategoryPage({ params, searchParams }: { param
                   <h2 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2 group-hover:text-teal-600 transition">{post.title}</h2>
                   {post.excerpt && <p className="text-sm text-gray-500 line-clamp-2">{post.excerpt}</p>}
                   {post.publishedAt && (
-                    <p className="text-xs text-gray-400 mt-3">{new Date(post.publishedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                    <p className="text-xs text-gray-400 mt-3">{new Date(post.publishedAt).toLocaleDateString('en-GB', { timeZone: TBILISI, day: 'numeric', month: 'long', year: 'numeric' })}</p>
                   )}
                 </div>
               </Link>

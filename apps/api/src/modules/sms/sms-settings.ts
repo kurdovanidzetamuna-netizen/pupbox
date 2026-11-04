@@ -1,6 +1,7 @@
 import { BadRequestException } from '@nestjs/common';
 import type { PrismaService } from '../prisma/prisma.service';
 import { normalisePhone } from '../auth/verification';
+import { TBILISI_OFFSET } from '../../common/tbilisi';
 
 /**
  * Everything about text messages that admin can change on the "Text
@@ -244,7 +245,7 @@ export const maskKey = (k: string) => (k ? `••••••${k.slice(-4)}` : 
 /** Is it quiet time now (Tbilisi)? If so, when it ends. */
 export function quietUntil(q: SmsSettings['quiet'], now = new Date()): Date | null {
   if (!q.enabled || q.from === q.to) return null;
-  const local = new Date(now.getTime() + 4 * 3600_000);
+  const local = new Date(now.getTime() + TBILISI_OFFSET);
   const mins = local.getUTCHours() * 60 + local.getUTCMinutes();
   const [fh, fm] = q.from.split(':').map(Number), [th, tm] = q.to.split(':').map(Number);
   const from = fh * 60 + fm, to = th * 60 + tm;
@@ -253,5 +254,5 @@ export function quietUntil(q: SmsSettings['quiet'], now = new Date()): Date | nu
   const end = new Date(local);
   end.setUTCHours(th, tm, 0, 0);
   if (end <= local) end.setUTCDate(end.getUTCDate() + 1);
-  return new Date(end.getTime() - 4 * 3600_000);
+  return new Date(end.getTime() - TBILISI_OFFSET);
 }

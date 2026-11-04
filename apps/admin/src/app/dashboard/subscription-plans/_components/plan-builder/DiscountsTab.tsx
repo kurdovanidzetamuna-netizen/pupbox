@@ -3,6 +3,7 @@ import { num } from '../../_lib/plan-config';
 import Pill from '../ui/Pill';
 import type { PlanBuilderState } from './usePlanBuilder';
 import { NumInput } from '@/components/NumberField';
+import { TBILISI } from '@pupbox/content';
 
 export default function DiscountsTab({ b }: { b: PlanBuilderState }) {
   const {
@@ -57,7 +58,7 @@ export default function DiscountsTab({ b }: { b: PlanBuilderState }) {
                     {c.discountType === 'PERCENT' ? `${c.discountValue}% off` : `₾${c.discountValue} off`}
                   </Pill>
                   {c.expiresAt && (
-                    <span style={{ fontSize: 11, color: 'var(--slate-400)' }}>Until {new Date(c.expiresAt).toLocaleDateString('en-GB')}</span>
+                    <span style={{ fontSize: 11, color: 'var(--slate-400)' }}>Until {new Date(c.expiresAt).toLocaleDateString('en-GB', { timeZone: TBILISI })}</span>
                   )}
                 </div>
               );

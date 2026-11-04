@@ -10,6 +10,7 @@ import DatePicker from '@/components/ui/DatePicker';
 import CategoryLikes from '@/components/CategoryLikes';
 import { useAllergens } from '@/lib/allergens';
 import { dogOption } from '@/lib/dog';
+import { myToday } from '@/lib/dates';
 
 /**
  * Tell-us-about-your-dog, as tappable choices rather than a form.
@@ -257,7 +258,7 @@ export default function DogProfileForm({ value, onChange, showOptional = true, c
           </Section>
           <Field id="dog-weight" inputMode="decimal" autoComplete="off" label={t('dog.weight')} value={value.weightKg} onChange={(v) => set('weightKg', cleanWeight(v))}
             trailing={<KgTag />} />
-          <DatePicker id="dog-birthday" label={t('dog.birthday')} value={value.birthday} onChange={(v) => set('birthday', v)} max={new Date().toISOString().slice(0, 10)} startView="years" />
+          <DatePicker id="dog-birthday" label={t('dog.birthday')} value={value.birthday} onChange={(v) => set('birthday', v)} max={myToday()} startView="years" />
         </div>
       )}
 

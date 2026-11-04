@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { SITE_STRINGS } from '@pupbox/content';
+import { SITE_STRINGS, TBILISI } from '@pupbox/content';
 import { getOr } from '@/lib/api';
 import { Field, Row, S, Section, Switch, btnSoft, card, inp, note } from './shared';
 
@@ -91,7 +91,7 @@ export function Cookies({ s, ro, up }: { s: S; ro: boolean; up: (f: (x: S) => S)
                   <li key={i} style={{ fontSize: 12.5, display: 'flex', gap: 8, flexWrap: 'wrap', color: 'var(--slate-600)', padding: '6px 8px', borderRadius: 8, background: 'var(--slate-50)' }}>
                     <b style={{ color: r.choice === 'all' ? 'var(--teal-700)' : 'var(--slate-700)' }}>{r.choice === 'all' ? 'Accepted all' : r.choice === 'needed' ? 'Only necessary' : `Chose: ${[r.analytics && 'analytics', r.ads && 'ads'].filter(Boolean).join(' + ') || 'nothing extra'}`}</b>
                     <span>{r.path || '/'}</span>
-                    <span style={{ color: 'var(--slate-400)' }}>{(r.lang ?? '').toUpperCase()} · visitor {r.visitor} · {new Date(r.createdAt).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+                    <span style={{ color: 'var(--slate-400)' }}>{(r.lang ?? '').toUpperCase()} · visitor {r.visitor} · {new Date(r.createdAt).toLocaleString('en-GB', { timeZone: TBILISI, day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
                   </li>
                 ))}
               </ul>
