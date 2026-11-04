@@ -4,6 +4,7 @@ import DogLikes from './DogLikes';
 import Composer from '@/app/dashboard/messages/Composer';
 import { ApiError, api, del, patch, post } from '@/lib/api';
 import { day, gel } from '@/lib/format';
+import { FacebookMark, GoogleMark, signupLabel } from '@/components/SignInBadges';
 
 const SIZE: Record<string, string> = { EXTRA_SMALL: 'XS', SMALL: 'S', MEDIUM: 'M', LARGE: 'L', EXTRA_LARGE: 'XL' };
 
@@ -111,6 +112,28 @@ export default function CustomerDrawer({ id, onClose, onChanged }: { id: string;
                 </div>
               ))}
               {note && <p role="status" style={{ margin: 0, fontSize: 12.5, color: note.startsWith('✓') || note.startsWith('Confirmation') ? 'var(--teal-700)' : 'var(--red-600)' }}>{note}</p>}
+            </div>
+            {/* How they get in: how the account was made, Google / Facebook linked, password or not */}
+            <div style={{ marginTop: 10, padding: '10px 12px', borderRadius: 12, border: '1px solid var(--slate-200b)', background: 'var(--white)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--slate-500)' }}>🔐 Sign-in</span>
+                <span style={{ fontSize: 11.5, color: 'var(--slate-500)' }}>· signed up with <strong style={{ color: 'var(--slate-800)' }}>{signupLabel(c.signupMethod)}</strong></span>
+              </div>
+              <div style={{ display: 'grid', gap: 6, marginTop: 8 }}>
+                {(c.identities ?? []).map((i: any) => (
+                  <div key={i.provider} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5 }}>
+                    {i.provider === 'GOOGLE' ? <GoogleMark size={16} /> : <FacebookMark size={16} />}
+                    <strong style={{ color: 'var(--slate-800)' }}>{signupLabel(i.provider)}</strong>
+                    <span style={{ color: 'var(--slate-500)', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>{i.email || ''}</span>
+                    <span style={{ marginLeft: 'auto', color: 'var(--slate-400)', fontSize: 11.5, whiteSpace: 'nowrap' }}>linked {day(i.createdAt)}{i.lastUsedAt ? ` · used ${day(i.lastUsedAt)}` : ''}</span>
+                  </div>
+                ))}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5 }}>
+                  <span aria-hidden="true">🔑</span>
+                  <strong style={{ color: 'var(--slate-800)' }}>Password</strong>
+                  <span style={{ color: c.hasPassword ? 'var(--green-700)' : 'var(--slate-400)' }}>{c.hasPassword ? 'set' : 'none — signs in with Google / Facebook only'}</span>
+                </div>
+              </div>
             </div>
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 10 }}>
               {badge(c.marketingEmail, `Email offers${c.marketingEmailAt ? ` since ${day(c.marketingEmailAt)}` : ''}`, 'No email offers')}

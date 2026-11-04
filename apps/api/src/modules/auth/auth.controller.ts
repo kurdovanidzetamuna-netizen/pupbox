@@ -1,13 +1,19 @@
-import { Controller, Post, Body, HttpCode, HttpStatus, UseGuards, Request } from '@nestjs/common';
+import { Controller, Post, Get, Put, Delete, Param, Body, HttpCode, HttpStatus, UseGuards, Request, BadRequestException } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ChangePasswordDto, DeleteAccountDto } from './dto/account.dto';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { ForgotPasswordDto, ResetPasswordDto } from './dto/password-reset.dto';
 import { Throttle } from '@nestjs/throttler';
-import { IsIn, IsOptional, IsString, Matches, MaxLength } from 'class-validator';
+import { IsBoolean, IsIn, IsOptional, IsString, Matches, MaxLength } from 'class-validator';
+import type { AuthProvider } from '@prisma/client';
+import { PrismaService } from '../prisma/prisma.service';
+import { AuditService } from '../audit/audit.service';
+import { AdminJwtGuard } from '../admin-auth/admin-jwt.guard';
+import { AdminPerms } from '../admin-auth/admin-permissions';
+import { adminSocialConfig, facebookDataDeletion, publicProviders, saveSocialConfig } from './social';
 
 class SendCodeDto {
   @IsIn(['EMAIL', 'PHONE']) channel: 'EMAIL' | 'PHONE';
@@ -27,10 +33,77 @@ class PhoneCodeDto {
   @IsString() @Matches(/^[\d\s-]{6,11}$/, { message: 'The code is 6 digits' }) code: string;
 }
 
+class SocialDto {
+  /** The access token Google's or Facebook's sign-in window gave the site. */
+  @IsString() @MaxLength(4096) token: string;
+  @IsOptional() @IsIn(['ka', 'en']) language?: 'ka' | 'en';
+  @IsOptional() @IsBoolean() marketingConsent?: boolean;
+  @IsOptional() @IsString() @MaxLength(40) referralCode?: string;
+}
+class LinkDto {
+  @IsString() @MaxLength(4096) token: string;
+}
+
+/** "google" / "facebook" in an address → the provider. */
+const providerOf = (p: string): AuthProvider => {
+  if (p === 'google') return 'GOOGLE';
+  if (p === 'facebook') return 'FACEBOOK';
+  throw new BadRequestException('Unknown sign-in provider');
+};
+
 @ApiTags('Customer Auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private authService: AuthService) {}
+  constructor(private authService: AuthService, private prisma: PrismaService) {}
+
+  /** Which "Continue with…" buttons the site shows, with the public ids their scripts need. */
+  @Get('providers')
+  @ApiOperation({ summary: 'Sign-in providers that are switched on' })
+  providers() {
+    return publicProviders(this.prisma);
+  }
+
+  /** Facebook's data deletion callback (set in the Facebook app): forgets what Facebook shared with us. */
+  @Post('facebook/data-deletion')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 30, ttl: 60_000 } })
+  @ApiOperation({ summary: 'Facebook data deletion callback (signed by Facebook)' })
+  facebookDeletion(@Body() body: { signed_request?: string }) {
+    return facebookDataDeletion(this.prisma, body?.signed_request);
+  }
+
+  /** Continue with Google / Facebook: signs in, links an account with the same email, or creates one. */
+  @Post(':provider(google|facebook)')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @ApiOperation({ summary: 'Sign in or sign up with Google or Facebook' })
+  social(@Param('provider') provider: string, @Body() dto: SocialDto) {
+    return this.authService.socialSignIn(providerOf(provider), dto.token, dto);
+  }
+
+  /** My ways to sign in: password or not, Google / Facebook linked. */
+  @Get('methods')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiOperation({ summary: 'My sign-in methods' })
+  methods(@Request() req: any) {
+    return this.authService.signInMethods(req.user.id);
+  }
+
+  @Post('link/:provider(google|facebook)')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(AuthGuard('jwt'))
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @ApiOperation({ summary: 'Link Google or Facebook to my account' })
+  link(@Request() req: any, @Param('provider') provider: string, @Body() dto: LinkDto) {
+    return this.authService.linkIdentity(req.user.id, providerOf(provider), dto.token);
+  }
+
+  @Delete('link/:provider(google|facebook)')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiOperation({ summary: 'Unlink Google or Facebook (never the last way in)' })
+  unlink(@Request() req: any, @Param('provider') provider: string) {
+    return this.authService.unlinkIdentity(req.user.id, providerOf(provider));
+  }
 
   // Tighter limits than the API-wide one: these are what password guessing
   // and email bombing would hammer.
@@ -137,5 +210,28 @@ export class AuthController {
   @ApiOperation({ summary: 'Set a new password with the emailed link; signs out other sessions' })
   resetPassword(@Body() dto: ResetPasswordDto) {
     return this.authService.resetPassword(dto.token, dto.password);
+  }
+}
+
+/** Admin → Settings → Sign in with Google & Facebook: the keys (secret masked) and on/off switches. */
+@ApiTags('Admin — Settings')
+@ApiBearerAuth()
+@UseGuards(AdminJwtGuard)
+@AdminPerms({ read: 'cms.edit', write: 'cms.edit' })
+@Controller('admin/social-login')
+export class AdminSocialController {
+  constructor(private prisma: PrismaService, private audit: AuditService) {}
+
+  @Get()
+  get() {
+    return adminSocialConfig(this.prisma);
+  }
+
+  @Put()
+  async save(@Body() body: Record<string, any>, @Request() req: any) {
+    const before = await adminSocialConfig(this.prisma);
+    const after = await saveSocialConfig(this.prisma, body);
+    await this.audit.log({ adminUserId: req.user?.id, action: 'UPDATE', module: 'settings', entityType: 'SocialSignIn', entityId: 'config-social', before, after });
+    return after;
   }
 }

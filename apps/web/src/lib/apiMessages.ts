@@ -11,6 +11,12 @@ const EXACT: Record<string, string> = {
   'Address not found': 'მისამართი ვერ მოიძებნა',
   'Access denied': 'წვდომა შეზღუდულია',
   'Account is blocked': 'ანგარიში დაბლოკილია',
+  'Wrong email or password. If you signed up with Google or Facebook, use that button.': 'ელფოსტა ან პაროლი არასწორია. თუ Google-ით ან Facebook-ით დარეგისტრირდი, ის ღილაკი გამოიყენე.',
+  'That sign-in didn’t work. Please try again.': 'შესვლა ვერ მოხერხდა. სცადე ხელახლა.',
+  'Google sign-in is off.': 'Google-ით შესვლა ამჟამად გამორთულია.',
+  'Facebook sign-in is off.': 'Facebook-ით შესვლა ამჟამად გამორთულია.',
+  'Set a password first — otherwise you couldn’t sign in any more.': 'ჯერ პაროლი დააყენე — თორემ ვეღარ შეხვალ.',
+  'Unknown sign-in provider': 'უცნობი შესვლის მეთოდი',
   'Account not found': 'ანგარიში ვერ მოიძებნა',
   'Add your phone number first.': 'ჯერ ტელეფონის ნომერი დაამატე.',
   'Address is required': 'მისამართი აუცილებელია',
@@ -92,6 +98,9 @@ const EXACT: Record<string, string> = {
 const SCOPE_KA: Record<string, string> = { 'shop products': 'მაღაზიის პროდუქტები', 'subscription boxes': 'ყუთის გეგმები', 'boxes you build': 'აწყობილი ყუთები', 'gift boxes': 'საჩუქრის ყუთები', delivery: 'მიწოდება' };
 
 const PATTERNS: [RegExp, (m: RegExpMatchArray) => string][] = [
+  [/^(Google|Facebook) didn’t share a confirmed email address\. Sign up with your email instead\.$/, (m) => `${m[1]}-მა დადასტურებული ელფოსტა არ გაგვიზიარა. დარეგისტრირდი ელფოსტით.`],
+  [/^This email is linked to a different (Google|Facebook) account\.$/, (m) => `ეს ელფოსტა სხვა ${m[1]} ანგარიშთანაა დაკავშირებული.`],
+  [/^That (Google|Facebook) account is already used by another PupBox account\.$/, (m) => `ეს ${m[1]} ანგარიში უკვე სხვა PupBox ანგარიშს ეკუთვნის.`],
   [/^That code isn't right\. (\d+) tr(?:y|ies) left\.$/, (m) => `კოდი არასწორია. დარჩა ${m[1]} ცდა.`],
   [/^Please wait (\d+) seconds before asking for a new code\.$/, (m) => `ახალი კოდის მოთხოვნამდე დაელოდე ${m[1]} წამი.`],
   [/ We removed the code — check the new total and try again\.$/, () => 'მეგობრის კოდი აქ აღარ მოქმედებს, ამიტომ მოვხსენით. გადაამოწმე ახალი ჯამი და სცადე თავიდან.'],

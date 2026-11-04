@@ -30,13 +30,13 @@ class UpdateCmsDto {
 }
 
 /** Rows only admin may read: shop settings hold internal addresses. */
-const PRIVATE_SLUGS = ['config-settings', 'config-sms', 'config-marketing'];
+const PRIVATE_SLUGS = ['config-settings', 'config-sms', 'config-marketing', 'config-social'];
 /**
  * Rows the CMS endpoints never touch, even for admin: the SMS settings hold an
  * API key (admin/sms/settings only), SEO & tracking the Meta token
  * (admin/marketing/settings only).
  */
-const SECRET_SLUGS = ['config-sms', 'config-marketing'];
+const SECRET_SLUGS = ['config-sms', 'config-marketing', 'config-social'];
 
 @ApiTags('cms')
 @Controller('cms')

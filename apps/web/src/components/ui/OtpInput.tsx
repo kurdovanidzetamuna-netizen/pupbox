@@ -25,7 +25,7 @@ export default function OtpInput({ value, onChange, onComplete, disabled, error,
   }
 
   return (
-    <div role="group" aria-label={label} className="flex gap-2">
+    <div role="group" aria-label={label} className="flex gap-1.5 min-[360px]:gap-2">
       {digits.map((d, i) => (
         <input key={i} ref={(el) => { refs.current[i] = el; }} value={d} disabled={disabled}
           inputMode="numeric" autoComplete={i === 0 ? 'one-time-code' : 'off'} maxLength={6} aria-label={`${label} ${i + 1}`}
@@ -46,7 +46,7 @@ export default function OtpInput({ value, onChange, onComplete, disabled, error,
             } else if (e.key === 'ArrowLeft') refs.current[i - 1]?.focus();
             else if (e.key === 'ArrowRight') refs.current[i + 1]?.focus();
           }}
-          className={`w-10 h-12 sm:w-11 sm:h-12 rounded-xl text-center text-lg font-semibold text-gray-900 outline-none transition-colors caret-teal-600
+          className={`flex-1 min-w-0 max-w-10 sm:max-w-11 h-12 rounded-xl text-center text-lg font-semibold text-gray-900 outline-none transition-colors caret-teal-600
             ${error ? 'bg-red-50 ring-1 ring-red-200' : d ? 'bg-teal-50 ring-1 ring-teal-200' : 'bg-gray-100/80'} focus:bg-white focus:ring-2 focus:ring-teal-300 disabled:opacity-50`} />
       ))}
     </div>

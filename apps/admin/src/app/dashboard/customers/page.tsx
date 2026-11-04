@@ -8,6 +8,7 @@ import { ActionButton, Pagination, StatCard, StatCards } from '@/components/Tool
 import { api, can, download, patch, today } from '@/lib/api';
 import { day } from '@/lib/format';
 import FilterBar from '@/components/FilterBar';
+import SignInBadges from '@/components/SignInBadges';
 
 const gel = (n: number) => `₾${n.toLocaleString('en-GB', { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 })}`;
 
@@ -21,10 +22,10 @@ const SORTS = [
   { value: 'lastOrder', label: 'Ordered most recently' }, { value: 'lastLogin', label: 'Signed in most recently' }, { value: 'name', label: 'Name A–Z' },
 ];
 
-type F = { search: string; status: string; plan: string; consent: string; language: string; city: string; tag: string; buyer: string; joinedFrom: string; joinedTo: string; sort: string };
+type F = { search: string; status: string; plan: string; consent: string; language: string; city: string; tag: string; buyer: string; signIn: string; joinedFrom: string; joinedTo: string; sort: string };
 /** The filters (search and sort aside) that count on the phone's Filters button. */
-const FILTER_KEYS = ['status', 'plan', 'consent', 'language', 'city', 'tag', 'buyer', 'joinedFrom', 'joinedTo'] as const;
-const EMPTY: F = { search: '', status: '', plan: '', consent: '', language: '', city: '', tag: '', buyer: '', joinedFrom: '', joinedTo: '', sort: 'joined' };
+const FILTER_KEYS = ['status', 'plan', 'consent', 'language', 'city', 'tag', 'buyer', 'signIn', 'joinedFrom', 'joinedTo'] as const;
+const EMPTY: F = { search: '', status: '', plan: '', consent: '', language: '', city: '', tag: '', buyer: '', signIn: '', joinedFrom: '', joinedTo: '', sort: 'joined' };
 
 /**
  * Every customer, with what the team needs to know at a glance: spend, paid
@@ -119,6 +120,7 @@ export default function CustomersPage() {
         <Dropdown aria-label="City" label="City" placeholder="City: all" value={f.city} onChange={set('city')} options={[{ value: '', label: 'All' }, ...(data?.cities ?? []).map((c: string) => ({ value: c, label: c }))]} />
         <Dropdown aria-label="Offers" label="Offers" placeholder="Offers: all" value={f.consent} onChange={set('consent')} options={[{ value: '', label: 'All' }, { value: 'email', label: 'Email offers on' }, { value: 'sms', label: 'SMS offers on' }, { value: 'none', label: 'No offers' }]} />
         <Dropdown aria-label="Language" label="Language" placeholder="Language: all" value={f.language} onChange={set('language')} options={[{ value: '', label: 'All' }, { value: 'ka', label: 'Georgian' }, { value: 'en', label: 'English' }]} />
+        <Dropdown aria-label="Sign-in" label="Sign-in" placeholder="Sign-in: all" value={f.signIn} onChange={set('signIn')} options={[{ value: '', label: 'All' }, { value: 'google', label: 'Google' }, { value: 'facebook', label: 'Facebook' }, { value: 'password', label: 'Has a password' }, { value: 'social', label: 'Google / Facebook only' }]} />
         <Dropdown aria-label="Account" label="Account" placeholder="Account: all" value={f.status} onChange={set('status')} options={[{ value: '', label: 'All' }, { value: 'ACTIVE', label: 'Active' }, { value: 'UNVERIFIED', label: 'Not verified' }, { value: 'BLOCKED', label: 'Blocked' }]} />
         {(data?.tags?.length ?? 0) > 0 && <Dropdown aria-label="Tag" label="Tag" placeholder="Tag: all" value={f.tag} onChange={set('tag')} options={[{ value: '', label: 'All' }, ...data.tags.map((x: string) => ({ value: x, label: x }))]} />}
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--slate-500)' }}>
@@ -142,7 +144,7 @@ export default function CustomersPage() {
                   <tr key={c.id} className="cu-row" onClick={() => setOpenId(c.id)} style={{ borderBottom: '1px solid var(--slate-50)', cursor: 'pointer' }}>
                     <td style={td}>
                       <div style={{ fontWeight: 600, color: 'var(--slate-800)' }}>{[c.firstName, c.lastName].filter(Boolean).join(' ') || '—'}{c.status !== 'ACTIVE' && <span style={{ marginLeft: 6, fontSize: 10.5, fontWeight: 700, color: c.status === 'BLOCKED' ? 'var(--red-600)' : 'var(--amber-700)' }}>{c.status === 'BLOCKED' ? 'Blocked' : 'Not verified'}</span>}</div>
-                      <div style={{ fontSize: 11.5, color: 'var(--slate-400)' }}>{c.email}</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', fontSize: 11.5, color: 'var(--slate-400)' }}>{c.email}<SignInBadges providers={c.providers} hasPassword={c.hasPassword} /></div>
                       {c.tags?.length > 0 && <div style={{ display: 'flex', gap: 4, marginTop: 3, flexWrap: 'wrap' }}>{c.tags.map((x: string) => <span key={x} style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--teal-700)', background: 'var(--teal-50)', borderRadius: 999, padding: '1px 7px' }}>{x}</span>)}</div>}
                     </td>
                     <td style={{ ...td, color: 'var(--slate-500)', whiteSpace: 'nowrap' }}>{c.phone || '—'}{c.phone && <span title={c.phoneVerified ? 'Confirmed' : 'Not confirmed'} style={{ marginLeft: 4, color: c.phoneVerified ? 'var(--green-700)' : 'var(--amber-600)' }}>{c.phoneVerified ? '✓' : '•'}</span>}</td>

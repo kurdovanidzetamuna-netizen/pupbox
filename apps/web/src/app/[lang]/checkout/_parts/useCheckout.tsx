@@ -236,15 +236,20 @@ export function useCheckout() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(apiMessage(data, t('co.e.generic')));
-      localStorage.setItem('pupbox_token', data.token);
-      // Moves what they added as a guest into the account cart; without this
-      // the order would be placed against an empty account cart.
-      await refresh();
-      prefillFromProfile();
-      if (data.verification && !data.verification.verified) setNeedVerify(true);
-      else next();
+      await signedIn(data);
     } catch (err: any) { setError(err.message); }
     finally { setLoading(false); }
+  }
+
+  /** Signed in or up (password, Google or Facebook): the account's cart and details, then the phone check or the next step. */
+  async function signedIn(data: { token: string; verification?: { verified: boolean } }) {
+    localStorage.setItem('pupbox_token', data.token);
+    // Moves what they added as a guest into the account cart; without this
+    // the order would be placed against an empty account cart.
+    await refresh();
+    prefillFromProfile();
+    if (data.verification && !data.verification.verified) setNeedVerify(true);
+    else next();
   }
 
   function submitGift() {
@@ -410,7 +415,7 @@ export function useCheckout() {
   );
   const card = 'bg-white rounded-[24px] ring-1 ring-gray-100 p-5 sm:p-7';
 
-  return { t, lang, cart, ready, refresh, router, arrival, setArrival, step, setStep, orderPlaced, setOrderPlaced, loading, setLoading, saveCard, setSaveCard, pin, setPin, error, setError, errs, setErrs, isNewAccount, setIsNewAccount, needVerify, setNeedVerify, consent, setConsent, showPw, setShowPw, signupPhone, setSignupPhone, signupPhoneOk, setSignupPhoneOk, signupProof, setSignupProof, deliveryPhoneOk, setDeliveryPhoneOk, signedInEmail, setSignedInEmail, form, setForm, giftDog, setGiftDog, profilePhone, setProfilePhone, giftLater, setGiftLater, dogId, setDogId, myDogs, setMyDogs, savedAddrs, setSavedAddrs, addrPicked, setAddrPicked, makeMain, setMakeMain, phoneKey, setPhoneKey, deliveryMethods, setDeliveryMethods, selectedDelivery, setSelectedDelivery, autoRenewal, setAutoRenewal, isGift, hasSubscription, steps, stepIndex, stepLabel, begun, prefillFromProfile, loadMyDogs, loadAddresses, fillAddress, chooseDog, update, go, next, back, fail, submitAccount, submitGift, submitDog, pay, selectedMethod, deliveryCost, discount, total, addrChoices, chosenAddr, plan, offersRenewal, months, period, field, OPTIONAL, input, summary, goBack, actions, card };
+  return { t, lang, cart, ready, refresh, router, arrival, setArrival, step, setStep, orderPlaced, setOrderPlaced, loading, setLoading, saveCard, setSaveCard, pin, setPin, error, setError, errs, setErrs, isNewAccount, setIsNewAccount, needVerify, setNeedVerify, consent, setConsent, showPw, setShowPw, signupPhone, setSignupPhone, signupPhoneOk, setSignupPhoneOk, signupProof, setSignupProof, deliveryPhoneOk, setDeliveryPhoneOk, signedInEmail, setSignedInEmail, form, setForm, giftDog, setGiftDog, profilePhone, setProfilePhone, giftLater, setGiftLater, dogId, setDogId, myDogs, setMyDogs, savedAddrs, setSavedAddrs, addrPicked, setAddrPicked, makeMain, setMakeMain, phoneKey, setPhoneKey, deliveryMethods, setDeliveryMethods, selectedDelivery, setSelectedDelivery, autoRenewal, setAutoRenewal, isGift, hasSubscription, steps, stepIndex, stepLabel, begun, prefillFromProfile, loadMyDogs, loadAddresses, fillAddress, chooseDog, update, go, next, back, fail, submitAccount, signedIn, submitGift, submitDog, pay, selectedMethod, deliveryCost, discount, total, addrChoices, chosenAddr, plan, offersRenewal, months, period, field, OPTIONAL, input, summary, goBack, actions, card };
 }
 
 export type Checkout = ReturnType<typeof useCheckout>;

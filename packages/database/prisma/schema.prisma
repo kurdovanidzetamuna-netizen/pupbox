@@ -15,6 +15,19 @@ enum UserStatus {
   UNVERIFIED
 }
 
+/// Outside accounts a customer can sign in with.
+enum AuthProvider {
+  GOOGLE
+  FACEBOOK
+}
+
+/// How a customer first made their account.
+enum SignupMethod {
+  EMAIL
+  GOOGLE
+  FACEBOOK
+}
+
 enum AdminUserStatus {
   ACTIVE
   INACTIVE
@@ -163,8 +176,11 @@ model User {
   phone          String?
   firstName      String
   lastName       String
-  passwordHash   String
+  /// Empty for an account made with Google or Facebook until the customer sets a password.
+  passwordHash   String?
   status         UserStatus  @default(UNVERIFIED)
+  /// How the account was first made: the sign-up form, Google or Facebook.
+  signupMethod   SignupMethod @default(EMAIL)
   referralCode   String      @unique @default(cuid())
   emailVerified  Boolean     @default(false)
   /// Confirmed with an SMS code at registration (or after changing the number).
@@ -199,6 +215,7 @@ model User {
   pushSubscriptions PushSubscription[]
   addresses      Address[]
   passwordResets PasswordResetToken[]
+  identities     UserIdentity[]
   verificationCodes VerificationCode[]
   notifications  Notification[]
   savedCards     SavedCard[]
@@ -1141,6 +1158,24 @@ model BoxShipment {
 
 /// A "forgot password" link. Only a hash of the token is stored, so a copy of
 /// the database can't be used to reset anyone's password. Single use, short-lived.
+/// A Google or Facebook account linked to a customer: signing in with it signs into the customer's account.
+model UserIdentity {
+  id             String       @id @default(cuid())
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider       AuthProvider
+  /// The person's id at Google / Facebook (never changes, unlike their email).
+  providerUserId String
+  /// The email that account had when linked, for the team's reference.
+  email          String?
+  createdAt      DateTime     @default(now())
+  lastUsedAt     DateTime?
+
+  @@unique([provider, providerUserId])
+  @@unique([userId, provider])
+  @@index([userId])
+}
+
 model PasswordResetToken {
   id        String    @id @default(cuid())
   userId    String

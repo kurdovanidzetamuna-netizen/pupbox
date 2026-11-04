@@ -12,6 +12,7 @@ import Button from '@/components/ui/Button';
 import Field from '@/components/ui/Field';
 import AuthTabs from '@/components/AuthTabs';
 import { Icon } from '@/components/ui/icons';
+import SocialSignIn, { type SocialResult } from '@/components/SocialSignIn';
 
 /** The sign-in form: a full page at /login, or inside the pop-up (`inModal`). */
 export function LoginForm({ inModal = false }: { inModal?: boolean }) {
@@ -30,6 +31,18 @@ export function LoginForm({ inModal = false }: { inModal?: boolean }) {
   const [loading, setLoading] = useState(false);
   const [showPw, setShowPw] = useState(false);
 
+  /** Signed in (password, Google or Facebook): keep the session, merge the cart, carry on. */
+  async function signedIn(data: { token: string; verification?: SocialResult['verification'] }) {
+    localStorage.setItem('pupbox_token', data.token);
+    saveForEmails(lang);
+    await refreshCart(); // merges anything added as a guest into the account cart
+    // Sign-up wasn't finished (or a new Google / Facebook account): confirm the phone first, then carry on.
+    if (data.verification && !data.verification.verified) router.push(`/verify?redirect=${encodeURIComponent(redirect)}`);
+    // From the pop-up with nowhere asked: close it and stay on the same page.
+    else if (inModal && !query('redirect')) router.back();
+    else router.push(redirect);
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const errs: Record<string, string> = {};
@@ -47,14 +60,7 @@ export function LoginForm({ inModal = false }: { inModal?: boolean }) {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || t('co.e.generic'));
-      localStorage.setItem('pupbox_token', data.token);
-      saveForEmails(lang);
-      await refreshCart(); // merges anything added as a guest into the account cart
-      // Sign-up wasn't finished: confirm phone and email first, then carry on.
-      if (data.verification && !data.verification.verified) router.push(`/verify?redirect=${encodeURIComponent(redirect)}`);
-      // From the pop-up with nowhere asked: close it and stay on the same page.
-      else if (inModal && !query('redirect')) router.back();
-      else router.push(redirect);
+      await signedIn(data);
     } catch (e: any) {
       setError(e.message);
     } finally {
@@ -68,6 +74,7 @@ export function LoginForm({ inModal = false }: { inModal?: boolean }) {
         <AuthTabs current="login" />
         <Heading kind="form" as="h1" title={t('login.heading')} />
         {sessionExpired && !error && <p className="text-amber-800 text-sm mb-4 bg-amber-50 px-3 py-2 rounded-lg" role="status">{t('acc.sessionExpired')}</p>}
+        <SocialSignIn onSignedIn={signedIn} disabled={loading} />
         <FormAlert message={error} className="mb-4" />
         <form noValidate onSubmit={handleSubmit} className="space-y-4">
           <Field id="login-email" type="email" label={t('login.email')} required autoComplete="email" inputMode="email"

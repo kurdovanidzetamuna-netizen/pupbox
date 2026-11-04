@@ -29,6 +29,8 @@ const USER_SELECT = {
   marketingEmail: true,
   marketingSms: true,
   createdAt: true,
+  /** How the account was made: the sign-up form, Google or Facebook (shown on the profile). */
+  signupMethod: true,
   // The customer's own dogs; a friend's dog from a gift lives with that plan.
   dogs: { where: { deletedAt: null, forGift: false } },
   addresses: { where: { deletedAt: null } },
@@ -86,7 +88,9 @@ export class UsersController {
   async exportMyData(@Request() req) {
     const id = req.user.id;
     const [profile, addresses, dogs, orders, subscriptions] = await Promise.all([
-      this.prisma.user.findUnique({ where: { id }, select: { email: true, firstName: true, lastName: true, phone: true, language: true, referralCode: true, emailVerified: true, phoneVerified: true, marketingConsent: true, marketingConsentAt: true, createdAt: true } }),
+      this.prisma.user.findUnique({ where: { id }, select: { email: true, firstName: true, lastName: true, phone: true, language: true, referralCode: true, emailVerified: true, phoneVerified: true, marketingConsent: true, marketingConsentAt: true, createdAt: true, signupMethod: true,
+        // Google / Facebook linked: which, the email they shared, when — never any token.
+        identities: { select: { provider: true, email: true, createdAt: true, lastUsedAt: true } } } }),
       this.prisma.address.findMany({ where: { userId: id, deletedAt: null }, select: { firstName: true, lastName: true, phone: true, city: true, addressLine1: true, addressLine2: true, postalCode: true, createdAt: true } }),
       this.prisma.dog.findMany({ where: { userId: id, deletedAt: null }, select: { name: true, breed: true, birthday: true, gender: true, size: true, weightKg: true, allergies: true, toyPreferences: true, foodPreferences: true, chewingStrength: true, likedCategoryIds: true, specialNotes: true, photoUrl: true, forGift: true } }),
       this.prisma.order.findMany({
@@ -189,6 +193,8 @@ export class AdminCustomersController {
         customerNotes: { orderBy: { createdAt: 'desc' }, take: 100 },
         _count: { select: { pushSubscriptions: true } },
         lastLoginAt: true, crmTags: true,
+        signupMethod: true, passwordHash: true,
+        identities: { select: { provider: true, email: true, createdAt: true, lastUsedAt: true }, orderBy: { createdAt: 'asc' } },
       },
     });
     if (!user) throw new NotFoundException('Customer not found');
@@ -197,9 +203,11 @@ export class AdminCustomersController {
     // What each promo code took off: the order's discount.
     const orderIds = user.couponUsages.map((u) => u.orderId).filter(Boolean) as string[];
     const discounts = orderIds.length ? await this.prisma.order.findMany({ where: { id: { in: orderIds } }, select: { id: true, discountAmount: true, orderNumber: true } }) : [];
-    const { referralsSent, referralsReceived, customerNotes, couponUsages, _count, crmTags, ...rest } = user;
+    const { referralsSent, referralsReceived, customerNotes, couponUsages, _count, crmTags, passwordHash, ...rest } = user;
     return {
       ...rest,
+      // Only whether one is set — never the hash itself.
+      hasPassword: !!passwordHash,
       totalPaid: me?.spent ?? 0, refunded: me?.refunded ?? 0, paidOrders: me?.orders ?? 0, lastOrderAt: me?.lastOrderAt ?? null,
       averageOrder: me?.orders ? +((me.spent + me.refunded) / me.orders).toFixed(2) : 0,
       tags: crmTags, notes: customerNotes, pushDevices: _count.pushSubscriptions,
