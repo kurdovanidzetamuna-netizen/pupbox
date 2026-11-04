@@ -14,6 +14,11 @@ import { SmsNotify } from '../sms/sms-notify';
 import { sendPhoneOtp, verifyPhoneOtp, useSignupProof, type OtpPurpose } from './phone-otp';
 import { removeDogPhoto } from '../dogs/dog-photo';
 import { Channel, confirmCode, normalisePhone, sendCode, verificationState } from './verification';
+import { socialConfig, verifyFacebook, verifyGoogle, type SocialProfile } from './social';
+import type { AuthProvider } from '@prisma/client';
+
+/** The answer to every failed password sign-in (see login). */
+export const WRONG_LOGIN = 'Wrong email or password. If you signed up with Google or Facebook, use that button.';
 
 /** How long a "forgot password" link works. */
 const RESET_TTL_MS = 60 * 60 * 1000;
@@ -128,11 +133,14 @@ export class AuthService {
   }
 
   async login(dto: LoginDto) {
+    // One answer for every failed sign-in — no such email, a wrong password,
+    // or an account made with Google / Facebook that has no password — so the
+    // form can't be used to learn who has an account, or how they sign in.
+    const refused = () => new UnauthorizedException(WRONG_LOGIN);
     const user = await this.findByEmail(dto.email);
-    if (!user) throw new UnauthorizedException('Invalid credentials');
-
+    if (!user || !user.passwordHash) throw refused();
     const valid = await bcrypt.compare(dto.password, user.passwordHash);
-    if (!valid) throw new UnauthorizedException('Invalid credentials');
+    if (!valid) throw refused();
 
     if (user.status === 'BLOCKED') throw new UnauthorizedException('Account is blocked');
 
@@ -194,9 +202,11 @@ export class AuthService {
   }
 
   /** A new password from inside the account: checks the old one, signs out every other session, keeps this one. */
-  async changePassword(userId: string, currentPassword: string, newPassword: string) {
+  async changePassword(userId: string, currentPassword: string | undefined, newPassword: string) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    if (!user || !(await bcrypt.compare(currentPassword, user.passwordHash))) throw new BadRequestException('Your current password is not right.');
+    if (!user) throw new BadRequestException('Account not found');
+    // An account made with Google or Facebook sets its first password without an old one.
+    if (user.passwordHash && !(await bcrypt.compare(currentPassword ?? '', user.passwordHash))) throw new BadRequestException('Your current password is not right.');
     const changedAt = new Date(Math.floor(Date.now() / 1000) * 1000);
     await this.prisma.user.update({ where: { id: userId }, data: { passwordHash: await bcrypt.hash(newPassword, 12), passwordChangedAt: changedAt } });
     await this.prisma.passwordResetToken.deleteMany({ where: { userId } });
@@ -209,10 +219,11 @@ export class AuthService {
    * requires keeping financial records. A running subscription must be
    * cancelled first, so the cancellation and refund rules apply to it.
    */
-  async deleteAccount(userId: string, password: string) {
+  async deleteAccount(userId: string, password: string | undefined) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user || user.deletedAt) throw new BadRequestException('Account not found');
-    if (!(await bcrypt.compare(password, user.passwordHash))) throw new BadRequestException('Your password is not right.');
+    // Without a password (Google / Facebook only), being signed in is the proof.
+    if (user.passwordHash && !(await bcrypt.compare(password ?? '', user.passwordHash))) throw new BadRequestException('Your password is not right.');
     const running = await this.prisma.customerSubscription.count({ where: { userId, status: { in: ['ACTIVE', 'PAUSED'] } } });
     if (running) throw new BadRequestException('Cancel your subscription first, then delete the account.');
 
@@ -232,11 +243,130 @@ export class AuthService {
       this.prisma.dog.updateMany({ where: { userId }, data: { name: 'Deleted', breed: null, birthday: null, specialNotes: null, photoUrl: null, deletedAt: now } }),
       this.prisma.passwordResetToken.deleteMany({ where: { userId } }),
       this.prisma.verificationCode.deleteMany({ where: { userId } }),
+      this.prisma.userIdentity.deleteMany({ where: { userId } }),
       this.prisma.cart.deleteMany({ where: { userId } }),
     ]);
     for (const p of photos) await removeDogPhoto(p.photoUrl);
     this.logger.log(`Account ${userId} deleted at the customer's request`);
     return { ok: true };
+  }
+
+  /**
+   * Continue with Google or Facebook. The token is checked with the provider
+   * (social.ts), then:
+   * 1. that Google / Facebook account is already linked → sign in;
+   * 2. an account has the same email, which the provider confirmed → link it
+   *    and sign in (the email is now confirmed too);
+   * 3. otherwise → a new account with that email (confirmed), no password.
+   * Google and Facebook don't give a phone number, so a new account confirms
+   * one by SMS next, like every other account.
+   */
+  async socialSignIn(provider: AuthProvider, token: string, extra: { language?: string; marketingConsent?: boolean; referralCode?: string } = {}) {
+    const cfg = await socialConfig(this.prisma);
+    let profile: SocialProfile;
+    if (provider === 'GOOGLE') {
+      if (!cfg.google.enabled || !cfg.google.clientId) throw new BadRequestException('Google sign-in is off.');
+      profile = await verifyGoogle(token, cfg.google.clientId);
+    } else {
+      if (!cfg.facebook.enabled || !cfg.facebook.appId || !cfg.facebook.appSecret) throw new BadRequestException('Facebook sign-in is off.');
+      profile = await verifyFacebook(token, cfg.facebook.appId, cfg.facebook.appSecret);
+    }
+
+    const name = provider === 'GOOGLE' ? 'Google' : 'Facebook';
+    const linked = await this.prisma.userIdentity.findUnique({ where: { provider_providerUserId: { provider, providerUserId: profile.id } }, include: { user: true } });
+    let user = linked && !linked.user.deletedAt ? linked.user : null;
+    let created = false;
+
+    if (!user) {
+      if (!profile.email || !profile.emailVerified) {
+        throw new BadRequestException(`${name} didn’t share a confirmed email address. Sign up with your email instead.`);
+      }
+      const existing = await this.findByEmail(profile.email);
+      if (existing) {
+        // One customer, one Google (or Facebook) account: a different one already linked stays.
+        const other = await this.prisma.userIdentity.findUnique({ where: { userId_provider: { userId: existing.id, provider } } });
+        if (other && other.providerUserId !== profile.id) throw new ConflictException(`This email is linked to a different ${name} account.`);
+        user = existing;
+      } else {
+        user = await this.createSocialUser(profile, extra);
+        created = true;
+      }
+      await this.prisma.userIdentity.upsert({
+        where: { userId_provider: { userId: user.id, provider } },
+        create: { userId: user.id, provider, providerUserId: profile.id, email: profile.email, lastUsedAt: new Date() },
+        update: { providerUserId: profile.id, email: profile.email, lastUsedAt: new Date() },
+      });
+      // The provider vouched for this email.
+      if (!user.emailVerified && profile.email && profile.email === user.email.toLowerCase()) {
+        user = await this.prisma.user.update({ where: { id: user.id }, data: { emailVerified: true } });
+      }
+    } else {
+      this.prisma.userIdentity.update({ where: { id: linked!.id }, data: { lastUsedAt: new Date() } }).catch(() => {});
+    }
+
+    if (user.status === 'BLOCKED') throw new UnauthorizedException('Account is blocked');
+    this.prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } }).catch(() => {});
+    return {
+      user: { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName, referralCode: user.referralCode },
+      token: this.signToken(user.id, user.email, 'customer'),
+      created,
+      verification: verificationState(user),
+    };
+  }
+
+  private async createSocialUser(p: SocialProfile, extra: { language?: string; marketingConsent?: boolean; referralCode?: string }) {
+    const language = extra.language === 'en' ? 'en' : 'ka';
+    const yes = extra.marketingConsent === true;
+    const now = new Date();
+    const user = await this.prisma.user.create({
+      data: {
+        email: this.normalise(p.email!), language,
+        firstName: p.firstName || p.email!.split('@')[0], lastName: p.lastName || '',
+        passwordHash: null, emailVerified: true, signupMethod: p.provider,
+        marketingConsent: yes, marketingConsentAt: yes ? now : null,
+        marketingEmail: yes, marketingSms: yes, marketingEmailAt: yes ? now : null, marketingSmsAt: yes ? now : null,
+      },
+    });
+    const short = await this.referrals.assignShortCode(user.id, user.firstName).catch(() => user.referralCode);
+    if (extra.referralCode) {
+      try { await this.referrals.applyReferralCode(user.id, extra.referralCode); } catch { /* ignore invalid codes */ }
+    }
+    notify(this.prisma, user.id, 'WELCOME', { firstName: user.firstName }, '/account/dogs');
+    this.email.sendWelcome({ email: user.email, firstName: user.firstName, language }).catch(() => {});
+    this.smsNotify.newCustomer(user.id);
+    return { ...user, referralCode: short };
+  }
+
+  /** Google / Facebook linked to my account, and whether I have a password. */
+  async signInMethods(userId: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { passwordHash: true, signupMethod: true, identities: { select: { provider: true, email: true, createdAt: true, lastUsedAt: true }, orderBy: { createdAt: 'asc' } } } });
+    if (!user) throw new BadRequestException('Account not found');
+    return { hasPassword: !!user.passwordHash, signupMethod: user.signupMethod, identities: user.identities };
+  }
+
+  /** Link Google / Facebook to the account I'm signed in to. */
+  async linkIdentity(userId: string, provider: AuthProvider, token: string) {
+    const cfg = await socialConfig(this.prisma);
+    const profile = provider === 'GOOGLE'
+      ? await verifyGoogle(token, cfg.google.clientId)
+      : await verifyFacebook(token, cfg.facebook.appId, cfg.facebook.appSecret);
+    const taken = await this.prisma.userIdentity.findUnique({ where: { provider_providerUserId: { provider, providerUserId: profile.id } } });
+    if (taken && taken.userId !== userId) throw new ConflictException(`That ${provider === 'GOOGLE' ? 'Google' : 'Facebook'} account is already used by another PupBox account.`);
+    await this.prisma.userIdentity.upsert({
+      where: { userId_provider: { userId, provider } },
+      create: { userId, provider, providerUserId: profile.id, email: profile.email, lastUsedAt: new Date() },
+      update: { providerUserId: profile.id, email: profile.email },
+    });
+    return this.signInMethods(userId);
+  }
+
+  /** Unlink Google / Facebook — never the last way in. */
+  async unlinkIdentity(userId: string, provider: AuthProvider) {
+    const m = await this.signInMethods(userId);
+    if (!m.identities.some((i) => i.provider === provider)) return m;
+    if (!m.hasPassword && m.identities.length <= 1) throw new BadRequestException('Set a password first — otherwise you couldn’t sign in any more.');
+    await this.prisma.userIdentity.deleteMany({ where: { userId, provider } });
+    return this.signInMethods(userId);
   }
 
   private signToken(userId: string, email: string, role: string) {

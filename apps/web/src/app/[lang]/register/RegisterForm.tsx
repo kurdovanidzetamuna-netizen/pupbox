@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState, Suspense, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useLanguage } from '@/context/LanguageContext';
+import { saveForEmails, useLanguage } from '@/context/LanguageContext';
 import { useCart } from '@/context/CartContext';
 import { safeRedirect } from '@/lib/safeRedirect';
 import LegalNotice from '@/components/LegalNotice';
@@ -20,6 +20,7 @@ import Field from '@/components/ui/Field';
 import AuthTabs from '@/components/AuthTabs';
 import { PwEye } from '@/app/[lang]/login/LoginForm';
 import { GIFT } from '@/lib/gift';
+import SocialSignIn, { type SocialResult } from '@/components/SocialSignIn';
 
 type Step = 'about' | 'account' | 'verify' | 'done';
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -121,6 +122,20 @@ export function RegisterForm({ inModal = false }: { inModal?: boolean }) {
 
   const verified = useCallback(() => { setStep('done'); window.scrollTo({ top: 0 }); }, []);
 
+  /**
+   * Google / Facebook: the email comes confirmed, so a new account goes
+   * straight to confirming the phone. An account that already existed just
+   * signs in and carries on, like the sign-in form.
+   */
+  async function social(r: SocialResult) {
+    localStorage.setItem('pupbox_token', r.token);
+    saveForEmails(lang);
+    await refreshCart();
+    if (!r.verification.verified) { setStep('verify'); window.scrollTo({ top: 0 }); return; }
+    if (r.created) { setStep('done'); return; }
+    if (inModal && !query('redirect')) router.back(); else router.push(redirect);
+  }
+
   const steps: Step[] = ['about', 'account', 'verify'];
 
   return (
@@ -143,6 +158,7 @@ export function RegisterForm({ inModal = false }: { inModal?: boolean }) {
         {step === 'about' && (
           <>
             <Heading kind="form" as="h1" title={t('register.heading')} subtitle={t('register.subheading')} />
+            <SocialSignIn onSignedIn={social} />
             <FormAlert message={error} missing={countErrors(fieldErrors)} className="mb-4" />
             <form onSubmit={nextStep} className="space-y-4" noValidate>
               <div className="grid grid-cols-2 gap-3">
@@ -186,8 +202,8 @@ export function RegisterForm({ inModal = false }: { inModal?: boolean }) {
         {step === 'verify' && (
           <>
             <span className="w-11 h-11 rounded-2xl bg-teal-50 text-teal-600 flex items-center justify-center mb-4"><Icon name="shield" className="w-6 h-6" /></span>
-            <Heading kind="form" as="h1" title={t('ver.title')} subtitle={t('ver.sub')} />
-            <VerifyCodes onDone={verified} />
+            <VerifyCodes onDone={verified}
+              header={(noPhone) => <Heading kind="form" as="h1" title={t(noPhone ? 'ver.titlePhone' : 'ver.title')} subtitle={t(noPhone ? 'ver.subPhone' : 'ver.sub')} />} />
           </>
         )}
 

@@ -7,21 +7,24 @@ import { Heading } from '@/components/ui/Heading';
 import Button from '@/components/ui/Button';
 import Segmented from '@/components/ui/Segmented';
 import { PwEye } from '@/app/[lang]/login/LoginForm';
+import SocialSignIn from '@/components/SocialSignIn';
 
 import type { Checkout } from './useCheckout';
 
 /** Step 1 when signed out: sign up or sign in, then confirm the email and phone codes. */
 export function AccountStep({ co }: { co: Checkout }) {
-  const { t, loading, error, setError, errs, setErrs, isNewAccount, setIsNewAccount, needVerify, setNeedVerify, consent, setConsent, showPw, setShowPw, signupPhone, setSignupPhone, setSignupPhoneOk, signupProof, setSignupProof, next, submitAccount, input, card } = co;
+  const { t, loading, error, setError, errs, setErrs, isNewAccount, setIsNewAccount, needVerify, setNeedVerify, consent, setConsent, showPw, setShowPw, signupPhone, setSignupPhone, setSignupPhoneOk, signupProof, setSignupProof, next, submitAccount, signedIn, input, card } = co;
   return (
     needVerify ? (
       <section className={card}>
-        <Heading kind="form" as="h1" title={t('ver.title')} subtitle={t('ver.sub')} />
-        <VerifyCodes onDone={() => { setNeedVerify(false); next(); }} />
+        <VerifyCodes onDone={() => { setNeedVerify(false); next(); }}
+          header={(noPhone) => <Heading kind="form" as="h1" title={t(noPhone ? 'ver.titlePhone' : 'ver.title')} subtitle={t(noPhone ? 'ver.subPhone' : 'ver.sub')} />} />
       </section>
     ) : (
       <section className={card}>
         <Heading kind="form" as="h1" title={t('co.account.title')} subtitle={t('co.account.sub')} />
+        {/* One tap with Google or Facebook, whether new or returning */}
+        <SocialSignIn onSignedIn={signedIn} disabled={loading} />
         {/* The same switch as the sign-in pop-up */}
         <Segmented className="mb-5" label={t('co.account.title')} value={isNewAccount ? 'new' : 'existing'}
           onChange={v => { setIsNewAccount(v === 'new'); setErrs({}); setError(''); }}

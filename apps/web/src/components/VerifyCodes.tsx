@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useLanguage } from '@/context/LanguageContext';
 import { fill } from '@/context/strings/purchase';
 import { authFetch, responseError as message } from '@/lib/authFetch';
@@ -17,10 +17,12 @@ const mask = (phone: string | null) => (phone ? `${phone.slice(0, 7)}•••${
 /**
  * Confirms the signed-in customer's phone (SMS code) and email (emailed
  * code). Codes were sent at sign-up; each box can ask for a new one after a
- * minute. A wrong number can be corrected here. Calls `onDone` once both
- * are confirmed.
+ * minute. A wrong number can be corrected here. An account made with Google
+ * or Facebook has a confirmed email and no phone yet: it starts by asking for
+ * the number. Calls `onDone` once both are confirmed. `header` draws the
+ * heading, told whether the phone is still missing.
  */
-export default function VerifyCodes({ onDone }: { onDone: () => void }) {
+export default function VerifyCodes({ onDone, header }: { onDone: () => void; header?: (phoneMissing: boolean) => ReactNode }) {
   const { t } = useLanguage();
   const [me, setMe] = useState<Me | null>(null);
   const [codes, setCodes] = useState<Record<Channel, string>>({ PHONE: '', EMAIL: '' });
@@ -37,7 +39,7 @@ export default function VerifyCodes({ onDone }: { onDone: () => void }) {
 
   useEffect(() => {
     // Not signed in (or the session ended): sign in first, then come back here.
-    authFetch('/users/me').then(r => r.json()).then(setMe)
+    authFetch('/users/me').then(r => r.json()).then((m: Me) => { setMe(m); if (!m.phone) setEditingPhone(true); })
       .catch(() => { window.location.href = `/login?redirect=${encodeURIComponent('/verify')}`; });
   }, []);
 
@@ -110,7 +112,8 @@ export default function VerifyCodes({ onDone }: { onDone: () => void }) {
 
   const row = (channel: Channel) => {
     const done = channel === 'PHONE' ? me.phoneVerified : me.emailVerified;
-    const to = channel === 'PHONE' ? mask(pendingPhone || me.phone) : me.email;
+    const noPhone = channel === 'PHONE' && !me.phone && !pendingPhone;
+    const to = channel === 'PHONE' ? (noPhone ? t('reg.phone') : mask(pendingPhone || me.phone)) : me.email;
     const title = channel === 'PHONE' ? 'SMS' : t('acc.notifEmail');
     if (done) {
       return (
@@ -149,8 +152,10 @@ export default function VerifyCodes({ onDone }: { onDone: () => void }) {
               } />
             <div className="mt-2 flex items-center justify-between gap-3 text-[12px]">
               <span className="text-gray-400">{t('ver.newNumberHint')}</span>
-              <button type="button" onClick={() => setEditingPhone(false)} aria-label={t('ui.cancel')} title={t('ui.cancel')}
-                className="w-7 h-7 rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-700 flex items-center justify-center"><Icon name="close" className="w-3.5 h-3.5" strokeWidth={2.4} /></button>
+              {!noPhone && (
+                <button type="button" onClick={() => setEditingPhone(false)} aria-label={t('ui.cancel')} title={t('ui.cancel')}
+                  className="w-7 h-7 rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-700 flex items-center justify-center"><Icon name="close" className="w-3.5 h-3.5" strokeWidth={2.4} /></button>
+              )}
             </div>
           </form>
         ) : (
@@ -174,6 +179,7 @@ export default function VerifyCodes({ onDone }: { onDone: () => void }) {
 
   return (
     <div className="space-y-3">
+      {header?.(!me.phone && !pendingPhone)}
       {row('PHONE')}
       {row('EMAIL')}
       {me.emailVerified && me.phoneVerified && <><Confetti count={18} /><p className="text-center font-bold text-teal-700 pt-2 animate-[pop_0.4s_ease-out]">{t('ver.allSet')}</p></>}

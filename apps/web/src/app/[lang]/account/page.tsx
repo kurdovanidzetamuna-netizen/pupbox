@@ -17,6 +17,8 @@ import { Icon } from '@/components/ui/icons';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { pushIsOn, pushSupported, turnPushOff, turnPushOn } from '@/lib/push';
 import { FormAlert, countErrors, revealFirstError } from '@/components/ui/FormError';
+import { fill } from '@/context/strings/purchase';
+import { FacebookMark, GoogleMark } from '@/components/SocialSignIn';
 
 export default function AccountPage() {
   const router = useRouter();
@@ -160,15 +162,15 @@ export default function AccountPage() {
           </header>
 
           {unverified && (
-            <div className="flex items-center gap-3 rounded-2xl bg-amber-50 ring-1 ring-amber-200/70 pl-4 pr-1.5 py-1.5">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-2xl bg-amber-50 ring-1 ring-amber-200/70 pl-4 pr-1.5 py-1.5">
               <Icon name="alert" className="w-4 h-4 text-amber-500 shrink-0" />
-              <p className="flex-1 text-[12.5px] text-amber-900">{t('ver.banner')}</p>
+              <p className="flex-1 min-w-[9rem] text-[12.5px] text-amber-900">{t(user?.emailVerified ? 'ver.bannerPhone' : user?.phoneVerified ? 'ver.bannerEmail' : 'ver.banner')}</p>
               <Link href="/verify?redirect=/account" className="shrink-0 bg-amber-500 text-white px-3.5 py-1.5 rounded-full text-[12px] font-semibold hover:bg-amber-600">{t('ver.bannerBtn')}</Link>
             </div>
           )}
 
 
-          <div className="grid lg:grid-cols-5 gap-5 items-start">
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-5 items-start">
             <section className="lg:col-span-3 bg-white rounded-3xl ring-1 ring-gray-200/60 p-5 sm:p-6">
               <h2 className="text-[15px] font-bold text-gray-900 mb-4">{t('acc.details')}</h2>
               <FormAlert message={error} missing={countErrors(fieldErrors)} className="mb-4" />
@@ -178,9 +180,16 @@ export default function AccountPage() {
                   {field('lastName', t('co.f.lastName'), true)}
                 </div>
                 <Field id="email" label={t('acc.email')} value={user?.email || ''} disabled trailing={badge(!!user?.emailVerified)} />
+                {/* How the account was made: the form, Google or Facebook */}
+                {user?.signupMethod && (
+                  <p className="-mt-1 px-1 flex items-center gap-1.5 text-[12px] text-gray-500">
+                    {user.signupMethod === 'GOOGLE' ? <GoogleMark className="w-3.5 h-3.5" /> : user.signupMethod === 'FACEBOOK' ? <span className="text-[#1877F2]"><FacebookMark className="w-3.5 h-3.5" /></span> : <Icon name="mail" className="w-3.5 h-3.5" />}
+                    {fill(t('acc.regWith'), { method: t(`acc.reg.${user.signupMethod}`), date: formatDate(user.createdAt, lang, { day: 'numeric', month: 'long', year: 'numeric' }) })}
+                  </p>
+                )}
                 {/* The number: confirmed when and how; changing it goes through an SMS code */}
-                <div className="rounded-xl bg-gray-100/80 pl-3.5 pr-2 py-2.5 flex items-center gap-3">
-                  <div className="flex-1 min-w-0">
+                <div className="rounded-xl bg-gray-100/80 pl-3.5 pr-2 py-2.5 flex flex-wrap items-center gap-x-3 gap-y-2">
+                  <div className="flex-1 min-w-[9rem]">
                     <p className="text-[10.5px] font-medium text-gray-500 leading-none">{t('co.f.phone')}</p>
                     <p className="mt-1 text-[13.5px] text-gray-900 truncate">{user?.phone || '—'}</p>
                     <p className={`mt-0.5 text-[11.5px] font-semibold flex items-center gap-1 ${user?.phoneVerified ? 'text-teal-700' : 'text-amber-700'}`}>

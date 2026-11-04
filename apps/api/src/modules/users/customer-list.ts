@@ -17,6 +17,8 @@ export interface CustomerQuery {
   joinedTo?: string;
   /** Customers who paid at least once (yes) or never (no). */
   buyer?: string;
+  /** How they sign in: google / facebook (linked) · password (has one) · social (no password, only Google/Facebook). */
+  signIn?: string;
   sort?: string;
   dir?: string;
   page?: number;
@@ -44,6 +46,10 @@ export async function customerRows(prisma: PrismaService, q: CustomerQuery, all 
     ...(q.tag ? { crmTags: { has: q.tag } } : {}),
     ...(q.consent === 'email' ? { marketingEmail: true } : q.consent === 'sms' ? { marketingSms: true } : q.consent === 'none' ? { marketingEmail: false, marketingSms: false } : {}),
     ...(day(q.joinedFrom) || day(q.joinedTo, true) ? { createdAt: { ...(day(q.joinedFrom) ? { gte: day(q.joinedFrom) } : {}), ...(day(q.joinedTo, true) ? { lte: day(q.joinedTo, true) } : {}) } } : {}),
+    ...(q.signIn === 'google' ? { identities: { some: { provider: 'GOOGLE' as const } } }
+      : q.signIn === 'facebook' ? { identities: { some: { provider: 'FACEBOOK' as const } } }
+      : q.signIn === 'password' ? { passwordHash: { not: null } }
+      : q.signIn === 'social' ? { passwordHash: null } : {}),
     ...(q.city ? { addresses: { some: { deletedAt: null, isGift: false, city: { equals: q.city, mode: 'insensitive' } } } } : {}),
     ...(search ? {
       OR: [
@@ -62,6 +68,7 @@ export async function customerRows(prisma: PrismaService, q: CustomerQuery, all 
       id: true, email: true, firstName: true, lastName: true, phone: true, status: true, language: true, createdAt: true, lastLoginAt: true,
       emailVerified: true, phoneVerified: true, phoneVerifiedAt: true, phoneVerifiedVia: true,
       marketingConsent: true, marketingEmail: true, marketingSms: true, crmTags: true, referralCode: true,
+      signupMethod: true, passwordHash: true, identities: { select: { provider: true } },
       addresses: { where: { deletedAt: null, isGift: false }, select: { city: true, isDefault: true }, orderBy: { createdAt: 'asc' } },
       subscriptions: { where: { isGift: false }, select: { status: true, plan: { select: { name: true } } }, orderBy: { createdAt: 'desc' } },
       referralsReceived: { select: { inviter: { select: { email: true } } }, take: 1 },
@@ -93,6 +100,8 @@ export async function customerRows(prisma: PrismaService, q: CustomerQuery, all 
       emailVerified: u.emailVerified, phoneVerified: u.phoneVerified, phoneVerifiedAt: u.phoneVerifiedAt, phoneVerifiedVia: u.phoneVerifiedVia,
       marketingConsent: u.marketingConsent, marketingEmail: u.marketingEmail, marketingSms: u.marketingSms,
       tags: u.crmTags, referralCode: u.referralCode, invitedBy: u.referralsReceived[0]?.inviter.email ?? null,
+      // How they get in: a password and/or Google / Facebook, and how the account was made.
+      signupMethod: u.signupMethod, hasPassword: !!u.passwordHash, providers: u.identities.map((i) => i.provider),
       city: home?.city ?? null, dogs: u._count.dogs,
       orders: o?._count._all ?? 0, lastOrderAt: o?._max.createdAt ?? null,
       spent: +((m?.paid ?? 0) - (m?.refunded ?? 0)).toFixed(2), refunded: +(m?.refunded ?? 0).toFixed(2),
@@ -136,13 +145,16 @@ const cell = (v: unknown) => {
   return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 };
 
+const signupLabel: Record<string, string> = { EMAIL: 'Email', GOOGLE: 'Google', FACEBOOK: 'Facebook' };
+
 /** The list as a spreadsheet (opens in Excel and Google Sheets, Georgian included). */
 export function customersCsv(rows: CustomerRow[]) {
-  const head = ['First name', 'Last name', 'Email', 'Phone', 'Phone confirmed', 'Email confirmed', 'City', 'Language', 'Status', 'Plan', 'Plan name', 'Paid orders', 'Spent (GEL)', 'Refunded (GEL)', 'Last order', 'Dogs', 'Email offers', 'SMS offers', 'Tags', 'Invited by', 'Referral code', 'Joined', 'Last sign-in'];
+  const head = ['First name', 'Last name', 'Email', 'Phone', 'Phone confirmed', 'Email confirmed', 'City', 'Language', 'Status', 'Plan', 'Plan name', 'Paid orders', 'Spent (GEL)', 'Refunded (GEL)', 'Last order', 'Dogs', 'Email offers', 'SMS offers', 'Tags', 'Invited by', 'Referral code', 'Joined', 'Last sign-in', 'Signed up with', 'Signs in with'];
   const lines = rows.map((r) => [
     r.firstName, r.lastName, r.email, r.phone, r.phoneVerified ? 'yes' : 'no', r.emailVerified ? 'yes' : 'no', r.city, r.language, r.status,
     r.plan, r.planName, r.orders, r.spent.toFixed(2), r.refunded.toFixed(2), r.lastOrderAt, r.dogs,
     r.marketingEmail ? 'yes' : 'no', r.marketingSms ? 'yes' : 'no', r.tags.join('; '), r.invitedBy, r.referralCode, r.createdAt, r.lastLoginAt,
+    signupLabel[r.signupMethod], [r.hasPassword ? 'Password' : '', ...r.providers.map((p) => signupLabel[p])].filter(Boolean).join('; '),
   ].map(cell).join(','));
   return '﻿' + [head.join(','), ...lines].join('\n');
 }

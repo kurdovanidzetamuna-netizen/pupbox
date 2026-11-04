@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { ActionButton } from '../../../components/Toolbar';
 import { NumInput } from '@/components/NumberField';
 import { getOr, post } from '@/lib/api';
+import SocialSignInCard from './SocialSignInCard';
 
 const SLUG = 'config-settings';
 
@@ -153,6 +154,8 @@ export default function SettingsPage() {
             <input type="email" value={v.orderEmail} onChange={set('orderEmail')} placeholder="orders@pupbox.ge"
               style={{ ...numInput, width: '100%', boxSizing: 'border-box' }} />
           </Card>
+
+          <SocialSignInCard />
 
           <Link href="/dashboard/sms" style={{ ...card, display: 'flex', alignItems: 'center', gap: 14, textDecoration: 'none' }}>
             <span style={{ fontSize: 24 }}>📱</span>

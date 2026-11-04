@@ -121,6 +121,7 @@ export const PURCHASE_STRINGS: Record<string, { en: string; ka: string }> = {
   'co.period.month':        { en: 'month',                      ka: 'თვეში' },
   'co.period.months':       { en: '{n} months',                 ka: '{n} თვეში' },
   'legal.accountNotice':    { en: 'By creating an account you agree to our {terms} and confirm you have read our {privacy}.', ka: 'ანგარიშის შექმნით ეთანხმები ჩვენს {terms} და ადასტურებ, რომ გაეცანი ჩვენს {privacy}.' },
+  'legal.socialNotice':     { en: 'By continuing with Google or Facebook you agree to our {terms} and confirm you have read our {privacy}. We only receive your name and email — never your contacts, friends or posts.', ka: 'Google-ით ან Facebook-ით გაგრძელებით ეთანხმები ჩვენს {terms} და ადასტურებ, რომ გაეცანი ჩვენს {privacy}. ვიღებთ მხოლოდ შენს სახელსა და ელფოსტას — არასდროს კონტაქტებს, მეგობრებს ან პოსტებს.' },
   'legal.termsLink':        { en: 'Terms',                      ka: 'პირობებს' },
   'legal.privacyLink':      { en: 'Privacy Policy',             ka: 'კონფიდენციალურობის პოლიტიკას' },
   'co.terms':               { en: 'By paying you agree to our', ka: 'გადახდით ეთანხმები ჩვენს' },
