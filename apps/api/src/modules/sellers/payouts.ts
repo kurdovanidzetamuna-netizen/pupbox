@@ -9,6 +9,7 @@ import { AdminPerms } from '../admin-auth/admin-permissions';
 import { AdminJwtGuard } from '../admin-auth/admin-jwt.guard';
 import { dateRange, toCsv } from '../reports/reports.service';
 import { r2 } from '../../common/money';
+import { tbilisiDay } from '../../common/tbilisi';
 
 /**
  * When a seller's line is owed:
@@ -23,8 +24,6 @@ const SOLD = [...UPCOMING, ...DUE];
 
 type State = 'due' | 'upcoming' | 'paid';
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
-/** A day as it was in Tbilisi, e.g. 2026-10-12. */
-const tbilisiDay = (d: Date) => d.toLocaleDateString('en-CA', { timeZone: 'Asia/Tbilisi' });
 
 class PayoutDto {
   @IsString() sellerId: string;

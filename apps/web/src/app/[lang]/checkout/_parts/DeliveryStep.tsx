@@ -24,7 +24,7 @@ export function DeliveryStep({ co }: { co: Checkout }) {
           {giftDog.name && <p className="text-xs text-gray-600 flex items-center gap-1"><Icon name="paw" className="w-3.5 h-3.5" />{giftDog.name}</p>}
           {form.giftRecipientEmail && <p className="text-xs text-gray-600">{form.giftRecipientEmail}</p>}
           {form.giftMessage && <p className="text-xs italic text-gray-600 mt-2">“{form.giftMessage}”</p>}
-          {giftLater && form.giftSendOn && <p className="text-xs text-gray-600 mt-2 flex items-center gap-1"><Icon name="calendar" className="w-3.5 h-3.5" />{fill(t('co.gift.sendsOn'), { date: formatDate(new Date(`${form.giftSendOn}T09:00:00+04:00`), lang, { day: 'numeric', month: 'long', year: 'numeric' }) })}</p>}
+          {giftLater && form.giftSendOn && <p className="text-xs text-gray-600 mt-2 flex items-center gap-1"><Icon name="calendar" className="w-3.5 h-3.5" />{fill(t('co.gift.sendsOn'), { date: formatDate(form.giftSendOn, lang, { day: 'numeric', month: 'long', year: 'numeric' }, 'calendar') })}</p>}
           <p className="text-xs text-lilac-600 mt-2 pt-2 border-t border-lilac-100">{fill(t('co.gift.billingNote'), { name: form.giftRecipientName })}</p>
         </div>
       )}

@@ -3,8 +3,9 @@ import { useEffect, useState } from 'react';
 import Composer, { GROUPS } from './Composer';
 import { ActionButton, StatCard, StatCards } from '@/components/Toolbar';
 import { getOr } from '@/lib/api';
+import { TBILISI } from '@pupbox/content';
 
-const when = (d: string) => new Date(d).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+const when = (d: string) => new Date(d).toLocaleString('en-GB', { timeZone: TBILISI, day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 
 /**
  * Messages to customers: news, offers, reminders. Each lands in the bell on

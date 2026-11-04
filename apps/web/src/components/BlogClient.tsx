@@ -45,7 +45,7 @@ export default function BlogClient({ posts, total, pages, page, categories, cont
   const local = posts.map((raw: any) => { const tr = raw.translations?.[lang] ?? {}; return { ...raw, title: tr.title?.trim() || raw.title, excerpt: tr.excerpt?.trim() || raw.excerpt }; });
   const featured = page === 1 && !activeCategory ? local[0] : null;
   const rest = featured ? local.slice(1) : local;
-  const date = (d?: string) => d ? formatDate(new Date(d), lang, { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+  const date = (d?: string) => d ? formatDate(d, lang, { day: 'numeric', month: 'short', year: 'numeric' }, 'shop') : '';
   const chip = (on: boolean) => `shrink-0 h-9 px-4 rounded-full inline-flex items-center gap-1.5 text-[12.5px] font-bold ring-1 ring-inset transition-colors ${on ? 'bg-teal-50 text-teal-700 ring-teal-400' : 'bg-white text-gray-600 ring-gray-200 hover:ring-gray-300'}`;
 
   return (

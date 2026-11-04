@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'r
 import Link from 'next/link';
 import { ActionButton } from '../../../components/Toolbar';
 import { api, getOr, patch, saveCsv } from '@/lib/api';
+import { tbilisiMonth } from '@pupbox/content';
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const SIZE: Record<string, string> = { EXTRA_SMALL: 'XS', SMALL: 'S', MEDIUM: 'M', LARGE: 'L', EXTRA_LARGE: 'XL' };
@@ -39,8 +40,7 @@ function Banner({ tone, children }: { tone: 'teal' | 'amber' | 'red'; children: 
  * packing → shipped flow that moves each customer's "boxes sent".
  */
 export default function MonthlyBoxesPage() {
-  const now = new Date();
-  const [ym, setYm] = useState({ year: now.getFullYear(), month: now.getMonth() + 1 });
+  const [ym, setYm] = useState(() => { const m = tbilisiMonth(); return { year: m.year, month: m.month }; });
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);

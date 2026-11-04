@@ -2,6 +2,7 @@
 import type { Pin } from '@/components/MapPicker';
 import { FieldError } from '@/components/ui/FormError';
 import { Icon } from '@/components/ui/icons';
+import { tbilisiDay } from '@pupbox/content';
 
 export const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -53,7 +54,6 @@ export function OptionCard({ name, checked, onChange, invalid, children }: { nam
  * is the whole point: every extra step is somewhere a customer can leave.
  */
 /** Dates for the gift start picker, in Tbilisi time (UTC+4) to match the server. */
-export const tbilisiDay = (offsetDays = 0) => new Date(Date.now() + 4 * 3600_000 + offsetDays * 86400_000).toISOString().slice(0, 10);
-export const todayTbilisi = () => tbilisiDay(0);
-export const tomorrowTbilisi = () => tbilisiDay(1);
-export const inAYear = () => tbilisiDay(365);
+export const todayTbilisi = () => tbilisiDay();
+export const tomorrowTbilisi = () => tbilisiDay(Date.now(), 1);
+export const inAYear = () => tbilisiDay(Date.now(), 365);

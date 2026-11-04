@@ -8,6 +8,11 @@ import * as compression from 'compression';
 import * as cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
 import { PrismaErrorFilter } from './common/prisma-error.filter';
+import { TBILISI } from './common/tbilisi';
+
+// The shop's clock is Tbilisi's: "today", "this month" and every date the
+// server works out follow it, whatever time zone the machine is set to.
+process.env.TZ = TBILISI;
 
 /**
  * Tokens for customers and admins are signed with JWT_SECRET. The example

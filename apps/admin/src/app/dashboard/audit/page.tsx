@@ -2,6 +2,7 @@
 import { Select } from '@/components/Dropdown';
 import { useState, useEffect, useCallback } from 'react';
 import { getOr } from '@/lib/api';
+import { TBILISI } from '@pupbox/content';
 
 
 const ACTION_COLORS: Record<string, { background: string; color: string; border: string }> = {
@@ -38,7 +39,7 @@ export default function AuditLogPage() {
   const modules = ['products', 'orders', 'subscriptions', 'customers', 'coupons', 'blog', 'cms', 'categories', 'auth'];
 
   function formatDate(d: string) {
-    return new Date(d).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    return new Date(d).toLocaleString('en-GB', { timeZone: TBILISI, day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
   }
 
   return (

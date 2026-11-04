@@ -7,6 +7,7 @@ import NumberField from '@/components/NumberField';
 import { ActionButton, StatCard, StatCards } from '@/components/Toolbar';
 import { ImageInput } from '../page-builder/_components/fields';
 import { getOr, post } from '@/lib/api';
+import { tbilisiDay } from '@pupbox/content';
 
 const SLUG = 'config-promo-popups';
 
@@ -59,7 +60,7 @@ const EMPTY: Omit<Popup, 'id'> = {
   audience: 'all', startsAt: '', endsAt: '',
 };
 
-const today = () => new Date().toISOString().slice(0, 10);
+const today = () => tbilisiDay();
 const nice = (d?: string) => (d ? new Date(`${d}T00:00:00`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '');
 
 /** Live now, waiting for its start date, past its end date, or switched off. */

@@ -1,3 +1,5 @@
+import { TBILISI } from '../../common/tbilisi';
+
 /**
  * Shared date-range vocabulary for the admin dashboard.
  *
@@ -97,13 +99,13 @@ function advance(d: Date, bucket: Bucket): Date {
 function labelFor(d: Date, bucket: Bucket): string {
   switch (bucket) {
     case 'hour':
-      return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+      return d.toLocaleTimeString('en-GB', { timeZone: TBILISI, hour: '2-digit', minute: '2-digit' });
     case 'day':
-      return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+      return d.toLocaleDateString('en-GB', { timeZone: TBILISI, day: '2-digit', month: 'short' });
     case 'week':
-      return `w/c ${d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}`;
+      return `w/c ${d.toLocaleDateString('en-GB', { timeZone: TBILISI, day: '2-digit', month: 'short' })}`;
     case 'month':
-      return d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+      return d.toLocaleDateString('en-US', { timeZone: TBILISI, month: 'short', year: '2-digit' });
   }
 }
 

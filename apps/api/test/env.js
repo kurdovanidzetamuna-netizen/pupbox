@@ -28,6 +28,7 @@ if (!/\/[^/?]*_test(\?|$)/.test(url)) throw new Error(`Refusing to run tests on 
 
 Object.assign(process.env, {
   NODE_ENV: 'test',
+  TZ: 'Asia/Tbilisi', // as the server sets it in main.ts
   DATABASE_URL: url,
   JWT_SECRET: 'test-only-secret-that-is-long-enough-1234567890',
   JWT_REFRESH_SECRET: 'test-only-refresh-secret-1234567890',

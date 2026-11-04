@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import FormField, { inputClass } from '@/components/FormField';
 import LangTabs, { type Lang } from '@/components/LangTabs';
 import { api, patch, post } from '@/lib/api';
+import { TBILISI } from '@pupbox/content';
 
 
 const inp = { width: '100%', border: '1px solid var(--slate-200)', borderRadius: 10, padding: '9px 14px', fontSize: 13, outline: 'none', boxSizing: 'border-box' as const };
@@ -159,7 +160,7 @@ export default function AdminCmsPage() {
                     </span>
                   </td>
                   <td style={{ padding: '14px 18px', fontSize: 12, color: 'var(--slate-400)' }}>
-                    {p.updatedAt ? new Date(p.updatedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '—'}
+                    {p.updatedAt ? new Date(p.updatedAt).toLocaleDateString('en-GB', { timeZone: TBILISI, day: 'numeric', month: 'short' }) : '—'}
                   </td>
                   <td style={{ padding: '14px 18px' }}>
                     <button onClick={() => { setEditing({ ...p }); const kaData = p.translations?.ka; setKa(kaData ? { title: kaData.title || '', contentHtml: kaData.content?.html || '', seoTitle: kaData.seoTitle || '', seoDesc: kaData.seoDesc || '' } : { title: '', contentHtml: '', seoTitle: '', seoDesc: '' }); setLang('en'); }} style={{ fontSize: 12, padding: '5px 10px', borderRadius: 8, background: 'var(--blue-50)', color: 'var(--blue-600)', border: 'none', cursor: 'pointer', fontWeight: 600 }}>Edit</button>

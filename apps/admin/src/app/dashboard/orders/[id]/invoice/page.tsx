@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import ChoiceNote from '../../../../../components/ChoiceNote';
 import { api } from '@/lib/api';
+import { TBILISI } from '@pupbox/content';
 
 
 export default function InvoicePage() {
@@ -70,7 +71,7 @@ export default function InvoicePage() {
             <div style={{ color: 'var(--white)', fontSize: 26, fontWeight: 800, letterSpacing: '-0.5px' }}>INVOICE</div>
             <div style={{ color: 'var(--teal-400)', fontFamily: 'monospace', fontSize: 14, fontWeight: 700, marginTop: 4 }}>{invoiceNum}</div>
             <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, marginTop: 6 }}>
-              Date: {date.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
+              Date: {date.toLocaleDateString('en-GB', { timeZone: TBILISI, day: 'numeric', month: 'long', year: 'numeric' })}
             </div>
             <div style={{ display: 'inline-flex', alignItems: 'center', marginTop: 8, background: order.status === 'DELIVERED' || order.status === 'PAID' ? 'var(--emerald-600)' : 'var(--amber-600)', color: 'var(--white)', padding: '3px 12px', borderRadius: 999, fontSize: 11, fontWeight: 700 }}>
               {order.status}
@@ -167,7 +168,7 @@ export default function InvoicePage() {
                 {[
                   ['Status', payment.status],
                   ['Provider', payment.provider],
-                  ['Paid At', payment.paidAt ? new Date(payment.paidAt).toLocaleString('en-GB') : '—'],
+                  ['Paid At', payment.paidAt ? new Date(payment.paidAt).toLocaleString('en-GB', { timeZone: TBILISI }) : '—'],
                 ].map(([l, v]) => (
                   <div key={l as string}>
                     <p style={{ color: 'var(--slate-400)', margin: '0 0 2px', fontWeight: 600 }}>{l}</p>

@@ -1,5 +1,6 @@
 import { Prisma } from '@prisma/client';
 import type { PrismaService } from '../prisma/prisma.service';
+import { tbilisiDay } from '../../common/tbilisi';
 
 /** Filters and sorting for admin → Customers (the list and its CSV export). */
 export interface CustomerQuery {
@@ -131,7 +132,7 @@ export async function customerRows(prisma: PrismaService, q: CustomerQuery, all 
 }
 
 const cell = (v: unknown) => {
-  const s = v == null ? '' : v instanceof Date ? v.toISOString().slice(0, 10) : String(v);
+  const s = v == null ? '' : v instanceof Date ? tbilisiDay(v) : String(v);
   return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 };
 

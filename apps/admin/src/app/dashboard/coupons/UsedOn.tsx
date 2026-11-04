@@ -3,8 +3,9 @@ import { useEffect, useState } from 'react';
 import CustomerDrawer from '@/components/CustomerDrawer';
 import { download, getOr } from '@/lib/api';
 import { gel } from '@/lib/format';
+import { TBILISI } from '@pupbox/content';
 
-const when = (d: string) => new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+const when = (d: string) => new Date(d).toLocaleDateString('en-GB', { timeZone: TBILISI, day: 'numeric', month: 'short', year: 'numeric' });
 
 /**
  * Who used a promo code: every order it was on, newest first — customer,

@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { tbilisiDay } from '../../common/tbilisi';
 
 /**
  * CSV that opens correctly in Excel: a UTF-8 marker so Georgian isn't garbled,
@@ -56,7 +57,7 @@ export class ReportsService {
 
     const rows = orders.map(o => ({
       order_id: o.id.slice(-8).toUpperCase(),
-      date: o.createdAt.toISOString().slice(0, 10),
+      date: tbilisiDay(o.createdAt),
       customer_email: o.user?.email ?? '',
       customer_name: `${o.user?.firstName ?? ''} ${o.user?.lastName ?? ''}`.trim(),
       city: o.address?.city ?? '',
@@ -97,7 +98,7 @@ export class ReportsService {
       orders: u._count.orders,
       has_active_subscription: u.subscriptions.length > 0,
       referral_code: u.referralCode,
-      created_at: u.createdAt.toISOString().slice(0, 10),
+      created_at: tbilisiDay(u.createdAt),
     }));
 
     return toCsv(rows);
@@ -123,9 +124,9 @@ export class ReportsService {
       status: s.status,
       boxes_delivered: s.boxesDelivered,
       boxes_total: s.boxesTotal ?? '',
-      start_date: s.startDate?.toISOString().slice(0, 10) ?? '',
-      next_renewal: s.nextRenewalAt?.toISOString().slice(0, 10) ?? '',
-      created_at: s.createdAt.toISOString().slice(0, 10),
+      start_date: s.startDate ? tbilisiDay(s.startDate) : '',
+      next_renewal: s.nextRenewalAt ? tbilisiDay(s.nextRenewalAt) : '',
+      created_at: tbilisiDay(s.createdAt),
     }));
 
     return toCsv(rows);
@@ -145,7 +146,7 @@ export class ReportsService {
 
     const rows = payments.map(p => ({
       payment_id: p.id.slice(-8).toUpperCase(),
-      date: p.createdAt.toISOString().slice(0, 10),
+      date: tbilisiDay(p.createdAt),
       order_id: p.orderId.slice(-8).toUpperCase(),
       order_type: p.order?.type ?? '',
       provider: p.provider,

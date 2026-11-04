@@ -6,6 +6,7 @@ import { Response } from 'express';
 import { AdminJwtGuard } from '../admin-auth/admin-jwt.guard';
 import { AdminPerms } from '../admin-auth/admin-permissions';
 import { CrmService, DogFilters } from './crm.service';
+import { tbilisiDay } from '../../common/tbilisi';
 
 const SIZES = ['EXTRA_SMALL', 'SMALL', 'MEDIUM', 'LARGE', 'EXTRA_LARGE'];
 
@@ -48,7 +49,7 @@ class CrmController {
   async export(@Query() q: Record<string, string>, @Res() res: Response) {
     const csv = await this.crm.exportCsv(filters(q));
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-    res.setHeader('Content-Disposition', `attachment; filename="pupbox-dogs-${new Date().toISOString().slice(0, 10)}.csv"`);
+    res.setHeader('Content-Disposition', `attachment; filename="pupbox-dogs-${tbilisiDay()}.csv"`);
     res.send(csv);
   }
 }
@@ -86,7 +87,7 @@ class ConsentsController {
     const ch = channel === 'sms' ? 'sms' : 'email';
     const csv = await this.consents.exportCsv(ch);
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-    res.setHeader('Content-Disposition', `attachment; filename="pupbox-${ch}-audience-${new Date().toISOString().slice(0, 10)}.csv"`);
+    res.setHeader('Content-Disposition', `attachment; filename="pupbox-${ch}-audience-${tbilisiDay()}.csv"`);
     res.send(csv);
   }
 

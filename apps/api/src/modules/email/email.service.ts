@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
+import { TBILISI } from '../../common/tbilisi';
 
 export type Lang = 'ka' | 'en';
 const lang = (l?: string | null): Lang => (l === 'en' ? 'en' : 'ka');
@@ -288,7 +289,7 @@ ${m.body.map(p).join('\n')}${button}${(m.after ?? []).map((a) => `<p style="marg
     const l = lang(d.language);
     const url = `${this.siteUrl}/account/orders`;
     const amount = `₾${d.amount.toFixed(2)}`;
-    const when = d.renewsOn.toLocaleDateString(l === 'ka' ? 'ka-GE' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+    const when = d.renewsOn.toLocaleDateString(l === 'ka' ? 'ka-GE' : 'en-GB', { timeZone: TBILISI, day: 'numeric', month: 'long', year: 'numeric' });
     const vars = { firstName: d.firstName, planName: d.planName, amount, renewsOn: when, payUrl: url };
     await this.deliver(d.email, 'renewal_due', l, vars, l === 'ka' ? {
       subject: `შენი გეგმა ${when}-ს განახლდება`,

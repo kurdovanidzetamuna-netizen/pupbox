@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { consentUpdate } from '../users/consent';
+import { tbilisiDay } from '../../common/tbilisi';
 
 export type Channel = 'email' | 'sms';
 
@@ -81,7 +82,7 @@ export class ConsentsService {
       select: { firstName: true, lastName: true, email: true, phone: true, language: true, marketingEmailAt: true, marketingSmsAt: true },
     });
     const cell = (v: unknown) => {
-      let s = v instanceof Date ? v.toISOString().slice(0, 10) : String(v ?? '');
+      let s = v instanceof Date ? tbilisiDay(v) : String(v ?? '');
       if (/^[=+\-@\t\r]/.test(s) && !/^\+\d{6,15}$/.test(s)) s = `'${s}`;
       s = s.replace(/"/g, '""');
       return /[",\n\r]/.test(s) ? `"${s}"` : s;

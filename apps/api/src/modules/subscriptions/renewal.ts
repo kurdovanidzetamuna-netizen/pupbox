@@ -6,6 +6,7 @@ import { shopSettings } from '../settings/settings';
 import { subscriptionPeriod } from './subscription-period';
 import { cancelUnpaidOrder } from '../orders/order-lifecycle';
 import { quoteSavedBox } from '../custom-box/custom-box';
+import { tbilisiDay } from '../../common/tbilisi';
 
 /**
  * What the next term costs, as an order line. A plan: its price. A monthly
@@ -149,7 +150,7 @@ export async function extendAfterRenewal(prisma: PrismaService, orderId: string)
       nextRenewalAt: period.nextRenewalAt,
     },
   });
-  logger.log(`Subscription ${sub.id} renewed until ${period.endDate.toISOString().slice(0, 10)}`);
+  logger.log(`Subscription ${sub.id} renewed until ${tbilisiDay(period.endDate)}`);
   return true;
 }
 

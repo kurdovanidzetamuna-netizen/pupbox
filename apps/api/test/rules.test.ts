@@ -157,6 +157,15 @@ describe('plan dates', () => {
     assert.equal(end('2028-02-29T09:00:00Z', 1, 'YEAR'), '2029-02-28');
     assert.equal(end('2026-01-15T09:00:00Z'), '2026-02-15');
   });
+  test('dates follow Tbilisi’s calendar, not the server’s clock', () => {
+    // 1 November 01:30 in Tbilisi is still 31 October in UTC
+    const tbilisiDay = (d: Date) => d.toLocaleDateString('en-CA', { timeZone: 'Asia/Tbilisi' });
+    const late = subscriptionPeriod(new Date('2026-10-31T21:30:00Z'), { durationValue: 1, durationUnit: 'MONTH' }, true).endDate;
+    assert.equal(tbilisiDay(late), '2026-12-01');
+    assert.equal(late.toISOString(), '2026-11-30T21:30:00.000Z', 'same time of day');
+    const lastDay = subscriptionPeriod(new Date('2026-01-30T20:30:00Z'), { durationValue: 1, durationUnit: 'MONTH' }, true).endDate;
+    assert.equal(tbilisiDay(lastDay), '2026-02-28', '31 January in Tbilisi');
+  });
   test('renews only on a yes', () => {
     const p = subscriptionPeriod(start, { durationValue: 1, durationUnit: 'MONTH' }, true);
     assert.equal(p.nextRenewalAt?.getTime(), p.endDate.getTime());

@@ -10,6 +10,7 @@ import RefundModal from './RefundModal';
 import ConfirmSheet, { Toast } from './ConfirmSheet';
 import DogLikes from '@/components/DogLikes';
 import type { Api } from '@pupbox/content';
+import { TBILISI } from '@pupbox/content';
 
 /** Each move in words: the button, what it does, and whether to ask first. */
 const MOVE: Record<string, { verb: string; done: string; help: string; ask?: string }> = {
@@ -24,8 +25,8 @@ const TABS = ['Overview', 'Items & box', 'Customer & dog', 'Payment', 'Activity'
 type Tab = typeof TABS[number];
 
 const SIZE: Record<string, string> = { EXTRA_SMALL: 'Extra small', SMALL: 'Small', MEDIUM: 'Medium', LARGE: 'Large', EXTRA_LARGE: 'Extra large' };
-const dateTime = (d?: string | null) => (d ? new Date(d).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—');
-const day = (d?: string | null) => (d ? new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—');
+const dateTime = (d?: string | null) => (d ? new Date(d).toLocaleString('en-GB', { timeZone: TBILISI, day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—');
+const day = (d?: string | null) => (d ? new Date(d).toLocaleDateString('en-GB', { timeZone: TBILISI, day: 'numeric', month: 'short', year: 'numeric' }) : '—');
 const age = (b?: string | null) => { if (!b) return null; const y = (Date.now() - new Date(b).getTime()) / (365.25 * 864e5); return y < 1 ? `${Math.max(1, Math.round(y * 12))} months` : `${Math.floor(y)} years`; };
 
 const card = { background: 'var(--white)', border: '1px solid var(--slate-200b)', borderRadius: 18, padding: 18 } as const;

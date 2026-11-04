@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { FilterSelect, SearchInput, Toolbar, StatCard, StatCards, Pagination, ActionButton } from '@/components/Toolbar';
 import { DateInput } from '@/components/DateField';
 import { download, getOr } from '@/lib/api';
+import { TBILISI } from '@pupbox/content';
 
 
 /** Each stage a referral moves through, in order, with how it shows. */
@@ -24,7 +25,7 @@ type Stats = {
 const coupons = (n: number) => `${n} promo code${n === 1 ? '' : 's'}`;
 const gel = (n: number) => `₾${n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
 const fullName = (u?: { firstName?: string | null; lastName?: string | null } | null) => [u?.firstName, u?.lastName].filter(Boolean).join(' ');
-const formatDate = (d: string) => new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+const formatDate = (d: string) => new Date(d).toLocaleDateString('en-GB', { timeZone: TBILISI, day: '2-digit', month: 'short', year: 'numeric' });
 
 /**
  * Referrals: the whole programme at a glance (funnel, rewards in ₾, what

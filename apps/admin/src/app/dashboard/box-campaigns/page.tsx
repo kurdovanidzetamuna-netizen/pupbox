@@ -5,6 +5,7 @@ import FormField, { inputClass } from '@/components/FormField';
 import LangTabs, { type Lang } from '@/components/LangTabs';
 import { NumInput } from '@/components/NumberField';
 import { api, getOr, post, put } from '@/lib/api';
+import { tbilisiMonth } from '@pupbox/content';
 
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const DOG_SIZES = ['', 'SMALL', 'MEDIUM', 'LARGE', 'XLARGE'];
@@ -17,7 +18,7 @@ export default function BoxCampaignsPage() {
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<any | null>(null);
   const [creating, setCreating] = useState(false);
-  const [form, setForm] = useState({ name: '', description: '', month: new Date().getMonth() + 1, year: new Date().getFullYear(), dogSize: '' });
+  const [form, setForm] = useState({ name: '', description: '', month: tbilisiMonth().month, year: tbilisiMonth().year, dogSize: '' });
   const [ka, setKa] = useState({ name: '', description: '' });
   const [lang, setLang] = useState<Lang>('en');
   const [saving, setSaving] = useState(false);
@@ -63,8 +64,8 @@ export default function BoxCampaignsPage() {
   }
 
   async function loadPackingList() {
-    const now = new Date();
-    api(`/box-campaigns/packing-list?year=${now.getFullYear()}&month=${now.getMonth() + 1}`).then(setPackingList).catch(() => {});
+    const now = tbilisiMonth();
+    api(`/box-campaigns/packing-list?year=${now.year}&month=${now.month}`).then(setPackingList).catch(() => {});
   }
 
   if (packingList) {

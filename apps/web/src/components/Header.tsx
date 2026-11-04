@@ -143,7 +143,7 @@ export default function Header({ site }: { site: StoredContent | null }) {
   return (
     <>
       <header className="sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-3">
+        <div className="max-w-7xl mx-auto px-4 max-[339px]:px-3 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-3 max-[339px]:gap-2">
           <Logo brand={c.brand} className="hdr-logo" />
 
           {/* The four main pages: compact pills; the current page lightly marked. */}
@@ -160,7 +160,7 @@ export default function Header({ site }: { site: StoredContent | null }) {
               On a page load the whole header sweeps in left to right — logo, pages, then
               these items one after another (hdr-*, globals.css);
               moving between pages keeps the header, so it plays once per refresh. */}
-          <div className="flex items-center gap-1 sm:gap-2">
+          <div className="flex items-center gap-1 max-[339px]:gap-0.5 sm:gap-2">
             <LangSwitch className="hidden lg:grid h-10 rounded-[16px] hdr-item hdr-d0" />
 
             {showIn && <span className={`${pre('when-in')} hdr-item hdr-d1`}><NotificationBell /></span>}

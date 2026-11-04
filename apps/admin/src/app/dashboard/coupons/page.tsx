@@ -7,6 +7,7 @@ import NumberField from '@/components/NumberField';
 import DateField, { inDays, showDate, todayIso } from '@/components/DateField';
 import ConfirmSheet, { Toast } from '../orders/_components/ConfirmSheet';
 import { del, download, getOr, patch, post, today } from '@/lib/api';
+import { tbilisiDay, tbilisiMonth, tbilisiStart, tbilisiEnd } from '@pupbox/content';
 
 
 /** What a promo code can take money off: any mix of these. */
@@ -55,10 +56,10 @@ type Form = typeof EMPTY;
 
 const gel = (n: any) => `₾${Number(n || 0).toLocaleString('en-US', { maximumFractionDigits: 2 })}`;
 const num = (v: string) => (v === '' ? null : Number(v));
-const day = (d?: string | null) => (d ? d.slice(0, 10) : '');
+const day = (d?: string | null) => (d ? tbilisiDay(d) : '');
 /** PUP-7KX2: easy to read aloud (no 0/O or 1/I). */
 const randomCode = () => `PUP-${Array.from({ length: 4 }, () => 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[Math.floor(Math.random() * 32)]).join('')}`;
-const endOfMonth = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate()}`; };
+const endOfMonth = () => tbilisiMonth().last;
 
 function toForm(c: any): Form {
   const s = (v: any) => (v === null || v === undefined ? '' : String(Number(v)));
@@ -162,7 +163,7 @@ export default function PromoCodesPage() {
       boxTierIds: boxy ? form.boxTierIds : [], minPlanMonths: boxy ? num(form.minPlanMonths) : null,
       minOrderAmount: num(form.minOrderAmount), firstOrderOnly: form.firstOrderOnly,
       usageLimit: num(form.usageLimit), perUserLimit: num(form.perUserLimit),
-      startsAt: form.startsAt || null, expiresAt: form.expiresAt ? `${form.expiresAt}T23:59:59` : null,
+      startsAt: form.startsAt ? tbilisiStart(form.startsAt) : null, expiresAt: form.expiresAt ? tbilisiEnd(form.expiresAt) : null,
     };
     if (isNew || !used) Object.assign(body, { discountType: form.discountType, discountValue: Number(form.discountValue) });
     if (isNew) body.code = form.code.trim().toUpperCase();
