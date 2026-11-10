@@ -1,4 +1,5 @@
 'use client';
+import Link from 'next/link';
 import type { PlanItem } from '../../_lib/types';
 import { num } from '../../_lib/plan-config';
 import GiftBoxesSection from './GiftBoxesSection';
@@ -15,6 +16,11 @@ export default function BoxBuilderTab({ b }: { b: PlanBuilderState }) {
   } = b;
   return (
     <>
+    {/* Costing only: the site never shows this, and packing goes by Box contents. */}
+    <p style={{ fontSize: 12.5, color: 'var(--slate-600)', background: 'var(--amber-50)', border: '1px solid var(--amber-200)', borderRadius: 10, padding: '9px 13px', margin: '0 0 16px', lineHeight: 1.5 }}>
+      💡 For working out your cost and margin only — customers never see it. What is actually packed each month is set in{' '}
+      <Link href="/dashboard/box-campaigns" style={{ color: 'inherit', fontWeight: 700 }}>Box contents</Link>.
+    </p>
     <div className="adm-stack" style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 20 }}>
 
       {/* Left: product picker + items */}

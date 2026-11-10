@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 const campaignInclude = {
@@ -55,7 +55,18 @@ export class BoxCampaignsService {
     await this.prisma.boxCampaignProduct.deleteMany({ where: { campaignId, productId } });
   }
 
+  /**
+   * Once a box of this list has been packed, its stock left by this list:
+   * changing or deleting the list then would put the wrong products back if
+   * the box is unpacked or cancelled.
+   */
+  private async lockedOnceSent(campaignId: string, what: string) {
+    const packed = await this.prisma.boxShipment.count({ where: { campaignId, stockTakenAt: { not: null } } });
+    if (packed) throw new BadRequestException(`${packed} box${packed === 1 ? ' has' : 'es have'} already been packed with this list, so it can’t be ${what}. Make a new month list instead.`);
+  }
+
   async setProducts(campaignId: string, items: { productId: string; quantity: number }[]) {
+    await this.lockedOnceSent(campaignId, 'changed');
     await this.prisma.boxCampaignProduct.deleteMany({ where: { campaignId } });
     if (items.length) {
       await this.prisma.boxCampaignProduct.createMany({
@@ -67,6 +78,7 @@ export class BoxCampaignsService {
 
   async delete(id: string) {
     await this.findById(id);
+    await this.lockedOnceSent(id, 'deleted');
     // Boxes already listed with this campaign keep their record, without contents.
     await this.prisma.boxShipment.updateMany({ where: { campaignId: id }, data: { campaignId: null } });
     await this.prisma.boxCampaignProduct.deleteMany({ where: { campaignId: id } });

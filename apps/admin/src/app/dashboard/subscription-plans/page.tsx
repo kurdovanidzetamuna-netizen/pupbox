@@ -2,10 +2,9 @@
 import { useState, useEffect } from 'react';
 import { ActionButton, SortBar, ViewToggle, Toolbar, Pagination, type ViewMode } from '@/components/Toolbar';
 import QuickAddBoxItemModal from '@/components/QuickAddBoxItemModal';
-import Link from 'next/link';
 import { EMPTY_FORM } from './_lib/constants';
 import { isSuperAdmin as currentUserIsSuperAdmin } from './_lib/auth';
-import { fetchPlans, fetchPlanOrderCount, fetchTiers, togglePlanActive, togglePlanListed, setGroupListed, deletePlan as deletePlanRequest } from './_lib/api';
+import { fetchPlans, fetchTiers, togglePlanActive, togglePlanListed, setGroupListed, deletePlan as deletePlanRequest } from './_lib/api';
 import { useBadges } from './_hooks/useBadges';
 import PlanBuilder from './_components/plan-builder/PlanBuilder';
 import PlanStats from './_components/PlanStats';
@@ -39,13 +38,8 @@ export default function AdminSubscriptionPlansPage() {
     try {
       const data = await fetchPlans();
       setPlans(data);
-      // fetch order counts per plan
-      const counts: Record<string, number> = {};
-      await Promise.all(data.map(async (p: any) => {
-        const n = await fetchPlanOrderCount(p.id);
-        if (n !== undefined) counts[p.id] = n;
-      }));
-      setPlanOrderCounts(counts);
+      // Each plan comes with its order count (one request, not one per plan).
+      setPlanOrderCounts(Object.fromEntries(data.map((p: any) => [p.id, p.orderCount ?? 0])));
     } catch { } finally { setLoading(false); }
   }
 
@@ -59,7 +53,8 @@ export default function AdminSubscriptionPlansPage() {
     (async () => {
       const tier = tierId ? (await fetchTiers()).find((t: any) => t.id === tierId) : null;
       const name = tier ? `${tier.name} · ${months} month${months === 1 ? '' : 's'}` : '';
-      setBuilderPlan({ ...EMPTY_FORM, tierId, durationValue: months, boxCount: months, name, slug: name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') });
+      const kaName = tier ? `${tier.translations?.ka?.name || tier.name} · ${months} თვე` : '';
+      setBuilderPlan({ ...EMPTY_FORM, tierId, durationValue: months, boxCount: months, name, slug: name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''), translations: { ka: { name: kaName } } });
     })();
     window.history.replaceState(null, '', window.location.pathname);
   }, []);
@@ -92,7 +87,8 @@ export default function AdminSubscriptionPlansPage() {
 
   async function deletePlan(p: any) {
     if (!confirm(`Delete "${p.name}"? This cannot be undone.`)) return;
-    await deletePlanRequest(p.id);
+    const refused = await deletePlanRequest(p.id);
+    if (refused) alert(refused);
     load();
   }
 
@@ -112,7 +108,7 @@ export default function AdminSubscriptionPlansPage() {
       <PageTabs tabs={BOX_PRICES} />
       <div style={{ marginBottom: 20 }}>
         <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--slate-900)', margin: '0 0 4px' }}>Boxes &amp; prices</h1>
-        <p style={{ fontSize: 13, color: 'var(--slate-400)', margin: 0 }}>Click "Configure" on any plan to set box contents, pricing, and discounts.</p>
+        <p style={{ fontSize: 13, color: 'var(--slate-400)', margin: 0 }}>Every plan's length, price and switches. Click “Configure” on a plan to change it.</p>
       </div>
 
       <PlanStats plans={plans} planOrderCounts={planOrderCounts} />
@@ -120,12 +116,6 @@ export default function AdminSubscriptionPlansPage() {
       <Toolbar style={{ marginBottom: 20 }}>
         <ActionButton onClick={() => setBuilderPlan({ ...EMPTY_FORM })}>+ New Plan</ActionButton>
         <ActionButton variant="secondary" onClick={() => setShowBoxItemModal(true)}>+ New Box Item</ActionButton>
-        <Link href="/dashboard/box-items" style={{ background: 'var(--white)', color: 'var(--slate-700)', border: '1.5px solid var(--slate-200)', borderRadius: 9, padding: '7px 16px', fontSize: 13, fontWeight: 600, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap', transition: 'background 0.15s, border-color 0.15s' }}
-          onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.background = 'var(--slate-50)'; (e.currentTarget as HTMLAnchorElement).style.borderColor = 'var(--slate-300)'; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.background = 'var(--white)'; (e.currentTarget as HTMLAnchorElement).style.borderColor = 'var(--slate-200)'; }}>
-          <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
-          Box Items
-        </Link>
         <button onClick={() => setShowBadgeManager(true)}
           onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--slate-200)'; }}
           onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--slate-100)'; }}

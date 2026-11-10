@@ -32,7 +32,8 @@ const shipmentInclude = {
       id: true, boxesTotal: true, boxesDelivered: true, isGift: true, status: true, cancelledAt: true,
       plan: { select: { name: true } },
       // A box the customer built: these products instead of the month's campaign.
-      customBox: { select: { id: true, mysteryCount: true, items: { select: { quantity: true, product: { select: { id: true, name: true, sku: true, allergens: true, inventory: { select: { quantity: true, reservedQty: true } } } } } } } },
+      // Only products still in the builder: one removed since is left out, as the renewal price leaves it out.
+      customBox: { select: { id: true, mysteryCount: true, items: { where: { product: { deletedAt: null } }, select: { quantity: true, product: { select: { id: true, name: true, sku: true, allergens: true, inventory: { select: { quantity: true, reservedQty: true } } } } } } } },
       user: { select: { id: true, email: true, firstName: true, lastName: true, language: true } },
       dog: { select: { name: true, breed: true, size: true, allergies: true, specialNotes: true } },
       // A gift's purchase carries who it's for and the buyer's message.
@@ -283,7 +284,7 @@ export class BoxShipmentsService {
       where: { id: shipmentId },
       select: {
         campaign: { select: { products: { select: { productId: true, quantity: true } } } },
-        subscription: { select: { customBox: { select: { items: { select: { productId: true, quantity: true } } } } } },
+        subscription: { select: { customBox: { select: { items: { where: { product: { deletedAt: null } }, select: { productId: true, quantity: true } } } } } },
       },
     });
     for (const p of box?.subscription.customBox?.items ?? box?.campaign?.products ?? []) {

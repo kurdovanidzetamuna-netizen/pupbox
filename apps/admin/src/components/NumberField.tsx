@@ -83,6 +83,7 @@ export function NumInput({ value, onChange, min, max, step, style, ...rest }: Om
         }
         rest.onBlur?.(e);
       }}
-      style={{ fontVariantNumeric: 'tabular-nums', ...style }} />
+      // Theme colours by default, so a bare field isn't a white box in dark mode.
+      style={{ fontVariantNumeric: 'tabular-nums', background: 'var(--white)', color: 'var(--slate-900)', ...style }} />
   );
 }

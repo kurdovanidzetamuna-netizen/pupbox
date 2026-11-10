@@ -7,11 +7,6 @@ export const fetchTiers = (): Promise<any[]> => getOr('/admin/box-tiers', []);
 
 export const fetchPlans = (): Promise<any[]> => api('/admin/subscription-plans');
 
-/** Number of orders on a plan, or undefined when the request is refused. */
-export async function fetchPlanOrderCount(planId: string): Promise<number | undefined> {
-  const d = await getOr<any>(`/orders/admin?planId=${planId}&limit=1`, null);
-  return d ? d.total || 0 : undefined;
-}
 
 /** Creates the plan when it has no id yet, otherwise updates it. Throws an ApiError when refused. */
 export const savePlan = (planId: string | undefined, body: any) =>
@@ -27,7 +22,9 @@ export const togglePlanListed = (p: any) => put(`/admin/subscription-plans/${p.i
 export const setGroupListed = (group: 'BOX_TYPES' | 'OTHER', listed: boolean) =>
   post('/admin/subscription-plans/show-on-site', { group, listed }).catch(() => null);
 
-export const deletePlan = (planId: string) => del(`/admin/subscription-plans/${planId}`).catch(() => null);
+/** Resolves to the reason when the server refuses (a plan people bought can't go). */
+export const deletePlan = (planId: string): Promise<string | null> =>
+  del(`/admin/subscription-plans/${planId}`).then(() => null, (e: any) => e.body?.message || 'Could not delete it');
 
 /** A badge marks one plan at a time: strips `badge` from every other plan. */
 export async function clearBadgeFromOtherPlans(badge: string, keepPlanId: string) {

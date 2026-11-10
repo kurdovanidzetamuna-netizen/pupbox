@@ -13,17 +13,21 @@ export function migrateConfig(saved: any, boxCount: number): PlanConfig {
 }
 
 /**
- * Cost and margin of a saved plan, as the plan list and view modal show it.
- *
- * Note: this reads only the legacy flat `planItems`, not the per-box `boxes`
- * the builder now saves, so it matches what those views have always shown.
+ * Cost and margin of a saved plan, as the plan list and view modal show it —
+ * the same sum as the builder: every box's products, plus our running and
+ * courier cost per box, plus any gift boxes. Older plans kept one flat
+ * `planItems` list instead of `boxes`.
  */
 export function summarisePlanCost(plan: any) {
   const cfg = plan.translations?.config;
-  const itemCount = cfg?.planItems?.length || 0;
-  const productCost = cfg?.planItems?.reduce((s: number, i: any) => s + i.price * i.qty, 0) || 0;
-  const opCost = cfg?.operationalCost || 0;
-  const delCost = cfg?.deliveryFree ? 0 : (cfg?.deliveryCost || 0);
+  const boxes: any[] = cfg?.boxes?.length ? cfg.boxes : cfg?.planItems?.length ? [{ items: cfg.planItems }] : [];
+  const lines = boxes.flatMap((b) => b.items || []);
+  const sum = (items: any[]) => items.reduce((s: number, i: any) => s + num(i.price) * num(i.qty, 1), 0);
+  const itemCount = lines.length;
+  const n = Number(plan.boxCount) || 1;
+  const productCost = sum(lines) + (cfg?.giftBoxes || []).reduce((s: number, g: any) => s + sum(g.items || []), 0);
+  const opCost = num(cfg?.operationalCost) * n;
+  const delCost = num(cfg?.deliveryCost) * n;
   const margin = Number(plan.price) - productCost - opCost - delCost;
   return { cfg, itemCount, productCost, opCost, delCost, margin, hasConfig: itemCount > 0 };
 }

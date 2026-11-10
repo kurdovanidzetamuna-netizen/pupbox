@@ -4,6 +4,9 @@ import { parseConfig } from './personalisation';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { PUBLIC_SELLER, finalPrice } from '../sellers/sellers';
+import { tbilisiDay } from '../../common/tbilisi';
+
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 const productInclude = {
   images: { orderBy: { sortOrder: 'asc' as const } },
@@ -286,6 +289,16 @@ export class ProductsService {
   async remove(id: string) {
     const product = await this.prisma.product.findFirst({ where: { id, deletedAt: null } });
     if (!product) throw new NotFoundException('Product not found');
+    // In a month's box still to be packed: it would be packed after all.
+    const [y, m] = tbilisiDay().split('-').map(Number);
+    const upcoming = await this.prisma.boxCampaign.findMany({
+      where: { products: { some: { productId: id } }, OR: [{ year: { gt: y } }, { year: y, month: { gte: m } }] },
+      select: { name: true, month: true, year: true },
+    });
+    if (upcoming.length) {
+      const which = upcoming.map((c) => `${c.name} (${MONTHS[c.month - 1]} ${c.year})`).join(', ');
+      throw new BadRequestException(`It's in the box contents for ${which}. Take it out in Box contents first.`);
+    }
     return this.prisma.product.update({
       where: { id },
       data: { deletedAt: new Date(), status: 'INACTIVE' },

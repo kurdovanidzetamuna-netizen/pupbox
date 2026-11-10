@@ -3,7 +3,7 @@ import { SubscriptionPlansService } from './subscription-plans.service';
 import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards } from '@nestjs/common';
 import { AdminJwtGuard } from '../admin-auth/admin-jwt.guard';
 import { ApiBearerAuth, ApiTags, ApiOperation } from '@nestjs/swagger';
-import { IsString, IsNumber, IsInt, IsOptional, IsBoolean, IsArray, IsEnum, IsIn, Min, MaxLength, ArrayMaxSize, ValidateNested } from 'class-validator';
+import { IsString, IsNumber, IsInt, IsOptional, IsBoolean, IsArray, IsEnum, IsIn, IsPositive, Matches, Max, Min, MaxLength, ArrayMaxSize, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 import { AdminPerms } from '../admin-auth/admin-permissions';
 import { PartialType } from '@nestjs/swagger';
@@ -14,13 +14,14 @@ enum DurationUnit { DAY = 'DAY', WEEK = 'WEEK', MONTH = 'MONTH', YEAR = 'YEAR' }
 
 class CreatePlanDto {
   @IsString() name: string;
-  @IsString() slug: string;
+  @IsString() @Matches(/^[a-z0-9-]+$/, { message: 'Web name: lowercase letters, numbers and dashes only' }) slug: string;
   @Type(() => Number) @IsInt() @Min(1) durationValue: number;
   @IsEnum(DurationUnit) durationUnit: DurationUnit;
   @Type(() => Number) @IsInt() @Min(1) boxCount: number;
-  @Type(() => Number) @IsNumber() @Min(0) price: number;
-  @IsOptional() @Type(() => Number) @IsNumber() discountPercent?: number;
-  @IsOptional() @Type(() => Number) @IsNumber() monthlyEquivPrice?: number;
+  /** Never free: an order of ₾0 has nothing for the bank to take. */
+  @Type(() => Number) @IsNumber() @IsPositive({ message: 'The price must be above 0' }) price: number;
+  @IsOptional() @Type(() => Number) @IsNumber() @Min(0) @Max(100) discountPercent?: number;
+  @IsOptional() @Type(() => Number) @IsNumber() @Min(0) monthlyEquivPrice?: number;
   @IsOptional() @IsBoolean() deliveryIncluded?: boolean;
   @IsOptional() @IsBoolean() autoRenewal?: boolean;
   /** Whether this plan may be purchased for someone else's dog. */
@@ -72,7 +73,7 @@ class SubscriptionPlansController {
 @Controller('admin/subscription-plans')
 class AdminSubscriptionPlansController {
   constructor(private service: SubscriptionPlansService, private prisma: PrismaService) {}
-  @Get() findAll() { return this.service.findAll(true); }
+  @Get() findAll() { return this.service.adminList(); }
   /** The badge list, shared by everyone in admin. */
   @Get('badges') badges() { return badgeList(this.prisma); }
   @Put('badges') saveBadges(@Body() dto: BadgesDto) { return saveBadges(this.prisma, dto.badges.map((b) => ({ en: b.en, ka: b.ka ?? '' }))); }

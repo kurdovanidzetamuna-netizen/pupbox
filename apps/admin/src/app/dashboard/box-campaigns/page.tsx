@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import FormField, { inputClass } from '@/components/FormField';
 import LangTabs, { type Lang } from '@/components/LangTabs';
 import { NumInput } from '@/components/NumberField';
-import { getOr, post, put } from '@/lib/api';
+import { del, getOr, post, put } from '@/lib/api';
 import { tbilisiMonth } from '@pupbox/content';
 
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -46,8 +46,9 @@ export default function BoxCampaignsPage() {
     const hasKa = Object.values(ka).some(v => v.trim() !== '');
     const body: any = { ...form, dogSize: form.dogSize || null };
     if (hasKa) body.translations = { ka: { ...ka } };
-    await post('/box-campaigns', body).catch(() => {});
+    const failed = await post('/box-campaigns', body).then(() => null, (e: any) => { const m = e.body?.message; return Array.isArray(m) ? m.join(', ') : m || 'Could not create it'; });
     setSaving(false);
+    if (failed) { alert(failed); return; }
     setCreating(false);
     load();
   }
@@ -57,8 +58,16 @@ export default function BoxCampaignsPage() {
     load();
   }
 
+  // Boxes already packed with it stay listed, just without the month's contents.
+  async function remove(c: any) {
+    if (!confirm(`Delete "${c.name}"? Its product list goes too.`)) return;
+    await del(`/box-campaigns/${c.id}`).catch((e: any) => alert(e.body?.message || 'Could not delete it'));
+    load();
+  }
+
   async function setProductsForCampaign(campaignId: string, items: { productId: string; quantity: number }[]) {
-    await put(`/box-campaigns/${campaignId}/products`, { items }).catch(() => {});
+    const failed = await put(`/box-campaigns/${campaignId}/products`, { items }).then(() => null, (e: any) => e.body?.message || 'Could not save the products');
+    if (failed) { alert(failed); return; }
     load();
     setSelected(null);
   }
@@ -162,9 +171,14 @@ export default function BoxCampaignsPage() {
                   {(!c.products || c.products.length === 0) && <span style={{ fontSize: 11, color: 'var(--slate-300)' }}>No products assigned</span>}
                 </div>
               </div>
-              <button onClick={() => setSelected(c)} style={{ width: '100%', fontSize: 13, padding: '9px', borderRadius: 10, border: '1px dashed var(--teal-200)', background: 'transparent', color: 'var(--teal-600)', cursor: 'pointer', fontWeight: 600 }}>
-                Edit Products →
-              </button>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button onClick={() => setSelected(c)} style={{ flex: 1, fontSize: 13, padding: '9px', borderRadius: 10, border: '1px dashed var(--teal-200)', background: 'transparent', color: 'var(--teal-600)', cursor: 'pointer', fontWeight: 600 }}>
+                  Edit Products →
+                </button>
+                <button onClick={() => remove(c)} aria-label={`Delete ${c.name}`} style={{ fontSize: 12, padding: '9px 12px', borderRadius: 10, border: 'none', background: 'var(--rose-50)', color: 'var(--rose-700)', cursor: 'pointer', fontWeight: 600 }}>
+                  Delete
+                </button>
+              </div>
             </div>
           ))}
         </div>

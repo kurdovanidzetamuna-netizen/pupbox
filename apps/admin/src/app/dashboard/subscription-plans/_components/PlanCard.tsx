@@ -33,7 +33,7 @@ export default function PlanCard({ p, canDelete, onView, onConfigure, onToggle, 
         <div style={{ background: 'var(--slate-50)', borderRadius: 8, padding: '10px 12px', marginBottom: 14, fontSize: 11 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--slate-500)', marginBottom: 3 }}><span>📦 {itemCount} products</span><span>₾{productCost.toFixed(2)}</span></div>
           {opCost > 0 && <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--slate-500)', marginBottom: 3 }}><span>⚙️ Operational</span><span>₾{opCost.toFixed(2)}</span></div>}
-          <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--slate-500)', marginBottom: 6 }}><span>🚚 Delivery</span><span>{cfg?.deliveryFree ? 'Free' : `₾${delCost.toFixed(2)}`}</span></div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--slate-500)', marginBottom: 6 }}><span>🚚 Our delivery cost</span><span>₾{delCost.toFixed(2)}</span></div>
           <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 5, borderTop: '1px solid var(--slate-200b)', fontWeight: 700 }}>
             <span style={{ color: margin >= 0 ? 'var(--green-700)' : 'var(--red-600)' }}>{margin >= 0 ? '✅ Margin' : '❌ Loss'}</span>
             <span style={{ color: margin >= 0 ? 'var(--green-700)' : 'var(--red-600)' }}>{margin >= 0 ? '+' : ''}₾{margin.toFixed(2)}</span>

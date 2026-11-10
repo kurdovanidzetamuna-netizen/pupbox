@@ -36,9 +36,9 @@ export default function PlanBuilder(props: PlanBuilderProps) {
               {plan.price ? <Pill bg="var(--teal-50)" color="var(--teal-600)" border="1px solid var(--teal-200)">₾{Number(plan.price).toFixed(2)}</Pill> : null}
               {plan.badge && <Pill bg="var(--teal-600)" color="var(--white)" border="none">{plan.badge}</Pill>}
             </div>
-            <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, margin: '4px 0 0' }}>
+            <p style={{ color: 'var(--slate-400)', fontSize: 12, margin: '4px 0 0' }}>
               {plan.id
-                ? `${plan.durationValue} ${plan.durationUnit.toLowerCase()}s · ${plan.boxCount} box${plan.boxCount > 1 ? 'es' : ''}`
+                ? `${plan.durationValue} ${plan.durationUnit.toLowerCase()}${plan.durationValue === 1 ? '' : 's'} · ${plan.boxCount} box${plan.boxCount > 1 ? 'es' : ''}`
                 : blockers.length === 0
                   ? 'Ready to create'
                   : `${blockers.length} thing${blockers.length > 1 ? 's' : ''} left before you can create it`}
@@ -64,8 +64,8 @@ export default function PlanBuilder(props: PlanBuilderProps) {
               start; a tick marks the ones already done. */}
           {([
             { t: 'form' as const, label: 'Plan Settings', icon: '⚙️', done: blockers.length === 0 },
-            { t: 'builder' as const, label: 'Box Builder', icon: '📦', done: allProductTotal > 0 },
-            { t: 'discounts' as const, label: 'Discounts', icon: '🏷️', done: (cfg.couponIds || []).length > 0 },
+            { t: 'builder' as const, label: 'Costs & margin', icon: '📦', done: allProductTotal > 0 },
+            { t: 'discounts' as const, label: 'Discounts', icon: '🏷️', done: Number(b.form.discountPercent) > 0 },
           ]).map(({ t, label, icon, done }) => {
             const active = tab === t;
             return (
