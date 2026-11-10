@@ -29,7 +29,7 @@ export default function PlanSettingsEnglish({ b }: { b: PlanBuilderState }) {
         Months and boxes share a cell because they are one
         decision — "six boxes over six months" — and splitting
         them across sections is how they drifted apart before. */}
-    <div className="adm-stack" style={{ display: 'grid', gridTemplateColumns: 'minmax(160px, 1.9fr) minmax(190px, 1.5fr) minmax(130px, 1.1fr) 84px', gap: 10, alignItems: 'start', marginBottom: 6 }}>
+    <div className="adm-stack" style={{ display: 'grid', gridTemplateColumns: 'minmax(160px, 1.9fr) minmax(190px, 1.5fr) minmax(130px, 1.1fr) 104px', gap: 10, alignItems: 'start', marginBottom: 6 }}>
       <FormField label="Plan name" required error={formErrors.name}>
         <input
           value={form.name ?? ''}
@@ -216,26 +216,14 @@ export default function PlanSettingsEnglish({ b }: { b: PlanBuilderState }) {
         checked={form.giftable} onChange={v => setForm((x: any) => ({ ...x, giftable: v }))}
         accent="var(--amber-700)" tint="var(--amber-50)"
       />
+      {/* The one switch checkout reads: standard delivery free with the plan. */}
       <SettingTile
         icon="🚚" title="Free delivery"
-        onLabel="No delivery charge" offLabel={`₾${Number(cfg.deliveryCost || 0).toFixed(2)} per box`}
-        detail="Covers delivery for every box on this plan. Turn it off to charge a fixed amount per box instead — the cost feeds into the plan's total price calculation."
-        checked={cfg.deliveryFree} onChange={v => setCfg(c => ({ ...c, deliveryFree: v }))}
-      />
-      <SettingTile
-        icon="🏷️" title="Delivery badge"
-        onLabel="Badge shown on the card" offLabel="No badge shown"
-        detail="Displays a small “Delivery included” badge on this plan's card on the pricing page. Set the actual delivery charge with the Free delivery chip."
+        onLabel="Customers pay nothing for delivery" offLabel="Customers pay delivery at checkout"
+        detail="On: standard delivery is free with this plan, and faster delivery costs only the difference. Off: customers pay the normal delivery price at checkout. The site says “Delivery included” on the plan when it's on."
         checked={form.deliveryIncluded} onChange={v => setForm((x: any) => ({ ...x, deliveryIncluded: v }))}
       />
     </div>
-    {!cfg.deliveryFree && (
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20, background: 'var(--slate-50)', borderRadius: 10, padding: '9px 13px' }}>
-        <label style={{ fontSize: 12, color: 'var(--slate-600)', fontWeight: 600 }}>Delivery cost per box</label>
-        <NumberField min={0} step={0.01} prefix="₾" width={132}
-          value={cfg.deliveryCost} onChange={v => setCfg(c => ({ ...c, deliveryCost: num(v) }))} />
-      </div>
-    )}
 
     {/* ── 3 · Pricing ── */}
     <StepHeading n={3} title="What it costs" hint={`Set a monthly rate and a discount — multiplied over the ${pricingMonths} month${pricingMonths === 1 ? '' : 's'} set above`} />
@@ -285,6 +273,13 @@ export default function PlanSettingsEnglish({ b }: { b: PlanBuilderState }) {
         )}
       </div>
 
+      {/* Renewals charge the plan's price on the day, so say so before saving a new one. */}
+      {plan.id && pricingTotal > 0 && Math.abs(pricingTotal - Number(plan.price)) >= 0.01 && (
+        <p role="status" style={{ fontSize: 12, color: 'var(--amber-800)', background: 'var(--amber-50)', border: '1px solid var(--amber-200)', borderRadius: 8, padding: '7px 11px', margin: '12px 0 0' }}>
+          Was ₾{Number(plan.price).toFixed(2)}. New customers pay ₾{pricingTotal.toFixed(2)}, and people already on this plan pay it from their next renewal.
+        </p>
+      )}
+
       {/* What is switched on under How it behaves, shown on the
           same tab as the chips so their effect is immediate
           rather than only visible over in Box Builder. */}
@@ -293,8 +288,7 @@ export default function PlanSettingsEnglish({ b }: { b: PlanBuilderState }) {
           { on: form.isActive && form.listed !== false, icon: '✅', label: 'Live on site', c: 'var(--emerald-600)', bg: 'var(--green-50)', b: 'var(--green-200)' },
           { on: form.autoRenewal, icon: '🔄', label: 'Auto renews', c: 'var(--teal-700)', bg: 'var(--teal-50)', b: 'var(--teal-200)' },
           { on: form.giftable, icon: '🎁', label: 'Giftable', c: 'var(--amber-700)', bg: 'var(--amber-50)', b: 'var(--amber-200)' },
-          { on: cfg.deliveryFree, icon: '🚚', label: 'Free delivery', c: 'var(--teal-700)', bg: 'var(--teal-50)', b: 'var(--teal-200)' },
-          { on: form.deliveryIncluded, icon: '🏷️', label: 'Delivery badge', c: 'var(--teal-700)', bg: 'var(--teal-50)', b: 'var(--teal-200)' },
+          { on: form.deliveryIncluded, icon: '🚚', label: 'Free delivery', c: 'var(--teal-700)', bg: 'var(--teal-50)', b: 'var(--teal-200)' },
         ].filter(x => x.on).map(x => (
           <span key={x.label} style={{ fontSize: 10.5, fontWeight: 600, padding: '2px 8px', borderRadius: 6, background: x.bg, color: x.c, border: `1px solid ${x.b}`, whiteSpace: 'nowrap' }}>
             {x.icon} {x.label}

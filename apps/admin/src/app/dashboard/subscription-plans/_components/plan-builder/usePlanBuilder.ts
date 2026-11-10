@@ -149,7 +149,8 @@ export function usePlanBuilder({ plan, onClose, onSaved, badges, addBadge }: Pla
   const activeProductTotal = boxProductTotals[safeActiveBox] || 0;
   const allProductTotal = useMemo(() => boxProductTotals.reduce((s, v) => s + v, 0), [boxProductTotals]);
 
-  const deliveryCostEffective = cfg.deliveryFree ? 0 : num(cfg.deliveryCost);
+  // What the courier costs us per box, whether or not the customer pays for delivery.
+  const deliveryCostEffective = num(cfg.deliveryCost);
   const perBoxOtherCost = num(cfg.operationalCost) + deliveryCostEffective;
   const activeBoxCost = activeProductTotal + perBoxOtherCost;
   const giftBoxTotal = useMemo(() =>
@@ -168,11 +169,12 @@ export function usePlanBuilder({ plan, onClose, onSaved, badges, addBadge }: Pla
     ...(!(Number(form.boxCount) > 0) ? [{ label: 'How many boxes', tab: 'form' as const }] : []),
     ...(!(pricingTotal > 0) ? [{ label: 'A price', tab: 'form' as const }] : []),
     ...(benefitLines.length === 0 ? [{ label: 'At least one benefit', tab: 'form' as const }] : []),
+    // Save asks for it too (validate), so "Ready to create" never fails on it.
+    ...(!String(ka.name || '').trim() ? [{ label: 'Georgian name', tab: 'form' as const, lang: 'ka' as const }] : []),
   ];
   // Worth flagging but not worth blocking on — you can launch without them.
   const warnings: { label: string; tab: 'form' | 'builder' | 'discounts' }[] = [
     ...(allProductTotal === 0 ? [{ label: 'No box contents yet, so margin is unknown', tab: 'builder' as const }] : []),
-    ...(!String(ka.name || '').trim() ? [{ label: 'No Georgian name — the site will show the English one', tab: 'form' as const }] : []),
   ];
   const canCreate = blockers.length === 0;
   const sellingPrice = pricingTotal;

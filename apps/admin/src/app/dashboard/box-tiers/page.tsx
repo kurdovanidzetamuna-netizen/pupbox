@@ -116,7 +116,7 @@ export default function BoxTiersPage() {
               <div style={{ display: 'flex', gap: 16, margin: '14px 0', fontSize: 12, color: 'var(--slate-500)', flexWrap: 'wrap' }}>
                 <span><strong style={{ color: 'var(--slate-800)' }}>{t.itemCount}</strong> items</span>
                 <span>Budget <strong style={{ color: 'var(--slate-800)' }}>{t.budgetMin != null ? `${gel(t.budgetMin)}–${gel(t.budgetMax ?? t.budgetMin)}` : '—'}</strong></span>
-                <span><strong style={{ color: 'var(--slate-800)' }}>{t.subscribers}</strong> subscribers</span>
+                <span><strong style={{ color: 'var(--slate-800)' }}>{t.subscribers}</strong> subscriber{t.subscribers === 1 ? '' : 's'}</span>
               </div>
 
               {/* 1 / 3 / 6 months: the plan's monthly price, or a gap to fill */}

@@ -1,5 +1,19 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+
+/**
+ * A plan customers can buy: on, shown on the site, and its box type (if it
+ * has one) on too. Hidden or off plans keep renewing for current subscribers.
+ */
+export const ON_SALE: Prisma.SubscriptionPlanWhereInput = {
+  isActive: true, listed: true, deletedAt: null, isCustomBox: false,
+  OR: [{ tierId: null }, { tier: { isActive: true } }],
+};
+
+/** The same test for a plan already loaded with its box type. */
+export const onSale = (p: { isActive: boolean; listed: boolean; deletedAt: Date | null; tier?: { isActive: boolean } | null }) =>
+  p.isActive && p.listed !== false && !p.deletedAt && p.tier?.isActive !== false;
 
 @Injectable()
 export class SubscriptionPlansService {
@@ -7,10 +21,21 @@ export class SubscriptionPlansService {
 
   findAll(adminView = false) {
     return this.prisma.subscriptionPlan.findMany({
-      where: { deletedAt: null, isCustomBox: false, ...(adminView ? {} : { isActive: true, listed: true }) },
+      where: adminView ? { deletedAt: null, isCustomBox: false } : ON_SALE,
       orderBy: [{ sortOrder: 'asc' }, { price: 'asc' }],
       include: { tier: { select: { id: true, name: true, slug: true, translations: true, emoji: true, sortOrder: true, isActive: true } } },
     });
+  }
+
+  /** Admin's list: every plan with how many orders it is on, in one go. */
+  async adminList() {
+    const [plans, counts] = await Promise.all([
+      this.findAll(true),
+      this.prisma.orderItem.groupBy({ by: ['subscriptionPlanId', 'orderId'], where: { subscriptionPlanId: { not: null } } }),
+    ]);
+    const orders = new Map<string, number>();
+    for (const c of counts) orders.set(c.subscriptionPlanId!, (orders.get(c.subscriptionPlanId!) ?? 0) + 1);
+    return plans.map((p) => ({ ...p, orderCount: orders.get(p.id) ?? 0 }));
   }
 
   async findOne(slug: string) {
@@ -61,8 +86,11 @@ export class SubscriptionPlansService {
     return { updated: count };
   }
 
+  /** Only a plan nobody bought can go; one with orders is turned off, so its history stays whole. */
   async remove(id: string) {
     await this.findById(id);
+    const bought = await this.prisma.orderItem.count({ where: { subscriptionPlanId: id } }) + await this.prisma.customerSubscription.count({ where: { planId: id } });
+    if (bought) throw new BadRequestException('People have bought this plan, so it can’t be deleted. Turn it off instead.');
     return this.prisma.subscriptionPlan.update({ where: { id }, data: { deletedAt: new Date(), isActive: false } });
   }
 }

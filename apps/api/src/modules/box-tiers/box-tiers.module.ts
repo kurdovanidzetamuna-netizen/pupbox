@@ -72,14 +72,21 @@ export class BoxTiersService {
     const tier = await this.prisma.boxTier.findUnique({ where: { id } });
     if (!tier) throw new NotFoundException('Tier not found');
     if (dto.slug && dto.slug !== tier.slug && (await this.prisma.boxTier.findUnique({ where: { slug: dto.slug } }))) throw new ConflictException('Slug already exists');
-    this.checkBudget({ budgetMin: dto.budgetMin ?? (tier.budgetMin as any), budgetMax: dto.budgetMax ?? (tier.budgetMax as any) });
+    // Sent as null clears it; left out keeps what is saved.
+    this.checkBudget({ budgetMin: dto.budgetMin !== undefined ? dto.budgetMin : (tier.budgetMin as any), budgetMax: dto.budgetMax !== undefined ? dto.budgetMax : (tier.budgetMax as any) });
     return this.prisma.boxTier.update({ where: { id }, data: dto as any });
   }
 
-  /** Only an unused tier can go; one with plans is turned off instead. */
+  /**
+   * Only an unused tier can go; one with plans is turned off instead. A plan
+   * people bought keeps its box type even once deleted, so their orders stay
+   * under it in Reports.
+   */
   async remove(id: string) {
     const plans = await this.prisma.subscriptionPlan.count({ where: { tierId: id, deletedAt: null } });
     if (plans) throw new BadRequestException('This box type still has plans. Move or delete them first, or turn the box type off.');
+    const bought = await this.prisma.subscriptionPlan.count({ where: { tierId: id, OR: [{ orderItems: { some: {} } }, { subscriptions: { some: {} } }] } });
+    if (bought) throw new BadRequestException('People have bought plans of this box type, so it can’t be deleted. Turn it off instead.');
     return this.prisma.boxTier.delete({ where: { id } });
   }
 

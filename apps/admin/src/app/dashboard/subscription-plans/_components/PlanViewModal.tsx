@@ -60,7 +60,7 @@ export default function PlanViewModal({ plan: vp, orderCount, onClose, onConfigu
         {/* Delivery + Settings row */}
         <div style={{ marginBottom: 18, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' as const }}>
           <span style={{ fontSize: 13, color: 'var(--slate-700b)', background: 'rgba(241,245,249,0.7)', padding: '4px 12px', borderRadius: 8 }}>
-            Delivery: <strong>{cfg?.deliveryFree ? 'Free' : cfg ? `₾${Number(cfg.deliveryCost || 0).toFixed(2)}` : '—'}</strong>
+            Delivery: <strong>{vp.deliveryIncluded ? 'Free for the customer' : 'Customer pays'}</strong>
           </span>
           <span style={{ fontSize: 13, color: vp.autoRenewal ? 'var(--green-800)' : 'var(--slate-500)', background: vp.autoRenewal ? 'rgba(240,253,244,0.7)' : 'rgba(241,245,249,0.7)', padding: '4px 12px', borderRadius: 8 }}>
             Auto-Renewal: <strong>{vp.autoRenewal ? 'On' : 'Off'}</strong>
@@ -97,8 +97,8 @@ export default function PlanViewModal({ plan: vp, orderCount, onClose, onConfigu
                   <div style={{ padding: '4px 14px', fontSize: 12, color: 'var(--slate-500)' }}>Operational cost</div>
                   <div style={{ padding: '4px 14px', fontSize: 12, fontWeight: 600, color: 'var(--slate-700b)', textAlign: 'right' as const }}>₾{opCost.toFixed(2)}</div>
                 </>}
-                <div style={{ padding: '4px 14px 8px', fontSize: 12, color: 'var(--slate-500)' }}>Delivery</div>
-                <div style={{ padding: '4px 14px 8px', fontSize: 12, fontWeight: 600, color: 'var(--slate-700b)', textAlign: 'right' as const }}>{cfg?.deliveryFree ? 'Free' : `₾${delCost.toFixed(2)}`}</div>
+                <div style={{ padding: '4px 14px 8px', fontSize: 12, color: 'var(--slate-500)' }}>Our delivery cost</div>
+                <div style={{ padding: '4px 14px 8px', fontSize: 12, fontWeight: 600, color: 'var(--slate-700b)', textAlign: 'right' as const }}>₾{delCost.toFixed(2)}</div>
               </div>
             </div>
           ) : (

@@ -78,8 +78,8 @@ export default function CustomBoxItemsPage() {
   }
 
   async function remove(x: any) {
-    if (!confirm(`Remove “${x.name}” from the custom box?`)) return;
-    await del(`/admin/products/${x.id}`).catch(() => setPopup(['Could not remove it']));
+    if (!confirm(`Remove “${x.name}” from the custom box?\n\nMonthly boxes that have it are packed and charged without it from now on.`)) return;
+    await del(`/admin/products/${x.id}`).catch((e: any) => setPopup([e.body?.message || 'Could not remove it']));
     load();
   }
 

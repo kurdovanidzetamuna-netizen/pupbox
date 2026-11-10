@@ -8,6 +8,7 @@ import { checkReferralCode, referralDiscount } from '../referrals/referral-promo
 import { couponDiscount, couponFit, couponGap, hasPaidBefore, meetsMinimum } from '../coupons/coupon-discount';
 import { orderPrice } from '../checkout/pricing';
 import { MAIN_IMAGE } from '../products/product-include';
+import { ON_SALE, onSale } from '../subscription-plans/subscription-plans.service';
 
 const cartInclude = {
   items: {
@@ -15,7 +16,7 @@ const cartInclude = {
     include: {
       // The main photo (else the first), and the category for a picture when there's none.
       product: { include: { images: MAIN_IMAGE, inventory: true, category: { select: { slug: true, name: true } } } },
-      subscriptionPlan: true,
+      subscriptionPlan: { include: { tier: { select: { isActive: true } } } },
       // A built box: what's in it, with names and pictures for the basket.
       customBox: { include: { items: { orderBy: { id: 'asc' as const }, include: { product: { select: { id: true, name: true, slug: true, translations: true, price: true, salePrice: true, images: MAIN_IMAGE, category: { select: { slug: true, name: true } } } } } } } },
     },
@@ -99,7 +100,7 @@ export class CartService {
 
     if (subscriptionPlanId) {
       // The monthly custom box plan is only bought by building a box.
-      const plan = await this.prisma.subscriptionPlan.findFirst({ where: { id: subscriptionPlanId, isActive: true, listed: true, deletedAt: null, isCustomBox: false } });
+      const plan = await this.prisma.subscriptionPlan.findFirst({ where: { ...ON_SALE, id: subscriptionPlanId } });
       if (!plan) throw new NotFoundException('Subscription plan not found');
       if (await this.prisma.cartItem.count({ where: { cartId, customBox: { monthly: true } } })) {
         throw new BadRequestException('Your basket already has a monthly box. Check that one out first, or remove it, then add a plan.');
@@ -308,7 +309,7 @@ export class CartService {
       const p = item.product, plan = item.subscriptionPlan;
       const gone = p
         ? !!p.deletedAt || !['ACTIVE', 'OUT_OF_STOCK'].includes(p.status) || !p.standaloneSale
-        : plan ? !!plan.deletedAt || !plan.isActive : true;
+        : plan ? !onSale(plan) : true;
       if (gone) {
         await this.prisma.cartItem.deleteMany({ where: { id: item.id } }); // two requests at once may both try
         changed = true;

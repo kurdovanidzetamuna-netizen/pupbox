@@ -19,7 +19,7 @@ export default function CostBreakdown({ b }: { b: PlanBuilderState }) {
       <div style={{ background: 'var(--slate-50)', borderRadius: 12, border: '1px solid var(--slate-200b)', overflow: 'hidden' }}>
         <div style={{ padding: '12px 16px', background: 'var(--slate-900)' }}>
           <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--white)' }}>Cost Breakdown</span>
-          <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', margin: '3px 0 0' }}>
+          <p style={{ fontSize: 11, color: 'var(--slate-400)', margin: '3px 0 0' }}>
             {boxCount > 1 ? `Box ${safeActiveBox + 1} of ${boxCount}` : `Per plan · ${boxCount} box`}
           </p>
         </div>
@@ -58,25 +58,17 @@ export default function CostBreakdown({ b }: { b: PlanBuilderState }) {
             </div>
           </div>
 
-          {/* Delivery cost */}
-          <div style={{ padding: '10px 16px', borderBottom: '1px solid var(--slate-200b)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: cfg.deliveryFree ? 0 : 8 }}>
-              <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--slate-500)' }}>🚚 Delivery</span>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 12, color: cfg.deliveryFree ? 'var(--teal-600)' : 'var(--slate-500)', fontWeight: 600 }}>
-                <input type="checkbox" checked={cfg.deliveryFree} onChange={e => setCfg(c => ({ ...c, deliveryFree: e.target.checked }))} style={{ accentColor: 'var(--teal-600)' }} />
-                Free delivery
-              </label>
+          {/* What the courier costs us — customers' delivery is the Free delivery switch */}
+          <div style={{ padding: '10px 16px', borderBottom: '1px solid var(--slate-200b)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--slate-500)' }}>🚚 Our delivery cost {boxCount > 1 ? '(per box)' : ''}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <span style={{ fontSize: 11, color: 'var(--slate-400)' }}>₾</span>
+              <NumInput min="0" step="0.01"
+                value={cfg.deliveryCost}
+                onChange={e => setCfg(c => ({ ...c, deliveryCost: num(e.target.value) }))}
+                style={{ width: 72, border: '1px solid var(--slate-200)', borderRadius: 7, padding: '4px 8px', fontSize: 12, outline: 'none', textAlign: 'right' }}
+              />
             </div>
-            {!cfg.deliveryFree && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 4, justifyContent: 'flex-end' }}>
-                <span style={{ fontSize: 11, color: 'var(--slate-400)' }}>₾</span>
-                <NumInput min="0" step="0.01"
-                  value={cfg.deliveryCost}
-                  onChange={e => setCfg(c => ({ ...c, deliveryCost: num(e.target.value) }))}
-                  style={{ width: 72, border: '1px solid var(--slate-200)', borderRadius: 7, padding: '4px 8px', fontSize: 12, outline: 'none', textAlign: 'right' }}
-                />
-              </div>
-            )}
           </div>
 
           {/* Gift boxes cost */}
@@ -169,7 +161,7 @@ export default function CostBreakdown({ b }: { b: PlanBuilderState }) {
         <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--teal-600)', margin: '0 0 8px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>What customer sees</p>
         <p style={{ fontSize: 22, fontWeight: 800, color: 'var(--slate-900)', margin: 0 }}>₾{pricingTotal.toFixed(2)}</p>
         <p style={{ fontSize: 12, color: 'var(--slate-500)', margin: '3px 0 0' }}>
-          {pricingMonths} month{pricingMonths > 1 ? 's' : ''} · {boxCount} box{boxCount > 1 ? 'es' : ''} · {cfg.deliveryFree ? 'Free delivery' : `₾${Number(cfg.deliveryCost).toFixed(2)} delivery`}
+          {pricingMonths} month{pricingMonths > 1 ? 's' : ''} · {boxCount} box{boxCount > 1 ? 'es' : ''} · {form.deliveryIncluded ? 'Free delivery' : 'Delivery paid at checkout'}
         </p>
         {pricingEffectiveMonthly > 0 && <p style={{ fontSize: 12, color: 'var(--slate-500)', margin: '3px 0 0' }}>₾{pricingEffectiveMonthly.toFixed(2)} / month</p>}
         {pricingSavings > 0 && <p style={{ fontSize: 12, color: 'var(--teal-600)', margin: '3px 0 0', fontWeight: 600 }}>You save ₾{pricingSavings.toFixed(2)} ({pricingDiscount}%)</p>}
@@ -186,7 +178,7 @@ export default function CostBreakdown({ b }: { b: PlanBuilderState }) {
             { on: form.isActive && form.listed !== false, icon: '✅', label: 'Live on site', c: 'var(--green-800)', bg: 'var(--green-50)', b: 'var(--green-200)' },
             { on: form.autoRenewal, icon: '🔄', label: 'Auto renews', c: 'var(--teal-700)', bg: 'var(--teal-50)', b: 'var(--teal-200)' },
             { on: form.giftable, icon: '🎁', label: 'Giftable', c: 'var(--amber-700)', bg: 'var(--amber-50)', b: 'var(--amber-200)' },
-            { on: form.deliveryIncluded, icon: '🚚', label: 'Delivery included', c: 'var(--teal-700)', bg: 'var(--teal-50)', b: 'var(--teal-200)' },
+            { on: form.deliveryIncluded, icon: '🚚', label: 'Free delivery', c: 'var(--teal-700)', bg: 'var(--teal-50)', b: 'var(--teal-200)' },
           ].filter(x => x.on).map(x => (
             <span key={x.label} style={{ fontSize: 10, fontWeight: 700, padding: '3px 9px', borderRadius: 999, background: x.bg, color: x.c, border: `1px solid ${x.b}`, whiteSpace: 'nowrap' }}>
               {x.icon} {x.label}

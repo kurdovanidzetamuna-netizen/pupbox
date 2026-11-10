@@ -190,13 +190,22 @@ export class SubscriptionsService implements OnModuleInit, OnModuleDestroy {
   }
 
   async toggleAutoRenewal(id: string, userId: string, enabled: boolean) {
-    const sub = await this.findOne(id, userId);
+    await this.findOne(id, userId);
+    return this.setRenewal(id, enabled, 'Renewal turned off by the customer.');
+  }
+
+  /**
+   * Renewal on or off, by the customer or admin alike. It falls due when the
+   * current term ends; switching it off clears that and withdraws a renewal
+   * payment that was waiting.
+   */
+  private async setRenewal(id: string, enabled: boolean, why: string) {
+    const sub = await this.prisma.customerSubscription.findUnique({ where: { id }, select: { status: true, endDate: true } });
+    if (!sub) throw new NotFoundException('Subscription not found');
     if (['CANCELLED', 'EXPIRED'].includes(sub.status)) throw new BadRequestException('Cannot modify a cancelled subscription');
-    // Renewal falls due when the current term ends; switching it off clears
-    // that and withdraws a renewal payment that was waiting.
     if (!enabled) {
       await this.chargeNotUndecided(id);
-      await this.withdrawOpenRenewals(id, 'Renewal turned off by the customer.');
+      await this.withdrawOpenRenewals(id, why);
     }
     return this.prisma.customerSubscription.update({ where: { id }, data: { autoRenewal: enabled, nextRenewalAt: enabled ? sub.endDate : null } });
   }
@@ -276,9 +285,11 @@ export class SubscriptionsService implements OnModuleInit, OnModuleDestroy {
     if (data.status && !(data.status === 'ACTIVE' && sub.status === 'PAUSED')) {
       throw new BadRequestException('Only a paused plan can be resumed here. Cancel uses the cancel action.');
     }
+    // Renewal goes through the same switch as the customer's, so its date follows.
+    if (data.autoRenewal !== undefined) await this.setRenewal(id, data.autoRenewal, 'Renewal turned off by admin.');
     return this.prisma.customerSubscription.update({
       where: { id },
-      data: { ...(data.status ? { status: 'ACTIVE' } : {}), ...(data.autoRenewal !== undefined ? { autoRenewal: data.autoRenewal } : {}), ...(data.cancelReason !== undefined ? { cancelReason: data.cancelReason } : {}) },
+      data: { ...(data.status ? { status: 'ACTIVE' } : {}), ...(data.cancelReason !== undefined ? { cancelReason: data.cancelReason } : {}) },
     });
   }
 
