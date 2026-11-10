@@ -5,8 +5,8 @@ import FormField, { inputClass } from '@/components/FormField';
 import LangTabs, { type Lang } from '@/components/LangTabs';
 import { ActionButton, StatCard, StatCards, Toolbar } from '@/components/Toolbar';
 import { del, getOr, post, put } from '@/lib/api';
+import { gel } from '@/lib/format';
 
-const gel = (n: any) => `₾${Number(n).toFixed(Number(n) % 1 ? 2 : 0)}`;
 
 const EMPTY = {
   name: '', slug: '', tagline: '', description: '', highlights: '', itemCount: 5, budgetMin: '', budgetMax: '',

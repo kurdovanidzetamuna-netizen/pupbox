@@ -8,6 +8,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AdminPerms } from '../admin-auth/admin-permissions';
 import { AdminJwtGuard } from '../admin-auth/admin-jwt.guard';
 import { tbilisiDay } from '../../common/tbilisi';
+import { COLLECTED, PAID_ORDER } from '../../common/ledger';
+import { r2 } from '../../common/money';
 
 const csvCell = (v: unknown) => { const t = v == null ? '' : String(v); return /[",\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t; };
 
@@ -61,21 +63,27 @@ const day = (v: string | null | undefined) => (v ? new Date(v) : null);
 export class CouponsController {
   constructor(private prisma: PrismaService) {}
 
-  /** Every code, with how it's doing: paid orders, money taken off, and sales it brought. */
+  /**
+   * Every code, with how it's doing: paid orders, money taken off, and the
+   * money it brought in (less refunds), counted as every admin screen counts
+   * money (common/ledger.ts).
+   */
   @Get()
   async list() {
-    const [coupons, stats] = await Promise.all([
+    const used = { couponId: { not: null } };
+    const [coupons, stats, payments, refunds] = await Promise.all([
       this.prisma.coupon.findMany({ orderBy: { createdAt: 'desc' }, include: { _count: { select: { usages: true } } } }),
-      this.prisma.order.groupBy({
-        by: ['couponId'],
-        where: { couponId: { not: null }, payments: { some: { status: { in: ['PAID', 'PARTIALLY_REFUNDED'] } } } },
-        _count: true, _sum: { discountAmount: true, total: true },
-      }),
+      this.prisma.order.groupBy({ by: ['couponId'], where: { ...used, ...PAID_ORDER }, _count: true, _sum: { discountAmount: true } }),
+      this.prisma.payment.findMany({ where: { status: { in: [...COLLECTED] }, order: used }, select: { amount: true, order: { select: { couponId: true } } } }),
+      this.prisma.refund.findMany({ where: { payment: { order: used } }, select: { amount: true, payment: { select: { order: { select: { couponId: true } } } } } }),
     ]);
     const by = new Map(stats.map((s) => [s.couponId, s]));
+    const sales = new Map<string, number>();
+    for (const p of payments) sales.set(p.order.couponId!, (sales.get(p.order.couponId!) ?? 0) + Number(p.amount));
+    for (const r of refunds) sales.set(r.payment.order.couponId!, (sales.get(r.payment.order.couponId!) ?? 0) - Number(r.amount));
     return coupons.map((c) => {
       const s = by.get(c.id);
-      return { ...c, stats: { orders: s?._count ?? 0, discount: Number(s?._sum.discountAmount ?? 0), sales: Number(s?._sum.total ?? 0) } };
+      return { ...c, stats: { orders: s?._count ?? 0, discount: Number(s?._sum.discountAmount ?? 0), sales: r2(sales.get(c.id) ?? 0) } };
     });
   }
 

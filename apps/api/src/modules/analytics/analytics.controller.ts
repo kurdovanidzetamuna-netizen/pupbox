@@ -15,7 +15,8 @@ export class AnalyticsController {
 
   /**
    * Headline metrics for both sales channels plus the time series, for one period.
-   * Unknown or missing `range` values fall back to '1m'.
+   * `range` is one of the keys, or picked days "2026-10-01~2026-10-31" (Tbilisi).
+   * Unknown or missing values fall back to '1m'.
    */
   @Get('overview')
   @ApiQuery({ name: 'range', required: false, enum: RANGE_KEYS })

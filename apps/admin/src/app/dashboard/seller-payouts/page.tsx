@@ -5,8 +5,9 @@ import { DateInput } from '@/components/DateField';
 import { api, download, post } from '@/lib/api';
 import { day } from '@/lib/format';
 import { tbilisiMonth } from '@pupbox/content';
+import { gel } from '@/lib/format';
 
-const money = (n: number) => `₾${Number(n || 0).toFixed(2)}`;
+const money = gel;
 
 /** Quick spans for the date filter. */
 function preset(k: 'this' | 'last' | 'all') {

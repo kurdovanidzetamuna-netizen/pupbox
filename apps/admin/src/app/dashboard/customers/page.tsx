@@ -9,8 +9,8 @@ import { api, can, download, patch, today } from '@/lib/api';
 import { day } from '@/lib/format';
 import FilterBar from '@/components/FilterBar';
 import SignInBadges from '@/components/SignInBadges';
+import { gel } from '@/lib/format';
 
-const gel = (n: number) => `₾${n.toLocaleString('en-GB', { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 })}`;
 
 const PLAN: Record<string, { label: string; color: string; bg: string }> = {
   active: { label: 'On a plan', color: 'var(--green-800)', bg: 'var(--green-50)' },

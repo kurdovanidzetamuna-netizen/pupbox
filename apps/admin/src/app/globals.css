@@ -451,3 +451,13 @@ body {
   .oe-bar > button:last-child { flex: 1 1 auto; }
   .od-stepline { display: block !important; }
 }
+
+/* Dashboard period: the menu, and the two days under it for "Custom dates". */
+.dash-period { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+.dash-dates { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 6px; }
+.dash-dates > span:not([aria-hidden]) { min-width: 0 !important; width: 100%; }
+.dash-dates > span:not([aria-hidden]) > * { flex: 1; min-width: 0; }
+@media (max-width: 767px) {
+  .dash-period, .dash-period > div:first-child { width: 100%; align-items: stretch; }
+  .dash-period > div:first-child > :last-child { flex: 1; }
+}

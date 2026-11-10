@@ -3,24 +3,17 @@ import { useEffect, useMemo, useState } from 'react';
 import Dropdown from '@/components/Dropdown';
 import { DateInput } from '@/components/DateField';
 import { api, download as fetchFile, getOr } from '@/lib/api';
-import { tbilisiDay } from '@pupbox/content';
+import { PERIODS, tbilisiDay } from '@pupbox/content';
 import { useCompact } from '@/lib/media';
+import { gel } from '@/lib/format';
 
-const gel = (n: number) => `₾${Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
 const DAY = 86400_000;
 /** Today in Tbilisi as YYYY-MM-DD. */
 const today = () => tbilisiDay();
 const shift = (d: string, days: number) => new Date(new Date(`${d}T00:00:00Z`).getTime() + days * DAY).toISOString().slice(0, 10);
 
-const PRESETS = [
-  { key: '7d', label: 'Last 7 days', range: () => [shift(today(), -6), today()] },
-  { key: '30d', label: 'Last 30 days', range: () => [shift(today(), -29), today()] },
-  { key: '90d', label: 'Last 90 days', range: () => [shift(today(), -89), today()] },
-  { key: 'month', label: 'This month', range: () => [today().slice(0, 8) + '01', today()] },
-  { key: 'lastMonth', label: 'Last month', range: () => { const first = today().slice(0, 8) + '01'; const end = shift(first, -1); return [end.slice(0, 8) + '01', end]; } },
-  { key: 'year', label: 'This year', range: () => [today().slice(0, 4) + '-01-01', today()] },
-  { key: 'custom', label: 'Custom dates', range: () => [] as string[] },
-] as const;
+// The same periods, names and days as the Dashboard and Orders.
+const PRESETS = [...PERIODS, { key: 'custom', label: 'Custom dates', range: () => [] as string[] }];
 const TYPES = [
   { value: 'SUBSCRIPTION', label: 'Boxes (new plans)' }, { value: 'RENEWAL', label: 'Renewals' },
   { value: 'PRODUCT', label: 'Shop' }, { value: 'MIXED', label: 'Box + shop' }, { value: 'FREE_REWARD', label: 'Rewards' },
@@ -218,7 +211,7 @@ function Insights() {
   );
 }
 
-function Kpi({ label, value, delta, sub, big, goodWhenDown }: { label: string; value: any; delta?: number; sub?: string; big?: boolean; goodWhenDown?: boolean }) {
+function Kpi({ label, value, delta, sub, big, goodWhenDown }: { label: string; value: any; delta?: number | null; sub?: string; big?: boolean; goodWhenDown?: boolean }) {
   const up = (delta ?? 0) > 0, flat = !delta;
   const good = goodWhenDown ? !up : up;
   return (
@@ -227,8 +220,8 @@ function Kpi({ label, value, delta, sub, big, goodWhenDown }: { label: string; v
       <div style={{ fontSize: big ? 24 : 20, fontWeight: 800, color: 'var(--slate-900)', marginTop: 4, letterSpacing: '-0.02em', overflowWrap: 'anywhere' }}>{value}</div>
       <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap', marginTop: 4, fontSize: 11.5 }}>
         {delta !== undefined && (
-          <span title="Compared with the period before" style={{ fontWeight: 800, color: flat ? 'var(--slate-400)' : good ? 'var(--green-700)' : 'var(--red-600)' }}>
-            {flat ? '— same' : `${up ? '▲' : '▼'} ${Math.abs(delta) > 999 ? '999+' : Math.abs(delta).toFixed(Math.abs(delta) < 10 ? 1 : 0)}%`}
+          <span title="Compared with the period before" style={{ fontWeight: 800, color: flat || delta === null ? 'var(--slate-400)' : good ? 'var(--green-700)' : 'var(--red-600)' }}>
+            {delta === null ? 'new · nothing before' : flat ? '— same' : `${up ? '▲' : '▼'} ${Math.abs(delta)}%`}
           </span>
         )}
         {sub && <span style={{ color: 'var(--slate-400)' }}>{sub}</span>}

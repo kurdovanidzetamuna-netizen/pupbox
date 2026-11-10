@@ -1,6 +1,7 @@
 import { Prisma } from '@prisma/client';
 import type { PrismaService } from '../prisma/prisma.service';
 import { tbilisiDay } from '../../common/tbilisi';
+import { PAID_ORDER } from '../../common/ledger';
 
 /** Filters and sorting for admin → Customers (the list and its CSV export). */
 export interface CustomerQuery {
@@ -25,7 +26,6 @@ export interface CustomerQuery {
   limit?: number;
 }
 
-const PAID_ORDER = ['PAID', 'PROCESSING', 'PACKED', 'SHIPPED', 'DELIVERED', 'REFUNDED'] as const;
 const RUNNING = ['ACTIVE', 'PAUSED', 'PAYMENT_FAILED'];
 
 export type CustomerRow = Awaited<ReturnType<typeof customerRows>>['rows'][number];
@@ -38,7 +38,8 @@ export type CustomerRow = Awaited<ReturnType<typeof customerRows>>['rows'][numbe
  */
 export async function customerRows(prisma: PrismaService, q: CustomerQuery, all = false) {
   const search = q.search?.trim();
-  const day = (s?: string, end = false) => (s && /^\d{4}-\d{2}-\d{2}$/.test(s) ? new Date(`${s}T${end ? '23:59:59.999' : '00:00:00'}Z`) : undefined);
+  // Whole Tbilisi days, like every other date filter.
+  const day = (s?: string, end = false) => (s && /^\d{4}-\d{2}-\d{2}$/.test(s) ? new Date(`${s}T${end ? '23:59:59.999' : '00:00:00'}+04:00`) : undefined);
   const where: Prisma.UserWhereInput = {
     deletedAt: null,
     ...(q.status ? { status: q.status as any } : {}),
@@ -84,7 +85,7 @@ export async function customerRows(prisma: PrismaService, q: CustomerQuery, all 
       LEFT JOIN (SELECT "paymentId", SUM(amount) AS refunded FROM "Refund" GROUP BY "paymentId") r ON r."paymentId" = p.id
       WHERE p.status IN ('PAID', 'PARTIALLY_REFUNDED', 'REFUNDED') AND p."userId" IN (${Prisma.join(ids)})
       GROUP BY p."userId"`,
-    prisma.order.groupBy({ by: ['userId'], where: { userId: { in: ids }, status: { in: [...PAID_ORDER] } }, _count: { _all: true }, _max: { createdAt: true } }),
+    prisma.order.groupBy({ by: ['userId'], where: { userId: { in: ids }, ...PAID_ORDER }, _count: { _all: true }, _max: { createdAt: true } }),
   ]) : [[], []];
   const moneyBy = new Map(money.map((m) => [m.userId, m]));
   const ordersBy = new Map(orders.map((o) => [o.userId, o]));

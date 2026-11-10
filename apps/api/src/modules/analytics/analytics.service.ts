@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { buildBuckets, bucketIndex, pctChange, resolveWindow, TimeBucket } from './analytics.range';
+import { channelShare, CUSTOMER, ledger, takenAt, takenIn, type Ledger, type Range } from '../../common/ledger';
 
 /**
  * Pupbox sells through two channels that behave nothing alike:
@@ -8,10 +9,10 @@ import { buildBuckets, bucketIndex, pctChange, resolveWindow, TimeBucket } from 
  *   • SUBSCRIPTION — recurring box plans (OrderItem.subscriptionPlanId)
  *   • ECOMMERCE    — one-off standalone products (OrderItem.productId)
  *
- * Order.type records SUBSCRIPTION / PRODUCT / MIXED, but MIXED orders contain
- * both kinds of line, so `type` alone cannot split revenue. Everything below
- * attributes at the OrderItem level instead, and splits each order's collected
- * payment between the channels in proportion to its line totals.
+ * Money and customers are counted the one way every admin screen counts
+ * them (common/ledger.ts): money on the day it was paid, refunds on the day
+ * they were made, orders on the day they were placed. A MIXED order's money
+ * is split between the channels by the value of its lines.
  */
 
 const n = (v: unknown): number => (v == null ? 0 : Number(v));
@@ -28,104 +29,42 @@ export interface ChannelPayments {
   successRate: number;
 }
 
-interface ChannelAccumulator {
-  revenue: number;
-  /** Every order touching this channel, whatever its payment outcome. */
-  orders: Set<string>;
-  /** Only orders that actually paid — the denominator for average order value. */
-  paidOrders: Set<string>;
-  units: number;
-  payments: {
-    paidCount: number;
-    failedCount: number;
-    refundedCount: number;
-    pendingCount: number;
-    paidAmount: number;
-    failedAmount: number;
-    refundedAmount: number;
-  };
-}
-
-const newChannel = (): ChannelAccumulator => ({
-  revenue: 0,
-  orders: new Set(),
-  paidOrders: new Set(),
-  units: 0,
-  payments: { paidCount: 0, failedCount: 0, refundedCount: 0, pendingCount: 0, paidAmount: 0, failedAmount: 0, refundedAmount: 0 },
-});
-
-type OrderRow = {
-  id: string;
-  createdAt: Date;
-  type: string;
-  status: string;
-  total: unknown;
-  items: { productId: string | null; subscriptionPlanId: string | null; quantity: number; total: unknown }[];
-  payments: { status: string; amount: unknown; refunds: { amount: unknown }[] }[];
-};
-
-const COLLECTED = ['PAID', 'PARTIALLY_REFUNDED', 'REFUNDED'];
-
-/**
- * The payment that decides an order's money outcome: the one that collected
- * money if any did (a failed retry later doesn't undo it), else the latest.
- * Payments arrive oldest first.
- */
-function decidingPayment(o: OrderRow) {
-  const collected = o.payments.filter((p) => COLLECTED.includes(p.status));
-  return collected[collected.length - 1] ?? o.payments[o.payments.length - 1];
-}
-
-/** Money the shop kept from a payment: what was collected minus what went back. */
-function kept(p: { status: string; amount: unknown; refunds: { amount: unknown }[] }) {
-  if (!COLLECTED.includes(p.status)) return { kept: 0, refunded: 0 };
-  const refunded = p.refunds.reduce((s, r) => s + n(r.amount), 0);
-  return { kept: Math.max(0, n(p.amount) - refunded), refunded };
-}
+const PLACED_ORDER = { id: true, type: true, status: true, createdAt: true, items: { select: { subscriptionPlanId: true, productId: true, quantity: true, total: true } } } as const;
+type PlacedOrder = { id: string; type: string; status: string; createdAt: Date; items: { subscriptionPlanId: string | null; productId: string | null; quantity: number; total: unknown }[] };
 
 @Injectable()
 export class AnalyticsService {
   constructor(private prisma: PrismaService) {}
 
-  /**
-   * Every headline card plus the time series, derived from a single order query
-   * spanning both the current and previous window.
-   */
+  /** Every headline card plus the time series, for one period and the one before it. */
   async getOverview(range?: string) {
     const w = resolveWindow(range);
+    const cur: Range = { gte: w.from, lte: w.to };
+    const prv: Range = { gte: w.prevFrom, lt: w.prevTo };
 
-    const orders = (await this.prisma.order.findMany({
-      where: { createdAt: { gte: w.prevFrom, lte: w.to } },
-      select: {
-        id: true,
-        createdAt: true,
-        type: true,
-        status: true,
-        total: true,
-        items: { select: { productId: true, subscriptionPlanId: true, quantity: true, total: true } },
-        payments: { select: { status: true, amount: true, refunds: { select: { amount: true } } }, orderBy: { createdAt: 'asc' } },
-      },
-    })) as unknown as OrderRow[];
+    const [money, prevMoney, placed, prevPlaced, attempts] = await Promise.all([
+      ledger(this.prisma, cur),
+      ledger(this.prisma, prv),
+      this.prisma.order.findMany({ where: { createdAt: cur }, select: PLACED_ORDER }) as Promise<PlacedOrder[]>,
+      this.prisma.order.findMany({ where: { createdAt: prv }, select: PLACED_ORDER }) as Promise<PlacedOrder[]>,
+      // Card tries that didn't take money: failed, or still waiting for the bank.
+      this.prisma.payment.findMany({ where: { status: { in: ['FAILED', 'PENDING'] }, createdAt: cur }, select: { status: true, amount: true, order: { select: { type: true, items: { select: { subscriptionPlanId: true, productId: true, total: true, quantity: true } } } } } }),
+    ]);
 
-    const current = orders.filter((o) => o.createdAt >= w.from);
-    const previous = orders.filter((o) => o.createdAt < w.from);
+    const mix = this.composition(placed);
+    const prevMix = this.composition(prevPlaced);
 
-    const cur = this.aggregate(current);
-    const prev = this.aggregate(previous);
-
-    // ── Users ──────────────────────────────────────────────────────────────
+    // ── Customers ──────────────────────────────────────────────────────────
     // `converted` is a true cohort measure: of the people who registered inside
-    // this window, how many took a subscription. Comparing new subscriptions to
-    // new sign-ups would be nonsense — most subscriptions come from customers
-    // who registered in an earlier period, so the ratio can exceed 100%.
+    // this window, how many took a subscription.
     const [totalUsers, newUsers, prevNewUsers, convertedNewUsers, subscribedUsers, activeUsers] = await Promise.all([
-      this.prisma.user.count(),
-      this.prisma.user.count({ where: { createdAt: { gte: w.from, lte: w.to } } }),
-      this.prisma.user.count({ where: { createdAt: { gte: w.prevFrom, lt: w.from } } }),
-      this.prisma.user.count({ where: { createdAt: { gte: w.from, lte: w.to }, subscriptions: { some: {} } } }),
+      this.prisma.user.count({ where: CUSTOMER }),
+      this.prisma.user.count({ where: { ...CUSTOMER, createdAt: cur } }),
+      this.prisma.user.count({ where: { ...CUSTOMER, createdAt: prv } }),
+      this.prisma.user.count({ where: { ...CUSTOMER, createdAt: cur, subscriptions: { some: {} } } }),
       // All-time: how much of the customer base has ever taken a subscription.
-      this.prisma.user.count({ where: { subscriptions: { some: {} } } }),
-      this.prisma.user.count({ where: { status: 'ACTIVE' } }),
+      this.prisma.user.count({ where: { ...CUSTOMER, subscriptions: { some: {} } } }),
+      this.prisma.user.count({ where: { ...CUSTOMER, status: 'ACTIVE' } }),
     ]);
 
     // ── Subscriptions (state, not flow — counted as of now) ────────────────
@@ -135,23 +74,33 @@ export class AnalyticsService {
     // A cancelled plan stays ACTIVE until its last box goes out, so churn goes by
     // when the customer cancelled, whatever the status says now.
     const [newSubs, prevNewSubs, cancelledInRange, activeNotLeaving] = await Promise.all([
-      this.prisma.customerSubscription.count({ where: { createdAt: { gte: w.from, lte: w.to } } }),
-      this.prisma.customerSubscription.count({ where: { createdAt: { gte: w.prevFrom, lt: w.from } } }),
-      this.prisma.customerSubscription.count({ where: { cancelledAt: { gte: w.from, lte: w.to } } }),
+      this.prisma.customerSubscription.count({ where: { createdAt: cur } }),
+      this.prisma.customerSubscription.count({ where: { createdAt: prv } }),
+      this.prisma.customerSubscription.count({ where: { cancelledAt: cur } }),
       this.prisma.customerSubscription.count({ where: { status: 'ACTIVE', cancelledAt: null } }),
     ]);
-
-    const activeSubs = statusCount('ACTIVE');
-    // Churn against the base that could have churned (active + those that did).
     const churnBase = activeNotLeaving + cancelledInRange;
     const churnRate = churnBase > 0 ? +((cancelledInRange / churnBase) * 100).toFixed(1) : 0;
 
-    // ── Registration + revenue time series ─────────────────────────────────
     const buckets = buildBuckets(w.from, w.to, w.spec.bucket);
-    const series = await this.buildSeries(buckets, current, w.from, w.to);
+    const [series] = await Promise.all([this.buildSeries(buckets, money, placed, cur)]);
 
-    const subOrders = cur.subscription.orders.size;
-    const ecomOrders = cur.ecommerce.orders.size;
+    const payments = (ch: 'box' | 'shop'): ChannelPayments => {
+      const c = money[ch];
+      let failedCount = 0, failedAmount = 0, pendingCount = 0;
+      for (const a of attempts) {
+        const share = channelShare(a.order as any)[ch];
+        if (share <= 0) continue;
+        if (a.status === 'FAILED') { failedCount++; failedAmount += n(a.amount) * share; } else pendingCount++;
+      }
+      const paidCount = money.payments.filter((p) => channelShare(p.order)[ch] > 0).length;
+      return {
+        paidCount, failedCount, refundedCount: c.refundCount, pendingCount,
+        paidAmount: round2(c.collected), failedAmount: round2(failedAmount), refundedAmount: round2(c.refunded),
+        successRate: paidCount + failedCount > 0 ? +((paidCount / (paidCount + failedCount)) * 100).toFixed(1) : 0,
+      };
+    };
+    const aov = (collected: number, orders: number) => (orders > 0 ? round2(collected / orders) : 0);
 
     return {
       range: w.spec.key,
@@ -162,53 +111,50 @@ export class AnalyticsService {
       comparedTo: { from: w.prevFrom.toISOString(), to: w.prevTo.toISOString() },
 
       subscription: {
-        revenue: round2(cur.subscription.revenue),
-        revenueChange: pctChange(cur.subscription.revenue, prev.subscription.revenue),
-        orders: subOrders,
-        ordersChange: pctChange(subOrders, prev.subscription.orders.size),
-        paidOrders: cur.subscription.paidOrders.size,
-        // Average order value must divide collected revenue by the orders that
-        // actually paid — dividing by all orders understates it by the failure rate.
-        aov: cur.subscription.paidOrders.size > 0 ? round2(cur.subscription.revenue / cur.subscription.paidOrders.size) : 0,
-        activeSubs,
+        revenue: money.box.net,
+        revenueChange: pctChange(money.box.net, prevMoney.box.net),
+        orders: mix.box,
+        ordersChange: pctChange(mix.box, prevMix.box),
+        paidOrders: money.box.orders.size,
+        // Average paid order: money in divided by the orders it came in for.
+        aov: aov(money.box.collected, money.box.orders.size),
+        activeSubs: statusCount('ACTIVE'),
         pausedSubs: statusCount('PAUSED'),
         expiredSubs: statusCount('EXPIRED'),
         newSubs,
         newSubsChange: pctChange(newSubs, prevNewSubs),
         cancelled: cancelledInRange,
         churnRate,
-        payments: this.finalisePayments(cur.subscription),
+        payments: payments('box'),
       },
 
       ecommerce: {
-        revenue: round2(cur.ecommerce.revenue),
-        revenueChange: pctChange(cur.ecommerce.revenue, prev.ecommerce.revenue),
-        orders: ecomOrders,
-        ordersChange: pctChange(ecomOrders, prev.ecommerce.orders.size),
-        paidOrders: cur.ecommerce.paidOrders.size,
-        aov: cur.ecommerce.paidOrders.size > 0 ? round2(cur.ecommerce.revenue / cur.ecommerce.paidOrders.size) : 0,
-        unitsSold: cur.ecommerce.units,
-        unitsChange: pctChange(cur.ecommerce.units, prev.ecommerce.units),
-        payments: this.finalisePayments(cur.ecommerce),
+        revenue: money.shop.net,
+        revenueChange: pctChange(money.shop.net, prevMoney.shop.net),
+        orders: mix.shop,
+        ordersChange: pctChange(mix.shop, prevMix.shop),
+        paidOrders: money.shop.orders.size,
+        aov: aov(money.shop.collected, money.shop.orders.size),
+        unitsSold: money.units,
+        unitsChange: pctChange(money.units, prevMoney.units),
+        payments: payments('shop'),
       },
 
       combined: {
-        revenue: round2(cur.subscription.revenue + cur.ecommerce.revenue),
-        revenueChange: pctChange(
-          cur.subscription.revenue + cur.ecommerce.revenue,
-          prev.subscription.revenue + prev.ecommerce.revenue,
-        ),
-        orders: cur.totalOrders,
-        ordersChange: pctChange(cur.totalOrders, prev.totalOrders),
-        // Mutually exclusive and summing to `orders` — safe to render as a
-        // composition bar, unlike the per-channel counts which share MIXED.
-        boxOnlyOrders: cur.boxOnlyOrders,
-        mixedOrders: cur.mixedOrders,
-        shopOnlyOrders: cur.shopOnlyOrders,
-        paidOrders: cur.paidOrders,
-        failedOrders: cur.failedOrders,
-        pendingOrders: cur.pendingOrders,
-        aov: cur.paidOrders > 0 ? round2((cur.subscription.revenue + cur.ecommerce.revenue) / cur.paidOrders) : 0,
+        revenue: money.net,
+        revenueChange: pctChange(money.net, prevMoney.net),
+        collected: money.collected,
+        refunded: money.refunded,
+        orders: placed.length,
+        ordersChange: pctChange(placed.length, prevPlaced.length),
+        // Mutually exclusive and summing to `orders`.
+        boxOnlyOrders: mix.boxOnly,
+        mixedOrders: mix.mixed,
+        shopOnlyOrders: mix.shopOnly,
+        paidOrders: money.paidOrders,
+        failedOrders: placed.filter((o) => o.status === 'FAILED').length,
+        pendingOrders: placed.filter((o) => o.status === 'PENDING').length,
+        aov: aov(money.collected, money.paidOrders),
       },
 
       users: {
@@ -226,118 +172,20 @@ export class AnalyticsService {
     };
   }
 
-  /** Fold orders into per-channel totals, splitting MIXED orders by line value. */
-  private aggregate(orders: OrderRow[]) {
-    const subscription = newChannel();
-    const ecommerce = newChannel();
-    // Composition of the period's orders — these three are mutually exclusive
-    // and sum to the total, unlike the per-channel counts which double-count MIXED.
-    let boxOnlyOrders = 0;
-    let mixedOrders = 0;
-    let shopOnlyOrders = 0;
-    let pendingOrders = 0;
-    let failedOrders = 0;
-    let paidOrders = 0;
-    let countedOrders = 0;
-
+  /** Orders placed, by what they hold: boxes only, both, shop only. */
+  private composition(orders: PlacedOrder[]) {
+    let boxOnly = 0, mixed = 0, shopOnly = 0;
     for (const o of orders) {
-      if (o.status === 'PENDING') pendingOrders++;
-      if (o.status === 'FAILED') failedOrders++;
-
-      let subItems = 0;
-      let prodItems = 0;
-      let prodUnits = 0;
-      for (const it of o.items) {
-        const t = n(it.total);
-        if (it.subscriptionPlanId) subItems += t;
-        else if (it.productId) {
-          prodItems += t;
-          prodUnits += it.quantity;
-        }
-      }
-      const lineTotal = subItems + prodItems;
-      // An order with no priced lines can't be attributed to either channel.
-      if (lineTotal <= 0) continue;
-      countedOrders++;
-
-      const hasSub = subItems > 0;
-      const hasProd = prodItems > 0;
-      if (hasSub && hasProd) mixedOrders++;
-      else if (hasSub) boxOnlyOrders++;
-      else shopOnlyOrders++;
-
-      if (hasSub) subscription.orders.add(o.id);
-      if (hasProd) {
-        ecommerce.orders.add(o.id);
-        ecommerce.units += prodUnits;
-      }
-
-      const payment = decidingPayment(o);
-      if (!payment) continue;
-
-      const money = kept(payment);
-      if (COLLECTED.includes(payment.status)) paidOrders++;
-
-      const subShare = subItems / lineTotal;
-      const prodShare = prodItems / lineTotal;
-
-      const apply = (ch: ChannelAccumulator, share: number, present: boolean) => {
-        if (!present) return;
-        switch (payment.status) {
-          case 'PAID':
-          case 'PARTIALLY_REFUNDED':
-          case 'REFUNDED':
-            // Revenue is money the shop kept: collected, less anything given back
-            // (a plan cancelled after the free window keeps its first month).
-            ch.revenue += money.kept * share;
-            ch.paidOrders.add(o.id);
-            if (money.refunded > 0) {
-              ch.payments.refundedCount++;
-              ch.payments.refundedAmount += money.refunded * share;
-            } else {
-              ch.payments.paidCount++;
-              ch.payments.paidAmount += money.kept * share;
-            }
-            break;
-          case 'FAILED':
-            ch.payments.failedCount++;
-            ch.payments.failedAmount += n(payment.amount) * share;
-            break;
-          default:
-            ch.payments.pendingCount++;
-        }
-      };
-
-      apply(subscription, subShare, hasSub);
-      apply(ecommerce, prodShare, hasProd);
+      const s = channelShare(o as any);
+      if (s.box > 0 && s.shop > 0) mixed++;
+      else if (s.box > 0) boxOnly++;
+      else shopOnly++;
     }
-
-    return {
-      subscription, ecommerce,
-      boxOnlyOrders, mixedOrders, shopOnlyOrders,
-      pendingOrders, failedOrders, paidOrders,
-      totalOrders: countedOrders,
-    };
+    return { boxOnly, mixed, shopOnly, box: boxOnly + mixed, shop: shopOnly + mixed };
   }
 
-  private finalisePayments(ch: ChannelAccumulator): ChannelPayments {
-    const p = ch.payments;
-    const attempts = p.paidCount + p.failedCount + p.refundedCount + p.pendingCount;
-    return {
-      paidCount: p.paidCount,
-      failedCount: p.failedCount,
-      refundedCount: p.refundedCount,
-      pendingCount: p.pendingCount,
-      paidAmount: round2(p.paidAmount),
-      failedAmount: round2(p.failedAmount),
-      refundedAmount: round2(p.refundedAmount),
-      // A refunded payment still went through, so it counts as a success.
-      successRate: attempts > 0 ? +(((p.paidCount + p.refundedCount) / attempts) * 100).toFixed(1) : 0,
-    };
-  }
-
-  /** Per-bucket revenue split, order split, and new-user counts. */
-  private async buildSeries(buckets: TimeBucket[], orders: OrderRow[], from: Date, to: Date) {
+  /** Per-bucket revenue (money in less refunds), orders placed, and new customers. */
+  private async buildSeries(buckets: TimeBucket[], money: Ledger, placed: PlacedOrder[], range: Range) {
     const rows = buckets.map((b) => ({
       label: b.label,
       start: b.start.toISOString(),
@@ -348,35 +196,29 @@ export class AnalyticsService {
       registrations: 0,
     }));
 
-    for (const o of orders) {
+    for (const p of money.payments) {
+      const idx = bucketIndex(buckets, takenAt(p));
+      if (idx < 0) continue;
+      const s = channelShare(p.order);
+      rows[idx].subscriptionRevenue += n(p.amount) * s.box;
+      rows[idx].ecommerceRevenue += n(p.amount) * s.shop;
+    }
+    for (const r of money.refunds) {
+      const idx = bucketIndex(buckets, r.createdAt);
+      if (idx < 0) continue;
+      const s = channelShare(r.payment.order);
+      rows[idx].subscriptionRevenue -= n(r.amount) * s.box;
+      rows[idx].ecommerceRevenue -= n(r.amount) * s.shop;
+    }
+    for (const o of placed) {
       const idx = bucketIndex(buckets, o.createdAt);
       if (idx < 0) continue;
-
-      let subItems = 0;
-      let prodItems = 0;
-      for (const it of o.items) {
-        const t = n(it.total);
-        if (it.subscriptionPlanId) subItems += t;
-        else if (it.productId) prodItems += t;
-      }
-      const lineTotal = subItems + prodItems;
-      if (lineTotal <= 0) continue;
-
-      if (subItems > 0) rows[idx].subscriptionOrders++;
-      if (prodItems > 0) rows[idx].ecommerceOrders++;
-
-      const payment = decidingPayment(o);
-      if (payment) {
-        const amount = kept(payment).kept;
-        rows[idx].subscriptionRevenue += amount * (subItems / lineTotal);
-        rows[idx].ecommerceRevenue += amount * (prodItems / lineTotal);
-      }
+      const s = channelShare(o as any);
+      if (s.box > 0) rows[idx].subscriptionOrders++;
+      if (s.shop > 0) rows[idx].ecommerceOrders++;
     }
 
-    const newUsers = await this.prisma.user.findMany({
-      where: { createdAt: { gte: from, lte: to } },
-      select: { createdAt: true },
-    });
+    const newUsers = await this.prisma.user.findMany({ where: { ...CUSTOMER, createdAt: range }, select: { createdAt: true } });
     for (const u of newUsers) {
       const idx = bucketIndex(buckets, u.createdAt);
       if (idx >= 0) rows[idx].registrations++;
@@ -397,8 +239,8 @@ export class AnalyticsService {
     const items = await this.prisma.orderItem.findMany({
       where: {
         productId: { not: null },
-        // Sold and kept: paid (or only partly refunded), not cancelled or refunded in full.
-        order: { createdAt: { gte: w.from, lte: w.to }, status: { notIn: ['CANCELLED', 'REFUNDED'] }, payments: { some: { status: { in: ['PAID', 'PARTIALLY_REFUNDED'] } } } },
+        // Sold: orders money came in for in the period, as in Reports.
+        order: { payments: { some: takenIn({ gte: w.from, lte: w.to }) } },
       },
       select: { productId: true, quantity: true, total: true, orderId: true },
     });
@@ -471,8 +313,8 @@ export class AnalyticsService {
     const items = await this.prisma.orderItem.findMany({
       where: {
         subscriptionPlanId: { not: null },
-        // Sold and kept: paid (or only partly refunded), not cancelled or refunded in full.
-        order: { createdAt: { gte: w.from, lte: w.to }, status: { notIn: ['CANCELLED', 'REFUNDED'] }, payments: { some: { status: { in: ['PAID', 'PARTIALLY_REFUNDED'] } } } },
+        // Sold: orders money came in for in the period, as in Reports.
+        order: { payments: { some: takenIn({ gte: w.from, lte: w.to }) } },
       },
       select: { subscriptionPlanId: true, total: true, orderId: true },
     });

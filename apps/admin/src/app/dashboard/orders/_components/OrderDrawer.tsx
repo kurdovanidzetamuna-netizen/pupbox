@@ -227,7 +227,7 @@ export default function OrderDrawer({ order: initial, categories, onClose, onCha
         <Fact title="Customer" onClick={() => setTab('Customer & dog')}>
           <strong>{user.firstName} {user.lastName}</strong>
           <span>{user.phone || 'no phone'} {user.phoneVerified ? '✓' : ''}</span>
-          <span style={{ color: 'var(--slate-400)' }}>{order.customerStats?.orders ?? '—'} orders · {money(order.customerStats?.totalPaid)} paid</span>
+          <span style={{ color: 'var(--slate-400)' }}>{order.customerStats?.orders ?? '—'} paid orders · {money(order.customerStats?.totalPaid)} in all</span>
         </Fact>
         <Fact title="Dog" onClick={() => setTab('Customer & dog')}>
           {dog ? <><strong>🐶 {dog.name}</strong><span>{[dog.breed, SIZE[dog.size ?? ''] ?? dog.size].filter(Boolean).join(' · ') || '—'}</span>{dog.allergies?.length > 0 && <span style={{ color: 'var(--red-600)', fontWeight: 700 }}>⚠ {dog.allergies.join(', ')}</span>}</> : <span style={{ color: 'var(--slate-400)' }}>No dog on this order</span>}
@@ -330,7 +330,7 @@ export default function OrderDrawer({ order: initial, categories, onClose, onCha
       <div style={card}>
         <p style={label}>👤 Customer</p>
         <p style={{ margin: 0, fontWeight: 800, fontSize: 16 }}>{user.firstName} {user.lastName}</p>
-        <p style={{ margin: '2px 0 10px', fontSize: 12.5, color: 'var(--slate-500)' }}>Customer since {day(order.customerStats?.since)} · {order.customerStats?.orders} orders · {money(order.customerStats?.totalPaid)} paid in all</p>
+        <p style={{ margin: '2px 0 10px', fontSize: 12.5, color: 'var(--slate-500)' }}>Customer since {day(order.customerStats?.since)} · {order.customerStats?.orders} paid orders · {money(order.customerStats?.totalPaid)} paid in all</p>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
           {user.phone && <a href={`tel:${user.phone}`} style={btn('soft')}>📞 {user.phone} {user.phoneVerified ? '✓' : ''}</a>}
           {user.email && <a href={`mailto:${user.email}`} style={{ ...btn('soft'), maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis' }}>✉️ {user.email}</a>}

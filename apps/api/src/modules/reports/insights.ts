@@ -3,6 +3,8 @@ import type { Prisma } from '@prisma/client';
 import type { PrismaService } from '../prisma/prisma.service';
 import { r2 as round } from '../../common/money';
 import { TBILISI_OFFSET } from '../../common/tbilisi';
+import { CUSTOMER, ledger, takenAt } from '../../common/ledger';
+import { pctChange } from '../analytics/analytics.range';
 
 export type InsightFilters = {
   from?: string; to?: string;
@@ -13,7 +15,6 @@ export type InsightFilters = {
 
 const DAY = 86400_000;
 const list = (v?: string) => (v ? v.split(',').map((x) => x.trim()).filter(Boolean) : []);
-const PAID = ['PAID', 'PARTIALLY_REFUNDED', 'REFUNDED'] as const;
 
 /** Start of the day / ISO week (Monday) / month a moment falls in, in Tbilisi time, as "YYYY-MM-DD". */
 function bucket(d: Date, by: 'day' | 'week' | 'month') {
@@ -27,7 +28,7 @@ function bucket(d: Date, by: 'day' | 'week' | 'month') {
  * The numbers behind admin → Reports → Insights, for one period and the one
  * before it (same length) to compare. Money counts when it was actually
  * taken (payment date), refunds when they were made — the way a bank
- * statement would show them. Every filter narrows the orders counted;
+ * statement would show them, and the way every admin screen counts (common/ledger.ts). Every filter narrows the orders counted;
  * several values in one filter mean "any of these".
  */
 export async function insights(prisma: PrismaService, f: InsightFilters) {
@@ -52,34 +53,19 @@ export async function insights(prisma: PrismaService, f: InsightFilters) {
 
   async function period(a: number, b: number) {
     const range = { gte: new Date(a), lt: new Date(b) };
-    const [payments, refunds, newCustomers, created] = await Promise.all([
-      prisma.payment.findMany({
-        where: { status: { in: [...PAID] }, paidAt: range, order: orderWhere },
-        select: {
-          amount: true, paidAt: true, attempt: true,
-          order: {
-            select: {
-              id: true, type: true, status: true, userId: true, address: { select: { city: true } },
-              items: { select: { name: true, quantity: true, total: true, productId: true, product: { select: { category: { select: { id: true, name: true, parent: { select: { id: true, name: true } } } } } }, subscriptionPlan: { select: { id: true, name: true, tier: { select: { id: true, name: true, emoji: true } } } } } },
-            },
-          },
-        },
-      }),
-      prisma.refund.findMany({ where: { createdAt: range, payment: { order: orderWhere } }, select: { amount: true, createdAt: true, reason: true } }),
-      prisma.user.count({ where: { createdAt: range, deletedAt: null, NOT: { email: { endsWith: '@pupbox.dev' } } } }),
+    const [money, newCustomers, created] = await Promise.all([
+      ledger(prisma, range, orderWhere),
+      prisma.user.count({ where: { ...CUSTOMER, createdAt: range } }),
       prisma.order.groupBy({ by: ['status'], where: { ...orderWhere, createdAt: range }, _count: { _all: true } }),
     ]);
-    const collected = payments.reduce((n, p) => n + Number(p.amount), 0);
-    const refunded = refunds.reduce((n, r) => n + Number(r.amount), 0);
-    const orders = new Set(payments.map((p) => p.order.id)).size;
+    const { payments, refunds, collected, refunded, net, paidOrders: orders } = money;
     const buyers = new Map<string, number>();
     for (const p of payments) buyers.set(p.order.userId, (buyers.get(p.order.userId) ?? 0) + 1);
-    const items = payments.reduce((n, p) => n + p.order.items.reduce((m, i) => m + (i.productId ? i.quantity : 0), 0), 0);
     const renewals = payments.filter((p) => p.order.type === 'RENEWAL').length;
     const recovered = payments.filter((p) => (p.attempt ?? 1) > 1).length;
     return { payments, refunds, created, kpi: {
-      collected: round(collected), refunded: round(refunded), net: round(collected - refunded), orders,
-      aov: orders ? round(collected / orders) : 0, items, newCustomers, buyers: buyers.size,
+      collected, refunded, net, orders,
+      aov: orders ? round(collected / orders) : 0, items: money.units, newCustomers, buyers: buyers.size,
       returning: [...buyers.values()].filter((n) => n > 1).length, refundCount: refunds.length,
       refundRate: collected ? round((refunded / collected) * 100) : 0, renewalsPaid: renewals, recoveredCharges: recovered,
     } };
@@ -92,7 +78,7 @@ export async function insights(prisma: PrismaService, f: InsightFilters) {
   for (let t = from; t < to; t += DAY) { const k = bucket(new Date(t), by); if (!series.has(k)) series.set(k, { date: k, collected: 0, refunded: 0, orders: 0 }); }
   const seen = new Set<string>();
   for (const p of now.payments) {
-    const row = series.get(bucket(p.paidAt!, by)); if (!row) continue;
+    const row = series.get(bucket(takenAt(p), by)); if (!row) continue;
     row.collected += Number(p.amount);
     if (!seen.has(p.order.id)) { seen.add(p.order.id); row.orders++; }
   }
@@ -137,10 +123,15 @@ export async function insights(prisma: PrismaService, f: InsightFilters) {
   const mrr = active.reduce((n, s) => n + Number(s.plan.monthlyEquivPrice ?? Number(s.plan.price) / months(s.plan)), 0);
   const [failedNow, churned] = await Promise.all([
     prisma.customerSubscription.count({ where: { status: 'PAYMENT_FAILED' } }),
-    prisma.customerSubscription.count({ where: { status: { in: ['CANCELLED', 'EXPIRED'] }, updatedAt: { gte: new Date(from), lt: new Date(to) } } }),
+    // Plans that stopped in the period: cancelled then, or ran out then.
+    prisma.customerSubscription.count({ where: { OR: [
+      { status: 'CANCELLED', cancelledAt: { gte: new Date(from), lt: new Date(to) } },
+      { status: 'EXPIRED', endDate: { gte: new Date(from), lt: new Date(to) } },
+    ] } }),
   ]);
 
-  const delta = (a: number, b: number) => (b ? round(((a - b) / b) * 100) : a ? 100 : 0);
+  // As on the Dashboard: one decimal, and null when there was nothing before to compare with.
+  const delta = (a: number, b: number) => pctChange(a, b);
   return {
     range: { from: new Date(from).toISOString(), to: new Date(to).toISOString(), groupBy: by },
     kpi: now.kpi, previous: before.kpi,
