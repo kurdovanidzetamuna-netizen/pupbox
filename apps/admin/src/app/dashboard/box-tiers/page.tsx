@@ -6,6 +6,7 @@ import LangTabs, { type Lang } from '@/components/LangTabs';
 import { ActionButton, StatCard, StatCards, Toolbar } from '@/components/Toolbar';
 import { del, getOr, post, put } from '@/lib/api';
 import { gel } from '@/lib/format';
+import PageTabs, { BOX_PRICES } from '@/components/PageTabs';
 
 
 const EMPTY = {
@@ -79,8 +80,9 @@ export default function BoxTiersPage() {
 
   return (
     <div style={{ padding: 'clamp(16px, 4vw, 32px)', maxWidth: 1200 }}>
+      <PageTabs tabs={BOX_PRICES} />
       <div style={{ marginBottom: 20 }}>
-        <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--slate-900)', margin: '0 0 4px' }}>Box types</h1>
+        <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--slate-900)', margin: '0 0 4px' }}>Boxes &amp; prices</h1>
         <p style={{ fontSize: 13, color: 'var(--slate-400)', margin: 0 }}>Mini, Standard, Premium — what goes in each box. Prices and lengths live on each plan.</p>
       </div>
 
@@ -92,7 +94,6 @@ export default function BoxTiersPage() {
 
       <Toolbar style={{ margin: '20px 0' }}>
         <ActionButton onClick={() => open()}>+ New box type</ActionButton>
-        <Link href="/dashboard/subscription-plans" style={{ fontSize: 13, fontWeight: 600, color: 'var(--teal-700)', textDecoration: 'none', alignSelf: 'center' }}>Plans →</Link>
       </Toolbar>
 
       {loading ? <p style={{ color: 'var(--slate-400)' }}>Loading…</p> : (
@@ -119,7 +120,7 @@ export default function BoxTiersPage() {
               </div>
 
               {/* 1 / 3 / 6 months: the plan's monthly price, or a gap to fill */}
-              <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(LENGTHS.length, 4)}, 1fr)`, gap: 6 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(98px, 1fr))', gap: 6 }}>
                 {LENGTHS.map((m) => {
                   const p = t.plans.find((x: any) => x.durationValue === m);
                   return p ? (

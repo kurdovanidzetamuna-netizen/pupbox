@@ -368,7 +368,7 @@ export default function DashboardPage() {
           <SectionHeader
             emoji="📦" title="Inventory & box contents" accent="var(--amber-600)"
             subtitle="What needs restocking, and what is going into the boxes"
-            action={{ label: 'Box campaigns', href: '/dashboard/box-campaigns' }}
+            action={{ label: 'Box contents', href: '/dashboard/box-campaigns' }}
           />
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 14 }}>
@@ -398,9 +398,9 @@ export default function DashboardPage() {
               )}
             </Panel>
 
-            <Panel title="Box campaigns" subtitle="Active campaigns and their contents" action={{ label: 'Box items', href: '/dashboard/box-items' }} minHeight={220}>
+            <Panel title="Box contents" subtitle="What goes in the coming months’ boxes" action={{ label: 'Box products', href: '/dashboard/box-items' }} minHeight={220}>
               {boxes.length === 0 ? (
-                <EmptyState emoji="📦" text="No active box campaigns" />
+                <EmptyState emoji="📦" text="No box contents set yet" />
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                   {boxes.map((c) => (

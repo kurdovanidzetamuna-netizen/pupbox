@@ -461,3 +461,28 @@ body {
   .dash-period, .dash-period > div:first-child { width: 100%; align-items: stretch; }
   .dash-period > div:first-child > :last-child { flex: 1; }
 }
+
+/* Computers: the menu put away ("Hide menu"), and the button that brings it back. */
+.adm-hide, .adm-reopen { display: inline-flex; align-items: center; justify-content: center; border: none; cursor: pointer; color: var(--slate-500); }
+.adm-hide { width: 30px; height: 30px; border-radius: 9px; background: transparent; flex-shrink: 0; }
+.adm-hide:hover { background: var(--slate-100); color: var(--slate-900); }
+.adm-reopen { position: fixed; top: 14px; left: 14px; z-index: 41; width: 38px; height: 38px; border-radius: 11px; background: var(--white); border: 1px solid var(--slate-200b); }
+.adm-reopen:hover { color: var(--teal-700); border-color: var(--teal-300); }
+.adm-hide:focus-visible, .adm-reopen:focus-visible { outline: 2px solid var(--teal-500); outline-offset: 2px; }
+@media (min-width: 1024px) {
+  .adm-sidebar { transition: transform .22s ease; }
+  .adm-main { transition: margin-left .22s ease, width .22s ease; }
+  [data-menu="hidden"] .adm-sidebar { transform: translateX(-100%); visibility: hidden; transition: transform .22s ease, visibility 0s .22s; }
+  [data-menu="hidden"] .adm-main { margin-left: 0 !important; width: 100% !important; padding-left: 40px; }
+}
+@media (max-width: 1023px) { .adm-hide, .adm-reopen { display: none !important; } }
+@media (prefers-reduced-motion: reduce) { .adm-sidebar, .adm-main { transition: none !important; } }
+
+/* Tabs joining pages that belong together (Boxes & prices, Box products). */
+.adm-pagetabs { display: inline-flex; gap: 4px; padding: 4px; margin-bottom: 18px; border-radius: 14px; background: var(--slate-100); max-width: 100%; }
+.adm-pagetabs a { display: flex; flex-direction: column; gap: 1px; padding: 8px 16px; border-radius: 10px; text-decoration: none; color: var(--slate-500); font-size: 13.5px; font-weight: 700; line-height: 1.2; }
+.adm-pagetabs a small { font-size: 11px; font-weight: 500; color: var(--slate-400); }
+.adm-pagetabs a:hover { color: var(--slate-900); }
+.adm-pagetabs a[data-on] { background: var(--white); color: var(--teal-700); box-shadow: 0 1px 3px rgba(15, 23, 42, .08); }
+.adm-pagetabs a:focus-visible { outline: 2px solid var(--teal-500); outline-offset: 2px; }
+@media (max-width: 640px) { .adm-pagetabs { display: flex; } .adm-pagetabs a { flex: 1; align-items: center; text-align: center; padding: 9px 8px; min-height: 44px; justify-content: center; } }

@@ -106,7 +106,7 @@ export default function MonthlyBoxesPage() {
     <div style={{ padding: 28, display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
         <div>
-          <h1 style={{ fontSize: 22, fontWeight: 800, color: 'var(--slate-900)', margin: 0 }}>📦 Monthly Boxes</h1>
+          <h1 style={{ fontSize: 22, fontWeight: 800, color: 'var(--slate-900)', margin: 0 }}>This month’s boxes</h1>
           <p style={{ fontSize: 13, color: 'var(--slate-400)', margin: '4px 0 0' }}>One box per active subscriber each month. Marking a box shipped counts it on the customer’s plan and emails them.</p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -127,7 +127,7 @@ export default function MonthlyBoxesPage() {
       {data && data.campaigns === 0 && items.length > 0 && (
         <Banner tone="amber">
           <span>No box contents are set for {MONTHS[ym.month - 1]} yet, so there is no pick list.</span>
-          <Link href="/dashboard/box-campaigns" style={{ color: 'inherit', fontWeight: 700 }}>Set contents →</Link>
+          <Link href="/dashboard/box-campaigns" style={{ color: 'inherit', fontWeight: 700 }}>Set box contents →</Link>
         </Banner>
       )}
       {data && data.campaigns > 0 && data.withoutCampaign > 0 && (

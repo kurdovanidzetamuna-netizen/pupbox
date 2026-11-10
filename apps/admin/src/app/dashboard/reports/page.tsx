@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Dropdown from '@/components/Dropdown';
 import { DateInput } from '@/components/DateField';
 import { api, download as fetchFile, getOr } from '@/lib/api';
@@ -131,11 +131,12 @@ function Insights() {
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
           <Dropdown aria-label="Period" icon="📅" value={preset} onChange={pick} options={PRESETS.map((p) => ({ value: p.key, label: p.label }))} />
           {preset === 'custom' && (
-            <span style={{ display: 'inline-flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
-              <DateInput aria-label="From" value={from} max={to} onChange={(e) => setFrom(e.target.value)} />
-              <span style={{ color: 'var(--slate-400)' }}>→</span>
-              <DateInput aria-label="To" value={to} min={from} max={today()} onChange={(e) => setTo(e.target.value)} />
-            </span>
+            // Two days side by side, always set: a period needs both ends.
+            <div className="dash-dates adm-keepgrid">
+              <DateInput aria-label="From" value={from} max={to || today()} clearable={false} onChange={(e) => setFrom(e.target.value)} />
+              <span aria-hidden="true" style={{ color: 'var(--slate-400)' }}>→</span>
+              <DateInput aria-label="To" value={to} min={from} max={today()} clearable={false} onChange={(e) => setTo(e.target.value)} />
+            </div>
           )}
           <Dropdown aria-label="Group by" value={groupBy} onChange={setGroupBy} options={[{ value: '', label: 'Auto grouping' }, { value: 'day', label: 'By day' }, { value: 'week', label: 'By week' }, { value: 'month', label: 'By month' }]} />
           <span style={{ flex: 1 }} />
@@ -277,24 +278,37 @@ function Bars({ rows, money, unit, empty = 'Nothing in this period.', tone }: { 
 /** A plain bar chart in SVG — one bar per day/week/month; hover or tap a bar for its numbers. */
 function Chart({ rows, metric, by }: { rows: { date: string; collected: number; refunded: number; orders: number }[]; metric: 'collected' | 'orders' | 'refunded'; by: string }) {
   const [hover, setHover] = useState<number | null>(null);
-  // A narrower drawing on phones, so its labels shrink less and stay readable.
   const compact = useCompact();
+  // Drawn at the width it has and a fixed, modest height, so a wide screen
+  // doesn't blow it up; labels stay at their real size.
+  const box = useRef<HTMLDivElement>(null);
+  const [width, setWidth] = useState(720);
+  useEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([e]) => setWidth(Math.max(260, Math.round(e.contentRect.width))));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
   if (!rows.length) return null;
-  const W = compact ? 360 : 720, H = compact ? 200 : 220, PAD = compact ? 30 : 28, FS = compact ? 13 : 10;
+  const W = width, H = compact ? 150 : 180, PAD = 36, FS = 11;
   const max = Math.max(...rows.map((r) => r[metric]), 1);
   const bw = (W - PAD) / rows.length;
+  // Bars stay slim however few there are.
+  const bar = Math.max(1, Math.min(bw * 0.7, 36));
   const fmt = (n: number) => (metric === 'orders' ? String(n) : gel(n));
   const label = (d: string) => new Date(`${d}T00:00:00Z`).toLocaleDateString('en-GB', by === 'month' ? { month: 'short', year: '2-digit', timeZone: 'UTC' } : { day: 'numeric', month: 'short', timeZone: 'UTC' });
-  const every = Math.ceil(rows.length / (compact ? 4 : 8));
+  // One date label per ~90px.
+  const every = Math.ceil(rows.length / Math.max(2, Math.floor(W / 90)));
   const total = rows.reduce((n, r) => n + r[metric], 0);
   const h = hover !== null ? rows[hover] : null;
   return (
-    <div>
+    <div ref={box}>
       <div style={{ fontSize: 12.5, color: 'var(--slate-500)', marginBottom: 6, minHeight: 18 }}>
         {h ? <><strong style={{ color: 'var(--slate-900)' }}>{label(h.date)}{by === 'week' ? ' (week)' : ''}</strong> · {gel(h.collected)} in · {h.orders} orders{h.refunded ? ` · ${gel(h.refunded)} refunded` : ''}</>
           : <>Total {fmt(total)} · highest {fmt(max)}</>}
       </div>
-      <svg viewBox={`0 0 ${W} ${H + 22}`} style={{ width: '100%', height: 'auto', display: 'block' }} role="img" aria-label={`${metric} over time`} onMouseLeave={() => setHover(null)}>
+      <svg width={W} height={H + 22} viewBox={`0 0 ${W} ${H + 22}`} style={{ width: '100%', height: H + 22, display: 'block' }} role="img" aria-label={`${metric} over time`} onMouseLeave={() => setHover(null)}>
         {[0.25, 0.5, 0.75, 1].map((g) => (
           <g key={g}>
             <line x1={PAD} x2={W} y1={H - g * (H - 10)} y2={H - g * (H - 10)} stroke="var(--slate-100)" />
@@ -306,7 +320,7 @@ function Chart({ rows, metric, by }: { rows: { date: string; collected: number; 
           return (
             <g key={r.date} onMouseEnter={() => setHover(i)} onClick={() => setHover(i)} style={{ cursor: 'pointer' }}>
               <rect x={PAD + i * bw} y={0} width={bw} height={H} fill="transparent" />
-              <rect x={PAD + i * bw + bw * 0.15} y={H - bh} width={Math.max(1, bw * 0.7)} height={bh} rx={Math.min(4, bw * 0.3)}
+              <rect x={PAD + i * bw + (bw - bar) / 2} y={H - bh} width={bar} height={bh} rx={Math.min(4, bar * 0.3)}
                 fill={metric === 'refunded' ? '#f87171' : hover === i ? 'var(--teal-700)' : 'var(--teal-500)'} />
               {i % every === 0 && <text x={PAD + i * bw + bw / 2} y={H + 16} fontSize={FS} textAnchor="middle" fill="var(--slate-400)">{label(r.date)}</text>}
             </g>
