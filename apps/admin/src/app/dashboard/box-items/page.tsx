@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { ActionButton, FilterSelect, SortBar, SearchInput, Toolbar, StatCard, StatCards, RowActions } from '@/components/Toolbar';
 import QuickAddBoxItemModal from '@/components/QuickAddBoxItemModal';
 import { getOr, patch } from '@/lib/api';
+import PageTabs, { BOX_PRODUCTS } from '@/components/PageTabs';
 
 
 const STATUS_COLORS: Record<string, any> = {
@@ -102,9 +103,10 @@ export default function BoxItemsPage() {
 
   return (
     <div style={{ padding: 32 }}>
+      <PageTabs tabs={BOX_PRODUCTS} />
       {/* Header */}
       <div style={{ marginBottom: 20 }}>
-        <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--slate-900)', margin: '0 0 4px' }}>Box Items</h1>
+        <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--slate-900)', margin: '0 0 4px' }}>Box products</h1>
         <p style={{ fontSize: 13, color: 'var(--slate-400)', margin: 0 }}>Products that go into subscription boxes — separate from the e-commerce store.</p>
       </div>
       <StatCards>

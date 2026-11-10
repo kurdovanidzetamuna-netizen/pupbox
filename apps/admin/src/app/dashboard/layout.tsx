@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { useTheme } from '@/components/ThemeProvider';
 import { AUTH_EVENT, clearToken, getOr, token as savedToken } from '@/lib/api';
 
-const NAV_GROUPS = [
+const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
   {
     label: 'Overview',
     items: [
@@ -14,15 +14,20 @@ const NAV_GROUPS = [
     ],
   },
   {
+    // The monthly work, in the order it happens.
     label: 'Subscriptions',
     items: [
-      { href: '/dashboard/box-tiers', label: 'Box types', icon: 'M4 7h16M4 12h16M4 17h10' },
-      { href: '/dashboard/subscription-plans', label: 'Plans', icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4' },
-      { href: '/dashboard/subscriptions', label: 'Subscriptions', icon: 'M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15' },
-      { href: '/dashboard/box-items', label: 'Box Items', icon: 'M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z' },
-      { href: '/dashboard/custom-box-items', label: 'Custom Box Items', icon: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4' },
-      { href: '/dashboard/monthly-boxes', label: 'Monthly Boxes', icon: 'M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z' },
-      { href: '/dashboard/box-campaigns', label: 'Box Campaigns', icon: 'M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4' },
+      { href: '/dashboard/subscriptions', label: 'Subscribers', icon: 'M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15' },
+      { href: '/dashboard/monthly-boxes', label: 'This month’s boxes', icon: 'M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z' },
+      { href: '/dashboard/box-campaigns', label: 'Box contents', icon: 'M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4' },
+    ],
+  },
+  {
+    // Set up once, changed now and then. Each opens on tabs for its two parts.
+    label: 'Box setup',
+    items: [
+      { href: '/dashboard/box-tiers', also: ['/dashboard/subscription-plans'], label: 'Boxes & prices', icon: 'M4 7h16M4 12h16M4 17h10' },
+      { href: '/dashboard/box-items', also: ['/dashboard/custom-box-items'], label: 'Box products', icon: 'M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z' },
     ],
   },
   {
@@ -101,8 +106,10 @@ const S = {
   main: { marginLeft: 224, minHeight: '100vh', backgroundColor: 'var(--slate-50)', width: 'calc(100vw - 224px)' },
 };
 
-function NavGroup({ group, isActive }: { group: typeof NAV_GROUPS[0]; isActive: (href: string, exact?: boolean) => boolean }) {
-  const hasActive = group.items.some(item => isActive(item.href, item.exact));
+type NavItem = { href: string; label: string; icon: string; exact?: boolean; also?: string[] };
+
+function NavGroup({ group, isActive }: { group: { label: string; items: NavItem[] }; isActive: (href: string, exact?: boolean, also?: string[]) => boolean }) {
+  const hasActive = group.items.some(item => isActive(item.href, item.exact, item.also));
   const [open, setOpen] = useState(hasActive || group.label === 'Overview');
 
   return (
@@ -119,7 +126,7 @@ function NavGroup({ group, isActive }: { group: typeof NAV_GROUPS[0]; isActive: 
       {open && (
         <div style={{ overflow: 'hidden' }}>
           {group.items.map(item => {
-            const active = isActive(item.href, item.exact);
+            const active = isActive(item.href, item.exact, item.also);
             return (
               <Link key={item.href} href={item.href} style={S.navLink(active)} className="adm-navlink" aria-current={active ? 'page' : undefined}>
                 <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24" style={{ flexShrink: 0 }}>
@@ -155,7 +162,8 @@ const needFor = (href: string) => NEEDS.find(([p]) => href === p || href.startsW
 const ALL_ITEMS = NAV_GROUPS.flatMap((g) => g.items.map((i) => ({ ...i, group: g.label })));
 /** The menu item a page belongs to (the longest matching address), for the phone title bar. */
 const itemFor = (path: string) =>
-  ALL_ITEMS.filter((i) => (i.exact ? path === i.href : path === i.href || path.startsWith(i.href + '/')))
+  ALL_ITEMS.flatMap((i) => [i, ...(i.also ?? []).map((href) => ({ ...i, href }))])
+    .filter((i) => (i.exact ? path === i.href : path === i.href || path.startsWith(i.href + '/')))
     .sort((a, b) => b.href.length - a.href.length)[0];
 /** Phones and tablets: the four places used most, then the full menu. */
 const TABS = ['/dashboard', '/dashboard/orders', '/dashboard/subscriptions', '/dashboard/customers'];
@@ -175,6 +183,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const { theme, toggleTheme } = useTheme();
   // Phones and small tablets: the menu slides in from the left.
   const [menu, setMenu] = useState(false);
+  // Computers: the menu can be put away for more room, and stays put away.
+  const [hidden, setHidden] = useState(false);
+  useEffect(() => { try { setHidden(localStorage.getItem('adm-menu-hidden') === '1'); } catch {} }, []);
+  const hide = (v: boolean) => { setHidden(v); try { localStorage.setItem('adm-menu-hidden', v ? '1' : '0'); } catch {} };
   const [q, setQ] = useState('');
   useEffect(() => { setMenu(false); setQ(''); }, [pathname]);
 
@@ -259,12 +271,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const allowed = (href: string) => { const n = needFor(href); return !n || !perms || perms.includes(n); };
   const found = q.trim() ? ALL_ITEMS.filter((i) => allowed(i.href) && `${i.label} ${i.group}`.toLowerCase().includes(q.trim().toLowerCase())) : null;
 
-  function isActive(href: string, exact?: boolean) {
-    return exact ? pathname === href : pathname === href || pathname.startsWith(href + '/');
+  /** On this page, or on one of the pages it gathers under tabs (`also`). */
+  function isActive(href: string, exact?: boolean, also: string[] = []) {
+    const at = (h: string) => pathname === h || pathname.startsWith(h + '/');
+    return exact ? pathname === href : at(href) || also.some(at);
   }
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh' }}>
+    <div style={{ display: 'flex', minHeight: '100vh' }} data-menu={hidden ? 'hidden' : undefined}>
+      {hidden && (
+        <button type="button" onClick={() => hide(false)} aria-label="Show menu" title="Show menu" className="adm-reopen">
+          <Svg d="M4 6h16M4 12h16M4 18h16" size={18} />
+        </button>
+      )}
       {/* Phones and tablets: the page's name on top, the main places at the bottom, the full menu as a sheet. */}
       <div className="adm-topbar">
         {deeper ? (
@@ -295,10 +314,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <aside id="adm-menu" style={S.sidebar} className="adm-sidebar" data-open={menu || undefined}>
         <div style={S.logo}>
           <div style={S.logoIcon}>🐾</div>
-          <div>
+          <div style={{ flex: 1, minWidth: 0 }}>
             <div style={S.logoText}>Pupbox</div>
             <div style={S.logoSub}>Admin Panel</div>
           </div>
+          <button type="button" onClick={() => hide(true)} aria-label="Hide menu" title="Hide menu" className="adm-hide">
+            <Svg d="M11 17l-5-5 5-5M18 17l-5-5 5-5" size={16} sw={2} />
+          </button>
         </div>
 
         <div className="adm-search">
@@ -309,7 +331,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div style={S.nav} className="adm-nav">
           {found ? (
             found.length ? found.map((it) => (
-              <Link key={it.href} href={it.href} style={S.navLink(isActive(it.href, it.exact))} className="adm-navlink">
+              <Link key={it.href} href={it.href} style={S.navLink(isActive(it.href, it.exact, (it as NavItem).also))} className="adm-navlink">
                 <Svg d={it.icon} size={15} />
                 <span style={{ flex: 1 }}>{it.label}</span>
                 <span style={{ fontSize: 11, color: 'var(--slate-400)' }}>{it.group}</span>

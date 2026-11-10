@@ -14,6 +14,7 @@ import PlanListRow, { PlanListHeader } from './_components/PlanListRow';
 import PlanCard from './_components/PlanCard';
 import PlanViewModal from './_components/PlanViewModal';
 import SiteVisibility from './_components/SiteVisibility';
+import PageTabs, { BOX_PRICES } from '@/components/PageTabs';
 
 export default function AdminSubscriptionPlansPage() {
   const [showBoxItemModal, setShowBoxItemModal] = useState(false);
@@ -108,8 +109,9 @@ export default function AdminSubscriptionPlansPage() {
 
   return (
     <div style={{ padding: 32 }}>
+      <PageTabs tabs={BOX_PRICES} />
       <div style={{ marginBottom: 20 }}>
-        <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--slate-900)', margin: '0 0 4px' }}>Subscription Plans</h1>
+        <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--slate-900)', margin: '0 0 4px' }}>Boxes &amp; prices</h1>
         <p style={{ fontSize: 13, color: 'var(--slate-400)', margin: 0 }}>Click "Configure" on any plan to set box contents, pricing, and discounts.</p>
       </div>
 

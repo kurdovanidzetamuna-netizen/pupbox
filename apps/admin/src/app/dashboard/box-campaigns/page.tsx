@@ -1,10 +1,11 @@
 'use client';
+import Link from 'next/link';
 import { Select } from '@/components/Dropdown';
 import { useEffect, useState } from 'react';
 import FormField, { inputClass } from '@/components/FormField';
 import LangTabs, { type Lang } from '@/components/LangTabs';
 import { NumInput } from '@/components/NumberField';
-import { api, getOr, post, put } from '@/lib/api';
+import { getOr, post, put } from '@/lib/api';
 import { tbilisiMonth } from '@pupbox/content';
 
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -23,7 +24,6 @@ export default function BoxCampaignsPage() {
   const [lang, setLang] = useState<Lang>('en');
   const [saving, setSaving] = useState(false);
   const [products, setProducts] = useState<any[]>([]);
-  const [packingList, setPackingList] = useState<any[] | null>(null);
 
   async function load() {
     setLoading(true);
@@ -63,51 +63,7 @@ export default function BoxCampaignsPage() {
     setSelected(null);
   }
 
-  async function loadPackingList() {
-    const now = tbilisiMonth();
-    api(`/box-campaigns/packing-list?year=${now.year}&month=${now.month}`).then(setPackingList).catch(() => {});
-  }
 
-  if (packingList) {
-    return (
-      <div style={{ padding: 32 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 28 }}>
-          <div>
-            <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--slate-900)', margin: 0 }}>Packing List</h1>
-            <p style={{ fontSize: 13, color: 'var(--slate-400)', marginTop: 4 }}>{packingList.length} subscriptions to pack this month</p>
-          </div>
-          <button onClick={() => setPackingList(null)} style={{ fontSize: 13, color: 'var(--slate-400)', background: 'none', border: 'none', cursor: 'pointer' }}>← Back</button>
-        </div>
-        <div style={{ background: 'var(--white)', borderRadius: 16, border: '1px solid var(--slate-200b)', overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-            <thead>
-              <tr>
-                {['Customer', 'Plan', 'Dog', 'Campaign', 'Products'].map(h => (
-                  <th key={h} style={{ padding: '10px 18px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: 'var(--slate-400)', textTransform: 'uppercase', letterSpacing: '0.06em', borderBottom: '1px solid var(--slate-200b)', background: 'var(--slate-50)' }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {packingList.map((row: any, i: number) => (
-                <tr key={i} style={{ borderBottom: '1px solid var(--slate-50)' }}>
-                  <td style={{ padding: '14px 18px' }}>
-                    <p style={{ fontWeight: 600, color: 'var(--slate-800)', margin: 0 }}>{row.customer}</p>
-                    <p style={{ fontSize: 11, color: 'var(--slate-400)', margin: '2px 0 0' }}>{row.email}</p>
-                  </td>
-                  <td style={{ padding: '14px 18px', fontSize: 12, color: 'var(--slate-500)' }}>{row.plan}</td>
-                  <td style={{ padding: '14px 18px', fontSize: 12, color: 'var(--slate-500)' }}>{row.dogName || '—'} {row.dogSize ? `(${row.dogSize})` : ''}</td>
-                  <td style={{ padding: '14px 18px' }}>
-                    <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--teal-700)', background: 'var(--teal-50)', padding: '3px 8px', borderRadius: 6 }}>{row.campaign}</span>
-                  </td>
-                  <td style={{ padding: '14px 18px', fontSize: 12, color: 'var(--slate-500)' }}>{row.products.map((p: any) => `${p.name} ×${p.quantity}`).join(', ') || '—'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    );
-  }
 
   if (selected) {
     return <ProductPicker campaign={selected} products={products} onSave={setProductsForCampaign} onBack={() => setSelected(null)} />;
@@ -116,20 +72,20 @@ export default function BoxCampaignsPage() {
   return (
     <div style={{ padding: 32 }}>
       <div style={{ background: 'var(--amber-50)', border: '1px solid var(--amber-200)', borderRadius: 10, padding: '10px 16px', marginBottom: 20, fontSize: 13, color: 'var(--amber-800)', lineHeight: 1.6 }}>
-        💡 <strong>How it works:</strong> Each campaign defines what goes in the box for a specific month + dog size. Subscribers automatically receive the campaign that matches their dog's size. Products available here are only those marked as "Box Items" in the Products page.
+        💡 <strong>How it works:</strong> set what goes in the box for each month (and, if you like, each dog size). Every subscriber’s box that month gets the contents matching their dog. Only products in <Link href="/dashboard/box-items" style={{ color: 'inherit', fontWeight: 700 }}>Box products</Link> can be added. Packing and shipping happen in <Link href="/dashboard/monthly-boxes" style={{ color: 'inherit', fontWeight: 700 }}>This month’s boxes</Link>.
       </div>
 
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 28 }}>
         <div>
-          <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--slate-900)', margin: 0 }}>Box Campaigns</h1>
-          <p style={{ fontSize: 13, color: 'var(--slate-400)', marginTop: 4 }}>{campaigns.length} campaigns</p>
+          <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--slate-900)', margin: 0 }}>Box contents</h1>
+          <p style={{ fontSize: 13, color: 'var(--slate-400)', marginTop: 4 }}>What goes in each month’s box · {campaigns.length} set</p>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
-          <button onClick={loadPackingList} style={{ fontSize: 13, fontWeight: 600, padding: '9px 16px', borderRadius: 10, background: 'var(--white)', color: 'var(--slate-500)', border: '1px solid var(--slate-200)', cursor: 'pointer' }}>
-            📋 Packing List
-          </button>
+          <Link href="/dashboard/monthly-boxes" style={{ fontSize: 13, fontWeight: 600, padding: '9px 16px', borderRadius: 10, background: 'var(--white)', color: 'var(--slate-600)', border: '1px solid var(--slate-200)', textDecoration: 'none' }}>
+            📋 Pack this month’s boxes
+          </Link>
           <button onClick={() => setCreating(true)} style={{ background: 'var(--teal-600)', color: 'var(--white)', border: 'none', borderRadius: 10, padding: '9px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-            + New Campaign
+            + Add a month
           </button>
         </div>
       </div>

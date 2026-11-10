@@ -363,7 +363,7 @@ export default function AdminSubscriptionsPage() {
   return (
     <div style={{ padding: 32 }}>
       <div style={{ marginBottom: 28 }}>
-        <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--slate-900)', margin: 0 }}>Subscriptions</h1>
+        <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--slate-900)', margin: 0 }}>Subscribers</h1>
         <p style={{ fontSize: 13, color: 'var(--slate-400)', marginTop: 4 }}>{total} subscriptions total</p>
       </div>
 

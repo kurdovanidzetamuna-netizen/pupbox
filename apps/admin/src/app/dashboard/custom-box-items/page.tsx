@@ -6,6 +6,7 @@ import FormField, { inputClass } from '@/components/FormField';
 import ErrorPopup from '@/components/ErrorPopup';
 import { NumInput } from '@/components/NumberField';
 import { del, getOr, post, put } from '@/lib/api';
+import PageTabs, { BOX_PRODUCTS } from '@/components/PageTabs';
 
 const EMOJI = ['🥩', '🍗', '🐟', '🧀', '🍪', '🥕', '🦴', '🦆', '🪢', '🏀', '🧩', '🐿️', '🪃', '🧸', '🧴', '🐾', '🦷', '🧤', '🌿', '🎀', '🥣', '🏷️', '🧣', '🛏️'];
 const EMPTY = { emoji: '🦴', name: '', nameKa: '', short: '', shortKa: '', categoryId: '', price: '', stock: '50', popular: false, mystery: true, active: true };
@@ -88,9 +89,10 @@ export default function CustomBoxItemsPage() {
 
   return (
     <div style={{ padding: 32 }}>
+      <PageTabs tabs={BOX_PRODUCTS} />
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, marginBottom: 24 }}>
         <div>
-          <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--slate-900)', margin: 0 }}>Custom box items</h1>
+          <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--slate-900)', margin: 0 }}>Box products</h1>
           <p style={{ fontSize: 13, color: 'var(--slate-400)', marginTop: 4, maxWidth: 680 }}>
             What customers can put in a box they build. These are not sold in the shop. Box rules (minimum items, packing fee, monthly discount, mystery item) are in Settings.
           </p>

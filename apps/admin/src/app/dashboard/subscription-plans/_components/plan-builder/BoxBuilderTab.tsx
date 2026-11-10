@@ -184,7 +184,7 @@ export default function BoxBuilderTab({ b }: { b: PlanBuilderState }) {
 
         {boxItems.length === 0 && (
           <div style={{ background: 'var(--amber-50)', border: '1px solid var(--amber-200)', borderRadius: 10, padding: '12px 16px', fontSize: 13, color: 'var(--amber-800)' }}>
-            💡 No box items found. Go to <strong>Box Items</strong> page and toggle products as box-included first.
+            💡 No box items found. Go to <strong>Box products</strong> and mark products as going into boxes first.
           </div>
         )}
 
