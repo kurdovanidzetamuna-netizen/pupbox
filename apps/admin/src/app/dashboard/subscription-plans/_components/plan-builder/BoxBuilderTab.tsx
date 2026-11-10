@@ -15,7 +15,7 @@ export default function BoxBuilderTab({ b }: { b: PlanBuilderState }) {
   } = b;
   return (
     <>
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 20 }}>
+    <div className="adm-stack" style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 20 }}>
 
       {/* Left: product picker + items */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>

@@ -76,7 +76,7 @@ export default function AdminBlogPage() {
           <button onClick={() => setEditing(null)} style={{ fontSize: 13, color: 'var(--slate-400)', background: 'none', border: 'none', cursor: 'pointer' }}>← Cancel</button>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 20 }}>
+        <div className="adm-stack" style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 20 }}>
           {/* Main content */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div style={card}>

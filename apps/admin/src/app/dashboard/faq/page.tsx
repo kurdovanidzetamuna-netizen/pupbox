@@ -250,10 +250,10 @@ export default function FAQPage() {
               </div>
 
               <div style={{ display: 'flex', gap: 8, paddingTop: 4 }}>
+                <button onClick={() => { setEditing(null); setForm(EMPTY); }} style={{ background: 'var(--slate-100)', color: 'var(--slate-500)', border: 'none', borderRadius: 9, padding: '9px 14px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
                 <button onClick={saveItem} disabled={saving || !form.question.trim()} style={{ flex: 1, background: !form.question.trim() ? 'var(--slate-200)' : 'var(--teal-600)', color: !form.question.trim() ? 'var(--slate-400)' : 'var(--white)', border: 'none', borderRadius: 9, padding: '9px', fontSize: 13, fontWeight: 700, cursor: saving || !form.question.trim() ? 'default' : 'pointer' }}>
                   {saving ? 'Saving…' : editing ? 'Save changes' : 'Add question'}
                 </button>
-                <button onClick={() => { setEditing(null); setForm(EMPTY); }} style={{ background: 'var(--slate-100)', color: 'var(--slate-500)', border: 'none', borderRadius: 9, padding: '9px 14px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
               </div>
             </div>
           </div>

@@ -29,7 +29,7 @@ export default function PlanSettingsEnglish({ b }: { b: PlanBuilderState }) {
         Months and boxes share a cell because they are one
         decision — "six boxes over six months" — and splitting
         them across sections is how they drifted apart before. */}
-    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(160px, 1.9fr) minmax(190px, 1.5fr) minmax(130px, 1.1fr) 84px', gap: 10, alignItems: 'start', marginBottom: 6 }}>
+    <div className="adm-stack" style={{ display: 'grid', gridTemplateColumns: 'minmax(160px, 1.9fr) minmax(190px, 1.5fr) minmax(130px, 1.1fr) 84px', gap: 10, alignItems: 'start', marginBottom: 6 }}>
       <FormField label="Plan name" required error={formErrors.name}>
         <input
           value={form.name ?? ''}
