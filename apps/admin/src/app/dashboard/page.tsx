@@ -2,6 +2,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { CustomSelect } from '../../components/Toolbar';
+import { DateInput, inDays, showDate, todayIso } from '@/components/DateField';
+import { PERIODS } from '@pupbox/content';
 import { ApiError, api, getOr } from '@/lib/api';
 import {
   CHANNEL, card, money, MetricCard, InsightCard, SectionHeader, Panel, EmptyState,
@@ -10,13 +12,11 @@ import {
 } from '../../components/DashboardWidgets';
 
 
+// The same periods, names and days as Reports and Orders; each is sent as
+// its first and last day, so the server counts exactly those days.
 const RANGE_OPTIONS = [
-  { value: '24h', label: 'Last 24 hours' },
-  { value: '7d', label: 'Last 7 days' },
-  { value: '1m', label: 'Last month' },
-  { value: '2m', label: 'Last 2 months' },
-  { value: '3m', label: 'Last 3 months' },
-  { value: '1y', label: 'Last year' },
+  ...PERIODS.map((p) => ({ value: p.key, label: p.label })),
+  { value: 'custom', label: 'Custom dates', dividerBefore: true },
 ];
 
 /** A `null` change means the previous period had no activity to compare against. */
@@ -41,7 +41,7 @@ interface Overview {
   subscription: SubscriptionBlock;
   ecommerce: EcommerceBlock;
   combined: {
-    revenue: number; revenueChange: Change; orders: number; ordersChange: Change; aov: number;
+    revenue: number; revenueChange: Change; collected: number; refunded: number; orders: number; ordersChange: Change; aov: number;
     boxOnlyOrders: number; mixedOrders: number; shopOnlyOrders: number;
     paidOrders: number; failedOrders: number; pendingOrders: number;
   };
@@ -75,7 +75,12 @@ interface BoxCampaign {
 }
 
 export default function DashboardPage() {
-  const [range, setRange] = useState('1m');
+  const [preset, setPreset] = useState('30d');
+  // Custom dates: Tbilisi days, both included; the server reads "from~to".
+  const [from, setFrom] = useState(inDays(-29));
+  const [to, setTo] = useState(todayIso());
+  const days = preset === 'custom' ? [from, to] : PERIODS.find((p) => p.key === preset)?.range() ?? [from, to];
+  const range = `${days[0]}~${days[1]}`;
   const [overview, setOverview] = useState<Overview | null>(null);
   const [products, setProducts] = useState<TopProduct[]>([]);
   const [plans, setPlans] = useState<TopPlan[]>([]);
@@ -115,9 +120,9 @@ export default function DashboardPage() {
     }
   }, []);
 
-  useEffect(() => { load(range); }, [range, load]);
+  useEffect(() => { if (from && to) load(range); }, [range, from, to, load]);
 
-  const rangeLabel = RANGE_OPTIONS.find((o) => o.value === range)?.label ?? '';
+  const rangeLabel = preset === 'custom' ? (from === to ? showDate(from) : `${showDate(from)} – ${showDate(to)}`) : RANGE_OPTIONS.find((o) => o.value === preset)?.label ?? '';
   const sub = overview?.subscription;
   const ecom = overview?.ecommerce;
 
@@ -131,9 +136,18 @@ export default function DashboardPage() {
             Subscription boxes and shop products, measured separately.
           </p>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          {loading && <span style={{ fontSize: 12, color: 'var(--slate-400)' }}>Refreshing…</span>}
-          <CustomSelect value={range} onChange={setRange} options={RANGE_OPTIONS} style={{ minWidth: 168 }} />
+        <div className="dash-period">
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 10 }}>
+            {loading && <span style={{ fontSize: 12, color: 'var(--slate-400)' }}>Refreshing…</span>}
+            <CustomSelect value={preset} onChange={setPreset} options={RANGE_OPTIONS} style={{ minWidth: 168 }} />
+          </div>
+          {preset === 'custom' && (
+            <div className="dash-dates adm-keepgrid">
+              <DateInput aria-label="From" value={from} max={to || todayIso()} clearable={false} onChange={(e) => setFrom(e.target.value)} />
+              <span aria-hidden="true" style={{ color: 'var(--slate-400)' }}>→</span>
+              <DateInput aria-label="To" value={to} min={from} max={todayIso()} clearable={false} onChange={(e) => setTo(e.target.value)} />
+            </div>
+          )}
         </div>
       </div>
 
@@ -160,12 +174,12 @@ export default function DashboardPage() {
               label="Total revenue" emoji="💰" bg="var(--green-50)" accent="var(--emerald-600)"
               value={money(overview.combined.revenue)} change={overview.combined.revenueChange}
               segments={[
-                { label: 'boxes', value: Math.round(sub.revenue), color: CHANNEL.subscription.accent },
-                { label: 'shop', value: Math.round(ecom.revenue), color: CHANNEL.ecommerce.accent },
+                { label: 'boxes', value: sub.revenue, color: CHANNEL.subscription.accent },
+                { label: 'shop', value: ecom.revenue, color: CHANNEL.ecommerce.accent },
               ]}
-              segmentTotal={Math.round(overview.combined.revenue)}
+              segmentTotal={overview.combined.revenue}
               segmentFormat={money}
-              footer={`${money(overview.combined.aov)} average paid order · money actually collected`}
+              footer={`${money(overview.combined.collected)} in · ${money(overview.combined.refunded)} refunded · ${money(overview.combined.aov)} average paid order`}
             />
 
             <InsightCard
@@ -274,7 +288,7 @@ export default function DashboardPage() {
             />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(280px, 1fr) minmax(320px, 1.4fr)', gap: 14, marginTop: 14 }}>
+          <div className="adm-stack" style={{ display: 'grid', gridTemplateColumns: 'minmax(280px, 1fr) minmax(320px, 1.4fr)', gap: 14, marginTop: 14 }}>
             <Panel title="Subscription payments" subtitle="Plan revenue collected in this period">
               <PaymentsPanel payments={sub.payments} accent={CHANNEL.subscription.accent} />
             </Panel>
@@ -324,7 +338,7 @@ export default function DashboardPage() {
               sub={inventory ? `${inventory.outOfStock} out of stock · ${inventory.lowStock} low` : 'no data'} />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(280px, 1fr) minmax(320px, 1.4fr)', gap: 14, marginTop: 14 }}>
+          <div className="adm-stack" style={{ display: 'grid', gridTemplateColumns: 'minmax(280px, 1fr) minmax(320px, 1.4fr)', gap: 14, marginTop: 14 }}>
             <Panel title="Shop payments" subtitle="Product revenue collected in this period">
               <PaymentsPanel payments={ecom.payments} accent={CHANNEL.ecommerce.accent} />
             </Panel>

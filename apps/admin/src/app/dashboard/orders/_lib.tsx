@@ -1,8 +1,10 @@
 'use client';
 import type { Api } from '@pupbox/content';
+import { gel } from '@/lib/format';
 /** Shared bits of the orders screens: labels, colours and badges. */
 
-export const money = (v: Api.Money | null | undefined) => `₾${Number(v || 0).toFixed(2)}`;
+/** Money as every admin screen writes it. */
+export const money = (v: Api.Money | null | undefined) => gel(v);
 
 /** Words a person uses, not the enum. Order follows the life of an order. */
 export const STATUS_LABEL: Record<string, string> = {

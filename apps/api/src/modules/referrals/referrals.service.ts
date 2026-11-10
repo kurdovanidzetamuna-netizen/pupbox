@@ -4,6 +4,7 @@ import { Prisma, ReferralStatus } from '@prisma/client';
 import { dateRange } from '../reports/reports.service';
 import { notify } from '../notifications/notify';
 import { PrismaService } from '../prisma/prisma.service';
+import { ALL_TIME, ledgerTotals, PAID_ORDER } from '../../common/ledger';
 import { EmailService } from '../email/email.service';
 import { shopSettings, cleanReferral, SETTINGS_SLUG } from '../settings/settings';
 
@@ -266,10 +267,11 @@ export class ReferralsService implements OnModuleInit, OnModuleDestroy {
       this.prisma.referral.aggregate({ where: { status: 'REWARD_GRANTED' }, _sum: { rewardValue: true } }),
       // Reward coupons are REF-… codes (linked properly once referrals store their coupon).
       this.prisma.coupon.findMany({ where: { code: { startsWith: 'REF-' } }, select: { discountValue: true, isActive: true, expiresAt: true, _count: { select: { usages: true } } } }),
-      this.prisma.order.aggregate({
-        where: { user: { referralsReceived: { some: { status: { not: 'CANCELLED' } } } }, total: { gt: 0 }, status: { notIn: ['PENDING', 'CANCELLED', 'REFUNDED', 'FAILED'] }, payments: { some: { status: { in: [...COLLECTED] } } } },
-        _sum: { total: true }, _count: { _all: true },
-      }),
+      // Money from invited customers, counted as every admin screen counts money.
+      Promise.all([
+        ledgerTotals(this.prisma, ALL_TIME(), { user: { referralsReceived: { some: { status: { not: 'CANCELLED' } } } } }),
+        this.prisma.order.count({ where: { user: { referralsReceived: { some: { status: { not: 'CANCELLED' } } } }, ...PAID_ORDER } }),
+      ]),
       this.prisma.referral.groupBy({ by: ['inviterId'], _count: { _all: true }, orderBy: { _count: { inviterId: 'desc' } }, take: 10 }),
     ]);
     const count = (s: string) => byStatus.find((x) => x.status === s)?._count._all ?? 0;
@@ -296,7 +298,7 @@ export class ReferralsService implements OnModuleInit, OnModuleDestroy {
         used: sum(used), usedCount: used.length,
         unused: sum(open), unusedCount: open.length,
       },
-      referredRevenue: { total: Number(revenue._sum.total ?? 0), orders: revenue._count._all },
+      referredRevenue: { total: revenue[0].net, orders: revenue[1] },
       topInviters: top.map((t) => ({
         ...people.find((p) => p.id === t.inviterId),
         referrals: t._count._all,
@@ -308,16 +310,18 @@ export class ReferralsService implements OnModuleInit, OnModuleDestroy {
   /** Admin → Coupons → Friend codes: the offer, and how it's doing. */
   async adminOffer() {
     const offer = (await shopSettings(this.prisma)).referral;
-    const [orders, paid, rewards] = await Promise.all([
-      this.prisma.order.count({ where: { referralCode: { not: null } } }),
-      this.prisma.order.aggregate({ where: { referralCode: { not: null }, payments: { some: { status: { in: [...COLLECTED] } } } }, _count: { _all: true }, _sum: { referralDiscount: true, total: true } }),
+    const withCode = { referralCode: { not: null } };
+    const [orders, paid, money, rewards] = await Promise.all([
+      this.prisma.order.count({ where: withCode }),
+      this.prisma.order.aggregate({ where: { ...withCode, ...PAID_ORDER }, _count: { _all: true }, _sum: { referralDiscount: true } }),
+      ledgerTotals(this.prisma, ALL_TIME(), withCode),
       this.prisma.referral.aggregate({ where: { status: 'REWARD_GRANTED' }, _count: { _all: true }, _sum: { rewardValue: true } }),
     ]);
     return {
       offer,
       stats: {
         ordersWithCode: orders, paidOrders: paid._count._all,
-        friendDiscounts: Number(paid._sum.referralDiscount ?? 0), revenue: Number(paid._sum.total ?? 0),
+        friendDiscounts: Number(paid._sum.referralDiscount ?? 0), revenue: money.net,
         rewardsGiven: rewards._count._all, rewardsValue: Number(rewards._sum.rewardValue ?? 0),
       },
     };

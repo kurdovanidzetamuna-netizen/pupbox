@@ -1,6 +1,7 @@
 'use client';
 import React from 'react';
 import Link from 'next/link';
+import { gel } from '@/lib/format';
 
 /**
  * Presentational building blocks for the admin dashboard.
@@ -23,12 +24,8 @@ export const card: React.CSSProperties = {
   boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
 };
 
-export const money = (v: number): string => {
-  const abs = Math.abs(v);
-  if (abs >= 1_000_000) return `₾${(v / 1_000_000).toFixed(2)}M`;
-  if (abs >= 10_000) return `₾${(v / 1000).toFixed(1)}k`;
-  return `₾${v.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
-};
+/** Money as every admin screen writes it. */
+export const money = gel;
 
 // ── Change indicator ────────────────────────────────────────────────────────
 
@@ -84,7 +81,10 @@ export function MetricCard({
       )}
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--slate-400)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 5 }}>{label}</div>
-        <div style={{ fontSize: 25, fontWeight: 800, color: accent, lineHeight: 1.05, wordBreak: 'break-word' }}>{value}</div>
+        {/* The figure shrinks with its card, so a long amount stays whole on one line. */}
+        <div style={{ containerType: 'inline-size' }}>
+          <div style={{ fontSize: 'clamp(15px, 14cqi, 25px)', fontWeight: 800, color: accent, lineHeight: 1.05, whiteSpace: 'nowrap' }}>{value}</div>
+        </div>
         {sub && <div style={{ fontSize: 11.5, color: 'var(--slate-400)', marginTop: 5 }}>{sub}</div>}
         <Delta value={change} inverse={inverseChange} />
       </div>

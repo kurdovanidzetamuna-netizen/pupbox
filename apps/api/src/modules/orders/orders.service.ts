@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import type { OrderStatus } from '@prisma/client';
 import { allowedNext, wasPaid } from './order-lifecycle';
 import { PrismaService } from '../prisma/prisma.service';
+import { ALL_TIME, ledgerTotals, PAID_ORDER, type Range } from '../../common/ledger';
 import { LINE_PRODUCT } from '../products/product-include';
 
 /**
@@ -128,24 +129,21 @@ export class OrdersService {
 
     // Summary spans the whole filtered set, not just this page — a stat card
     // that only described 20 rows would be worse than no stat card.
-    const [byType, byStatus, valueAgg, paidAgg] = await Promise.all([
+    const [byType, byStatus, valueAgg] = await Promise.all([
       this.prisma.order.groupBy({ by: ['type'], where: whereWithoutType, _count: { id: true }, _sum: { total: true } }),
       this.prisma.order.groupBy({ by: ['status'], where, _count: { id: true } }),
       this.prisma.order.aggregate({ where, _sum: { total: true } }),
-      this.prisma.payment.aggregate({ where: { status: 'PAID', order: where }, _sum: { amount: true } }),
     ]);
-    // Money kept from partly refunded payments counts as collected too.
-    const [partPaid, partRefunded] = await Promise.all([
-      this.prisma.payment.aggregate({ where: { status: 'PARTIALLY_REFUNDED', order: where }, _sum: { amount: true } }),
-      this.prisma.refund.aggregate({ where: { payment: { status: 'PARTIALLY_REFUNDED', order: where } }, _sum: { amount: true } }),
-    ]);
-
-    const [statusCounts, allAgg, allPaid, allPartPaid, allPartRefunded] = await Promise.all([
+    // Money is counted the way the Dashboard and Reports count it (common/ledger.ts):
+    // what came in on the chosen days, less refunds made on them, for the
+    // orders the other filters pick.
+    const { createdAt: _placed, ...moneyWhere } = where;
+    const days: Range = base.createdAt ? { gte: base.createdAt.gte ?? new Date(0), lte: base.createdAt.lte ?? new Date() } : ALL_TIME();
+    const [money, statusCounts, allAgg, allMoney] = await Promise.all([
+      ledgerTotals(this.prisma, days, moneyWhere),
       this.prisma.order.groupBy({ by: ['status'], where: byStatusWhere, _count: { id: true } }),
       this.prisma.order.aggregate({ _count: { id: true }, _sum: { total: true } }),
-      this.prisma.payment.aggregate({ where: { status: 'PAID' }, _sum: { amount: true } }),
-      this.prisma.payment.aggregate({ where: { status: 'PARTIALLY_REFUNDED' }, _sum: { amount: true } }),
-      this.prisma.refund.aggregate({ where: { payment: { status: 'PARTIALLY_REFUNDED' } }, _sum: { amount: true } }),
+      ledgerTotals(this.prisma, ALL_TIME()),
     ]);
     const num = (v: unknown) => (v == null ? 0 : Number(v));
     const statusCount = (s: string) => byStatus.find((r) => r.status === s)?._count.id ?? 0;
@@ -164,7 +162,9 @@ export class OrdersService {
       summary: {
         totalOrders: total,
         totalValue: num(valueAgg._sum.total),
-        paidRevenue: num(paidAgg._sum.amount) + num(partPaid._sum.amount) - num(partRefunded._sum.amount),
+        paidRevenue: money.net,
+        collected: money.collected,
+        refunded: money.refunded,
         paidCount: statusCount('PAID') + statusCount('PROCESSING') + statusCount('PACKED') + statusCount('SHIPPED') + statusCount('DELIVERED'),
         pendingCount: statusCount('PENDING'),
         failedCount: statusCount('FAILED'),
@@ -179,7 +179,7 @@ export class OrdersService {
         all: {
           totalOrders: allAgg._count.id,
           totalValue: num(allAgg._sum.total),
-          paidRevenue: num(allPaid._sum.amount) + num(allPartPaid._sum.amount) - num(allPartRefunded._sum.amount),
+          paidRevenue: allMoney.net,
         },
         byType: byType
           .map((r) => ({ type: r.type, count: r._count.id, value: num(r._sum.total) }))
@@ -228,11 +228,13 @@ export class OrdersService {
     });
     if (!order) throw new NotFoundException('Order not found');
     // How much this customer has paid us in all (less refunds).
-    const [paidSum, refundSum] = await Promise.all([
+    const [paidSum, refundSum, paidOrders] = await Promise.all([
       this.prisma.payment.aggregate({ where: { userId: order.userId, status: { in: ['PAID', 'PARTIALLY_REFUNDED', 'REFUNDED'] } }, _sum: { amount: true } }),
       this.prisma.refund.aggregate({ where: { payment: { userId: order.userId } }, _sum: { amount: true } }),
+      // Paid orders, as the Customers list counts them.
+      this.prisma.order.count({ where: { userId: order.userId, ...PAID_ORDER } }),
     ]);
-    const customerStats = { orders: order.user._count.orders, totalPaid: +(Number(paidSum._sum.amount ?? 0) - Number(refundSum._sum.amount ?? 0)).toFixed(2), since: order.user.createdAt };
+    const customerStats = { orders: paidOrders, totalPaid: +(Number(paidSum._sum.amount ?? 0) - Number(refundSum._sum.amount ?? 0)).toFixed(2), since: order.user.createdAt };
     const { passwordHash: _p, ...user } = order.user;
     return { ...this.withFlow({ ...order, user }), customerStats };
   }

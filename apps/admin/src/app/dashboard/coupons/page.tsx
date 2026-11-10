@@ -8,6 +8,7 @@ import DateField, { inDays, showDate, todayIso } from '@/components/DateField';
 import ConfirmSheet, { Toast } from '../orders/_components/ConfirmSheet';
 import { del, download, getOr, patch, post, today } from '@/lib/api';
 import { tbilisiDay, tbilisiMonth, tbilisiStart, tbilisiEnd } from '@pupbox/content';
+import { gel } from '@/lib/format';
 
 
 /** What a promo code can take money off: any mix of these. */
@@ -54,7 +55,6 @@ const EMPTY = {
 };
 type Form = typeof EMPTY;
 
-const gel = (n: any) => `₾${Number(n || 0).toLocaleString('en-US', { maximumFractionDigits: 2 })}`;
 const num = (v: string) => (v === '' ? null : Number(v));
 const day = (d?: string | null) => (d ? tbilisiDay(d) : '');
 /** PUP-7KX2: easy to read aloud (no 0/O or 1/I). */

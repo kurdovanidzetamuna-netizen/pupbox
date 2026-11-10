@@ -8,10 +8,10 @@ import OrderDrawer from './_components/OrderDrawer';
 import { categoryTree, type Cat } from './_components/CategoryPicker';
 import { DateInput } from '@/components/DateField';
 import type { Api } from '@pupbox/content';
-import { TBILISI, tbilisiDay, tbilisiMonth } from '@pupbox/content';
+import { PERIODS as SHARED_PERIODS, TBILISI } from '@pupbox/content';
 import FilterBar from '@/components/FilterBar';
+import { gel } from '@/lib/format';
 
-const gel = (v: number) => (Math.abs(v) >= 10000 ? `₾${(v / 1000).toFixed(1)}k` : `₾${v.toLocaleString('en-US', { maximumFractionDigits: 0 })}`);
 const PAGE = 20;
 // Work first, then the ends of the road; unpaid ones wait at the end.
 const TABS = ['PAID', 'PROCESSING', 'PACKED', 'SHIPPED', 'DELIVERED', 'CANCELLED', 'REFUNDED', 'FAILED', 'PENDING'];
@@ -19,14 +19,8 @@ const SORTS: DropdownOption[] = [
   { value: '', label: 'Newest first' }, { value: 'createdAt_asc', label: 'Oldest first' },
   { value: 'total_desc', label: 'Highest total' }, { value: 'total_asc', label: 'Lowest total' },
 ];
-const day = (d: Date) => tbilisiDay(d);
-const PERIODS: { value: string; label: string; range: () => [string, string] }[] = [
-  { value: 'today', label: 'Today', range: () => [day(new Date()), day(new Date())] },
-  { value: '7', label: 'Last 7 days', range: () => [day(new Date(Date.now() - 6 * 864e5)), day(new Date())] },
-  { value: '30', label: 'Last 30 days', range: () => [day(new Date(Date.now() - 29 * 864e5)), day(new Date())] },
-  { value: 'month', label: 'This month', range: () => [tbilisiMonth().first, tbilisiDay()] },
-  { value: 'custom', label: 'Pick dates…', range: () => ['', ''] },
-];
+// The same periods, names and days as the Dashboard and Reports.
+const PERIODS = [...SHARED_PERIODS.map((p) => ({ value: p.key, label: p.label, range: p.range })), { value: 'custom', label: 'Pick dates…', range: (): [string, string] => ['', ''] }];
 
 const tab = (on: boolean) => ({
   display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 12px', borderRadius: 999, fontSize: 12.5, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' as const,
@@ -132,7 +126,8 @@ export default function AdminOrdersPage() {
   const all = summary?.all;
   const cards = summary ? [
     { label: 'Orders', value: summary.totalOrders.toLocaleString(), accent: 'var(--slate-900)', sub: `${gel(summary.totalValue)} value`, of: all && `of ${all.totalOrders.toLocaleString()} all · ${gel(all.totalValue)}` },
-    { label: 'Collected', value: gel(summary.paidRevenue), accent: 'var(--emerald-600)', sub: summary.totalValue > 0 ? `${Math.round((summary.paidRevenue / summary.totalValue) * 100)}% of value` : '—', of: all && `of ${gel(all.paidRevenue)} all time` },
+    // Money in on these days less refunds made on them, as the Dashboard and Reports count it.
+    { label: 'Collected', value: gel(summary.paidRevenue), accent: 'var(--emerald-600)', sub: summary.refunded > 0 ? `${gel(summary.collected)} in · ${gel(summary.refunded)} refunded` : 'after refunds', of: all && `of ${gel(all.paidRevenue)} all time` },
     { label: 'In progress', value: summary.paidCount.toLocaleString(), accent: 'var(--blue-600)', sub: `${summary.pendingCount} unpaid`, of: 'paid, not delivered yet' },
     { label: 'Need attention', value: (summary.failedCount + summary.refundedCount).toLocaleString(), accent: summary.failedCount + summary.refundedCount > 0 ? 'var(--red-600)' : 'var(--emerald-600)',
       sub: `${summary.refundDueCount ? `${summary.refundDueCount} refund due · ` : ''}${summary.failedCount} failed`, of: `${summary.refundedCount} cancelled or refunded` },

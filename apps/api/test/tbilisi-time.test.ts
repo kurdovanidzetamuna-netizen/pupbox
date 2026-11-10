@@ -2,6 +2,7 @@ import { describe, test } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { admin, buy, coupon, customer, expectStatus, get, post, prisma, product } from './harness';
 import { tbilisiDay } from '../src/common/tbilisi';
+import { resolveWindow } from '../src/modules/analytics/analytics.range';
 import { daysBetween, tbilisiDay as sharedDay, tbilisiEnd, tbilisiMonth, tbilisiStart } from '../../../packages/content/src/tbilisi';
 
 /**
@@ -55,5 +56,24 @@ describe('Tbilisi time', () => {
     expectStatus(await post('/cart/items', { productId: p.id }, c.token), '2xx');
     assert.equal((await post('/cart/coupon', { code: ended.code }, c.token)).status, 400, 'ended yesterday');
     expectStatus(await post('/cart/coupon', { code: lastDay.code }, c.token), '2xx', 'still works on its last day');
+  });
+
+  test('dashboard custom dates are whole Tbilisi days, compared with the days before', () => {
+    const now = new Date('2026-11-10T12:00:00Z');
+    const w = resolveWindow('2026-10-01~2026-10-31', now);
+    assert.equal(w.spec.key, 'custom');
+    assert.equal(w.spec.label, '1 Oct 2026 – 31 Oct 2026');
+    assert.equal(w.spec.bucket, 'day');
+    assert.equal(w.from.toISOString(), '2026-09-30T20:00:00.000Z');
+    assert.equal(w.to.toISOString(), '2026-10-31T19:59:59.999Z');
+    assert.equal(w.prevFrom.toISOString(), '2026-08-30T20:00:00.000Z');
+    assert.equal(w.prevTo.toISOString(), w.from.toISOString());
+    const one = resolveWindow('2026-11-10~2026-11-10', now);
+    assert.equal(one.spec.label, '10 Nov 2026');
+    assert.equal(one.spec.bucket, 'hour');
+    assert.equal(one.to.toISOString(), now.toISOString(), 'today stops at now');
+    assert.equal(resolveWindow('2026-01-01~2026-10-31', now).spec.bucket, 'month');
+    for (const bad of ['2026-10-31~2026-10-01', '2020-01-01~2026-10-01', '2027-01-01~2027-01-02', '2026-13-01~2026-13-05', 'junk'])
+      assert.equal(resolveWindow(bad, now).spec.key, '1m', bad);
   });
 });

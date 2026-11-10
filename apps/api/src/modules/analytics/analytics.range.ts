@@ -1,4 +1,4 @@
-import { TBILISI } from '../../common/tbilisi';
+import { TBILISI, TBILISI_OFFSET } from '../../common/tbilisi';
 
 /**
  * Shared date-range vocabulary for the admin dashboard.
@@ -15,7 +15,7 @@ export type RangeKey = (typeof RANGE_KEYS)[number];
 export type Bucket = 'hour' | 'day' | 'week' | 'month';
 
 export interface RangeSpec {
-  key: RangeKey;
+  key: RangeKey | 'custom';
   label: string;
   /** Length of the window in milliseconds. */
   ms: number;
@@ -47,7 +47,36 @@ export interface ResolvedWindow {
   prevTo: Date;
 }
 
+/**
+ * A period the admin picked: "2026-10-01~2026-10-31", both days included,
+ * as Tbilisi days. Anything malformed, back to front or longer than two
+ * years is ignored (the caller falls back to the default range).
+ */
+const CUSTOM = /^(\d{4}-\d{2}-\d{2})~(\d{4}-\d{2}-\d{2})$/;
+const MAX_CUSTOM_DAYS = 731;
+
+function customWindow(raw: string | undefined, now: Date): ResolvedWindow | null {
+  const m = CUSTOM.exec(raw ?? '');
+  if (!m) return null;
+  const from = new Date(Date.parse(`${m[1]}T00:00:00Z`) - TBILISI_OFFSET);
+  const end = new Date(Date.parse(`${m[2]}T00:00:00Z`) + DAY - TBILISI_OFFSET);
+  if (isNaN(from.getTime()) || isNaN(end.getTime()) || end <= from || from > now) return null;
+  const ms = end.getTime() - from.getTime();
+  if (ms > MAX_CUSTOM_DAYS * DAY) return null;
+  // A period that runs into the future stops at now, but is compared with
+  // the same number of whole days before it.
+  // The last moment of the last day: queries include `to`, and the next
+  // day's midnight belongs to the next period.
+  const to = end > now ? now : new Date(end.getTime() - 1);
+  const bucket: Bucket = ms <= 2 * DAY ? 'hour' : ms <= 45 * DAY ? 'day' : ms <= 190 * DAY ? 'week' : 'month';
+  const day = (s: string) => new Date(`${s}T00:00:00Z`).toLocaleDateString('en-GB', { timeZone: 'UTC', day: 'numeric', month: 'short', year: 'numeric' });
+  const label = m[1] === m[2] ? day(m[1]) : `${day(m[1])} – ${day(m[2])}`;
+  return { spec: { key: 'custom', label, ms, bucket }, from, to, prevFrom: new Date(from.getTime() - ms), prevTo: from };
+}
+
 export function resolveWindow(raw?: string, now = new Date()): ResolvedWindow {
+  const custom = customWindow(raw, now);
+  if (custom) return custom;
   const spec = resolveRange(raw);
   const to = now;
   const from = new Date(now.getTime() - spec.ms);

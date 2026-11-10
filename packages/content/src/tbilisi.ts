@@ -25,3 +25,18 @@ export const daysBetween = (a: string, b: string) => Math.round((Date.parse(b.sl
 /** A Tbilisi day as the moment it starts ("…T00:00:00+04:00") or ends ("…T23:59:59+04:00"), for sending to the API. */
 export const tbilisiStart = (day: string) => `${day}T00:00:00+04:00`;
 export const tbilisiEnd = (day: string) => `${day}T23:59:59+04:00`;
+
+/**
+ * The ready-made periods every admin screen offers (Dashboard, Reports,
+ * Orders), with the same names and the same days everywhere: whole Tbilisi
+ * days, from the first to the last, both included.
+ */
+export const PERIODS: { key: string; label: string; range: () => [string, string] }[] = [
+  { key: 'today', label: 'Today', range: () => [tbilisiDay(), tbilisiDay()] },
+  { key: '7d', label: 'Last 7 days', range: () => [tbilisiDay(Date.now(), -6), tbilisiDay()] },
+  { key: '30d', label: 'Last 30 days', range: () => [tbilisiDay(Date.now(), -29), tbilisiDay()] },
+  { key: '90d', label: 'Last 90 days', range: () => [tbilisiDay(Date.now(), -89), tbilisiDay()] },
+  { key: 'month', label: 'This month', range: () => [tbilisiMonth().first, tbilisiDay()] },
+  { key: 'lastMonth', label: 'Last month', range: () => [tbilisiMonth(-1).first, tbilisiMonth(-1).last] },
+  { key: 'year', label: 'This year', range: () => [`${tbilisiDay().slice(0, 4)}-01-01`, tbilisiDay()] },
+];
