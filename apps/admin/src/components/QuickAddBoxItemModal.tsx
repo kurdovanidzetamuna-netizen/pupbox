@@ -296,6 +296,13 @@ export default function QuickAddBoxItemModal({ onClose, onCreated }: Props) {
 
         {/* Footer */}
         <div style={{ padding: '14px 28px', borderTop: '1px solid var(--slate-200)', display: 'flex', gap: 10, flexShrink: 0 }}>
+          {/* Cancel left, create right — as on every form */}
+          <button onClick={handleClose}
+            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--slate-200)'; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--slate-100)'; }}
+            onMouseDown={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(0.97)'; }}
+            onMouseUp={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)'; }}
+            style={{ flex: 1, padding: '10px 0', borderRadius: 10, background: 'var(--slate-100)', color: 'var(--slate-700b)', border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 13, transition: 'background 0.15s, transform 0.1s' }}>Cancel</button>
           <button type="submit" onClick={handleSubmit} disabled={saving}
             onMouseEnter={e => { if (!saving) (e.currentTarget as HTMLButtonElement).style.background = 'var(--teal-700)'; }}
             onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--teal-600)'; }}
@@ -304,12 +311,6 @@ export default function QuickAddBoxItemModal({ onClose, onCreated }: Props) {
             style={{ flex: 2, padding: '10px 0', borderRadius: 10, background: 'var(--teal-600)', color: 'var(--white)', border: 'none', cursor: saving ? 'default' : 'pointer', fontWeight: 700, fontSize: 13, opacity: saving ? 0.7 : 1, transition: 'background 0.15s, transform 0.1s' }}>
             {saving ? 'Creating…' : 'Create Box Item'}
           </button>
-          <button onClick={handleClose}
-            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--slate-200)'; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--slate-100)'; }}
-            onMouseDown={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(0.97)'; }}
-            onMouseUp={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)'; }}
-            style={{ flex: 1, padding: '10px 0', borderRadius: 10, background: 'var(--slate-100)', color: 'var(--slate-700b)', border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 13, transition: 'background 0.15s, transform 0.1s' }}>Cancel</button>
         </div>
       </div>
     </>

@@ -172,12 +172,19 @@ export default function OrderDrawer({ order: initial, categories, onClose, onCha
             {STATUS_FLOW.map((s, i) => (
               <li key={s} aria-current={i === step ? 'step' : undefined} style={{ minWidth: 0 }}>
                 <span style={{ display: 'block', height: 8, borderRadius: 99, background: i < step ? 'var(--teal-500)' : i === step ? 'var(--teal-600)' : 'var(--slate-200)', boxShadow: i === step ? '0 0 0 3px var(--teal-100)' : 'none' }} />
-                <span style={{ display: 'block', marginTop: 7, fontSize: 11, fontWeight: i === step ? 800 : 600, color: i === step ? 'var(--teal-800)' : i < step ? 'var(--slate-500)' : 'var(--slate-400)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <span className="od-steplabel" style={{ display: 'block', marginTop: 7, fontSize: 11, fontWeight: i === step ? 800 : 600, color: i === step ? 'var(--teal-800)' : i < step ? 'var(--slate-500)' : 'var(--slate-400)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {i < step ? '✓ ' : i === step ? '● ' : ''}{STATUS_LABEL[s]}
                 </span>
               </li>
             ))}
           </ol>
+        )}
+        {/* Phones: no room for six labels — one line says where it stands */}
+        {step >= 0 && (
+          <p className="od-stepline" style={{ margin: '-10px 0 16px', fontSize: 12.5, color: 'var(--slate-500)' }}>
+            Step {step + 1} of {STATUS_FLOW.length} · <strong style={{ color: 'var(--teal-800)' }}>{STATUS_LABEL[order.status]}</strong>
+            {step < STATUS_FLOW.length - 1 && <> · next: {STATUS_LABEL[STATUS_FLOW[step + 1]]}</>}
+          </p>
         )}
 
         {order.status === 'PENDING' ? (
@@ -483,7 +490,7 @@ export default function OrderDrawer({ order: initial, categories, onClose, onCha
             </div>
           </div>
           {!editing && (
-            <nav role="tablist" aria-label="Order sections" style={{ display: 'flex', gap: 4, padding: '0 clamp(10px, 3vw, 20px)', overflowX: 'auto', scrollbarWidth: 'none' }}>
+            <nav role="tablist" aria-label="Order sections" style={{ display: 'flex', flexWrap: 'nowrap', gap: 4, padding: '0 clamp(10px, 3vw, 20px)', overflowX: 'auto', scrollbarWidth: 'none' }}>
               {TABS.map((t) => (
                 <button key={t} role="tab" aria-selected={tab === t} onClick={() => setTab(t)}
                   style={{ padding: '10px 12px', border: 'none', background: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 700, whiteSpace: 'nowrap', color: tab === t ? 'var(--teal-700)' : 'var(--slate-500)', borderBottom: `2.5px solid ${tab === t ? 'var(--teal-600)' : 'transparent'}` }}>

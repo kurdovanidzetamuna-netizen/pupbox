@@ -167,8 +167,8 @@ export default function BoxCampaignsPage() {
               </div>
             )}
             <div style={{ display: 'flex', gap: 10, paddingTop: 4 }}>
-              <button onClick={createCampaign} disabled={saving || !form.name} style={{ background: 'var(--teal-600)', color: 'var(--white)', border: 'none', borderRadius: 10, padding: '9px 20px', fontSize: 13, fontWeight: 600, cursor: saving || !form.name ? 'default' : 'pointer', opacity: saving || !form.name ? 0.5 : 1 }}>{saving ? 'Creating…' : 'Create'}</button>
               <button onClick={() => setCreating(false)} style={{ background: 'var(--slate-100)', color: 'var(--slate-500)', border: 'none', borderRadius: 10, padding: '9px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
+              <button onClick={createCampaign} disabled={saving || !form.name} style={{ background: 'var(--teal-600)', color: 'var(--white)', border: 'none', borderRadius: 10, padding: '9px 20px', fontSize: 13, fontWeight: 600, cursor: saving || !form.name ? 'default' : 'pointer', opacity: saving || !form.name ? 0.5 : 1 }}>{saving ? 'Creating…' : 'Create'}</button>
             </div>
           </div>
         </div>

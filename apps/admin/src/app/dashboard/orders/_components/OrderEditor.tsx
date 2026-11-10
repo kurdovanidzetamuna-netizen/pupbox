@@ -313,7 +313,7 @@ export default function OrderEditor({ orderId, categories, onDone, onCancel }: {
       {error && <p role="alert" style={{ margin: 0, fontSize: 12.5, color: 'var(--red-600)', background: 'var(--red-50)', border: '1px solid var(--red-200)', borderRadius: 11, padding: '9px 12px' }}>{error}</p>}
 
       {/* The bar: how many changes, what they do to the money, Review */}
-      <div style={{ position: 'sticky', bottom: 0, zIndex: 3, padding: 12, borderRadius: 16, background: 'var(--white)', border: '1px solid var(--slate-200b)', boxShadow: '0 -8px 24px -16px rgba(15,23,42,.35)', display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+      <div className="oe-bar" style={{ position: 'sticky', bottom: 0, zIndex: 3, padding: 12, borderRadius: 16, background: 'var(--white)', border: '1px solid var(--slate-200b)', boxShadow: '0 -8px 24px -16px rgba(15,23,42,.35)', display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
         <div style={{ flex: '1 1 180px', minWidth: 0 }}>
           <div style={{ fontSize: 13.5, fontWeight: 800, color: 'var(--slate-900)' }}>{dirty ? `${changes.length} change${changes.length === 1 ? '' : 's'}` : 'No changes yet'}</div>
           <div style={{ fontSize: 12, color: moneyLine ? 'var(--amber-700)' : 'var(--slate-400)' }}>{moneyLine || `Total stays ${money(order.total)}`}</div>
