@@ -1,5 +1,6 @@
 import { OrderStatus } from '@prisma/client';
 import type { PrismaService } from '../prisma/prisma.service';
+import { COLLECTED } from '../../common/ledger';
 import { releaseStock } from '../products/stock';
 
 /**
@@ -22,7 +23,13 @@ const NEXT: Record<OrderStatus, OrderStatus[]> = {
 };
 
 /** Paid and not (fully) refunded yet. */
-export const wasPaid = (payments: { status: string }[]) => payments.some((p) => p.status === 'PAID');
+/** Money came in for it, even if some or all has gone back since (see common/ledger.ts). */
+export const wasPaid = (payments: { status: string }[]) => payments.some((p) => (COLLECTED as readonly string[]).includes(p.status));
+
+/** What is left to give back on an order's payments: paid less refunded. */
+export const leftToRefund = (payments: { status: string; amount?: any; refunds?: { amount: any }[] }[]) =>
+  +payments.filter((p) => p.status === 'PAID' || p.status === 'PARTIALLY_REFUNDED')
+    .reduce((n, p) => n + Number(p.amount ?? 0) - (p.refunds ?? []).reduce((m, r) => m + Number(r.amount), 0), 0).toFixed(2);
 
 export function allowedNext(status: OrderStatus, paid: boolean): OrderStatus[] {
   // A cancelled order that had been paid still owes the customer their money.

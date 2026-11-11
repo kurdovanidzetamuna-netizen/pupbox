@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import type { OrderStatus } from '@prisma/client';
-import { allowedNext, wasPaid } from './order-lifecycle';
+import { allowedNext, leftToRefund, wasPaid } from './order-lifecycle';
 import { PrismaService } from '../prisma/prisma.service';
 import { ALL_TIME, ledgerTotals, PAID_ORDER, type Range } from '../../common/ledger';
 import { LINE_PRODUCT } from '../products/product-include';
@@ -40,7 +40,7 @@ export class OrdersService {
       const refunds = p?.refunds ?? [];
       const refunded = refunds.reduce((s, r) => s + Number(r.amount), 0);
       const paid = p && ['PAID', 'PARTIALLY_REFUNDED', 'REFUNDED'].includes(p.status);
-      const owed = Number(o.refundDueAmount ?? 0) || (o.status === 'CANCELLED' && p?.status === 'PAID' ? Number(p.amount) : 0);
+      const owed = Number(o.refundDueAmount ?? 0) || (o.status === 'CANCELLED' && paid ? leftToRefund([p]) : 0);
       return { ...o, refund: paid && (owed > 0 || refunded > 0) ? { owed, refunded, refundedAt: refunds[0]?.createdAt ?? null } : null };
     });
     return { orders: withRefunds, total, page, limit, pages: Math.ceil(total / limit) };
@@ -113,7 +113,7 @@ export class OrdersService {
         include: {
           user: { select: { id: true, email: true, firstName: true, lastName: true, phone: true } },
           address: true,
-          payments: { orderBy: { createdAt: 'desc' }, take: 1 },
+          payments: { orderBy: { createdAt: 'desc' }, take: 1, include: { refunds: true } },
           items: { include: { product: LINE_PRODUCT, subscriptionPlan: true } },
           dog: true,
           subscription: { include: { plan: true } },
@@ -150,7 +150,7 @@ export class OrdersService {
 
     const refundDueCount = await this.prisma.order.count({
       // AND, not a spread: the search filter is an OR of its own and would be replaced.
-      where: { AND: [where, { OR: [{ status: 'CANCELLED', payments: { some: { status: 'PAID' } } }, { refundDueAmount: { gt: 0 } }] }] },
+      where: { AND: [where, { OR: [{ status: 'CANCELLED', payments: { some: { status: { in: ['PAID', 'PARTIALLY_REFUNDED'] } } } }, { refundDueAmount: { gt: 0 } }] }] },
     });
 
     return {
@@ -240,11 +240,11 @@ export class OrdersService {
   }
 
   /** What admin may do next with an order, and whether money is owed back. */
-  withFlow<T extends { status: OrderStatus; payments: { status: string; amount?: any }[]; refundDueAmount?: any }>(o: T) {
+  withFlow<T extends { status: OrderStatus; payments: { status: string; amount?: any; refunds?: { amount: any }[] }[]; refundDueAmount?: any }>(o: T) {
     const paid = wasPaid(o.payments);
-    // Owed back: what a cancellation set aside, or the whole payment of a paid order cancelled outright.
+    // Owed back: what a cancellation set aside, or what is left of the payment of a paid order cancelled outright.
     const set = Number(o.refundDueAmount ?? 0);
-    const full = o.status === 'CANCELLED' && paid ? Number(o.payments.find((p) => p.status === 'PAID')?.amount ?? 0) : 0;
+    const full = o.status === 'CANCELLED' && paid ? leftToRefund(o.payments) : 0;
     const refundDueValue = set > 0 ? set : full;
     return { ...o, allowedNext: allowedNext(o.status, paid), refundDue: refundDueValue > 0 && paid, refundDueValue };
   }
