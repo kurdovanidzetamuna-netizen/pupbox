@@ -20,9 +20,9 @@ const mask = (phone: string | null) => (phone ? `${phone.slice(0, 7)}•••${
  * minute. A wrong number can be corrected here. An account made with Google
  * or Facebook has a confirmed email and no phone yet: it starts by asking for
  * the number. Calls `onDone` once both are confirmed. `header` draws the
- * heading, told whether the phone is still missing.
+ * heading, told whether the phone is still missing or only the email is left.
  */
-export default function VerifyCodes({ onDone, header }: { onDone: () => void; header?: (phoneMissing: boolean) => ReactNode }) {
+export default function VerifyCodes({ onDone, header }: { onDone: () => void; header?: (phoneMissing: boolean, emailOnly: boolean) => ReactNode }) {
   const { t } = useLanguage();
   const [me, setMe] = useState<Me | null>(null);
   const [codes, setCodes] = useState<Record<Channel, string>>({ PHONE: '', EMAIL: '' });
@@ -161,7 +161,7 @@ export default function VerifyCodes({ onDone, header }: { onDone: () => void; he
         ) : (
           <OtpInput label={t('ver.code')} value={codes[channel]} disabled={busy === channel} error={!!errors[channel]}
             onChange={v => { setCodes(c => ({ ...c, [channel]: v })); setErrors(er => ({ ...er, [channel]: '' })); }}
-            onComplete={v => confirm(channel, v)} />
+            onComplete={v => confirm(channel, v)} autoFocus={channel === 'PHONE' || me.phoneVerified} />
         )}
         <FieldError message={errors[channel]} className="mt-2" />
         {notes[channel] && !errors[channel] && <p className="text-teal-700 text-[12px] mt-2">{notes[channel]}</p>}
@@ -179,7 +179,7 @@ export default function VerifyCodes({ onDone, header }: { onDone: () => void; he
 
   return (
     <div className="space-y-3">
-      {header?.(!me.phone && !pendingPhone)}
+      {header?.(!me.phone && !pendingPhone, me.phoneVerified && !pendingPhone && !me.emailVerified)}
       {row('PHONE')}
       {row('EMAIL')}
       {me.emailVerified && me.phoneVerified && <><Confetti count={18} /><p className="text-center font-bold text-teal-700 pt-2 animate-[pop_0.4s_ease-out]">{t('ver.allSet')}</p></>}

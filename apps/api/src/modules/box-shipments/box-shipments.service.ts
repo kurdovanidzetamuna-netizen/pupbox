@@ -1,8 +1,9 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { BoxShipmentStatus, Prisma } from '@prisma/client';
+import { BoxShipmentStatus, OrderStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { notify } from '../notifications/notify';
 import { EmailService } from '../email/email.service';
+import { moveBoxStock } from './box-stock';
 
 /**
  * Which of a product's allergens the dog reacts to, ignoring letter case.
@@ -16,6 +17,8 @@ const allergenClash = (dog: string[] | null | undefined, product: string[] | nul
 
 /** Boxes in these states have left us; they count as sent to the customer. */
 const SENT: BoxShipmentStatus[] = ['SHIPPED', 'DELIVERED'];
+/** How far a plan order has come; it only moves forward with its boxes. */
+const RANK: Record<string, number> = { PAID: 0, PROCESSING: 1, PACKED: 2, SHIPPED: 3, DELIVERED: 4 };
 
 /** Where each status may go next. Going back is allowed to undo a mis-click. */
 const NEXT: Record<BoxShipmentStatus, BoxShipmentStatus[]> = {
@@ -262,40 +265,58 @@ export class BoxShipmentsService {
       }
     }
     for (const id of newlySent) this.notifyShipped(id).catch((e) => this.logger.error(`Box shipped email failed for ${id}: ${e.message}`));
+    for (const id of new Set(movable.map((r) => r.subscriptionId))) await this.ordersFollowBoxes(id);
 
     return { updated: movable.length, skipped: rows.length - movable.length };
   }
 
   /**
-   * Packing (or shipping straight from "to pack") takes the box's products out
-   * of stock; going back to "to pack" or cancelling puts them back. Guarded by
-   * stockTakenAt so each happens once per box.
+   * A plan's order follows its boxes, so Orders doesn't keep it under "to
+   * pack" once its box is on the way. Each paid term covers the next
+   * `boxCount` boxes: its order is packed and shipped with its first box and
+   * delivered with its last. Only forward, and no message to the customer —
+   * the box already sent one. Orders with shop products are packed from
+   * Orders as before.
    */
-  private async moveStock(shipmentId: string, status: BoxShipmentStatus) {
-    const take = status === 'PACKED' || status === 'SHIPPED' || status === 'DELIVERED';
-    const give = status === 'TO_PACK' || status === 'CANCELLED';
-    if (!take && !give) return;
-    const { count } = await this.prisma.boxShipment.updateMany({
-      where: { id: shipmentId, stockTakenAt: take ? null : { not: null } },
-      data: { stockTakenAt: take ? new Date() : null },
-    });
-    if (!count) return;
-    const box = await this.prisma.boxShipment.findUnique({
-      where: { id: shipmentId },
+  private async ordersFollowBoxes(subscriptionId: string) {
+    const sub = await this.prisma.customerSubscription.findUnique({
+      where: { id: subscriptionId },
       select: {
-        campaign: { select: { products: { select: { productId: true, quantity: true } } } },
-        subscription: { select: { customBox: { select: { items: { where: { product: { deletedAt: null } }, select: { productId: true, quantity: true } } } } } },
+        plan: { select: { boxCount: true } },
+        shipments: { where: { status: { not: 'CANCELLED' } }, select: { boxNumber: true, status: true, shippedAt: true, deliveredAt: true, trackingNumber: true } },
+        // The terms that brought boxes, oldest first; a refunded term counts only if its boxes went out.
+        orders: {
+          where: { type: { in: ['SUBSCRIPTION', 'RENEWAL'] }, OR: [{ status: { in: ['PAID', 'PROCESSING', 'PACKED', 'SHIPPED', 'DELIVERED'] } }, { status: 'REFUNDED', shippedAt: { not: null } }] },
+          orderBy: { createdAt: 'asc' },
+          select: { id: true, status: true, shippedAt: true, trackingNumber: true },
+        },
       },
     });
-    for (const p of box?.subscription.customBox?.items ?? box?.campaign?.products ?? []) {
-      const n = take ? -p.quantity : p.quantity;
-      await this.prisma.$executeRaw`UPDATE "Inventory" SET "quantity" = GREATEST(0, "quantity" + ${n}), "updatedAt" = now() WHERE "productId" = ${p.productId}`;
-      const inv = await this.prisma.inventory.findUnique({ where: { productId: p.productId }, select: { quantity: true } });
-      // Keep the shop's "out of stock" in line with the shelf.
-      if (inv?.quantity === 0) await this.prisma.product.updateMany({ where: { id: p.productId, status: 'ACTIVE' }, data: { status: 'OUT_OF_STOCK' } });
-      else if (inv && inv.quantity > 0) await this.prisma.product.updateMany({ where: { id: p.productId, status: 'OUT_OF_STOCK' }, data: { status: 'ACTIVE' } });
+    if (!sub) return;
+    const per = Math.max(1, sub.plan.boxCount);
+    for (const [k, o] of sub.orders.entries()) {
+      if (!(o.status in RANK)) continue;
+      const mine = sub.shipments.filter((b) => b.boxNumber > k * per && b.boxNumber <= (k + 1) * per).sort((a, b) => a.boxNumber - b.boxNumber);
+      const last = mine.find((b) => b.boxNumber === (k + 1) * per);
+      const out = mine.filter((b) => SENT.includes(b.status));
+      const to = last?.status === 'DELIVERED' ? 'DELIVERED' : out.length ? 'SHIPPED' : mine.some((b) => b.status === 'PACKED') ? 'PACKED' : null;
+      if (!to || RANK[to] <= RANK[o.status]) continue;
+      await this.prisma.order.updateMany({
+        where: { id: o.id, status: o.status as OrderStatus },
+        data: {
+          status: to,
+          ...(RANK[to] >= RANK.SHIPPED && !o.shippedAt ? { shippedAt: out[0]?.shippedAt ?? new Date() } : {}),
+          ...(to === 'DELIVERED' ? { deliveredAt: last?.deliveredAt ?? new Date() } : {}),
+          ...(!o.trackingNumber && out[0]?.trackingNumber ? { trackingNumber: out[0].trackingNumber } : {}),
+        },
+      });
     }
   }
+
+  private moveStock(shipmentId: string, status: BoxShipmentStatus) {
+    return moveBoxStock(this.prisma, shipmentId, status);
+  }
+
 
   async setTracking(id: string, trackingNumber: string) {
     const row = await this.prisma.boxShipment.findUnique({ where: { id }, select: { id: true } });

@@ -219,6 +219,26 @@ describe('cancelling a plan', () => {
     const all = await planCancellation(fake(paidSub({ hoursAgo: 100, boxesTotal: 9, boxesDelivered: 1, status: 'PAUSED' })), 's', now);
     assert.equal(all.plan.refund, 90, 'capped at what was paid');
   });
+  test('paid two terms ahead: the boxes that won’t ship come back from both payments', async () => {
+    // 1-month plan bought, then extended twice: 3 paid, 1 sent.
+    const term = (id: string, hoursAgo: number) => ({ id, refundDueAmount: 0, items: [{ total: 99 }], payments: [{ paidAt: new Date(now.getTime() - hoursAgo * 3600_000), refunds: [] }] });
+    const sub = { ...paidSub({ hoursAgo: 1, boxCount: 1, boxesTotal: 3, boxesDelivered: 1, shipments: [thisMonth('DELIVERED')] }), orders: [term('o3', 1), term('o2', 2), term('o1', 50)] };
+    const { plan, refunds } = await planCancellation(fake(sub), 's', now);
+    assert.equal(plan.keptBoxes, 1);
+    assert.equal(plan.refund, 198);
+    assert.deepEqual(refunds, [{ orderId: 'o3', amount: 99 }, { orderId: 'o2', amount: 99 }]);
+  });
+  test('paid twice within the free hours, nothing sent: both back', async () => {
+    const term = (id: string, hoursAgo: number) => ({ id, refundDueAmount: 0, items: [{ total: 99 }], payments: [{ paidAt: new Date(now.getTime() - hoursAgo * 3600_000), refunds: [] }] });
+    const { plan, refunds } = await planCancellation(fake({ ...paidSub({ hoursAgo: 1, boxCount: 1, boxesTotal: 2 }), orders: [term('o2', 1), term('o1', 3)] }), 's', now);
+    assert.equal(plan.kind, 'free');
+    assert.equal(plan.refund, 198);
+    assert.equal(refunds.length, 2);
+  });
+  test('what was already given back on a term is not refunded twice', async () => {
+    const { plan } = await planCancellation(fake({ ...paidSub({ hoursAgo: 100 }), orders: [{ id: 'o1', refundDueAmount: 0, items: [{ total: 90 }], payments: [{ paidAt: new Date(now.getTime() - 100 * 3600_000), refunds: [{ amount: 50 }] }] }] }), 's', now);
+    assert.equal(plan.refund, 40, '60 for 2 boxes, but only 40 left of the payment');
+  });
 });
 
 describe('shop settings from admin', () => {

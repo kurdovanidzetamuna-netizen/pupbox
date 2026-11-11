@@ -209,6 +209,53 @@ describe('packing the month’s boxes (This month’s boxes)', () => {
     const r = expectStatus(await patch('/admin/box-shipments/status', { ids: [small1.id], status: 'TO_PACK' }, a), '2xx');
     assert.equal(r.updated, 0);
   });
+
+  test('a plan’s order follows its box: packed, shipped (with tracking), delivered — with no second message', async () => {
+    const a = await admin(), [year, month] = [2032, 6];
+    const c = await customer(), o = await buy(c.token, (await plan((await boxType()).id)).id);
+    expectStatus(await post('/admin/box-shipments/add-due', { year, month }, a), '2xx');
+    const b = await prisma.boxShipment.findFirstOrThrow({ where: { subscriptionId: o.subscriptionId!, year, month } });
+    const now = async () => prisma.order.findUniqueOrThrow({ where: { id: o.id } });
+    const move = async (status: string, trackingNumber?: string) => expectStatus(await patch('/admin/box-shipments/status', { ids: [b.id], status, trackingNumber }, a), '2xx');
+    assert.equal((await now()).status, 'PAID', 'listed only: still to pack');
+    await move('PACKED'); assert.equal((await now()).status, 'PACKED');
+    await move('SHIPPED', 'TRK9');
+    let x = await now(); assert.equal(x.status, 'SHIPPED'); assert.equal(x.trackingNumber, 'TRK9'); assert.ok(x.shippedAt);
+    await move('DELIVERED');
+    x = await now(); assert.equal(x.status, 'DELIVERED'); assert.ok(x.deliveredAt);
+    const kinds = (await prisma.notification.findMany({ where: { userId: c.id } })).map((n) => n.type);
+    assert.ok(!kinds.some((k) => /^ORDER_(SHIPPED|DELIVERED)/.test(k)), `only the box messages: ${kinds}`);
+  });
+
+  test('a 3-box order: shipped with its first box, delivered with its last', async () => {
+    const a = await admin(), c = await customer();
+    const o = await buy(c.token, (await plan((await boxType()).id, { durationValue: 3, boxCount: 3, price: 105 })).id);
+    const status = async () => (await prisma.order.findUniqueOrThrow({ where: { id: o.id } })).status;
+    for (const [i, month] of [7, 8, 9].entries()) {
+      expectStatus(await post('/admin/box-shipments/add-due', { year: 2032, month }, a), '2xx');
+      const b = await prisma.boxShipment.findFirstOrThrow({ where: { subscriptionId: o.subscriptionId!, year: 2032, month } });
+      assert.equal(b.boxNumber, i + 1);
+      expectStatus(await patch('/admin/box-shipments/status', { ids: [b.id], status: 'SHIPPED' }, a), '2xx');
+      expectStatus(await patch('/admin/box-shipments/status', { ids: [b.id], status: 'DELIVERED' }, a), '2xx');
+      assert.equal(await status(), i < 2 ? 'SHIPPED' : 'DELIVERED', `after box ${i + 1}`);
+    }
+  });
+
+  test('a packed box of a plan cancelled by admin: the box is cancelled and its products go back', async () => {
+    const a = await admin(), [year, month] = [2032, 10];
+    const chew = await prisma.product.create({ data: { name: 'Chew', slug: `sh-${stamp()}`, sku: `SH-${stamp()}`, price: 5, status: 'ACTIVE', includedInBox: true, standaloneSale: false, inventory: { create: { quantity: 10 } } } });
+    const list = expectStatus(await post('/box-campaigns', { name: 'All sizes', month, year, dogSize: null }, a), '2xx');
+    expectStatus(await put(`/box-campaigns/${list.id}/products`, { items: [{ productId: chew.id, quantity: 2 }] }, a), '2xx');
+    const c = await customer(), o = await buy(c.token, (await plan((await boxType()).id)).id);
+    expectStatus(await post('/admin/box-shipments/add-due', { year, month }, a), '2xx');
+    const b = await prisma.boxShipment.findFirstOrThrow({ where: { subscriptionId: o.subscriptionId!, year, month } });
+    expectStatus(await patch('/admin/box-shipments/status', { ids: [b.id], status: 'PACKED' }, a), '2xx');
+    const shelf = async () => (await prisma.inventory.findUniqueOrThrow({ where: { productId: chew.id } })).quantity;
+    assert.equal(await shelf(), 8);
+    expectStatus(await patch(`/orders/admin/${o.id}/status`, { status: 'CANCELLED' }, a), '2xx', 'cancel the plan order');
+    assert.equal((await prisma.boxShipment.findUniqueOrThrow({ where: { id: b.id } })).status, 'CANCELLED');
+    assert.equal(await shelf(), 10, 'the packed chews are back on the shelf');
+  });
 });
 
 describe('what admin can’t save', () => {

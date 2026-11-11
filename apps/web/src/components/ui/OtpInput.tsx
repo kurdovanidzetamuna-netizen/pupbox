@@ -1,20 +1,28 @@
 'use client';
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 
 /**
  * Six one-digit boxes for a verification code. Typing moves to the next box,
  * Backspace to the previous, and pasting a whole code fills them all. Calls
  * `onComplete` as soon as all six digits are in (no button needed).
+ * `autoFocus`: the first box is ready to type into once it can be used.
  */
-export default function OtpInput({ value, onChange, onComplete, disabled, error, label }: {
+export default function OtpInput({ value, onChange, onComplete, disabled, error, label, autoFocus }: {
   value: string;
   onChange: (v: string) => void;
   onComplete?: (v: string) => void;
   disabled?: boolean;
   error?: boolean;
   label: string;
+  autoFocus?: boolean;
 }) {
   const refs = useRef<(HTMLInputElement | null)[]>([]);
+  const focused = useRef(false);
+  useEffect(() => {
+    if (!autoFocus || disabled || focused.current) return;
+    focused.current = true;
+    refs.current[0]?.focus();
+  }, [autoFocus, disabled]);
   const digits = Array.from({ length: 6 }, (_, i) => value[i] ?? '');
 
   function set(next: string) {

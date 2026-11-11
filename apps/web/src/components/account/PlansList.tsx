@@ -350,7 +350,7 @@ export default function PlansList({ subs, setSubs, toast, view = 'list' }: {
                     <div className="flex-1 min-w-0">
                       <p className="text-[13px] font-semibold text-gray-900">{t('sub.autoRenewal')}</p>
                       <p className="text-[11.5px] text-gray-500">
-                        {sub.autoRenewal ? (sub.nextRenewalAt ? fill(t('sub.renewsOn'), { date: date(sub.nextRenewalAt) }) : t('sub.renewsAuto')) : t('sub.noRenew')}
+                        {sub.autoRenewal ? (sub.nextRenewalAt ? fill(t(due ? 'sub.renewsWhenPaid' : 'sub.renewsOn'), { date: date(sub.nextRenewalAt) }) : t('sub.renewsAuto')) : t('sub.noRenew')}
                       </p>
                     </div>
                     <button onClick={() => toggleAutoRenewal(sub)} disabled={toggling === sub.id} role="switch" aria-checked={!!sub.autoRenewal} aria-label={t('sub.autoRenewal')}

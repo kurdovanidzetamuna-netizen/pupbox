@@ -6,6 +6,7 @@ import { FlittService } from '../payments/flitt.service';
 import { SmsNotify } from '../sms/sms-notify';
 import { notify } from '../notifications/notify';
 import { OrdersService } from './orders.service';
+import { cancelOpenBoxes } from '../box-shipments/box-stock';
 
 /** Money back to a customer: sent through the bank, or recorded when done in its portal. */
 @Injectable()
@@ -157,7 +158,7 @@ export class OrderRefundsService {
     }
     if (closeUnshipped && order.subscriptionId) {
       await this.prisma.customerSubscription.update({ where: { id: order.subscriptionId }, data: { status: 'CANCELLED', cancelledAt: new Date(), cancelReason: o.reason?.trim() || 'Refunded by admin', autoRenewal: false, nextRenewalAt: null } });
-      await this.prisma.boxShipment.updateMany({ where: { subscriptionId: order.subscriptionId, status: { in: ['TO_PACK', 'PACKED'] } }, data: { status: 'CANCELLED' } });
+      await cancelOpenBoxes(this.prisma, order.subscriptionId);
     }
 
     notify(this.prisma, order.userId, 'REFUNDED', { orderId: id, amount, full: everything }, '/account/orders');
