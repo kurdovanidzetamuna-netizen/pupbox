@@ -194,6 +194,7 @@ export const STORE_STRINGS: Record<string, { en: string; ka: string }> = {
   'sub.price':              { en: 'Price',                      ka: 'ფასი' },
   'sub.autoRenewal':        { en: 'Auto-renewal',               ka: 'ავტომატური განახლება' },
   'sub.renewsOn':           { en: 'Renews automatically on {date}', ka: 'ავტომატურად განახლდება {date}' },
+  'sub.renewsWhenPaid':    { en: 'Renews on {date}, once the payment above is made', ka: 'განახლდება {date}, ზემოთ მითითებული გადახდის შემდეგ' },
   'sub.renewsAuto':         { en: 'Renews automatically',       ka: 'ავტომატურად განახლდება' },
   'sub.noRenew':            { en: "Your subscription won't renew automatically", ka: 'გამოწერა ავტომატურად არ განახლდება' },
   'sub.renewOn':            { en: 'Auto-renewal turned on',     ka: 'ავტომატური განახლება ჩაირთო' },

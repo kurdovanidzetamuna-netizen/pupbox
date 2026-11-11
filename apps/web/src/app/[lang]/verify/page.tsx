@@ -18,7 +18,7 @@ function Verify() {
       <div className="mx-auto w-full max-w-lg bg-white rounded-3xl ring-1 ring-gray-200/60 p-6 sm:p-8">
         <span className="w-11 h-11 rounded-2xl bg-teal-50 text-teal-600 flex items-center justify-center mb-4"><Icon name="shield" className="w-6 h-6" /></span>
         <VerifyCodes onDone={done}
-          header={(noPhone) => <Heading kind="form" as="h1" title={t(noPhone ? 'ver.titlePhone' : 'ver.title')} subtitle={t(noPhone ? 'ver.subPhone' : 'ver.sub')} />} />
+          header={(noPhone, emailOnly) => <Heading kind="form" as="h1" title={t(noPhone ? 'ver.titlePhone' : emailOnly ? 'ver.titleEmail' : 'ver.title')} subtitle={t(noPhone ? 'ver.subPhone' : emailOnly ? 'ver.subEmail' : 'ver.sub')} />} />
       </div>
     </main>
   );

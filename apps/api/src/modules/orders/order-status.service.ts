@@ -6,6 +6,7 @@ import { notify } from '../notifications/notify';
 import { allowedNext, cancelUnpaidOrder, leftToRefund, wasPaid } from './order-lifecycle';
 import { OrdersService } from './orders.service';
 import { OrderRefundsService } from './order-refunds.service';
+import { cancelOpenBoxes } from '../box-shipments/box-stock';
 
 /** Admin moves an order along: packing, shipping, delivery, cancelling. */
 @Injectable()
@@ -53,7 +54,7 @@ export class OrderStatusService {
       }
       if (order.subscriptionId) {
         await this.prisma.customerSubscription.update({ where: { id: order.subscriptionId }, data: { status: 'CANCELLED', cancelledAt: new Date(), cancelReason: note || 'Order cancelled by admin', autoRenewal: false, nextRenewalAt: null } });
-        await this.prisma.boxShipment.updateMany({ where: { subscriptionId: order.subscriptionId, status: { in: ['TO_PACK', 'PACKED'] } }, data: { status: 'CANCELLED' } });
+        await cancelOpenBoxes(this.prisma, order.subscriptionId);
       }
       await this.prisma.order.update({ where: { id }, data: { status: 'CANCELLED', internalNotes: [order.internalNotes, `Cancelled by admin after payment${note ? `: ${note}` : ''}. Refund due.`].filter(Boolean).join('\n') } });
       return this.orders.adminGetOne(id);

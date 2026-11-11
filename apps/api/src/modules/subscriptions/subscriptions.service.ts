@@ -4,6 +4,7 @@ import { endOfMonth, planCancellation } from './cancellation';
 import { createDueRenewals, createExtension, endUnpaidRenewals } from './renewal';
 import { EmailService } from '../email/email.service';
 import { cancelUnpaidOrder } from '../orders/order-lifecycle';
+import { cancelOpenBoxes } from '../box-shipments/box-stock';
 
 const HOUR = 60 * 60 * 1000;
 
@@ -139,7 +140,7 @@ export class SubscriptionsService implements OnModuleInit, OnModuleDestroy {
     await this.chargeNotUndecided(id);
     await this.withdrawOpenRenewals(id, 'Subscription cancelled by the customer.');
     const now = new Date();
-    const { plan, orderId } = await planCancellation(this.prisma, id, now);
+    const { plan, refunds } = await planCancellation(this.prisma, id, now);
     const keepsBox = plan.kind === 'keep' && plan.thisMonthBoxComing;
     await this.prisma.customerSubscription.update({
       where: { id },
@@ -152,19 +153,19 @@ export class SubscriptionsService implements OnModuleInit, OnModuleDestroy {
       },
     });
     if (plan.kind === 'free') {
-      await this.prisma.boxShipment.updateMany({ where: { subscriptionId: id, status: { in: ['TO_PACK', 'PACKED'] } }, data: { status: 'CANCELLED' } });
+      await cancelOpenBoxes(this.prisma, id);
     }
-    if (plan.refund > 0 && orderId) {
-      const order = await this.prisma.order.findUnique({ where: { id: orderId }, select: { status: true, refundDueAmount: true, internalNotes: true, items: { where: { productId: { not: null } }, select: { id: true } } } });
+    for (const r of refunds) {
+      const order = await this.prisma.order.findUnique({ where: { id: r.orderId }, select: { status: true, refundDueAmount: true, internalNotes: true, items: { where: { productId: { not: null } }, select: { id: true } } } });
       // Cancelled for free and the order was only this plan: nothing of it will
       // ship, so the order is cancelled too (recording the refund then closes it).
-      const wholeOrderOff = plan.kind === 'free' && !order?.items.length && ['PAID', 'PROCESSING'].includes(order?.status ?? '');
+      const wholeOrderOff = plan.kind === 'free' && !order?.items.length && ['PAID', 'PROCESSING', 'PACKED'].includes(order?.status ?? '');
       await this.prisma.order.update({
-        where: { id: orderId },
+        where: { id: r.orderId },
         data: {
           ...(wholeOrderOff ? { status: 'CANCELLED' as const } : {}),
-          refundDueAmount: Number(order?.refundDueAmount ?? 0) + plan.refund,
-          internalNotes: [order?.internalNotes, `Subscription cancelled by the customer (${plan.kind === 'free' ? `within ${plan.freeHours} h — full refund` : `kept ${plan.keptBoxes} of ${plan.boxesTotal} boxes`}). Refund due ₾${plan.refund.toFixed(2)}.`].filter(Boolean).join('\n'),
+          refundDueAmount: Number(order?.refundDueAmount ?? 0) + r.amount,
+          internalNotes: [order?.internalNotes, `Subscription cancelled by the customer (${plan.kind === 'free' ? `within ${plan.freeHours} h — full refund` : `kept ${plan.keptBoxes} of ${plan.boxesTotal} boxes`}). Refund due ₾${r.amount.toFixed(2)}${refunds.length > 1 ? ` of ₾${plan.refund.toFixed(2)} in all` : ''}.`].filter(Boolean).join('\n'),
         },
       });
     }

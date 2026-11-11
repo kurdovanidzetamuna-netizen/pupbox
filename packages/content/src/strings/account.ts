@@ -37,6 +37,8 @@ export const ACCOUNT_STRINGS: Record<string, { en: string; ka: string }> = {
   'ver.sub':                { en: 'We sent a 6-digit code to each. It keeps your account and deliveries safe.', ka: 'ორივეზე 6-ნიშნა კოდი გამოგიგზავნეთ. ეს შენი ანგარიშისა და მიწოდების უსაფრთხოებისთვისაა.' },
   'ver.titlePhone':         { en: 'One last step: your phone',   ka: 'ბოლო ნაბიჯი: შენი ტელეფონი' },
   'ver.subPhone':           { en: 'Add your mobile number — we’ll text a 6-digit code to confirm it. It keeps your account and deliveries safe.', ka: 'მიუთითე მობილურის ნომერი — დასადასტურებლად 6-ნიშნა კოდს SMS-ით გამოგიგზავნით. ეს შენი ანგარიშისა და მიწოდების უსაფრთხოებისთვისაა.' },
+  'ver.titleEmail':         { en: 'One last step: your email',   ka: 'ბოლო ნაბიჯი: შენი ელფოსტა' },
+  'ver.subEmail':           { en: 'We sent a 6-digit code to your email. Type it in and you’re done.', ka: 'ელფოსტაზე 6-ნიშნა კოდი გამოგიგზავნეთ. შეიყვანე და მზად ხარ.' },
   'ver.phone':              { en: 'SMS code sent to {to}',       ka: 'SMS კოდი გაიგზავნა ნომერზე {to}' },
   'ver.email':              { en: 'Email code sent to {to}',     ka: 'ელფოსტის კოდი გაიგზავნა მისამართზე {to}' },
   'ver.code':               { en: '6-digit code',                ka: '6-ნიშნა კოდი' },

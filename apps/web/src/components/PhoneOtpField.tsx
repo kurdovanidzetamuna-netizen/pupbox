@@ -119,7 +119,7 @@ export default function PhoneOtpField({ id, label, value, onChange, onConfirmed,
           <p className="text-[12.5px] text-gray-700 mb-2.5 flex items-center gap-1.5">
             <Icon name="chat" className="w-4 h-4 text-teal-600" />{fill(t('ver.phone'), { to: sentTo })}
           </p>
-          <OtpInput value={code} onChange={(v) => { setCode(v); setErr(''); }} onComplete={check} disabled={busy} error={!!err} label={t('ver.code')} />
+          <OtpInput value={code} onChange={(v) => { setCode(v); setErr(''); }} onComplete={check} disabled={busy} error={!!err} label={t('ver.code')} autoFocus />
           {err && <FieldError message={err} />}
           <div className="mt-2.5 flex items-center gap-4 text-[12px]">
             {wait > 0

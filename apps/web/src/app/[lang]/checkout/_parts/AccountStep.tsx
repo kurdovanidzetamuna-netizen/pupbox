@@ -18,7 +18,7 @@ export function AccountStep({ co }: { co: Checkout }) {
     needVerify ? (
       <section className={card}>
         <VerifyCodes onDone={() => { setNeedVerify(false); next(); }}
-          header={(noPhone) => <Heading kind="form" as="h1" title={t(noPhone ? 'ver.titlePhone' : 'ver.title')} subtitle={t(noPhone ? 'ver.subPhone' : 'ver.sub')} />} />
+          header={(noPhone, emailOnly) => <Heading kind="form" as="h1" title={t(noPhone ? 'ver.titlePhone' : emailOnly ? 'ver.titleEmail' : 'ver.title')} subtitle={t(noPhone ? 'ver.subPhone' : emailOnly ? 'ver.subEmail' : 'ver.sub')} />} />
       </section>
     ) : (
       <section className={card}>
