@@ -3,7 +3,7 @@ import type { OrderStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
 import { notify } from '../notifications/notify';
-import { allowedNext, cancelUnpaidOrder, wasPaid } from './order-lifecycle';
+import { allowedNext, cancelUnpaidOrder, leftToRefund, wasPaid } from './order-lifecycle';
 import { OrdersService } from './orders.service';
 import { OrderRefundsService } from './order-refunds.service';
 
@@ -24,7 +24,7 @@ export class OrderStatusService {
     const order = await this.prisma.order.findUnique({
       where: { id },
       include: {
-        payments: { orderBy: { createdAt: 'desc' } },
+        payments: { orderBy: { createdAt: 'desc' }, include: { refunds: { select: { amount: true } } } },
         items: { where: { productId: { not: null } }, select: { productId: true, quantity: true } },
         user: { select: { email: true, firstName: true, language: true } },
       },
@@ -38,7 +38,10 @@ export class OrderStatusService {
     const note = opts.reason?.trim();
 
     if (to === 'CANCELLED' && !paid) {
-      await cancelUnpaidOrder(this.prisma, id, note ? `Cancelled by admin: ${note}` : 'Cancelled by admin.');
+      // Never report a cancel that didn't happen (paid meanwhile, or not pending any more).
+      if (!(await cancelUnpaidOrder(this.prisma, id, note ? `Cancelled by admin: ${note}` : 'Cancelled by admin.'))) {
+        throw new BadRequestException('This order changed in the meantime. Refresh and look again.');
+      }
       return this.orders.adminGetOne(id);
     }
 
@@ -49,7 +52,7 @@ export class OrderStatusService {
         if (inv.quantity > 0) await this.prisma.product.updateMany({ where: { id: i.productId!, status: 'OUT_OF_STOCK' }, data: { status: 'ACTIVE' } });
       }
       if (order.subscriptionId) {
-        await this.prisma.customerSubscription.update({ where: { id: order.subscriptionId }, data: { status: 'CANCELLED', cancelReason: note || 'Order cancelled by admin', nextRenewalAt: null } });
+        await this.prisma.customerSubscription.update({ where: { id: order.subscriptionId }, data: { status: 'CANCELLED', cancelledAt: new Date(), cancelReason: note || 'Order cancelled by admin', autoRenewal: false, nextRenewalAt: null } });
         await this.prisma.boxShipment.updateMany({ where: { subscriptionId: order.subscriptionId, status: { in: ['TO_PACK', 'PACKED'] } }, data: { status: 'CANCELLED' } });
       }
       await this.prisma.order.update({ where: { id }, data: { status: 'CANCELLED', internalNotes: [order.internalNotes, `Cancelled by admin after payment${note ? `: ${note}` : ''}. Refund due.`].filter(Boolean).join('\n') } });
@@ -57,9 +60,9 @@ export class OrderStatusService {
     }
 
     if (to === 'REFUNDED') {
-      const payment = order.payments.find((p) => p.status === 'PAID');
-      if (!payment) throw new BadRequestException('This order has no payment to refund.');
-      await this.refunds.recordRefund(id, opts.refundAmount ?? Number(payment.amount), note);
+      const left = leftToRefund(order.payments);
+      if (!(left > 0)) throw new BadRequestException('This order has no payment to refund.');
+      await this.refunds.recordRefund(id, opts.refundAmount ?? left, note);
       // Even a partial refund ends a cancelled or delivered order.
       await this.prisma.order.update({ where: { id }, data: { status: 'REFUNDED' } });
       return this.orders.adminGetOne(id);

@@ -156,7 +156,7 @@ export class OrderRefundsService {
       if (inv.quantity > 0) await this.prisma.product.updateMany({ where: { id: b.productId, status: 'OUT_OF_STOCK' }, data: { status: 'ACTIVE' } });
     }
     if (closeUnshipped && order.subscriptionId) {
-      await this.prisma.customerSubscription.update({ where: { id: order.subscriptionId }, data: { status: 'CANCELLED', cancelReason: o.reason?.trim() || 'Refunded by admin', nextRenewalAt: null } });
+      await this.prisma.customerSubscription.update({ where: { id: order.subscriptionId }, data: { status: 'CANCELLED', cancelledAt: new Date(), cancelReason: o.reason?.trim() || 'Refunded by admin', autoRenewal: false, nextRenewalAt: null } });
       await this.prisma.boxShipment.updateMany({ where: { subscriptionId: order.subscriptionId, status: { in: ['TO_PACK', 'PACKED'] } }, data: { status: 'CANCELLED' } });
     }
 
